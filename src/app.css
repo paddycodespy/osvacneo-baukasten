@@ -57,8 +57,10 @@ html, body { margin: 0; height: 100%; }
 .wordmark .wm-sub { color: #fff; font-weight: 500; font-size: 17px; margin-left: 6px; }
 button, input { font: inherit; color: inherit; }
 /* Links grundsätzlich ohne Unterstreichung */
-a { text-decoration: none; }
+a { text-decoration: none; transition: color 0.15s; }
 .license a { color: var(--sky-d); font-weight: 600; }
+/* Links: beim Hovern und beim Anklicken im Rot der Website */
+.license a:hover, .license a:active, .files a:hover, .files a:active { color: var(--red); }
 button { cursor: pointer; }
 
 /* Hover für alle Schaltflächen: nur leicht vergrößern, Farben bleiben gleich (wie osvacneo.de) */
