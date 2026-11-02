@@ -14,8 +14,8 @@
   let kindId = $state('MF');
   let input = $state<OsvacInput>({ ...DEFAULT_INPUT, maleDiameterInner: 25, femaleDiameterInner: 32 });
   let text = $state(true);
+  /** Eine Einstellung für Anzeige und Export der Druckhilfe (wird immer mitberechnet) */
   let supports = $state(true);
-  let exportHelpers = $state(true);
   let machine = $state({ mode: 'over' as 'over' | 'into', dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true });
   let volume = $state<number | null>(null);
 
@@ -25,7 +25,6 @@
   let status = $state<'start' | 'preview' | 'detail' | 'ready' | 'error'>('start');
   let errorMsg = $state('');
   let section = $state(false);
-  let showHelpers = $state(true);
   let exporting = $state<ExportFormat | null>(null);
   let files = $state<{ fileName: string; url: string; size: number; key: string }[]>([]);
 
@@ -81,7 +80,7 @@
   let buildToken = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   function spec() {
-    return makeBuild(kindId, $state.snapshot(input), { text, knurl: true, supports, ...$state.snapshot(buildOpts) });
+    return makeBuild(kindId, $state.snapshot(input), { text, knurl: true, supports: true, ...$state.snapshot(buildOpts) });
   }
   function schedule() {
     clearTimeout(timer);
@@ -93,7 +92,7 @@
     errorMsg = '';
     try {
       status = 'preview';
-      const quick = await build(makeBuild(kindId, $state.snapshot(input), { text: false, knurl: false, supports, ...$state.snapshot(buildOpts) }));
+      const quick = await build(makeBuild(kindId, $state.snapshot(input), { text: false, knurl: false, supports: true, ...$state.snapshot(buildOpts) }));
       if (token !== buildToken) return;
       dims = viewer!.setBodies(quick.bodies);
       status = 'detail';
@@ -112,8 +111,13 @@
   $effect(() => {
     // Abhängigkeiten registrieren
     void [kindId, input.maleDiameterInner, input.femaleDiameterInner, input.hoseDiameterInner, input.generalMaterialWidth,
-      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, text, supports, JSON.stringify(pipe)];
+      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, text, JSON.stringify(pipe)];
     if (viewer) schedule();
+  });
+
+  // Druckhilfe ein-/ausblenden ohne Neuberechnung
+  $effect(() => {
+    viewer?.setHelpers(supports);
   });
 
   onMount(() => {
@@ -125,8 +129,9 @@
   async function download(f: ExportFormat) {
     exporting = f;
     try {
-      const r = await exportFile(spec(), f, fileName, exportHelpers);
-      const key = JSON.stringify(spec().input) + f + exportHelpers;
+      const withHelpers = supports && hasSupport;
+      const r = await exportFile(spec(), f, fileName, withHelpers);
+      const key = JSON.stringify(spec().input) + f + withHelpers;
       for (const old of files.filter((x) => x.fileName === r.fileName)) URL.revokeObjectURL(old.url);
       files = [{ ...r, key }, ...files.filter((x) => x.fileName !== r.fileName)];
     } catch (e) {
@@ -153,8 +158,8 @@
 
     <div class="stage-tools">
       <button class="tool" class:on={section} aria-pressed={section} onclick={() => { section = !section; viewer?.setSection(section); }}>Schnitt</button>
-      {#if supports && hasSupport}
-        <button class="tool" class:on={showHelpers} aria-pressed={showHelpers} onclick={() => { showHelpers = !showHelpers; viewer?.setHelpers(showHelpers); }}>Druckhilfe</button>
+      {#if hasSupport}
+        <button class="tool" class:on={supports} aria-pressed={supports} onclick={() => (supports = !supports)}>Druckhilfe</button>
       {/if}
       <button class="tool" onclick={() => viewer?.resetView()}>Ansicht zurücksetzen</button>
     </div>
@@ -304,8 +309,8 @@
             <strong>STEP herunterladen</strong><small>Exaktes CAD-Modell zum Weiterkonstruieren</small>
           </button>
         </div>
-        {#if supports && hasSupport}
-          <label class="inline-check"><input type="checkbox" bind:checked={exportHelpers} /> Druckhilfe mit exportieren</label>
+        {#if hasSupport}
+          <label class="inline-check"><input type="checkbox" bind:checked={supports} /> Druckhilfe mit exportieren</label>
         {/if}
         <p class="status-line" role="status">
           {#if exporting}{exporting.toUpperCase()} wird erzeugt …{:else if status !== 'ready'}Die Downloads sind verfügbar, sobald die Berechnung fertig ist.{/if}
