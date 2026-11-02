@@ -40,7 +40,7 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
   ]);
 
   // --- Rändelung + Textfelder ---
-  body = addGrip(body, rFo, -2, -31.5, { clearFieldA: true, knurl: opt.knurl });
+  body = addGrip(body, rFo, -2, -31.5, { knurl: opt.knurl });
 
   // --- Bajonett ---
   const w = p.femaleBayonetNoseWidth;

@@ -78,7 +78,7 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 | Teil | Volumen gegenüber Fusion | Anmerkung |
 |---|---|---|
 | Male M32 (mit Text) | −0,4 % | Druckhilfe ohne Aussparungen an den Nasen |
-| Female F32 (mit Text) | +0,1 % | |
+| Female F32 (mit Text) | +0,3 % | |
 | MxxFyy M25/F32 | +0,3 % | |
 | FxxHyy F32/H32 | +0,1 % | Gewindeauslauf im Knickschutz fehlt |
 | MxxHyy M25/H36 | −0,5 % | Gewinde als eigener Körper; die 0,5-mm-Überlappung mit der Wand ist herausgerechnet |
