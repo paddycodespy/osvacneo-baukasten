@@ -237,6 +237,7 @@ h2 {
   line-height: 1.2;
 }
 .lead { margin: 0 0 22px; color: var(--slate-2); max-width: 60ch; }
+.lead strong { color: var(--graphite); font-weight: 700; }
 
 /* Adaptertypen */
 .kinds { display: flex; flex-direction: column; gap: 2px; }
@@ -258,7 +259,10 @@ h2 {
 .kind-text strong { font-weight: 600; font-size: 15px; white-space: nowrap; }
 .kind-text small { font-size: 13.5px; color: var(--slate-2); line-height: 1.35; }
 .kind-code { flex: none; font-family: var(--cond); font-size: 13px; color: var(--grey); white-space: nowrap; }
-.kind-code .ck { font-size: 15px; font-weight: 700; color: var(--graphite); }
+.kind-code .ck { font-size: 15px; font-weight: 700; }
+.kind-code .ck-M { color: var(--sky-d); }
+.kind-code .ck-F { color: #e5352b; }
+.kind-code .ck-H { color: var(--graphite); }
 .kind-code .cx { font-weight: 500; }
 .kind:disabled .ck { color: inherit; }
 
@@ -304,7 +308,7 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 /* Stutzen */
 .sub { font-family: var(--cond); font-weight: 600; font-size: 22px; margin: 28px 0 10px; }
 .seg.wide { display: flex; margin-bottom: 14px; }
-.seg.wide button { flex: 1; padding: 8px 10px; font-size: 14.5px; }
+.seg.wide button { flex: 1; padding: 8px 6px; font-size: 13px; white-space: nowrap; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin: 14px 0 6px; }
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 500; }
 .field .num-in input { width: 100%; }

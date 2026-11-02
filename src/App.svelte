@@ -7,6 +7,7 @@
   import type { ExportFormat } from './lib/worker/protocol';
   import KindIcon from './components/KindIcon.svelte';
   import MeasureFigure from './components/MeasureFigure.svelte';
+  import NumberField from './components/NumberField.svelte';
   import type { PipeSpec } from './lib/osvac/machine';
   import { estimateFilament } from './lib/filament';
 
@@ -245,7 +246,7 @@
         </div>
       {:else if step === 1}
         <h2>Größen</h2>
-        <p class="lead">Innendurchmesser in Millimetern. 25 und 32 sind die Standardgrößen von osVAC neo.</p>
+        <p class="lead">Innendurchmesser in Millimetern. <strong>25</strong> und <strong>32</strong> sind die Standardgrößen von osVAC neo.</p>
         {#each kind.diameters as k}
           <fieldset class="dia">
             <legend>{LABELS[k].name}</legend>
@@ -255,11 +256,7 @@
                   <button class="chip" class:sel={input[k] === v} onclick={() => setDia(k, v)}>{v}</button>
                 {/each}
               </div>
-              <label class="num-in">
-                <span class="sr">{LABELS[k].hint}</span>
-                <input type="number" min="15" max="60" step="0.1" value={input[k]} onchange={(e) => setDia(k, +(e.currentTarget as HTMLInputElement).value)} />
-                <span class="unit">mm</span>
-              </label>
+              <NumberField value={input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => setDia(k, v)} />
             </div>
           </fieldset>
         {/each}
@@ -276,11 +273,11 @@
               : 'Innendurchmesser der Absaugöffnung messen: vorne an der Kante und in der Tiefe, bis zu der der Adapter hineinreichen soll.'}
           </p>
           <div class="grid2">
-            <label class="field"><span>Ø vorne</span><span class="num-in"><input type="number" step="0.1" min="8" max="120" bind:value={machine.dOpen} /><span class="unit">mm</span></span></label>
-            <label class="field"><span>Ø in der Tiefe</span><span class="num-in"><input type="number" step="0.1" min="8" max="120" bind:value={machine.dDepth} /><span class="unit">mm</span></span></label>
-            <label class="field"><span>Tiefe (Steckweg)</span><span class="num-in"><input type="number" step="1" min="5" max="100" bind:value={machine.length} /><span class="unit">mm</span></span></label>
-            <label class="field"><span>Wandstärke</span><span class="num-in"><input type="number" step="0.5" min="2" max="8" bind:value={machine.wall} /><span class="unit">mm</span></span></label>
-            <label class="field"><span>Zugabe für den Sitz</span><span class="num-in"><input type="number" step="0.05" min="0" max="2" bind:value={machine.allowance} /><span class="unit">mm</span></span></label>
+            <div class="field"><span>Ø vorne</span><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" /></div>
+            <div class="field"><span>Ø in der Tiefe</span><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" /></div>
+            <div class="field"><span>Tiefe (Steckweg)</span><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></div>
+            <div class="field"><span>Wandstärke</span><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" /></div>
+            <div class="field"><span>Zugabe für den Sitz</span><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></div>
             <label class="field check"><input type="checkbox" bind:checked={machine.holes} /> 3 Schraubenlöcher Ø 4</label>
           </div>
           <p class="hint">Rohr innen: Ø {fmt(pipe.d2Inner, 2)} an der Öffnung, Ø {fmt(pipe.d1Inner, 2)} am Übergang, Wand {fmt(pipe.wall)} mm.</p>
