@@ -3,9 +3,9 @@
  * erhabene Felder (+0.5 mm) mittig im Griffbereich, darüber/darunter läuft die Rändelung durch.
  *
  * Layouts (aus den Fusion-Exporten vermessen, Schrift Arial/Liberation Sans Regular):
- *  - 'full'       (Female, Schlauchteil): Feld A 40×16 bei 270° mit „osVAC neo“ + Kennung, Band B 48×6 bei 90°
+ *  - 'full'       (Female, Schlauchteil): Feld A 40×16 bei 270° mit „osVAC neo“ + Kennung, Band B 48×6 bei 90° mit der Lizenzzeile
  *  - 'housing'    (Gehäuse MxxHyy):       Feld A 40×6 bei 270° nur mit „osVAC neo“, kein Band
- *  - 'housedHose' (Schlauchteil MxxHyy):  Feld A 40×10 bei 270° nur mit Kennung, Band B 48×6 bei 90°
+ *  - 'housedHose' (Schlauchteil MxxHyy):  Feld A 40×10 bei 270° nur mit Kennung, Band B 48×6 bei 90° mit der Lizenzzeile
  */
 import type { Shape3D } from 'replicad';
 import { extrudeDown, annularSector, knurlRing, deg } from './geom';
@@ -19,6 +19,9 @@ const FIELD_B_H = 6;
 const FIELD_A_H: Record<GripLayout, number> = { full: 16, housing: 6, housedHose: 10 };
 
 /** Schriftgrößen (fontSize) und Grundlinien relativ zur Feldmitte – gemessen am Original. */
+/** Lizenzzeile wie im Original (Band B, Stecker bei 90°). */
+export const LICENSE_TEXT = 'CC BY-NC-SA 4.0';
+
 export const TEXT = {
   small: 5.847, // „osVAC neo“, Versalhöhe ≈ 4.0 mm
   label: 11.525, // Kennung im 16-mm-Feld (F32, H36 …)
@@ -64,6 +67,6 @@ export function addLabels(body: Shape3D, r: number, zTop: number, zBot: number, 
       : layout === 'housing'
         ? [t('osVAC neo', TEXT.small, 270, TEXT.band)]
         : [t(label, TEXT.labelMid, 270, TEXT.midLabel)];
-  if (f.b) tools.push(t(`osVAC neo  ${label}`, TEXT.small, 90, TEXT.band));
+  if (f.b) tools.push(t(LICENSE_TEXT, TEXT.small, 90, TEXT.band));
   return engrave(body, tools);
 }
