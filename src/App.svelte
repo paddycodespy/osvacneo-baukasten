@@ -6,6 +6,8 @@
   import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './lib/osvac/params';
   import type { ExportFormat } from './lib/worker/protocol';
   import KindIcon from './components/KindIcon.svelte';
+  import MeasureFigure from './components/MeasureFigure.svelte';
+  import type { PipeSpec } from './lib/osvac/machine';
 
   const STEPS = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
   let step = $state(0);
@@ -14,6 +16,8 @@
   let text = $state(true);
   let supports = $state(true);
   let exportHelpers = $state(true);
+  let machine = $state({ mode: 'over' as 'over' | 'into', dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true });
+  let volume = $state<number | null>(null);
 
   let host: HTMLDivElement;
   let viewer: PartViewer | null = null;
@@ -27,8 +31,22 @@
 
   const kind = $derived(kindById(kindId));
   const params = $derived(deriveParams(input));
-  const fileName = $derived(kind.fileName(params));
-  const code = $derived(fileName.replace('osVACneo-', ''));
+  /** Druckhilfe gibt es nur, wenn der Stecker mit der Spitze nach unten gedruckt wird */
+  const hasSupport = $derived(kind.id === 'M' || kind.id === 'MF');
+  const pipe = $derived.by((): PipeSpec => {
+    const m = machine;
+    const w = Math.max(2, m.wall);
+    const toInner = (d: number) => (m.mode === 'over' ? d + m.allowance : d - m.allowance - 2 * w);
+    // D1 (am Übergang, tief im Adapter) ↔ Stutzen vorne; D2 (Öffnung des Adapters) ↔ Stutzen in der Tiefe
+    return { d1Inner: round1(toInner(m.dOpen)), d2Inner: round1(toInner(m.dDepth)), length: m.length, wall: w, transition: 8, screwHoles: m.holes };
+  });
+  const buildOpts = $derived(kind.machine ? { pipe } : {});
+  const fileName = $derived(kind.fileName(params, buildOpts));
+  const code = $derived(
+    kind.machine
+      ? `${kind.ends.top === 'female' ? 'F' : 'M'}${fmt(kind.ends.top === 'female' ? input.femaleDiameterInner : input.maleDiameterInner)}/${fmt(machine.dOpen)}`
+      : fileName.replace('osVACneo-', ''),
+  );
 
   const LABELS: Record<DiameterKey, { name: string; hint: string; presets: number[] }> = {
     femaleDiameterInner: { name: 'Kupplung (F)', hint: 'Innendurchmesser der Bajonett-Kupplung', presets: [25, 32] },
@@ -43,10 +61,18 @@
       if (!(v >= 15 && v <= 60)) w.push(`${LABELS[k].name}: ${fmt(v)} mm liegt außerhalb von 15 bis 60 mm.`);
       else if (!LABELS[k].presets.includes(v)) w.push(`${LABELS[k].name}: ${fmt(v)} mm ist kein osVACneo-Standardmaß. Passt nur zu Teilen derselben Größe.`);
     }
+    if (kind.machine) {
+      if (pipe.d1Inner < 8 || pipe.d2Inner < 8) w.push('Der Innendurchmesser des Rohrs wird kleiner als 8 mm. Maße oder Wandstärke prüfen.');
+      if (Math.abs(machine.dOpen - machine.dDepth) > 8) w.push('Öffnung und Tiefe unterscheiden sich um mehr als 8 mm. Bitte die Messung prüfen.');
+      if (machine.length < 10) w.push('Unter 10 mm Steckweg hält der Adapter kaum auf dem Stutzen.');
+    }
     if (input.maleFemaleGapSize < 0.1 || input.maleFemaleGapSize > 0.5) w.push('Spaltmaß außerhalb von 0,1 bis 0,5 mm – Stecker und Kupplung passen dann kaum zusammen.');
     return w;
   });
 
+  function round1(v: number) {
+    return Math.round(v * 100) / 100;
+  }
   function fmt(v: number, d = 1) {
     return v.toLocaleString('de-DE', { maximumFractionDigits: d });
   }
@@ -55,7 +81,7 @@
   let buildToken = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   function spec() {
-    return makeBuild(kindId, $state.snapshot(input), { text, knurl: true, supports });
+    return makeBuild(kindId, $state.snapshot(input), { text, knurl: true, supports, ...$state.snapshot(buildOpts) });
   }
   function schedule() {
     clearTimeout(timer);
@@ -67,13 +93,14 @@
     errorMsg = '';
     try {
       status = 'preview';
-      const quick = await build(makeBuild(kindId, $state.snapshot(input), { text: false, knurl: false, supports }));
+      const quick = await build(makeBuild(kindId, $state.snapshot(input), { text: false, knurl: false, supports, ...$state.snapshot(buildOpts) }));
       if (token !== buildToken) return;
       dims = viewer!.setBodies(quick.bodies);
       status = 'detail';
       const full = await build(spec());
       if (token !== buildToken) return;
       dims = viewer!.setBodies(full.bodies);
+      volume = full.volume;
       status = 'ready';
     } catch (e) {
       if (token !== buildToken) return;
@@ -85,7 +112,7 @@
   $effect(() => {
     // Abhängigkeiten registrieren
     void [kindId, input.maleDiameterInner, input.femaleDiameterInner, input.hoseDiameterInner, input.generalMaterialWidth,
-      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, text, supports];
+      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, text, supports, JSON.stringify(pipe)];
     if (viewer) schedule();
   });
 
@@ -126,7 +153,7 @@
 
     <div class="stage-tools">
       <button class="tool" class:on={section} aria-pressed={section} onclick={() => { section = !section; viewer?.setSection(section); }}>Schnitt</button>
-      {#if supports}
+      {#if supports && hasSupport}
         <button class="tool" class:on={showHelpers} aria-pressed={showHelpers} onclick={() => { showHelpers = !showHelpers; viewer?.setHelpers(showHelpers); }}>Druckhilfe</button>
       {/if}
       <button class="tool" onclick={() => viewer?.resetView()}>Ansicht zurücksetzen</button>
@@ -136,7 +163,7 @@
       <dl class="dims">
         <div><dt>Höhe</dt><dd>{dims ? fmt(dims.height) : '–'}<span>mm</span></dd></div>
         <div><dt>Größter Ø</dt><dd>{dims ? fmt(dims.diameter) : '–'}<span>mm</span></dd></div>
-        <div><dt>Kupplung außen</dt><dd>{fmt(params.femaleDiameterOuter)}<span>mm</span></dd></div>
+        <div><dt>Volumen ca.</dt><dd>{volume ? fmt(volume / 1000) : '–'}<span>cm³</span></dd></div>
       </dl>
       <p class="status" data-s={status} role="status">
         {#if status === 'start'}CAD-Kern wird geladen …
@@ -202,6 +229,28 @@
             </div>
           </fieldset>
         {/each}
+        {#if kind.machine}
+          <h3 class="sub">Maschinenstutzen</h3>
+          <div class="seg wide" role="radiogroup" aria-label="Befestigung">
+            <button role="radio" aria-checked={machine.mode === 'over'} class:sel={machine.mode === 'over'} onclick={() => (machine.mode = 'over')}>Adapter wird aufgesteckt</button>
+            <button role="radio" aria-checked={machine.mode === 'into'} class:sel={machine.mode === 'into'} onclick={() => (machine.mode = 'into')}>Adapter wird eingesteckt</button>
+          </div>
+          <MeasureFigure mode={machine.mode} />
+          <p class="hint">
+            {machine.mode === 'over'
+              ? 'Außendurchmesser des Stutzens mit dem Messschieber messen: vorne an der Öffnung und in der Tiefe, bis zu der der Adapter reichen soll.'
+              : 'Innendurchmesser der Absaugöffnung messen: vorne an der Kante und in der Tiefe, bis zu der der Adapter hineinreichen soll.'}
+          </p>
+          <div class="grid2">
+            <label class="field"><span>Ø vorne</span><span class="num-in"><input type="number" step="0.1" min="8" max="120" bind:value={machine.dOpen} /><span class="unit">mm</span></span></label>
+            <label class="field"><span>Ø in der Tiefe</span><span class="num-in"><input type="number" step="0.1" min="8" max="120" bind:value={machine.dDepth} /><span class="unit">mm</span></span></label>
+            <label class="field"><span>Tiefe (Steckweg)</span><span class="num-in"><input type="number" step="1" min="5" max="100" bind:value={machine.length} /><span class="unit">mm</span></span></label>
+            <label class="field"><span>Wandstärke</span><span class="num-in"><input type="number" step="0.5" min="2" max="8" bind:value={machine.wall} /><span class="unit">mm</span></span></label>
+            <label class="field"><span>Zugabe für den Sitz</span><span class="num-in"><input type="number" step="0.05" min="0" max="2" bind:value={machine.allowance} /><span class="unit">mm</span></span></label>
+            <label class="field check"><input type="checkbox" bind:checked={machine.holes} /> 3 Schraubenlöcher Ø 4</label>
+          </div>
+          <p class="hint">Rohr innen: Ø {fmt(pipe.d2Inner, 2)} an der Öffnung, Ø {fmt(pipe.d1Inner, 2)} am Übergang, Wand {fmt(pipe.wall)} mm.</p>
+        {/if}
       {:else if step === 2}
         <h2>Passung und Druck</h2>
         <p class="lead">Die Standardwerte passen für die meisten gut kalibrierten Drucker.</p>
@@ -228,14 +277,14 @@
         <fieldset class="opt checks">
           <legend>Extras</legend>
           <label><input type="checkbox" bind:checked={text} /> Beschriftung ({code}, osVAC neo)</label>
-          {#if kind.ends.top === 'male' || kind.ends.bottom === 'male'}
+          {#if hasSupport}
             <label><input type="checkbox" bind:checked={supports} /> Druckhilfe unter dem Stecker</label>
           {/if}
         </fieldset>
       {:else}
         <h2>Herunterladen</h2>
         <p class="lead">
-          {kind.title}, {kind.diameters.map((k) => `${LABELS[k].name} ${fmt(input[k])} mm`).join(', ')}.
+          {kind.title}, {kind.diameters.map((k) => `${LABELS[k].name} ${fmt(input[k])} mm`).join(', ')}{#if kind.machine}, Stutzen Ø {fmt(machine.dOpen)} / {fmt(machine.dDepth)} mm, {machine.length} mm tief{/if}.
         </p>
 
         {#if warnings.length}
@@ -255,7 +304,7 @@
             <strong>STEP herunterladen</strong><small>Exaktes CAD-Modell zum Weiterkonstruieren</small>
           </button>
         </div>
-        {#if supports && (kind.ends.top === 'male' || kind.ends.bottom === 'male')}
+        {#if supports && hasSupport}
           <label class="inline-check"><input type="checkbox" bind:checked={exportHelpers} /> Druckhilfe mit exportieren</label>
         {/if}
         <p class="status-line" role="status">

@@ -5,8 +5,8 @@
  */
 import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
-import { revolveProfile, revolveProfileSector, extrudeDown, channelOutline, annularSector, knurlRing, L, A, rad, deg } from './geom';
-import { textOnCylinder } from './text';
+import { revolveProfile, revolveProfileSector, extrudeDown, channelOutline, annularSector, L, A, rad, deg } from './geom';
+import { addGrip, addLabels } from './grip';
 
 export interface FemaleOptions {
   text?: boolean;
@@ -39,26 +39,8 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
     L(rFi + 0.1, -H + 0.1),
   ]);
 
-  // --- Rändelung (100 Zähne, 0.475 hoch) zwischen z = -2 und -31.5 ---
-  const knurlTop = -2;
-  const knurlBot = -31.5;
-  // Textfeld A (40 mm Bogen, volle Feldhöhe 16 mm) bei 270°, Textfeld B (48 mm Bogen, 6 mm Band) bei 90°
-  const fieldAHalf = deg(p.generalTextFieldWidth / 2 / rFo);
-  const fieldBHalf = deg(48 / 2 / rFo);
-  const fieldA = { c: 270, z0: -8.75, z1: -24.75 };
-  const fieldB = { c: 90, z0: -13.75, z1: -19.75 };
-
-  if (opt.knurl !== false) {
-    let knurl = extrudeDown(knurlRing(100, rFo, 0.475, rFo - 0.3), knurlTop, knurlTop - knurlBot);
-    // Bereich Textfeld A: keine Rändelung über die volle Höhe
-    const clearA = extrudeDown(annularSector(rFo - 0.5, rFo + 1, fieldA.c - fieldAHalf, fieldA.c + fieldAHalf), knurlTop + 0.1, knurlTop - knurlBot + 0.2);
-    knurl = knurl.cut(clearA);
-    body = body.fuse(knurl);
-  }
-  // erhabene Textfelder (+0.5 mm)
-  const raisedA = extrudeDown(annularSector(rFo - 0.3, rFo + 0.5, fieldA.c - fieldAHalf, fieldA.c + fieldAHalf), fieldA.z0, fieldA.z0 - fieldA.z1);
-  const raisedB = extrudeDown(annularSector(rFo - 0.3, rFo + 0.5, fieldB.c - fieldBHalf, fieldB.c + fieldBHalf), fieldB.z0, fieldB.z0 - fieldB.z1);
-  body = body.fuse(raisedA).fuse(raisedB);
+  // --- Rändelung + Textfelder ---
+  body = addGrip(body, rFo, -2, -31.5, { clearFieldA: true, knurl: opt.knurl });
 
   // --- Bajonett ---
   const w = p.femaleBayonetNoseWidth;
@@ -93,17 +75,8 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
     body = body.fuse(ridge);
   }
 
-  // --- Beschriftung (Gravur 0.5 mm in die erhabenen Felder) ---
-  if (opt.text !== false) {
-    const label = opt.label ?? `F${fmt(p.femaleDiameterInner)}`;
-    const rT = rFo + 0.5;
-    const tools = [
-      textOnCylinder(rT, { text: 'osVAC neo', size: 5, centerDeg: fieldA.c, baselineZ: -13.0 }, 0.5),
-      textOnCylinder(rT, { text: label, size: 10, centerDeg: fieldA.c, baselineZ: -22.6 }, 0.5),
-      textOnCylinder(rT, { text: `osVAC neo  ${label}`, size: 5, centerDeg: fieldB.c, baselineZ: -18.5 }, 0.5),
-    ];
-    for (const t of tools) if (t) body = body.cut(t);
-  }
+  // --- Beschriftung ---
+  if (opt.text !== false) body = addLabels(body, rFo, -2, -31.5, opt.label ?? `F${fmt(p.femaleDiameterInner)}`);
   void rad;
   return body;
 }

@@ -10,7 +10,8 @@ export type P2 = [number, number];
 /** Polygon/Profil-Segmente in der r-z-Ebene. */
 export type Seg =
   | { t: 'L'; p: P2 } // Linie zum Punkt
-  | { t: 'A'; p: P2; c: P2 }; // Kreisbogen zum Punkt um Mittelpunkt c (kürzerer Bogen)
+  | { t: 'A'; p: P2; c: P2 } // Kreisbogen zum Punkt um Mittelpunkt c (kürzerer Bogen)
+  | { t: 'M'; p: P2; m: P2 }; // Kreisbogen zum Punkt durch Zwischenpunkt m
 
 export const L = (r: number, z: number): Seg => ({ t: 'L', p: [r, z] });
 export const A = (r: number, z: number, cr: number, cz: number): Seg => ({ t: 'A', p: [r, z], c: [cr, cz] });
@@ -33,6 +34,7 @@ export function drawPath(start: P2, segs: Seg[]): Drawing {
   let cur = start;
   for (const s of segs) {
     if (s.t === 'L') pen = pen.lineTo(s.p);
+    else if (s.t === 'M') pen = pen.threePointsArcTo(s.p, s.m);
     else pen = pen.threePointsArcTo(s.p, arcMid(cur, s.p, s.c));
     cur = s.p;
   }

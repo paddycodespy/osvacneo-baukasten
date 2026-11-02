@@ -1,13 +1,15 @@
 {
   "name": "osvacneo-konfigurator",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test:geometry": "tsx scripts/matrix.ts",
+    "part": "tsx scripts/build-ref.ts"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
@@ -28,5 +30,6 @@
     "replicad": "^1.2.0",
     "replicad-opencascadejs": "^1.1.0",
     "three": "^0.187.0"
-  }
+  },
+  "description": "osVACneo-Absaugadapter im Browser konfigurieren und als 3MF, STL oder STEP herunterladen"
 }

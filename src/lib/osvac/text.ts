@@ -31,7 +31,7 @@ export function textOnCylinder(rSurface: number, spec: CylText, depth: number): 
   if (!font) return null;
   const { text, size, centerDeg, baselineZ } = spec;
   const total = font.getAdvanceWidth(text, size);
-  let result: Shape3D | null = null;
+  const glyphs: Shape3D[] = [];
   const over = 0.2;
   const rPlane = rSurface + over;
   for (let i = 0; i < text.length; i++) {
@@ -50,12 +50,21 @@ export function textOnCylinder(rSurface: number, spec: CylText, depth: number): 
     }
     const plane = tangentPlane(rPlane, th, baselineZ);
     const solid = glyph.sketchOnPlane(plane).extrude(-(depth + over)) as Shape3D;
-    result = result ? (result.fuse(solid) as Shape3D) : solid;
+    glyphs.push(solid);
   }
+  // Glyphen vereinigen (ein Compound als Werkzeug ist in OpenCascade bei Überlappung nicht robust)
+  let result: Shape3D | null = null;
+  for (const g of glyphs) result = result ? (result.fuse(g) as Shape3D) : g;
   return result;
 }
 
 /** Breite eines Textes in mm (für Layout). */
 export function textWidth(text: string, size: number): number {
   return font ? font.getAdvanceWidth(text, size) : text.length * size * 0.6;
+}
+
+/** Text-Werkzeuge nacheinander aus einem Körper schneiden. */
+export function engrave(body: Shape3D, tools: (Shape3D | null)[]): Shape3D {
+  for (const t of tools) if (t) body = body.cut(t);
+  return body;
 }

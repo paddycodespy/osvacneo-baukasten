@@ -5,7 +5,7 @@
 import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, extrudeDown, channelOutline, L, A } from './geom';
-import { textOnCylinder } from './text';
+import { textOnCylinder, engrave } from './text';
 import { fmt } from './female';
 import { draw } from 'replicad';
 
@@ -49,7 +49,7 @@ export function maleTube(p: OsvacParams, opt: MaleOptions = {}): Shape3D {
       textOnCylinder(rMo, { text: label, size: 10, centerDeg: 90, baselineZ: -14.5 }, 0.5),
       textOnCylinder(rMo, { text: 'CC BY-NC-SA 4.0', size: 5, centerDeg: 210, baselineZ: -4.6 }, 0.5),
     ];
-    for (const t of tools) if (t) body = body.cut(t);
+    body = engrave(body, tools);
   }
   return body;
 }

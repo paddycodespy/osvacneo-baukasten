@@ -4,7 +4,7 @@
  */
 import opencascade from 'replicad-opencascadejs';
 import wasmUrl from 'replicad-opencascadejs/wasm?url';
-import { setOC, makeCompound, type Shape3D } from 'replicad';
+import { setOC, makeCompound, measureVolume, type Shape3D } from 'replicad';
 import { deriveParams } from '../osvac/params';
 import { initFont } from '../osvac/text';
 import { kindById } from '../osvac/catalog';
@@ -69,9 +69,9 @@ self.onmessage = async (ev: MessageEvent<BuildRequest | ExportRequest | { type: 
       const bodies = buildBodies(msg);
       const meshes: MeshBody[] = bodies.map((b) => ({ name: b.name, helper: !!b.helper, ...toMesh(b.shape, msg.options.text ? 0.03 : 0.05) }));
       let volume = 0;
-      for (const b of bodies) if (!b.helper) volume += (b.shape as unknown as { volume?: number }).volume ?? 0;
+      for (const b of bodies) if (!b.helper) volume += measureVolume(b.shape);
       post(
-        { type: 'mesh', id: msg.id, bodies: meshes, ms: performance.now() - t0 },
+        { type: 'mesh', id: msg.id, bodies: meshes, ms: performance.now() - t0, volume },
         meshes.flatMap((m) => [m.positions.buffer, m.normals.buffer, m.indices.buffer]),
       );
       return;
