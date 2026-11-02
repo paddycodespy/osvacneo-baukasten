@@ -117,11 +117,13 @@
 
   // Druckhilfe ein-/ausblenden ohne Neuberechnung
   $effect(() => {
-    viewer?.setHelpers(supports);
+    const on = supports; // zuerst lesen, damit Svelte die Abhängigkeit registriert
+    viewer?.setHelpers(on);
   });
 
   onMount(() => {
     viewer = new PartViewer(host);
+    viewer.setHelpers(supports);
     schedule();
     return () => viewer?.dispose();
   });
@@ -146,12 +148,15 @@
   }
 </script>
 
+<header class="topbar">
+  <p class="wordmark"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span> <span class="wm-sub">Konfigurator</span></p>
+</header>
+
 <div class="app">
   <section class="stage" aria-label="3D-Vorschau">
     <div class="viewport" bind:this={host}></div>
 
     <header class="stage-head">
-      <p class="brand">osVACneo Konfigurator</p>
       <h1 class="code" aria-live="polite">{code}</h1>
       <p class="kind-line">{kind.title}</p>
     </header>

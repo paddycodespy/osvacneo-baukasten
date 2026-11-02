@@ -5,10 +5,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { MeshBody } from './worker/protocol';
 
+// Farben nach osvacneo.de
 export const COLORS = {
-  part: 0x3566c4,
-  helper: 0x9aa7ae,
-  bed: 0xb88a3b,
+  part: 0xef453b,
+  helper: 0xf2f4f5,
+  bed: 0x333333,
 };
 
 function peiTexture(): THREE.CanvasTexture {
@@ -16,14 +17,14 @@ function peiTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = s;
   const g = c.getContext('2d')!;
-  g.fillStyle = '#b88a3b';
+  g.fillStyle = '#333333';
   g.fillRect(0, 0, s, s);
-  // Pulverbeschichtung: feine helle und dunkle Sprenkel
-  for (let i = 0; i < 26000; i++) {
+  // strukturierte Druckplatte: feine helle Sprenkel auf Graphit
+  for (let i = 0; i < 22000; i++) {
     const x = Math.random() * s;
     const y = Math.random() * s;
     const l = Math.random();
-    g.fillStyle = l > 0.5 ? `rgba(255,230,170,${0.10 + l * 0.18})` : `rgba(90,60,20,${0.08 + l * 0.2})`;
+    g.fillStyle = l > 0.5 ? `rgba(255,255,255,${0.03 + l * 0.07})` : `rgba(0,0,0,${0.10 + l * 0.2})`;
     g.fillRect(x, y, 1.2, 1.2);
   }
   const t = new THREE.CanvasTexture(c);
@@ -96,12 +97,12 @@ export class PartViewer {
     const plate = new THREE.ShapeGeometry(roundedPlate(170, 12), 8);
     this.bed = new THREE.Mesh(
       plate,
-      new THREE.MeshStandardMaterial({ map: peiTexture(), roughness: 0.82, metalness: 0.35, color: 0xffffff }),
+      new THREE.MeshStandardMaterial({ map: peiTexture(), roughness: 0.85, metalness: 0.2, color: 0xffffff }),
     );
     // Plattenkante
     const edge = new THREE.Mesh(
       new THREE.ExtrudeGeometry(roundedPlate(170, 12), { depth: 3, bevelEnabled: false }),
-      new THREE.MeshStandardMaterial({ color: 0x6f5426, roughness: 0.6, metalness: 0.4 }),
+      new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 0.6, metalness: 0.4 }),
     );
     edge.position.z = -3.05;
     this.bed.add(edge);
@@ -150,11 +151,11 @@ export class PartViewer {
       g.computeBoundingBox();
       const mat = new THREE.MeshStandardMaterial({
         color: b.helper ? COLORS.helper : COLORS.part,
-        roughness: b.helper ? 0.9 : 0.55,
+        roughness: b.helper ? 0.9 : 0.5,
         metalness: 0.0,
         side: THREE.DoubleSide,
         transparent: b.helper,
-        opacity: b.helper ? 0.75 : 1,
+        opacity: b.helper ? 0.85 : 1,
         clippingPlanes: this.section ? [this.clip] : [],
       });
       const mesh = new THREE.Mesh(g, mat);
