@@ -53,14 +53,18 @@ export function hoseBody(p: OsvacParams, variant: 'plain' | 'housed', opt: HoseO
   // Das Gewinde ist ein eigener Körper (siehe hoseThreadBody): Boolesche Operationen mit den
   // Spline-Flächen der Schraubenlinie würden die Berechnung um Minuten verlängern.
   let body = revolveProfile([rH, 0], segs);
-  body = addGrip(body, rO, gripTop, gripBot, { knurl: opt.knurl });
-  if (opt.text !== false) body = addLabels(body, rO, gripTop, gripBot, opt.label ?? `H${fmt(p.hoseDiameterInner)}`);
+  const layout = variant === 'plain' ? 'full' : 'housedHose';
+  body = addGrip(body, rO, gripTop, gripBot, { knurl: opt.knurl, layout });
+  if (opt.text !== false) body = addLabels(body, rO, gripTop, gripBot, opt.label ?? `H${fmt(p.hoseDiameterInner)}`, layout);
   return body;
 }
 
-/** Gewinderippe als eigener Körper; überlappt die Wand um 0.5 mm und wird im Slicer verschmolzen. */
-export function hoseThreadBody(p: OsvacParams): Shape3D {
-  return hoseThread(p);
+/**
+ * Gewinderippe als eigener Körper; überlappt die Wand um 0.5 mm und wird im Slicer verschmolzen.
+ * runout = true, wenn ein Knickschutz folgt: dann läuft die Rippe im Trichter aus.
+ */
+export function hoseThreadBody(p: OsvacParams, runout: boolean): Shape3D {
+  return hoseThread(p, 0.5, runout);
 }
 
 /**
@@ -170,8 +174,8 @@ export function maleHousing(p: OsvacParams, opt: HoseOptions = {}): Shape3D {
     [rB, -3.006],
     [rH, -3.006],
   ]));
-  body = addGrip(body, rO, -4.006, -19.006, { knurl: opt.knurl });
-  if (opt.text !== false) body = addLabels(body, rO, -4.006, -19.006, opt.label ?? `M${fmt(p.maleDiameterInner)}`);
+  body = addGrip(body, rO, -4.006, -19.006, { knurl: opt.knurl, layout: 'housing' });
+  if (opt.text !== false) body = addLabels(body, rO, -4.006, -19.006, '', 'housing');
   return body;
 }
 

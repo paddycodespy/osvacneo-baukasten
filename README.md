@@ -80,17 +80,20 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 | Male M32 (mit Text) | −0,4 % | Druckhilfe ohne Aussparungen an den Nasen |
 | Female F32 (mit Text) | +0,3 % | |
 | MxxFyy M25/F32 | +0,3 % | |
-| FxxHyy F32/H32 | +0,1 % | Gewindeauslauf im Knickschutz fehlt |
+| FxxHyy F32/H32 | +0,1 % | |
 | MxxHyy M25/H36 | −0,5 % | Gewinde als eigener Körper; die 0,5-mm-Überlappung mit der Wand ist herausgerechnet |
-| Fxx to Pipe Cone | +0,7 % | Schraubenlöcher ohne Senkung |
+| Fxx to Pipe Cone | +0,7 % | |
+| Hose H36 (Schlauchteil, Gewinde, Knickschutz) | −0,9 % | Gewinde mit Auslauf im Knickschutz (knapp 2 Umdrehungen bis Tiefe 0) |
 
 Die Drehringe stimmen auf den Kubikmillimeter mit Fusion überein. Schlauchseite, Drehring und Knickschutz sind zusätzlich bei 9 mm Materialstärke gegen Fusion geprüft (Außenmaße auf 0,03 mm genau). Bajonett, Nut, Rastnase, Dichtnut, Drehring und Gewinde liegen in den Schnitten deckungsgleich auf den Fusion-Exporten.
+
+Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation Sans Regular ist maßgleich zu Arial, Abweichung ≤ 0,15 mm). Statt der Lizenzzeile „CC BY-NC-SA 4.0“ steht auf dem Band „osVAC neo“ und die Kennung; die Lizenz wird beim Download verlinkt. Schraubenlöcher am Rohrkonus mit 90°-Senkung Ø 8 bei 90/210/330° wie im Original.
 
 Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, einstellbares Spaltmaß am Drehring (fest 0,3 mm wie im Original), Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“.
 
 ## Lizenzen
 
 - **osVAC neo** (Konstruktion, Maße, Formeln): CC BY-NC-SA 4.0. Diese Lizenz gilt auch für alle mit dem Konfigurator erzeugten Teile: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen.
-- **Liberation Sans** (Beschriftung): SIL Open Font License, siehe `public/fonts/LICENSE-LiberationSans.txt`.
+- **Liberation Sans Regular** (Beschriftung): SIL Open Font License, siehe `public/fonts/LICENSE-LiberationSans.txt`.
 - **Barlow** (Oberfläche): SIL Open Font License.
 - **replicad** (MIT) und **OpenCascade** (LGPL 2.1, als WebAssembly unverändert eingebunden), **three.js** (MIT).

@@ -20,7 +20,7 @@ function init(baseUrl: string) {
     ready = (async () => {
       const OC = await opencascade({ locateFile: () => wasmUrl });
       setOC(OC);
-      const font = await fetch(baseUrl + 'fonts/LiberationSans-Bold.ttf').then((r) => r.arrayBuffer());
+      const font = await fetch(baseUrl + 'fonts/LiberationSans-Regular.ttf').then((r) => r.arrayBuffer());
       await initFont(font);
     })();
   }
@@ -75,8 +75,9 @@ self.onmessage = async (ev: MessageEvent<BuildRequest | ExportRequest | { type: 
       let area = 0;
       let helperVolume = 0;
       let helperArea = 0;
+      const runout = bodies.some((b) => b.name === 'Knickschutz');
       for (const b of bodies) {
-        const v = b.name === 'Gewinde' ? measureVolume(hoseThread(p, 0)) : measureVolume(b.shape);
+        const v = b.name === 'Gewinde' ? measureVolume(hoseThread(p, 0, runout)) : measureVolume(b.shape);
         const a = measureArea(b.shape);
         if (b.helper) {
           helperVolume += v;

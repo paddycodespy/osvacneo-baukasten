@@ -6,6 +6,7 @@ import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, extrudeDown, channelOutline, L, A } from './geom';
 import { textOnCylinder, engrave } from './text';
+import { TEXT } from './grip';
 import { fmt } from './female';
 import { draw } from 'replicad';
 
@@ -45,8 +46,8 @@ export function maleTube(p: OsvacParams, opt: MaleOptions = {}): Shape3D {
   if (opt.text !== false) {
     const label = opt.label ?? `M${fmt(p.maleDiameterInner)}`;
     const tools = [
-      textOnCylinder(rMo, { text: 'osVAC neo', size: 5, centerDeg: 90, baselineZ: -4.6 }, 0.5),
-      textOnCylinder(rMo, { text: label, size: 10, centerDeg: 90, baselineZ: -14.5 }, 0.5),
+      textOnCylinder(rMo, { text: 'osVAC neo', size: TEXT.small, centerDeg: 270, baselineZ: -3.89 }, 0.5),
+      textOnCylinder(rMo, { text: label, size: TEXT.label, centerDeg: 270, baselineZ: -14.53 }, 0.5),
     ];
     body = engrave(body, tools);
   }

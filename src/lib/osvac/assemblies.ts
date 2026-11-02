@@ -28,7 +28,7 @@ export interface BuildOptions {
 
 /** Male mit Spitze nach oben (Anschluss unten bei z = -maleHeight); Nasen wie im Original bei 30/150/270°. */
 function flippedMale(p: OsvacParams, o: BuildOptions): Shape3D {
-  return maleTube(p, o).rotate(180, [0, 0, 0], [1, 0, 0]).rotate(60, [0, 0, 0], [0, 0, 1]).translate([0, 0, -p.maleHeight]);
+  return maleTube(p, o).rotate(180, [0, 0, 0], [1, 0, 0]).rotate(180, [0, 0, 0], [0, 0, 1]).translate([0, 0, -p.maleHeight]);
 }
 
 /** Übergangskonus Female-Unterseite → Male-Oberseite (MxxFyyTransitionCone). */
@@ -97,7 +97,7 @@ export function buildMachineM(p: OsvacParams, o: BuildOptions = {}): Body[] {
 export function buildHose(p: OsvacParams, o: BuildOptions = {}): Body[] {
   return [
     { name: 'Schlauchteil', shape: hoseBody(p, 'plain', o) },
-    { name: 'Gewinde', shape: hoseThreadBody(p) },
+    { name: 'Gewinde', shape: hoseThreadBody(p, true) },
     { name: 'Knickschutz', shape: hoseSkirt(p) },
   ];
 }
@@ -117,7 +117,7 @@ export function buildFxxHyy(p: OsvacParams, o: BuildOptions = {}): Body[] {
     { name: 'Drehring außen', shape: swivelOuter(p, false).translate([0, 0, zO]) },
     { name: 'Drehring innen', shape: swivelInner(p, false).translate([0, 0, zI]) },
     { name: 'Schlauchteil', shape: hoseBody(p, 'plain', o).translate([0, 0, zH]) },
-    { name: 'Gewinde', shape: hoseThreadBody(p).translate([0, 0, zH]) },
+    { name: 'Gewinde', shape: hoseThreadBody(p, true).translate([0, 0, zH]) },
     { name: 'Knickschutz', shape: hoseSkirt(p).translate([0, 0, zH]) },
   ];
 }
@@ -135,7 +135,6 @@ export function buildMxxHyy(p: OsvacParams, o: BuildOptions = {}): Body[] {
     { name: 'Drehring außen', shape: swivelOuter(p, true).translate([0, 0, zO]) },
     { name: 'Drehring innen', shape: swivelInner(p, true).translate([0, 0, zI]) },
     { name: 'Schlauchteil', shape: hoseBody(p, 'housed', o).translate([0, 0, zH]) },
-    { name: 'Gewinde', shape: hoseThreadBody(p).translate([0, 0, zH]) },
-    
+    { name: 'Gewinde', shape: hoseThreadBody(p, false).translate([0, 0, zH]) },
   ];
 }

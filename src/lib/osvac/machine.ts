@@ -8,6 +8,9 @@ import { makeCylinder } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, L, A, rad } from './geom';
 import { textOnCylinder, engrave } from './text';
+import { TEXT } from './grip';
+
+const HOLE_ANGLES = [90, 210, 330];
 
 export interface PipeSpec {
   /** Innen-Ø oben (am Übergang) – PipeConeDiameter1Inner */
@@ -62,26 +65,34 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
   ]);
 
   if (s.screwHoles) {
+    // 3 Schraubenlöcher Ø4 mit 90°-Senkung (Ø8 an der Außenfläche), wie im Original bei 90/210/330°
     const zH = -(L0 - 7.82);
     const rAt = r1i + slope * -zH;
-    for (const a of [97, 217, 337]) {
+    const uOut = rAt + w; // Außenfläche auf Lochachse (Konus ist nahezu zylindrisch)
+    const sink = revolveProfile([0, 0], [L(2, 0), L(5, 3), L(0, 3)]); // Spitze bei Ø4, 45° Flanken
+    for (const a of HOLE_ANGLES) {
       const dir: [number, number, number] = [Math.cos(rad(a)), Math.sin(rad(a)), 0];
       const start: [number, number, number] = [dir[0] * (rAt - 2), dir[1] * (rAt - 2), zH];
-      const hole = makeCylinder(2, w + 6, start, dir);
-      body = body.cut(hole);
+      body = body.cut(makeCylinder(2, w + 6, start, dir));
+      const us = uOut - 2;
+      body = body.cut(
+        sink.clone().rotate(90, [0, 0, 0], [0, 1, 0]).rotate(a, [0, 0, 0], [0, 0, 1]).translate([dir[0] * us, dir[1] * us, zH]),
+      );
     }
   }
 
   if (opt.text !== false) {
     const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US');
-    const lines = [
-      { t: `${f(s.d1Inner)}/${f(s.d1Inner + 2 * w)}`, z: -4.5 },
-      { t: `${f(w)}/${f(L0)}`, z: -L0 / 2 - 1.5 },
-      { t: `${f(s.d2Inner)}/${f(s.d2Inner + 2 * w)}`, z: -L0 + 6.5 },
+    // Lage und Größe wie im Original (Arial/Liberation Sans Regular, Versalhöhe ≈ 4 mm)
+    const lines: { t: string; z: number; c: number; size?: number }[] = [
+      { t: `${f(s.d1Inner)}/${f(s.d1Inner + 2 * w)}`, z: -4.65, c: 270 },
+      { t: `${f(w)}/${f(L0)}`, z: -L0 / 2 - 1.2, c: 270 },
+      { t: `${f(s.d2Inner)}/${f(s.d2Inner + 2 * w)}`, z: -L0 + 1.75, c: 270 },
+      { t: 'osVAC neo', z: -7.55, c: 90, size: 7.2 },
     ];
     const tools = lines
-      .filter((l) => !(l.z > -0.5 || l.z < -L0 + 2.5))
-      .map((l) => textOnCylinder(r1i + w + slope * -(l.z + 2), { text: l.t, size: 5.2, centerDeg: 270, baselineZ: l.z }, 0.5));
+      .filter((l) => !(l.z > -4.3 || l.z < -L0 + 1.7))
+      .map((l) => textOnCylinder(r1i + w + slope * -(l.z + 2), { text: l.t, size: l.size ?? TEXT.small, centerDeg: l.c, baselineZ: l.z }, 0.5));
     body = engrave(body, tools);
   }
   return body;
