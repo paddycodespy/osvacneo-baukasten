@@ -146,6 +146,7 @@ export class PartViewer {
     }
     const box = new THREE.Box3();
     const partBox = new THREE.Box3();
+    let rMax = 0;
     for (const b of bodies) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(b.positions, 3));
@@ -166,14 +167,19 @@ export class PartViewer {
       mesh.visible = !b.helper || this.showHelpers;
       this.model.add(mesh);
       box.union(g.boundingBox!);
-      if (!b.helper) partBox.union(g.boundingBox!);
+      if (!b.helper) {
+        partBox.union(g.boundingBox!);
+        // größter Abstand zur Achse (Bounding-Box würde z. B. Bajonettnasen bei 30° übersehen)
+        const pos = b.positions;
+        for (let i = 0; i < pos.length; i += 3) rMax = Math.max(rMax, Math.hypot(pos[i], pos[i + 1]));
+      }
     }
     // auf das Druckbett stellen
     this.model.position.z = -box.min.z;
     const size = partBox.getSize(new THREE.Vector3());
     if (!this.framed) this.frame(box);
     this.needsRender = true;
-    return { height: size.z, diameter: Math.max(size.x, size.y) };
+    return { height: size.z, diameter: 2 * rMax };
   }
 
   /** Kamera so setzen, dass Bauteil und Druckbett vollständig und mittig im Bild sind. */

@@ -205,9 +205,9 @@
         <div><dt>PETG ca.</dt><dd>{gramsText}<span>g</span></dd></div>
       </dl>
       <p class="status" data-s={status} role="status">
-        {#if status === 'start'}CAD-Kern wird geladen …
-        {:else if status === 'preview'}Vorschau wird berechnet …
-        {:else if status === 'detail'}Rändelung und Beschriftung werden berechnet …
+        {#if status === 'start'}CAD-Kern wird geladen…
+        {:else if status === 'preview'}Vorschau wird berechnet…
+        {:else if status === 'detail'}Rändelung und Beschriftung werden berechnet…
         {:else if status === 'ready'}Bereit zum Download
         {:else}Fehler beim Berechnen{/if}
       </p>
@@ -358,7 +358,7 @@
           <label class="inline-check"><input type="checkbox" bind:checked={supports} /> Druckhilfe mit exportieren</label>
         {/if}
         <p class="status-line" role="status">
-          {#if exporting}{exporting.toUpperCase()} wird erzeugt …{:else if status !== 'ready'}Die Downloads sind verfügbar, sobald die Berechnung fertig ist.{/if}
+          {#if exporting}{exporting.toUpperCase()} wird erzeugt…{:else if status !== 'ready'}Die Downloads sind verfügbar, sobald die Berechnung fertig ist.{/if}
         </p>
         {#if files.length}
           <div class="files">
@@ -371,7 +371,7 @@
           </div>
         {/if}
         <p class="license">
-          osVAC neo steht unter CC BY-NC-SA 4.0: Weitergabe mit Namensnennung, nicht kommerziell, unter gleichen Bedingungen.
+          osVAC neo steht unter <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.de" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>: Weitergabe mit Namensnennung, nicht kommerziell, unter gleichen Bedingungen.
         </p>
       {/if}
 
