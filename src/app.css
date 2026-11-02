@@ -260,9 +260,17 @@ h2 {
 .kind-text small { font-size: 13.5px; color: var(--slate-2); line-height: 1.35; }
 .kind-code { flex: none; font-family: var(--cond); font-size: 13px; color: var(--grey); white-space: nowrap; }
 .kind-code .ck { font-size: 15px; font-weight: 700; }
-.kind-code .ck-M { color: var(--sky-d); }
-.kind-code .ck-F { color: #e5352b; }
-.kind-code .ck-H { color: var(--graphite); }
+/* Kennfarben: M blau, F rot, H graphit (Wizard-Kürzel, Größenauswahl) */
+:root { --c-M: var(--sky-d); --c-F: #e5352b; --c-H: var(--graphite); }
+.kind-code .ck-M, legend .ck-M { color: var(--c-M); }
+.kind-code .ck-F, legend .ck-F { color: var(--c-F); }
+.kind-code .ck-H, legend .ck-H { color: var(--c-H); }
+.dia-M { --c: var(--c-M); }
+.dia-F { --c: var(--c-F); }
+.dia-H { --c: var(--c-H); }
+.dia .chip.sel { background: var(--c); border-color: var(--c); color: #fff; }
+.dia .chip:hover:not(.sel) { border-color: var(--c); }
+.dia .num-in:focus-within { outline-color: var(--c); }
 .kind-code .cx { font-weight: 500; }
 .kind:disabled .ck { color: inherit; }
 

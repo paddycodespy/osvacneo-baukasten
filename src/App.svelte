@@ -64,10 +64,10 @@
       : fileName.replace('osVAC neo ', ''),
   );
 
-  const LABELS: Record<DiameterKey, { name: string; hint: string; presets: number[] }> = {
-    femaleDiameterInner: { name: 'Kupplung (F)', hint: 'Innendurchmesser der Bajonett-Kupplung', presets: [25, 32] },
-    maleDiameterInner: { name: 'Stecker (M)', hint: 'Innendurchmesser des Steckers', presets: [25, 32] },
-    hoseDiameterInner: { name: 'Schlauch (H)', hint: 'Innendurchmesser des Schlauchs', presets: [25, 27, 32, 36, 38, 40, 50] },
+  const LABELS: Record<DiameterKey, { name: string; word: string; letter: 'F' | 'M' | 'H'; hint: string; presets: number[] }> = {
+    femaleDiameterInner: { name: 'Kupplung (F)', word: 'Kupplung', letter: 'F', hint: 'Innendurchmesser der Bajonett-Kupplung', presets: [25, 32] },
+    maleDiameterInner: { name: 'Stecker (M)', word: 'Stecker', letter: 'M', hint: 'Innendurchmesser des Steckers', presets: [25, 32] },
+    hoseDiameterInner: { name: 'Schlauch (H)', word: 'Schlauch', letter: 'H', hint: 'Innendurchmesser des Schlauchs', presets: [25, 27, 32, 36, 38, 40, 50] },
   };
 
   const warnings = $derived.by(() => {
@@ -248,8 +248,8 @@
         <h2>Größen</h2>
         <p class="lead">Innendurchmesser in Millimetern. <strong>25</strong> und <strong>32</strong> sind die Standardgrößen von osVAC neo.</p>
         {#each kind.diameters as k}
-          <fieldset class="dia">
-            <legend>{LABELS[k].name}</legend>
+          <fieldset class="dia dia-{LABELS[k].letter}">
+            <legend>{LABELS[k].word} (<b class="ck-{LABELS[k].letter}">{LABELS[k].letter}</b>)</legend>
             <div class="dia-row">
               <div class="chips">
                 {#each LABELS[k].presets as v}
