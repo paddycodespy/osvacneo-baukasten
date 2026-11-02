@@ -36,13 +36,18 @@ npm run build
 npm run preview    # http://localhost:4173
 ```
 
-Der Ordner `dist/` ist eine statische Website und läuft mit jedem Webserver. Per Doppelklick als `file://` funktioniert er nicht, weil Browser dort keine Web Worker und kein WebAssembly laden.
+Der Ordner `dist/` ist eine statische Website und läuft mit jedem lokalen Webserver. Per Doppelklick als `file://` funktioniert er nicht, weil Browser dort keine Web Worker und kein WebAssembly laden.
 
-## Veröffentlichen mit GitHub Pages
+## Versionsverwaltung mit GitHub
 
-1. Repository auf GitHub anlegen und pushen.
-2. In den Einstellungen unter *Pages* als Quelle **GitHub Actions** wählen.
-3. Jeder Push auf `main` baut und veröffentlicht die Seite (`.github/workflows/pages.yml`).
+Das Repository ist für die Nutzung auf dem eigenen Rechner gedacht. GitHub dient nur als Ablage und Versionsverwaltung, es wird nichts veröffentlicht. Empfohlen ist ein **privates** Repository.
+
+```bash
+git remote add origin https://github.com/<dein-account>/osvacneo-konfigurator.git
+git push -u origin main
+```
+
+Danach reicht nach Änderungen `git add -A`, `git commit -m "…"` und `git push`.
 
 ## Aufbau
 
