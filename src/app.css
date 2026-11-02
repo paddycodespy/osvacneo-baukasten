@@ -353,7 +353,8 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .dl:hover:not(:disabled) { background: #f4f6f7; border-color: #cfd6da; }
 .dl.primary { background: var(--red); border-color: var(--red); color: #fff; }
 .dl.primary small { color: #ffe1de; }
-.dl.primary:hover:not(:disabled) { background: #ff5a50; border-color: #ff5a50; }
+.dl.primary { transition: transform 0.2s ease; }
+.dl.primary:hover:not(:disabled) { transform: scale(1.03); }
 .dl:disabled { opacity: 0.45; }
 .status-line { min-height: 1.5em; font-size: 14px; color: var(--slate-2); margin: 10px 0; }
 .warn {
@@ -389,7 +390,8 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .ghost { border: 1px solid var(--line); background: none; }
 .ghost:disabled { opacity: 0.4; }
 .next { border: 0; background: var(--red); color: #fff; margin-left: auto; }
-.next:hover { background: var(--red-d); }
+.next { transition: transform 0.2s ease; }
+.next:hover { transform: scale(1.05); }
 
 /* ---------- Mobil ---------- */
 @media (max-width: 860px) {
@@ -406,4 +408,5 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .status::before { animation: none !important; }
+  .dl.primary:hover:not(:disabled), .next:hover { transform: none; }
 }
