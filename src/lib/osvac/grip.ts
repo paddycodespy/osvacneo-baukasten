@@ -1,7 +1,7 @@
 /**
  * Griffbereich wie im Original: 100 Rändelzähne (0.475 hoch) zwischen zTop und zBot,
  * Textfeld A (40 mm Bogen, 16 mm hoch) bei 270°, Textband B (48 mm Bogen, 6 mm) bei 90°,
- * beide erhaben (+0.5 mm) und mittig im Griffbereich.
+ * beide erhaben (+0.5 mm) und mittig im Griffbereich. Über und unter den Feldern läuft die Rändelung durch.
  */
 import type { Shape3D } from 'replicad';
 import { extrudeDown, annularSector, knurlRing, deg } from './geom';
@@ -21,16 +21,11 @@ function fields(r: number, zTop: number, zBot: number) {
   };
 }
 
-export function addGrip(body: Shape3D, r: number, zTop: number, zBot: number, o: { clearFieldA?: boolean; knurl?: boolean } = {}): Shape3D {
+export function addGrip(body: Shape3D, r: number, zTop: number, zBot: number, o: { knurl?: boolean } = {}): Shape3D {
   const f = fields(r, zTop, zBot);
   const fitA = zTop - zBot >= FIELD_A_H + 0.5;
-  if (o.knurl !== false) {
-    let knurl = extrudeDown(knurlRing(100, r, 0.475, r - 0.3), zTop, zTop - zBot);
-    if (o.clearFieldA && fitA) {
-      knurl = knurl.cut(extrudeDown(annularSector(r - 0.5, r + 1, f.a.c - f.a.half, f.a.c + f.a.half), zTop + 0.1, zTop - zBot + 0.2));
-    }
-    body = body.fuse(knurl);
-  }
+  // Rändelung läuft wie im Original rundum durch; die erhabenen Felder liegen darüber
+  if (o.knurl !== false) body = body.fuse(extrudeDown(knurlRing(100, r, 0.475, r - 0.3), zTop, zTop - zBot));
   if (fitA) body = body.fuse(extrudeDown(annularSector(r - 0.3, r + 0.5, f.a.c - f.a.half, f.a.c + f.a.half), f.a.z0, FIELD_A_H));
   body = body.fuse(extrudeDown(annularSector(r - 0.3, r + 0.5, f.b.c - f.b.half, f.b.c + f.b.half), f.b.z0, FIELD_B_H));
   return body;
