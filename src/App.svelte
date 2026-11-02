@@ -220,7 +220,7 @@
 
     <div class="step-body">
       {#if step === 0}
-        <h2>Verbindungsart</h2>
+        <h2>Verbindung</h2>
         <div class="kinds" role="radiogroup" aria-label="Adaptertyp">
           {#each KINDS as k}
             <button
@@ -283,7 +283,7 @@
           <p class="hint">Rohr innen: Ø {fmt(pipe.d2Inner, 2)} an der Öffnung, Ø {fmt(pipe.d1Inner, 2)} am Übergang, Wand {fmt(pipe.wall)} mm.</p>
         {/if}
       {:else if step === 2}
-        <h2>Passung und Druck</h2>
+        <h2>Passung</h2>
         <p class="lead">Die Standardwerte passen für die meisten gut kalibrierten Drucker.</p>
 
         <fieldset class="opt">
@@ -313,7 +313,7 @@
           {/if}
         </fieldset>
       {:else}
-        <h2>Herunterladen</h2>
+        <h2>Download</h2>
         <p class="lead">
           {kind.title}, {kind.diameters.map((k) => `${LABELS[k].name} ${fmt(input[k])} mm`).join(', ')}{#if kind.machine}, Stutzen Ø {fmt(machine.dOpen)} / {fmt(machine.dDepth)} mm, {machine.length} mm tief{/if}.
         </p>
