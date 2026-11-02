@@ -244,7 +244,7 @@
           {/each}
         </div>
       {:else if step === 1}
-        <h2>Welche Größen?</h2>
+        <h2>Größen</h2>
         <p class="lead">Innendurchmesser in Millimetern. 25 und 32 sind die osVACneo-Standardgrößen.</p>
         {#each kind.diameters as k}
           <fieldset class="dia">
