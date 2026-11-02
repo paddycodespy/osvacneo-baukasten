@@ -6,7 +6,7 @@ import { initFont } from '../src/lib/osvac/text';
 import { KINDS } from '../src/lib/osvac/catalog';
 const here = path.dirname(fileURLToPath(import.meta.url));
 setOC(await opencascade({ locateFile: (f: string) => path.join(here, '../node_modules/replicad-opencascadejs/dist/', f) }));
-await initFont(fs.readFileSync(path.join(here, '../public/fonts/LiberationSans-Bold.ttf')).buffer as ArrayBuffer);
+await initFont(fs.readFileSync(path.join(here, '../public/fonts/LiberationSans-Regular.ttf')).buffer as ArrayBuffer);
 const cases = [
   
   

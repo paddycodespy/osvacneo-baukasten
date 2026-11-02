@@ -17,7 +17,7 @@ setOC(OC);
 const args = process.argv.slice(2);
 const [part, M, F, H] = args;
 const notext = args.includes('--notext');
-if (!notext) await initFont(fs.readFileSync(path.join(here, '../public/fonts/LiberationSans-Bold.ttf')).buffer as ArrayBuffer);
+if (!notext) await initFont(fs.readFileSync(path.join(here, '../public/fonts/LiberationSans-Regular.ttf')).buffer as ArrayBuffer);
 const wArg = args.find((a) => a.startsWith('--w='));
 const W = wArg ? +wArg.slice(4) : 7;
 const p = deriveParams({ maleDiameterInner: +M, femaleDiameterInner: +F, hoseDiameterInner: +H, generalMaterialWidth: W });
