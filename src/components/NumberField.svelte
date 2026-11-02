@@ -77,6 +77,6 @@
     background: none;
     color: var(--grey);
   }
-  .spin button:hover { background: var(--sky-l); color: var(--graphite); }
+  .spin button { --grow: 1.25; }
   .spin svg { width: 10px; height: 6px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 </style>
