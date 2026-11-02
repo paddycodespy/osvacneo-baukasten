@@ -84,7 +84,7 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 | MxxHyy M25/H36 | −0,5 % | Gewinde als eigener Körper; die 0,5-mm-Überlappung mit der Wand ist herausgerechnet |
 | Fxx to Pipe Cone | +0,7 % | Schraubenlöcher ohne Senkung |
 
-Die Drehringe stimmen auf den Kubikmillimeter mit Fusion überein. Bajonett, Nut, Rastnase, Dichtnut, Drehring und Gewinde liegen in den Schnitten deckungsgleich auf den Fusion-Exporten.
+Die Drehringe stimmen auf den Kubikmillimeter mit Fusion überein. Schlauchseite, Drehring und Knickschutz sind zusätzlich bei 9 mm Materialstärke gegen Fusion geprüft (Außenmaße auf 0,03 mm genau). Bajonett, Nut, Rastnase, Dichtnut, Drehring und Gewinde liegen in den Schnitten deckungsgleich auf den Fusion-Exporten.
 
 Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, einstellbares Spaltmaß am Drehring (fest 0,3 mm wie im Original), Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“.
 
