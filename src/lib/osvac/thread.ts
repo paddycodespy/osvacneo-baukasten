@@ -26,7 +26,8 @@ export function rootRadius(p: OsvacParams, z: number): number {
 }
 
 /** Gewinderippe als Volumenkörper im Hose-System (Oberkante Hose = z 0). */
-export function hoseThread(p: OsvacParams): Shape3D {
+/** ext: wie weit das Profil in die Wand ragt (0.5 für sicheres Verschmelzen, 0 für die Volumenberechnung). */
+export function hoseThread(p: OsvacParams, ext = 0.5): Shape3D {
   const t = Math.tan(rad(THREAD.taperDeg));
   const tipR = (z: number) => rootRadius(p, z) - THREAD.depth + 0.0;
   const zOf = (phi: number) => -4.5 - (THREAD.pitch * phi) / 360;
@@ -55,7 +56,6 @@ export function hoseThread(p: OsvacParams): Shape3D {
   // Profil in der Ebene durch die Achse beim Startwinkel (x = radial, y = z)
   const z0 = zOf(phi0);
   const rT = tipR(z0);
-  const ext = 0.5; // in die Wand hinein, damit die Rippe sicher verschmilzt
   const zu = z0 + THREAD.upper;
   const zd = z0 - THREAD.lower;
   const prof = draw([0, 0])

@@ -4,7 +4,8 @@
  */
 import opencascade from 'replicad-opencascadejs';
 import wasmUrl from 'replicad-opencascadejs/wasm?url';
-import { setOC, makeCompound, measureVolume, type Shape3D } from 'replicad';
+import { setOC, makeCompound, measureVolume, measureArea, type Shape3D } from 'replicad';
+import { hoseThread } from '../osvac/thread';
 import { deriveParams } from '../osvac/params';
 import { initFont } from '../osvac/text';
 import { kindById } from '../osvac/catalog';
@@ -68,10 +69,25 @@ self.onmessage = async (ev: MessageEvent<BuildRequest | ExportRequest | { type: 
       const t0 = performance.now();
       const bodies = buildBodies(msg);
       const meshes: MeshBody[] = bodies.map((b) => ({ name: b.name, helper: !!b.helper, ...toMesh(b.shape, msg.options.text ? 0.03 : 0.05) }));
+      // Druckvolumen: Gewinde ohne die 0,5-mm-Überlappung mit der Wand zählen
+      const p = deriveParams(msg.input);
       let volume = 0;
-      for (const b of bodies) if (!b.helper) volume += measureVolume(b.shape);
+      let area = 0;
+      let helperVolume = 0;
+      let helperArea = 0;
+      for (const b of bodies) {
+        const v = b.name === 'Gewinde' ? measureVolume(hoseThread(p, 0)) : measureVolume(b.shape);
+        const a = measureArea(b.shape);
+        if (b.helper) {
+          helperVolume += v;
+          helperArea += a;
+        } else {
+          volume += v;
+          area += a;
+        }
+      }
       post(
-        { type: 'mesh', id: msg.id, bodies: meshes, ms: performance.now() - t0, volume },
+        { type: 'mesh', id: msg.id, bodies: meshes, ms: performance.now() - t0, volume, area, helperVolume, helperArea },
         meshes.flatMap((m) => [m.positions.buffer, m.normals.buffer, m.indices.buffer]),
       );
       return;

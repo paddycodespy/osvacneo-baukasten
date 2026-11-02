@@ -49,6 +49,9 @@ function roundedPlate(w: number, r: number): THREE.Shape {
   return sh;
 }
 
+/** Kantenlänge des Druckbetts in mm */
+const BED = 170;
+
 export interface Dimensions {
   height: number;
   diameter: number;
@@ -94,14 +97,14 @@ export class PartViewer {
     rim.position.set(-200, 180, 90);
     this.scene.add(rim);
 
-    const plate = new THREE.ShapeGeometry(roundedPlate(170, 12), 8);
+    const plate = new THREE.ShapeGeometry(roundedPlate(BED, 12), 8);
     this.bed = new THREE.Mesh(
       plate,
       new THREE.MeshStandardMaterial({ map: peiTexture(), roughness: 0.85, metalness: 0.2, color: 0xffffff }),
     );
     // Plattenkante
     const edge = new THREE.Mesh(
-      new THREE.ExtrudeGeometry(roundedPlate(170, 12), { depth: 3, bevelEnabled: false }),
+      new THREE.ExtrudeGeometry(roundedPlate(BED, 12), { depth: 3, bevelEnabled: false }),
       new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 0.6, metalness: 0.4 }),
     );
     edge.position.z = -3.05;
@@ -173,20 +176,49 @@ export class PartViewer {
     return { height: size.z, diameter: Math.max(size.x, size.y) };
   }
 
+  /** Kamera so setzen, dass Bauteil und Druckbett vollständig und mittig im Bild sind. */
   private frame(box: THREE.Box3) {
-    const s = box.getSize(new THREE.Vector3());
-    const r = Math.max(s.x, s.y, s.z);
-    const target = new THREE.Vector3(0, 0, s.z * 0.45);
+    const all = box.clone();
+    all.translate(new THREE.Vector3(0, 0, -box.min.z)); // Modell steht auf dem Bett
+    all.union(new THREE.Box3(new THREE.Vector3(-BED / 2, -BED / 2, -3), new THREE.Vector3(BED / 2, BED / 2, 0)));
+    const sphere = all.getBoundingSphere(new THREE.Sphere());
+    const target = sphere.center.clone();
     const dir = new THREE.Vector3(0.52, -0.66, 0.62).normalize();
-    this.camera.position.copy(target.clone().add(dir.multiplyScalar(r * 3.6 + 120)));
+    let dist = sphere.radius / Math.sin(THREE.MathUtils.degToRad(this.camera.fov) / 2);
+    // Ecken der Szene im Bild mittig ausrichten und auf ~78 % der Fläche skalieren
+    const corners: THREE.Vector3[] = [];
+    for (const x of [all.min.x, all.max.x]) for (const y of [all.min.y, all.max.y]) for (const z of [all.min.z, all.max.z]) corners.push(new THREE.Vector3(x, y, z));
+    for (let it = 0; it < 4; it++) {
+      this.camera.position.copy(target.clone().add(dir.clone().multiplyScalar(dist)));
+      this.camera.lookAt(target);
+      this.camera.updateMatrixWorld();
+      this.camera.updateProjectionMatrix();
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const c of corners) {
+        const v = c.clone().project(this.camera);
+        x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
+      }
+      // Verschiebung der Bildmitte in Weltkoordinaten (Ebene durch das Ziel)
+      const halfH = Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) * dist;
+      const halfW = halfH * this.camera.aspect;
+      const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+      const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
+      target.add(right.multiplyScalar(((x0 + x1) / 2) * halfW)).add(up.multiplyScalar(((y0 + y1) / 2) * halfH));
+      const extent = Math.max((x1 - x0) / 2, (y1 - y0) / 2);
+      dist *= extent / 0.78;
+    }
+    this.camera.position.copy(target.clone().add(dir.clone().multiplyScalar(dist)));
     this.controls.target.copy(target);
+    this.camera.near = dist / 50;
+    this.camera.far = dist * 20;
+    this.camera.updateProjectionMatrix();
     this.framed = true;
   }
 
   resetView() {
     this.framed = false;
     const box = new THREE.Box3().setFromObject(this.model);
-    box.translate(new THREE.Vector3(0, 0, 0));
+    box.translate(new THREE.Vector3(0, 0, -this.model.position.z));
     this.frame(box);
     this.needsRender = true;
   }

@@ -256,7 +256,23 @@ h2 {
 .kind-text { display: flex; flex-direction: column; flex: 1; }
 .kind-text strong { font-weight: 600; font-size: 16px; }
 .kind-text small { font-size: 13.5px; color: var(--slate-2); line-height: 1.35; }
-.kind-code { font-family: var(--cond); font-weight: 600; font-size: 14px; color: var(--slate-2); }
+.kind-code { display: flex; align-items: baseline; gap: 1px; flex: none; font-family: var(--cond); }
+.kind-code .ck {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--graphite);
+}
+.kind-code .ck-F { background: var(--sky); }
+.kind-code .ck-M { background: #ef453b; }
+.kind-code .ck-H { background: var(--graphite); }
+.kind-code .cx { font-size: 12.5px; font-weight: 500; color: var(--grey); margin: 0 3px 0 1px; }
+.kind:disabled .ck { background: #b8c0c5; }
 
 /* Durchmesser */
 fieldset { border: 0; margin: 0 0 22px; padding: 0; }
@@ -353,6 +369,7 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .files li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--shop-2); }
 .files a { color: var(--cobalt-d); font-weight: 600; text-decoration: none; }
 .files a:hover { text-decoration: underline; }
+.filament { font-size: 14px; margin: -8px 0 18px; padding: 10px 14px; background: var(--mist); border-radius: 8px; }
 .license { font-size: 13px; color: var(--slate-2); border-top: 1px solid var(--line); padding-top: 12px; margin-top: 18px; }
 .error { color: #b02a20; font-size: 14px; }
 
