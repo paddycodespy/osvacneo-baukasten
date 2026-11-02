@@ -77,15 +77,14 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 
 | Teil | Volumen gegenüber Fusion | Anmerkung |
 |---|---|---|
-| Male M32 | +0,1 % | Druckhilfe ohne Aussparungen an den Nasen |
-| Female F32 | +0,4 % | Beschriftung leicht anders gesetzt |
+| Male M32 (mit Text) | −0,4 % | Druckhilfe ohne Aussparungen an den Nasen |
+| Female F32 (mit Text) | +0,1 % | |
 | MxxFyy M25/F32 | +0,3 % | |
 | FxxHyy F32/H32 | +0,1 % | Gewindeauslauf im Knickschutz fehlt |
-| FxxHyy F32/H36 | +0,8 % | |
-| MxxHyy M25/H36 | +2,9 % | Gehäusebeschriftung vereinfacht |
+| MxxHyy M25/H36 | −0,5 % | Gewinde als eigener Körper; die 0,5-mm-Überlappung mit der Wand ist herausgerechnet |
 | Fxx to Pipe Cone | +0,7 % | Schraubenlöcher ohne Senkung |
 
-Bajonett, Nut, Rastnase, Dichtnut, Drehring und Gewinde liegen in den Schnitten deckungsgleich auf den Fusion-Exporten.
+Die Drehringe stimmen auf den Kubikmillimeter mit Fusion überein. Bajonett, Nut, Rastnase, Dichtnut, Drehring und Gewinde liegen in den Schnitten deckungsgleich auf den Fusion-Exporten.
 
 Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, einstellbares Spaltmaß am Drehring (fest 0,3 mm wie im Original), Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“.
 

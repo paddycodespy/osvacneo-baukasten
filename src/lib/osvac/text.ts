@@ -44,7 +44,8 @@ export function textOnCylinder(rSurface: number, spec: CylText, depth: number): 
     const th = centerDeg + deg(s / rSurface);
     let glyph;
     try {
-      glyph = drawText(ch, { startX: -gw / 2, startY: 0, fontSize: size, fontFamily: FONT_FAMILY });
+      // Achtung: startX von drawText wirkt mit umgekehrtem Vorzeichen → explizit verschieben
+      glyph = drawText(ch, { startX: 0, startY: 0, fontSize: size, fontFamily: FONT_FAMILY }).translate(-gw / 2, 0);
     } catch {
       continue;
     }
