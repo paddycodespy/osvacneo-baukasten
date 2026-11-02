@@ -258,10 +258,7 @@ h2 {
 .kind-text strong { font-weight: 600; font-size: 15px; white-space: nowrap; }
 .kind-text small { font-size: 13.5px; color: var(--slate-2); line-height: 1.35; }
 .kind-code { flex: none; font-family: var(--cond); font-size: 13px; color: var(--grey); white-space: nowrap; }
-.kind-code .ck { font-size: 15px; font-weight: 700; }
-.kind-code .ck-M { color: var(--sky-d); }
-.kind-code .ck-F { color: #e5352b; }
-.kind-code .ck-H { color: var(--graphite); }
+.kind-code .ck { font-size: 15px; font-weight: 700; color: var(--graphite); }
 .kind-code .cx { font-weight: 500; }
 .kind:disabled .ck { color: inherit; }
 
