@@ -8,7 +8,7 @@ import { revolveProfile, extrudeDown, channelOutline, L, A } from './geom';
 import { textOnCylinder, engrave } from './text';
 import { TEXT } from './grip';
 import { fmt } from './female';
-import { draw } from 'replicad';
+import { makePolygon, makeSolid, type Point } from 'replicad';
 
 export const MALE_NOSE_ANGLES = [30, 150, 270];
 
@@ -83,23 +83,73 @@ export function maleSupport(p: OsvacParams): Shape3D {
     L(rMi - g, zCupTop),
     L(rBrimIn, zCupTop),
   ]);
-  // Stützrippen (0.8 mm) bei 90/210/330°, 45° vom Teller bis an die Steckerwand
-  const t = 0.8;
-  // Rippe greift unten 0.25 mm in den Teller und in den Fangring ein: flächige Überlappung statt
-  // Linienkontakt (sonst entstehen nicht-mannigfaltige Kanten im Netz)
-  const inner = rMo + g + 0.3;
-  const rib2D = draw([rMo, zCupTop])
-    .lineTo([rMo, zBrimTop + (rBrimOut - rMo)])
-    .lineTo([rBrimOut, zBrimTop])
-    .lineTo([rBrimOut, zBrimTop - 0.25])
-    .lineTo([inner, zBrimTop - 0.25])
-    .lineTo([inner, zCupTop])
-    .close();
-  let rib0 = rib2D.sketchOnPlane('XZ').extrude(t) as Shape3D;
-  const bb = rib0.boundingBox.bounds;
-  rib0 = rib0.translate([0, -(bb[0][1] + bb[1][1]) / 2, 0]);
+  // Stützblöcke unter den Bajonettnasen (wie im Original): Grundriss der Nase, innen ab rMo + 0,8,
+  // oben an der Nasenunterseite mit 45°-Fase nach innen, unten auf Fangring und Teller
+  const Rn = rMo + p.bajonettNaseDicke;
+  const zNose = -H + p.bajonettNaseMaleRandAbstand; // Unterseite der Nasen (−28,7)
+  const nose2D = channelOutline(p.maleBayonetNoseWidth, Rn, 1, rMo - 1);
+  const blockProfile = revolveProfile([rMo + 0.8, zBrimTop - 0.25], [
+    L(Rn, zBrimTop - 0.25),
+    L(Rn, zNose),
+    L(rMo + 1.6, zNose),
+    L(rMo + 0.8, zNose - 1),
+  ]);
+  for (const a of MALE_NOSE_ANGLES) {
+    const prism = extrudeDown(nose2D, zNose + 0.1, zNose + 0.1 - zBrimTop + 0.5).rotate(a, [0, 0, 0], [0, 0, 1]);
+    sup = sup.fuse(prism.intersect(blockProfile) as Shape3D);
+  }
+  // Stützrippen 0,8 mm bei 90/210/330°: 45° vom Teller bis an die Steckerwand; an den Auflagen
+  // (Steckerwand, Fangring, Teller) auf 0,4 mm verjüngt, damit sie sich leicht abbrechen lassen
+  const rib0 = taperedRib(rMo, zBrimTop + (rBrimOut - rMo), zCupTop + 1, rMo + 2.2, zBrimTop, rBrimOut);
   for (const a of [90, 210, 330]) {
     sup = sup.fuse(rib0.clone().rotate(a, [0, 0, 0], [0, 0, 1]));
   }
   return sup;
+}
+
+/**
+ * Rippe als konvexes Polyeder im System x = radial, y = tangential, z: Profil V1 (Steckerwand oben),
+ * V2 (Steckerwand unten), V3 (Fuß der 45°-Schräge auf dem Teller), V4 (Tellerrand); V4→V1 ist die freie Kante.
+ * An den drei Auflagekanten V1V2, V2V3, V3V4 halbe Breite 0,2 statt 0,4 (Übergang über 0,8 mm).
+ */
+function taperedRib(rW: number, zTop: number, zW: number, rC: number, zB: number, rOut: number): Shape3D {
+  type V = [number, number];
+  const emb = 0.05; // Fuß minimal in Fangring und Teller versenkt (Flächen- statt Kantenkontakt)
+  const V1: V = [rW, zTop];
+  const V2: V = [rW, zW - emb];
+  const V3: V = [rC, zB - emb];
+  const V4: V = [rOut, zB - emb];
+  const P = [V1, V2, V3, V4];
+  // innere Kontur: Auflagekanten um 0,8 nach innen versetzt, freie Kante bleibt
+  const off = (a: V, b: V, d: number): [V, V] => {
+    const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz);
+    const n: V = [-dz / l, dx / l]; // links der Laufrichtung = innen (Umlauf im Uhrzeigersinn in x-z)
+    return [[a[0] + n[0] * d, a[1] + n[1] * d], [b[0] + n[0] * d, b[1] + n[1] * d]];
+  };
+  const inter = (p1: V, p2: V, q1: V, q2: V): V => {
+    const d1: V = [p2[0] - p1[0], p2[1] - p1[1]], d2: V = [q2[0] - q1[0], q2[1] - q1[1]];
+    const den = d1[0] * d2[1] - d1[1] * d2[0];
+    const t = ((q1[0] - p1[0]) * d2[1] - (q1[1] - p1[1]) * d2[0]) / den;
+    return [p1[0] + t * d1[0], p1[1] + t * d1[1]];
+  };
+  const e12 = off(V1, V2, 0.8), e23 = off(V2, V3, 0.8), e34 = off(V3, V4, 0.8);
+  const V1i = inter(e12[0], e12[1], V4, V1);
+  const V2i = inter(e12[0], e12[1], e23[0], e23[1]);
+  const V3i = inter(e23[0], e23[1], e34[0], e34[1]);
+  const V4i = inter(e34[0], e34[1], V4, V1);
+  const Pi = [V1i, V2i, V3i, V4i];
+  const p3 = (v: V, y: number): Point => [v[0], y, v[1]];
+  const f = (...pts: Point[]) => makePolygon(pts);
+  const faces = [];
+  for (const s of [1, -1]) {
+    faces.push(f(...Pi.map((v) => p3(v, 0.4 * s)))); // Seitenfläche
+    for (let i = 0; i < 3; i++) {
+      faces.push(f(p3(P[i], 0.2 * s), p3(P[i + 1], 0.2 * s), p3(Pi[i + 1], 0.4 * s), p3(Pi[i], 0.4 * s))); // Verjüngung
+    }
+  }
+  for (let i = 0; i < 3; i++) faces.push(f(p3(P[i], 0.2), p3(P[i + 1], 0.2), p3(P[i + 1], -0.2), p3(P[i], -0.2))); // Auflage
+  faces.push(
+    f(p3(V1, 0.2), p3(V1i, 0.4), p3(V4i, 0.4), p3(V4, 0.2), p3(V4, -0.2), p3(V4i, -0.4), p3(V1i, -0.4), p3(V1, -0.2)),
+  ); // freie Kante
+  return makeSolid(faces) as unknown as Shape3D;
 }

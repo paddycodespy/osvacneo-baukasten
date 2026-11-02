@@ -77,8 +77,8 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 
 | Teil | Volumen gegenüber Fusion | Anmerkung |
 |---|---|---|
-| Male M32 (mit Text) | −0,4 % | Druckhilfe ohne Aussparungen an den Nasen |
-| Female F32 (mit Text) | +0,3 % | |
+| Male M32 (mit Text) | −0,4 % | Druckhilfe +0,03 % |
+| Female F32 (mit Text) | +0,1 % | Einführkanal mit R-1-Oberkante, Einlaufschräge, Rastnase mit R-1-Übergängen, Nutende mit Fase (F25: Nut endet wie im Original 60° hinter dem Kanal) |
 | MxxFyy M25/F32 | +0,3 % | |
 | FxxHyy F32/H32 | +0,1 % | |
 | MxxHyy M25/H36 | −0,5 % | Gewinde als eigener Körper; die 0,5-mm-Überlappung mit der Wand ist herausgerechnet |
