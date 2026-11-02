@@ -18,10 +18,19 @@ export interface AdapterKind {
   diameters: DiameterKey[];
   available: boolean;
   build?: (p: OsvacParams, o: asm.BuildOptions) => asm.Body[];
-  fileName: (p: OsvacParams) => string;
+  /** Maschinenadapter: fragt Stutzenmaße ab */
+  machine?: boolean;
+  fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
 export type EndType = 'female' | 'male' | 'hose' | 'machine';
+
+function pipeName(o?: asm.BuildOptions): string {
+  const s = o?.pipe;
+  if (!s) return '';
+  const r = (v: number) => n(Math.round(v * 10) / 10);
+  return `${r(s.d2Inner)}-${r(s.d1Inner)}x${r(s.length)}`;
+}
 
 const n = (v: number) => (Number.isInteger(v) ? String(v) : String(v).replace('.', ','));
 
@@ -63,31 +72,47 @@ export const KINDS: AdapterKind[] = [
     id: 'FH',
     code: 'FxxHyy',
     title: 'Kupplung ↔ Schlauch',
-    description: 'Kupplung mit Drehring auf Schlauchgewinde. In Arbeit.',
+    description: 'Kupplung mit Drehring und Schlauchgewinde, z. B. für den Saugschlauch.',
     ends: { top: 'female', bottom: 'hose' },
     diameters: ['femaleDiameterInner', 'hoseDiameterInner'],
-    available: false,
+    available: true,
+    build: asm.buildFxxHyy,
     fileName: (p) => `osVACneo-F${n(p.femaleDiameterInner)}H${n(p.hoseDiameterInner)}`,
   },
   {
     id: 'MH',
     code: 'MxxHyy',
     title: 'Stecker ↔ Schlauch',
-    description: 'Stecker mit Drehring auf Schlauchgewinde. In Arbeit.',
+    description: 'Stecker mit Drehring und Schlauchgewinde.',
     ends: { top: 'male', bottom: 'hose' },
     diameters: ['maleDiameterInner', 'hoseDiameterInner'],
-    available: false,
+    available: true,
+    build: asm.buildMxxHyy,
     fileName: (p) => `osVACneo-M${n(p.maleDiameterInner)}H${n(p.hoseDiameterInner)}`,
   },
   {
-    id: 'MACHINE',
-    code: 'Maschine',
-    title: 'Maschinenstutzen',
-    description: 'osVACneo-Anschluss auf einen gemessenen Stutzen. In Arbeit.',
+    id: 'MACHINE_F',
+    code: 'Fxx-Rohr',
+    title: 'Kupplung → Maschinenstutzen',
+    description: 'Kupplung auf einen gemessenen Stutzen, gerade oder konisch.',
     ends: { top: 'female', bottom: 'machine' },
     diameters: ['femaleDiameterInner'],
-    available: false,
-    fileName: (p) => `osVACneo-F${n(p.femaleDiameterInner)}-Maschine`,
+    machine: true,
+    available: true,
+    build: asm.buildMachineF,
+    fileName: (p, o) => `osVACneo-F${n(p.femaleDiameterInner)}-Rohr${pipeName(o)}`,
+  },
+  {
+    id: 'MACHINE_M',
+    code: 'Mxx-Rohr',
+    title: 'Stecker → Maschinenstutzen',
+    description: 'Stecker auf einen gemessenen Stutzen, gerade oder konisch.',
+    ends: { top: 'male', bottom: 'machine' },
+    diameters: ['maleDiameterInner'],
+    machine: true,
+    available: true,
+    build: asm.buildMachineM,
+    fileName: (p, o) => `osVACneo-M${n(p.maleDiameterInner)}-Rohr${pipeName(o)}`,
   },
 ];
 

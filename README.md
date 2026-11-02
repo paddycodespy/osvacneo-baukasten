@@ -1,47 +1,92 @@
-# Svelte + TS + Vite
+# osVACneo Konfigurator
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+Konfigurator für **osVACneo**-Absaugadapter, der komplett im Browser läuft. Ein Wizard führt durch Verbindung, Größen, Passung und Download. Am Ende gibt es das Teil als **3MF**, **STL** oder **STEP**.
 
-## Recommended IDE Setup
+Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Original-osVACneo-Teil: Profile, Bajonett, Toleranzen und Formeln stammen aus dem Fusion-360-Master **osVACneo v366 (beta)** und wurden gegen Fusion-Exporte in mehreren Größen geprüft.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+## Adaptertypen
 
-## Need an official Svelte framework?
+| Typ | Aufbau | Fusion-Vorlage |
+|---|---|---|
+| Stecker ↔ Kupplung | Female, Übergangskonus, Male, Druckhilfe | MxxFyy |
+| Kupplung einzeln | Female | Female (Kupplung) |
+| Stecker einzeln | Male, Druckhilfe | Male (Stecker) |
+| Kupplung ↔ Schlauch | Female, Übergang, Drehring (2 Ringe), Gewindekörper, Gewinde, Knickschutz | FxxHyy |
+| Stecker ↔ Schlauch | Male, Gehäuse, Drehring (2 Ringe), Gewindekörper, Gewinde | MxxHyy |
+| Kupplung → Maschinenstutzen | Female, Dichtnut-Füllung, Übergang, Rohrkonus | Fxx To Pipe Cone |
+| Stecker → Maschinenstutzen | Male, Übergang, Rohrkonus | Mxx To Pipe Cone |
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Materialstärke (7 oder 9 mm), Beschriftung, Druckhilfe sowie beim Maschinenstutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe und Schraubenlöcher.
 
-## Technical considerations
+Wie in Fusion besteht ein Adapter aus mehreren Körpern, die sich berühren oder überlappen. Slicer verschmelzen sie beim Laden. In 3MF liegen sie als Teile eines Objekts vor, in STEP als einzelne Volumenkörper.
 
-**Why use this over SvelteKit?**
+## Lokal starten
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+Voraussetzung: Node.js 20 oder neuer.
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```bash
+npm install
+npm run dev        # Entwicklungsserver auf http://localhost:5173
 ```
+
+Fertige Version bauen und lokal ausliefern:
+
+```bash
+npm run build
+npm run preview    # http://localhost:4173
+```
+
+Der Ordner `dist/` ist eine statische Website und läuft mit jedem Webserver. Per Doppelklick als `file://` funktioniert er nicht, weil Browser dort keine Web Worker und kein WebAssembly laden.
+
+## Veröffentlichen mit GitHub Pages
+
+1. Repository auf GitHub anlegen und pushen.
+2. In den Einstellungen unter *Pages* als Quelle **GitHub Actions** wählen.
+3. Jeder Push auf `main` baut und veröffentlicht die Seite (`.github/workflows/pages.yml`).
+
+## Aufbau
+
+```
+src/
+  App.svelte                 Wizard und Oberfläche
+  lib/viewer.ts              3D-Ansicht (three.js) mit Druckbett
+  lib/cad.ts                 Aufrufe an den CAD-Worker
+  lib/worker/cad.worker.ts   OpenCascade (replicad) im Web Worker, Export STL/STEP/3MF
+  lib/worker/threemf.ts      3MF-Writer
+  lib/osvac/params.ts        Parameter und Formeln aus Fusion
+  lib/osvac/female.ts        Kupplung mit Bajonett, Rastnase, Dichtnut
+  lib/osvac/male.ts          Stecker mit Bajonettnasen, Druckhilfe
+  lib/osvac/hose.ts          Gewindekörper, Drehring, Gehäuse, Knickschutz
+  lib/osvac/thread.ts        Schlauchgewinde (linksgängig, Steigung 5 mm, Konus 4°)
+  lib/osvac/machine.ts       Rohrkonus für Maschinenstutzen
+  lib/osvac/grip.ts          Rändelung und Textfelder
+  lib/osvac/catalog.ts       Adaptertypen für den Wizard
+scripts/
+  build-ref.ts               Einzelteil in Node bauen (npm run part -- MxxFyy 25 32 32)
+  matrix.ts                  Alle Typen mit Grenzwerten bauen (npm run test:geometry)
+```
+
+Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Radien hängen über die Fusion-Formeln von den Eingaben ab, axiale Maße sind fest.
+
+## Abgleich mit Fusion
+
+| Teil | Volumen gegenüber Fusion | Anmerkung |
+|---|---|---|
+| Male M32 | +0,1 % | Druckhilfe ohne Aussparungen an den Nasen |
+| Female F32 | +0,4 % | Beschriftung leicht anders gesetzt |
+| MxxFyy M25/F32 | +0,3 % | |
+| FxxHyy F32/H32 | +0,1 % | Gewindeauslauf im Knickschutz fehlt |
+| FxxHyy F32/H36 | +0,8 % | |
+| MxxHyy M25/H36 | +2,9 % | Gehäusebeschriftung vereinfacht |
+| Fxx to Pipe Cone | +0,7 % | Schraubenlöcher ohne Senkung |
+
+Bajonett, Nut, Rastnase, Dichtnut, Drehring und Gewinde liegen in den Schnitten deckungsgleich auf den Fusion-Exporten.
+
+Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, einstellbares Spaltmaß am Drehring (fest 0,3 mm wie im Original), Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“.
+
+## Lizenzen
+
+- **osVACneo** (Konstruktion, Maße, Formeln): CC BY-NC-SA 4.0. Diese Lizenz gilt auch für alle mit dem Konfigurator erzeugten Teile: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen.
+- **Liberation Sans** (Beschriftung): SIL Open Font License, siehe `public/fonts/LICENSE-LiberationSans.txt`.
+- **Barlow** (Oberfläche): SIL Open Font License.
+- **replicad** (MIT) und **OpenCascade** (LGPL 2.1, als WebAssembly unverändert eingebunden), **three.js** (MIT).
