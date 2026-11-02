@@ -13,10 +13,10 @@ Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Orig
 | Stecker einzeln | Male, Druckhilfe | Male (Stecker) |
 | Kupplung ↔ Schlauch | Female, Übergang, Drehring (2 Ringe), Gewindekörper, Gewinde, Knickschutz | FxxHyy |
 | Stecker ↔ Schlauch | Male, Gehäuse, Drehring (2 Ringe), Gewindekörper, Gewinde | MxxHyy |
-| Kupplung → Maschinenstutzen | Female, Dichtnut-Füllung, Übergang, Rohrkonus | Fxx To Pipe Cone |
-| Stecker → Maschinenstutzen | Male, Übergang, Rohrkonus | Mxx To Pipe Cone |
+| Kupplung → Stutzen | Female, Dichtnut-Füllung, Übergang, Rohrkonus | Fxx To Pipe Cone |
+| Stecker → Stutzen | Male, Übergang, Rohrkonus | Mxx To Pipe Cone |
 
-Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Materialstärke (7 oder 9 mm), Beschriftung, Druckhilfe sowie beim Maschinenstutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe und Schraubenlöcher.
+Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Materialstärke (7 oder 9 mm), Beschriftung, Druckhilfe sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe und Schraubenlöcher.
 
 Wie in Fusion besteht ein Adapter aus mehreren Körpern, die sich berühren oder überlappen. Slicer verschmelzen sie beim Laden. In 3MF liegen sie als Teile eines Objekts vor, in STEP als einzelne Volumenkörper.
 
@@ -63,7 +63,7 @@ src/
   lib/osvac/male.ts          Stecker mit Bajonettnasen, Druckhilfe
   lib/osvac/hose.ts          Gewindekörper, Drehring, Gehäuse, Knickschutz
   lib/osvac/thread.ts        Schlauchgewinde (linksgängig, Steigung 5 mm, Konus 4°)
-  lib/osvac/machine.ts       Rohrkonus für Maschinenstutzen
+  lib/osvac/machine.ts       Rohrkonus für Stutzen
   lib/osvac/grip.ts          Rändelung und Textfelder
   lib/osvac/catalog.ts       Adaptertypen für den Wizard
 scripts/
