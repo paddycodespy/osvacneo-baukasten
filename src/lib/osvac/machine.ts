@@ -1,6 +1,6 @@
 /**
- * Maschinenadapter nach "osVACneo PipesConesFlangesHandles":
- * osVACneo-Anschluss (F oder M) → Übergangskonus (TransitionConeLength) → Rohrkonus (PipeCone).
+ * Maschinenadapter nach "osVAC neo PipesConesFlangesHandles":
+ * Anschluss von osVAC neo (F oder M) → Übergangskonus (TransitionConeLength) → Rohrkonus (PipeCone).
  * Lokales System: Oberkante des Übergangs bei z = 0, nach unten.
  */
 import type { Shape3D } from 'replicad';
@@ -28,7 +28,7 @@ export const DEFAULT_PIPE: PipeSpec = { d1Inner: 29.3, d2Inner: 33.3, length: 30
 
 export const pipeWall = (s: PipeSpec) => Math.max(s.wall, 2);
 
-/** Übergangskonus vom osVACneo-Anschluss (rIn..rOut oben) auf den Rohranfang. */
+/** Übergangskonus vom Anschluss von osVAC neo (rIn..rOut oben) auf den Rohranfang. */
 export function pipeTransition(rIn: number, rOut: number, s: PipeSpec): Shape3D {
   const w = pipeWall(s);
   const r1i = s.d1Inner / 2;

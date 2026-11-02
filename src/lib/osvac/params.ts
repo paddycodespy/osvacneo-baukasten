@@ -1,5 +1,5 @@
 /**
- * osVACneo-Parameter – 1:1 aus "osVACneo Master" v366 (Fusion 360) übernommen.
+ * Parameter von osVAC neo – 1:1 aus "osVAC neo Master" v366 (Fusion 360) übernommen.
  * Alle Längen in mm. Abgeleitete Werte nutzen exakt die Fusion-Formeln.
  */
 

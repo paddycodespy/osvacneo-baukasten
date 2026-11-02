@@ -1,5 +1,5 @@
 /**
- * Schlauchseite (osVACneo "Hose"): Gewindekörper, Knickschutz-Trichter, Drehring (zwei
+ * Schlauchseite (osVAC neo "Hose"): Gewindekörper, Knickschutz-Trichter, Drehring (zwei
  * ineinandergreifende Ringe, im Druck beweglich) und Gehäuse für die Male-Variante.
  * Alle Radien hängen nur vom Schlauch-Innendurchmesser ab (rH = H/2), gemessen an H32 und H36.
  * Lokales System je Modul: Oberkante z = 0.
