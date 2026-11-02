@@ -219,7 +219,7 @@
 
     <div class="step-body">
       {#if step === 0}
-        <h2>Was soll verbunden werden?</h2>
+        <h2>Verbindungsart</h2>
         <div class="kinds" role="radiogroup" aria-label="Adaptertyp">
           {#each KINDS as k}
             <button
