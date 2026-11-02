@@ -243,36 +243,27 @@ h2 {
 .kind {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   text-align: left;
   border: 1px solid transparent;
   border-radius: 10px;
   background: none;
-  padding: 10px 12px;
+  padding: 10px 10px;
 }
 .kind:hover:not(:disabled) { background: var(--shop); }
 .kind.sel { border-color: var(--sky); background: var(--sky-l); --icon-fill: #9fd5f3; --icon-stroke: var(--sky-d); }
 .kind:disabled { opacity: 0.5; }
 .kind-text { display: flex; flex-direction: column; flex: 1; }
-.kind-text strong { font-weight: 600; font-size: 16px; }
+.kind-text { min-width: 0; }
+.kind-text strong { font-weight: 600; font-size: 15px; white-space: nowrap; }
 .kind-text small { font-size: 13.5px; color: var(--slate-2); line-height: 1.35; }
-.kind-code { display: flex; align-items: baseline; gap: 1px; flex: none; font-family: var(--cond); }
-.kind-code .ck {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--graphite);
-}
-.kind-code .ck-F { background: #ef453b; }
-.kind-code .ck-M { background: var(--sky); }
-.kind-code .ck-H { background: var(--graphite); }
-.kind-code .cx { font-size: 12.5px; font-weight: 500; color: var(--grey); margin: 0 3px 0 1px; }
-.kind:disabled .ck { background: #b8c0c5; }
+.kind-code { flex: none; font-family: var(--cond); font-size: 13px; color: var(--grey); white-space: nowrap; }
+.kind-code .ck { font-size: 15px; font-weight: 700; }
+.kind-code .ck-M { color: var(--sky-d); }
+.kind-code .ck-F { color: #e5352b; }
+.kind-code .ck-H { color: var(--graphite); }
+.kind-code .cx { font-weight: 500; }
+.kind:disabled .ck { color: inherit; }
 
 /* Durchmesser */
 fieldset { border: 0; margin: 0 0 22px; padding: 0; }
