@@ -87,7 +87,7 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 
 Die Drehringe stimmen auf den Kubikmillimeter mit Fusion überein. Schlauchseite, Drehring und Knickschutz sind zusätzlich bei 9 mm Materialstärke gegen Fusion geprüft (Außenmaße auf 0,03 mm genau). Bajonett, Nut, Rastnase, Dichtnut, Drehring und Gewinde liegen in den Schnitten deckungsgleich auf den Fusion-Exporten.
 
-Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation Sans Regular ist maßgleich zu Arial, Abweichung ≤ 0,15 mm). Statt der Lizenzzeile „CC BY-NC-SA 4.0“ steht auf dem Band „osVAC neo“ und die Kennung; die Lizenz wird beim Download verlinkt. Schraubenlöcher am Rohrkonus mit 90°-Senkung Ø 8 bei 90/210/330° wie im Original.
+Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation Sans Regular ist maßgleich zu Arial, Abweichung ≤ 0,15 mm). Die Lizenzzeile „CC BY-NC-SA 4.0“ steht wie im Original auf dem Band (Kupplung, Schlauchteil) und oben am Stecker; zusätzlich wird die Lizenz beim Download verlinkt. Schraubenlöcher am Rohrkonus mit 90°-Senkung Ø 8 bei 90/210/330° wie im Original.
 
 Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, einstellbares Spaltmaß am Drehring (fest 0,3 mm wie im Original), Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“.
 
