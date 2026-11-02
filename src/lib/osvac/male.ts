@@ -47,7 +47,6 @@ export function maleTube(p: OsvacParams, opt: MaleOptions = {}): Shape3D {
     const tools = [
       textOnCylinder(rMo, { text: 'osVAC neo', size: 5, centerDeg: 90, baselineZ: -4.6 }, 0.5),
       textOnCylinder(rMo, { text: label, size: 10, centerDeg: 90, baselineZ: -14.5 }, 0.5),
-      textOnCylinder(rMo, { text: 'CC BY-NC-SA 4.0', size: 5, centerDeg: 210, baselineZ: -4.6 }, 0.5),
     ];
     body = engrave(body, tools);
   }
