@@ -349,10 +349,11 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 }
 .dl strong { font-size: 16px; font-weight: 600; }
 .dl small { font-size: 13.5px; color: var(--slate-2); }
-.dl:hover:not(:disabled) { border-color: var(--slate-2); }
+.dl { transition: background-color 0.15s, border-color 0.15s; }
+.dl:hover:not(:disabled) { background: #f4f6f7; border-color: #cfd6da; }
 .dl.primary { background: var(--red); border-color: var(--red); color: #fff; }
 .dl.primary small { color: #ffe1de; }
-.dl.primary:hover:not(:disabled) { background: var(--red-d); }
+.dl.primary:hover:not(:disabled) { background: #ff5a50; border-color: #ff5a50; }
 .dl:disabled { opacity: 0.45; }
 .status-line { min-height: 1.5em; font-size: 14px; color: var(--slate-2); margin: 10px 0; }
 .warn {
