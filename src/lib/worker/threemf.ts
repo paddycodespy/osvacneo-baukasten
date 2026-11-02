@@ -11,10 +11,41 @@ export interface MeshPart {
   triangles: number[];
 }
 
+/**
+ * OpenCascade liefert die Dreiecke flächenweise mit eigenen Eckpunkten. Für ein geschlossenes
+ * (wasserdichtes) Netz werden Punkte an gleicher Position zusammengeführt und entartete Dreiecke entfernt.
+ */
+export function weld(part: MeshPart): MeshPart {
+  const map = new Map<string, number>();
+  const verts: number[] = [];
+  const remap: number[] = [];
+  const q = (v: number) => Math.round(v * 1e5);
+  for (let i = 0; i < part.vertices.length; i += 3) {
+    const key = `${q(part.vertices[i])},${q(part.vertices[i + 1])},${q(part.vertices[i + 2])}`;
+    let idx = map.get(key);
+    if (idx === undefined) {
+      idx = verts.length / 3;
+      map.set(key, idx);
+      verts.push(part.vertices[i], part.vertices[i + 1], part.vertices[i + 2]);
+    }
+    remap.push(idx);
+  }
+  const tris: number[] = [];
+  for (let i = 0; i < part.triangles.length; i += 3) {
+    const a = remap[part.triangles[i]];
+    const b = remap[part.triangles[i + 1]];
+    const c = remap[part.triangles[i + 2]];
+    if (a !== b && b !== c && a !== c) tris.push(a, b, c);
+  }
+  return { name: part.name, vertices: verts, triangles: tris };
+}
+
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
+/** Nur Metadaten-Namen aus der 3MF-Kernspezifikation, sonst lehnen Slicer die Konfiguration ab. */
 export function build3MF(parts: MeshPart[], title: string): Blob {
   let objects = '';
+  parts = parts.map(weld);
   parts.forEach((p, i) => {
     const v: string[] = [];
     for (let k = 0; k < p.vertices.length; k += 3) {
@@ -33,8 +64,8 @@ export function build3MF(parts: MeshPart[], title: string): Blob {
   const model = `<?xml version="1.0" encoding="UTF-8"?>
 <model unit="millimeter" xml:lang="de-DE" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
 <metadata name="Title">${esc(title)}</metadata>
-<metadata name="Application">osVAC neo Konfigurator</metadata>
-<metadata name="License">CC BY-NC-SA 4.0 (osVAC neo)</metadata>
+<metadata name="Designer">osVAC neo</metadata>
+<metadata name="LicenseTerms">CC BY-NC-SA 4.0</metadata>
 <resources>${objects}</resources>
 <build><item objectid="${parentId}"/></build>
 </model>`;

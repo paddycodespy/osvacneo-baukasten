@@ -84,11 +84,15 @@ export function maleSupport(p: OsvacParams): Shape3D {
   ]);
   // Stützrippen (0.8 mm) bei 90/210/330°, 45° vom Teller bis an die Steckerwand
   const t = 0.8;
-  const rib2D = draw([rMo, zCupTop - 1])
+  // Rippe greift unten 0.25 mm in den Teller und in den Fangring ein: flächige Überlappung statt
+  // Linienkontakt (sonst entstehen nicht-mannigfaltige Kanten im Netz)
+  const inner = rMo + g + 0.3;
+  const rib2D = draw([rMo, zCupTop])
     .lineTo([rMo, zBrimTop + (rBrimOut - rMo)])
     .lineTo([rBrimOut, zBrimTop])
-    .lineTo([rMo + 2.2, zBrimTop])
-    .lineTo([rMo + 1, zCupTop])
+    .lineTo([rBrimOut, zBrimTop - 0.25])
+    .lineTo([inner, zBrimTop - 0.25])
+    .lineTo([inner, zCupTop])
     .close();
   let rib0 = rib2D.sketchOnPlane('XZ').extrude(t) as Shape3D;
   const bb = rib0.boundingBox.bounds;
