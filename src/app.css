@@ -61,11 +61,10 @@ button { cursor: pointer; }
 /* Hover für alle Schaltflächen: nur leicht vergrößern, Farben bleiben gleich (wie osvacneo.de) */
 button { transition: transform 0.18s ease; }
 button:hover:not(:disabled) { transform: scale(var(--grow, 1.05)); }
-.kind { --grow: 1.015; }
 .dl { --grow: 1.025; }
 .chip { --grow: 1.08; }
-.seg button { --grow: 1.04; }
-.seg button:hover { position: relative; z-index: 1; }
+/* Ausnahmen ohne Vergrößerung: Verbindungstypen, Materialstärke, Reiter 1–4 (Pfeile im Zahlenfeld: NumberField) */
+.kind, .seg button, .step-tab { --grow: 1; }
 button:disabled { cursor: not-allowed; }
 :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
