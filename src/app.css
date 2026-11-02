@@ -57,6 +57,15 @@ html, body { margin: 0; height: 100%; }
 .wordmark .wm-sub { color: #fff; font-weight: 500; font-size: 17px; margin-left: 6px; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
+
+/* Hover für alle Schaltflächen: nur leicht vergrößern, Farben bleiben gleich (wie osvacneo.de) */
+button { transition: transform 0.18s ease; }
+button:hover:not(:disabled) { transform: scale(var(--grow, 1.05)); }
+.kind { --grow: 1.015; }
+.dl { --grow: 1.025; }
+.chip { --grow: 1.08; }
+.seg button { --grow: 1.04; }
+.seg button:hover { position: relative; z-index: 1; }
 button:disabled { cursor: not-allowed; }
 :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -127,7 +136,6 @@ button:disabled { cursor: not-allowed; }
   font-size: 13.5px;
   font-weight: 500;
 }
-.tool:hover { background: rgba(255, 255, 255, 0.12); }
 .tool.on { background: #fff; color: var(--graphite); border-color: #fff; }
 
 .stage-foot {
@@ -251,7 +259,6 @@ h2 {
   background: none;
   padding: 10px 10px;
 }
-.kind:hover:not(:disabled) { background: var(--shop); }
 .kind.sel { border-color: var(--sky); background: var(--sky-l); --icon-fill: #9fd5f3; --icon-stroke: var(--sky-d); }
 .kind:disabled { opacity: 0.5; }
 .kind-text { display: flex; flex-direction: column; flex: 1; }
@@ -269,7 +276,6 @@ h2 {
 .dia-F { --c: var(--c-F); }
 .dia-H { --c: var(--c-H); }
 .dia .chip.sel { background: var(--c); border-color: var(--c); color: #fff; }
-.dia .chip:hover:not(.sel) { border-color: var(--c); }
 .dia .num-in:focus-within { outline-color: var(--c); }
 .kind-code .cx { font-weight: 500; }
 .kind:disabled .ck { color: inherit; }
@@ -289,7 +295,6 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
   font-weight: 600;
   font-size: 16px;
 }
-.chip:hover { border-color: var(--slate-2); }
 .chip.sel { background: var(--sky); color: #fff; border-color: var(--sky); }
 .num-in {
   display: flex;
@@ -349,12 +354,8 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 }
 .dl strong { font-size: 16px; font-weight: 600; }
 .dl small { font-size: 13.5px; color: var(--slate-2); }
-.dl { transition: background-color 0.15s, border-color 0.15s; }
-.dl:hover:not(:disabled) { background: #f4f6f7; border-color: #cfd6da; }
 .dl.primary { background: var(--red); border-color: var(--red); color: #fff; }
 .dl.primary small { color: #ffe1de; }
-.dl.primary { transition: transform 0.2s ease; }
-.dl.primary:hover:not(:disabled) { transform: scale(1.03); }
 .dl:disabled { opacity: 0.45; }
 .status-line { min-height: 1.5em; font-size: 14px; color: var(--slate-2); margin: 10px 0; }
 .warn {
@@ -390,8 +391,6 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .ghost { border: 1px solid var(--line); background: none; }
 .ghost:disabled { opacity: 0.4; }
 .next { border: 0; background: var(--red); color: #fff; margin-left: auto; }
-.next { transition: transform 0.2s ease; }
-.next:hover { transform: scale(1.05); }
 
 /* ---------- Mobil ---------- */
 @media (max-width: 860px) {
@@ -408,5 +407,5 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .status::before { animation: none !important; }
-  .dl.primary:hover:not(:disabled), .next:hover { transform: none; }
+  button:hover:not(:disabled) { transform: none; }
 }
