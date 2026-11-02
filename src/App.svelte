@@ -60,7 +60,7 @@
   const code = $derived(
     kind.machine
       ? `${kind.ends.top === 'female' ? 'F' : 'M'}${fmt(kind.ends.top === 'female' ? input.femaleDiameterInner : input.maleDiameterInner)}/${fmt(machine.dOpen)}`
-      : fileName.replace('osVACneo-', ''),
+      : fileName.replace('osVAC neo ', ''),
   );
 
   const LABELS: Record<DiameterKey, { name: string; hint: string; presets: number[] }> = {
@@ -74,7 +74,7 @@
     for (const k of kind.diameters) {
       const v = input[k];
       if (!(v >= 15 && v <= 60)) w.push(`${LABELS[k].name}: ${fmt(v)} mm liegt außerhalb von 15 bis 60 mm.`);
-      else if (!LABELS[k].presets.includes(v)) w.push(`${LABELS[k].name}: ${fmt(v)} mm ist kein osVACneo-Standardmaß. Passt nur zu Teilen derselben Größe.`);
+      else if (!LABELS[k].presets.includes(v)) w.push(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
     }
     if (kind.machine) {
       if (pipe.d1Inner < 8 || pipe.d2Inner < 8) w.push('Der Innendurchmesser des Rohrs wird kleiner als 8 mm. Maße oder Wandstärke prüfen.');
@@ -245,7 +245,7 @@
         </div>
       {:else if step === 1}
         <h2>Größen</h2>
-        <p class="lead">Innendurchmesser in Millimetern. 25 und 32 sind die osVACneo-Standardgrößen.</p>
+        <p class="lead">Innendurchmesser in Millimetern. 25 und 32 sind die Standardgrößen von osVAC neo.</p>
         {#each kind.diameters as k}
           <fieldset class="dia">
             <legend>{LABELS[k].name}</legend>
@@ -366,7 +366,7 @@
           </div>
         {/if}
         <p class="license">
-          osVACneo steht unter CC BY-NC-SA 4.0: Weitergabe mit Namensnennung, nicht kommerziell, unter gleichen Bedingungen.
+          osVAC neo steht unter CC BY-NC-SA 4.0: Weitergabe mit Namensnennung, nicht kommerziell, unter gleichen Bedingungen.
         </p>
       {/if}
 

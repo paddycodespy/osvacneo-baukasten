@@ -1,5 +1,5 @@
 /**
- * Innengewinde für Saugschläuche (osVACneo "Hose"): linksgängig, Steigung 5 mm,
+ * Innengewinde für Saugschläuche (osVAC neo "Hose"): linksgängig, Steigung 5 mm,
  * 3,8 Umdrehungen, Konus −4°, Dreiecksprofil (Coil SectionSize 3 mm).
  * Vermessen am Fusion-Export H32/H36: Spitzen bei z = −4.5 − φ/72 (φ in Grad).
  */

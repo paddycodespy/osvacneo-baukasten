@@ -1,5 +1,5 @@
 /**
- * Zusammengesetzte osVACneo-Adapter. Jedes Ergebnis ist eine Liste benannter Körper
+ * Zusammengesetzte Adapter von osVAC neo. Jedes Ergebnis ist eine Liste benannter Körper
  * (wie in Fusion: Körper überlappen/berühren sich und werden vom Slicer verschmolzen).
  * Globales System: Achse Z, Oberkante des Adapters bei z = 0.
  */

@@ -1,8 +1,8 @@
-# osVACneo Konfigurator
+# osVAC neo Konfigurator
 
-Konfigurator für **osVACneo**-Absaugadapter, der komplett im Browser läuft. Ein Wizard führt durch Verbindung, Größen, Passung und Download. Am Ende gibt es das Teil als **3MF**, **STL** oder **STEP**.
+Konfigurator für Absaugadapter von **osVAC neo**, der komplett im Browser läuft. Ein Wizard führt durch Verbindung, Größen, Passung und Download. Am Ende gibt es das Teil als **3MF**, **STL** oder **STEP**.
 
-Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Original-osVACneo-Teil: Profile, Bajonett, Toleranzen und Formeln stammen aus dem Fusion-360-Master **osVACneo v366 (beta)** und wurden gegen Fusion-Exporte in mehreren Größen geprüft.
+Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Originalteil von osVAC neo: Profile, Bajonett, Toleranzen und Formeln stammen aus dem Fusion-360-Master **osVAC neo v366 (beta)** und wurden gegen Fusion-Exporte in mehreren Größen geprüft.
 
 ## Adaptertypen
 
@@ -90,7 +90,7 @@ Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stü
 
 ## Lizenzen
 
-- **osVACneo** (Konstruktion, Maße, Formeln): CC BY-NC-SA 4.0. Diese Lizenz gilt auch für alle mit dem Konfigurator erzeugten Teile: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen.
+- **osVAC neo** (Konstruktion, Maße, Formeln): CC BY-NC-SA 4.0. Diese Lizenz gilt auch für alle mit dem Konfigurator erzeugten Teile: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen.
 - **Liberation Sans** (Beschriftung): SIL Open Font License, siehe `public/fonts/LICENSE-LiberationSans.txt`.
 - **Barlow** (Oberfläche): SIL Open Font License.
 - **replicad** (MIT) und **OpenCascade** (LGPL 2.1, als WebAssembly unverändert eingebunden), **three.js** (MIT).

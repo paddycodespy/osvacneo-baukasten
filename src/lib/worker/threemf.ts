@@ -33,8 +33,8 @@ export function build3MF(parts: MeshPart[], title: string): Blob {
   const model = `<?xml version="1.0" encoding="UTF-8"?>
 <model unit="millimeter" xml:lang="de-DE" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
 <metadata name="Title">${esc(title)}</metadata>
-<metadata name="Application">osVACneo Konfigurator</metadata>
-<metadata name="License">CC BY-NC-SA 4.0 (osVACneo)</metadata>
+<metadata name="Application">osVAC neo Konfigurator</metadata>
+<metadata name="License">CC BY-NC-SA 4.0 (osVAC neo)</metadata>
 <resources>${objects}</resources>
 <build><item objectid="${parentId}"/></build>
 </model>`;

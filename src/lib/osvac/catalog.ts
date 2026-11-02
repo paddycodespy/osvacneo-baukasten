@@ -1,5 +1,5 @@
 /**
- * Katalog der konfigurierbaren osVACneo-Adapter.
+ * Katalog der konfigurierbaren Adapter von osVAC neo.
  * Jeder Eintrag beschreibt, welche Durchmesser abgefragt werden und wie gebaut wird.
  */
 import type { OsvacParams } from './params';
@@ -9,7 +9,7 @@ export type DiameterKey = 'maleDiameterInner' | 'femaleDiameterInner' | 'hoseDia
 
 export interface AdapterKind {
   id: string;
-  /** Name nach osVACneo-Schema, z. B. "MxxFyy" */
+  /** Name nach dem Schema von osVAC neo, z. B. "MxxFyy" */
   code: string;
   title: string;
   description: string;
@@ -39,12 +39,12 @@ export const KINDS: AdapterKind[] = [
     id: 'MF',
     code: 'MxxFyy',
     title: 'Stecker ↔ Kupplung',
-    description: 'Verbindet zwei osVACneo-Größen, z. B. M25 auf F32.',
+    description: 'Verbindet zwei Größen von osVAC neo, z. B. M25 auf F32.',
     ends: { top: 'female', bottom: 'male' },
     diameters: ['femaleDiameterInner', 'maleDiameterInner'],
     available: true,
     build: asm.buildMxxFyy,
-    fileName: (p) => `osVACneo-M${n(p.maleDiameterInner)}F${n(p.femaleDiameterInner)}`,
+    fileName: (p) => `osVAC neo M${n(p.maleDiameterInner)}F${n(p.femaleDiameterInner)}`,
   },
   {
     id: 'F',
@@ -55,7 +55,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['femaleDiameterInner'],
     available: true,
     build: asm.buildFemale,
-    fileName: (p) => `osVACneo-F${n(p.femaleDiameterInner)}`,
+    fileName: (p) => `osVAC neo F${n(p.femaleDiameterInner)}`,
   },
   {
     id: 'M',
@@ -66,7 +66,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['maleDiameterInner'],
     available: true,
     build: asm.buildMale,
-    fileName: (p) => `osVACneo-M${n(p.maleDiameterInner)}`,
+    fileName: (p) => `osVAC neo M${n(p.maleDiameterInner)}`,
   },
   {
     id: 'FH',
@@ -77,7 +77,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['femaleDiameterInner', 'hoseDiameterInner'],
     available: true,
     build: asm.buildFxxHyy,
-    fileName: (p) => `osVACneo-F${n(p.femaleDiameterInner)}H${n(p.hoseDiameterInner)}`,
+    fileName: (p) => `osVAC neo F${n(p.femaleDiameterInner)}H${n(p.hoseDiameterInner)}`,
   },
   {
     id: 'MH',
@@ -88,7 +88,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['maleDiameterInner', 'hoseDiameterInner'],
     available: true,
     build: asm.buildMxxHyy,
-    fileName: (p) => `osVACneo-M${n(p.maleDiameterInner)}H${n(p.hoseDiameterInner)}`,
+    fileName: (p) => `osVAC neo M${n(p.maleDiameterInner)}H${n(p.hoseDiameterInner)}`,
   },
   {
     id: 'MACHINE_F',
@@ -100,7 +100,7 @@ export const KINDS: AdapterKind[] = [
     machine: true,
     available: true,
     build: asm.buildMachineF,
-    fileName: (p, o) => `osVACneo-F${n(p.femaleDiameterInner)}-Rohr${pipeName(o)}`,
+    fileName: (p, o) => `osVAC neo F${n(p.femaleDiameterInner)}-Rohr${pipeName(o)}`,
   },
   {
     id: 'MACHINE_M',
@@ -112,7 +112,7 @@ export const KINDS: AdapterKind[] = [
     machine: true,
     available: true,
     build: asm.buildMachineM,
-    fileName: (p, o) => `osVACneo-M${n(p.maleDiameterInner)}-Rohr${pipeName(o)}`,
+    fileName: (p, o) => `osVAC neo M${n(p.maleDiameterInner)}-Rohr${pipeName(o)}`,
   },
 ];
 

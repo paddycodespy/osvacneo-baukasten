@@ -30,5 +30,5 @@
     "replicad-opencascadejs": "^1.1.0",
     "three": "^0.187.0"
   },
-  "description": "osVACneo-Absaugadapter im Browser konfigurieren und als 3MF, STL oder STEP herunterladen"
+  "description": "Absaugadapter von osVAC neo im Browser konfigurieren und als 3MF, STL oder STEP herunterladen"
 }

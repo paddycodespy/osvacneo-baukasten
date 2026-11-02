@@ -1,7 +1,7 @@
 /**
  * Female (Kupplung) – Bajonett-Aufnahme mit Rändelung und Textfeldern.
  * Lokales System: Oberkante z = 0, Unterkante z = -femaleHeight (33.5).
- * Vermessen an osVACneo Master v366 (F32 und F25).
+ * Vermessen an osVAC neo Master v366 (F32 und F25).
  */
 import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
