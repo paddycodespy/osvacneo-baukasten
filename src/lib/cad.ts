@@ -34,7 +34,7 @@ export function makeBuild(kind: string, input: OsvacInput, options: BuildOptions
   return { type: 'build', id: nextId++, kind, input: { ...input }, options: { ...options } };
 }
 
-export async function build(req: BuildRequest): Promise<{ bodies: MeshBody[]; ms: number; volume: number }> {
+export async function build(req: BuildRequest): Promise<{ bodies: MeshBody[]; ms: number; volume: number; area: number; helperVolume: number; helperArea: number }> {
   await cadReady;
   return call({ ...req, id: nextId++ } as unknown as { id: number });
 }

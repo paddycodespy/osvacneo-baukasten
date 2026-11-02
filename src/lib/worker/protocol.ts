@@ -30,6 +30,6 @@ export interface MeshBody {
 
 export type WorkerReply =
   | { type: 'ready' }
-  | { type: 'mesh'; id: number; bodies: MeshBody[]; ms: number; volume: number }
+  | { type: 'mesh'; id: number; bodies: MeshBody[]; ms: number; volume: number; area: number; helperVolume: number; helperArea: number }
   | { type: 'file'; id: number; blob: Blob; fileName: string }
   | { type: 'error'; id: number; message: string };

@@ -8,6 +8,7 @@
   import KindIcon from './components/KindIcon.svelte';
   import MeasureFigure from './components/MeasureFigure.svelte';
   import type { PipeSpec } from './lib/osvac/machine';
+  import { estimateFilament } from './lib/filament';
 
   const STEPS = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
   let step = $state(0);
@@ -17,7 +18,7 @@
   /** Eine Einstellung für Anzeige und Export der Druckhilfe (wird immer mitberechnet) */
   let supports = $state(true);
   let machine = $state({ mode: 'over' as 'over' | 'into', dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true });
-  let volume = $state<number | null>(null);
+  let measures = $state<{ volume: number; area: number; helperVolume: number; helperArea: number } | null>(null);
 
   let host: HTMLDivElement;
   let viewer: PartViewer | null = null;
@@ -30,6 +31,21 @@
 
   const kind = $derived(kindById(kindId));
   const params = $derived(deriveParams(input));
+  /** PETG-Bedarf; Druckhilfe zählt mit, wenn sie gedruckt wird */
+  const filament = $derived.by(() => {
+    if (!measures) return null;
+    const withHelper = supports && hasSupport;
+    return estimateFilament(
+      measures.volume + (withHelper ? measures.helperVolume : 0),
+      measures.area + (withHelper ? measures.helperArea : 0),
+    );
+  });
+  const gramsText = $derived.by(() => {
+    if (!filament) return '–';
+    const a = Math.round(filament.gramsMin);
+    const b = Math.round(filament.gramsMax);
+    return a === b ? `${a}` : `${a}–${b}`;
+  });
   /** Druckhilfe gibt es nur, wenn der Stecker mit der Spitze nach unten gedruckt wird */
   const hasSupport = $derived(kind.id === 'M' || kind.id === 'MF');
   const pipe = $derived.by((): PipeSpec => {
@@ -69,6 +85,11 @@
     return w;
   });
 
+  /** Zerlegt "MxxFyy" in hervorgehobene Kennbuchstaben (M, F, H) und Platzhalter */
+  function codeParts(code: string) {
+    return code.split(/([MFH](?=[xy]{2}|$|-))/).filter(Boolean).map((t) => ({ t, key: /^[MFH]$/.test(t) }));
+  }
+
   function round1(v: number) {
     return Math.round(v * 100) / 100;
   }
@@ -99,7 +120,7 @@
       const full = await build(spec());
       if (token !== buildToken) return;
       dims = viewer!.setBodies(full.bodies);
-      volume = full.volume;
+      measures = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
       status = 'ready';
     } catch (e) {
       if (token !== buildToken) return;
@@ -173,7 +194,7 @@
       <dl class="dims">
         <div><dt>Höhe</dt><dd>{dims ? fmt(dims.height) : '–'}<span>mm</span></dd></div>
         <div><dt>Größter Ø</dt><dd>{dims ? fmt(dims.diameter) : '–'}<span>mm</span></dd></div>
-        <div><dt>Volumen ca.</dt><dd>{volume ? fmt(volume / 1000) : '–'}<span>cm³</span></dd></div>
+        <div><dt>PETG ca.</dt><dd>{gramsText}<span>g</span></dd></div>
       </dl>
       <p class="status" data-s={status} role="status">
         {#if status === 'start'}CAD-Kern wird geladen …
@@ -199,7 +220,6 @@
     <div class="step-body">
       {#if step === 0}
         <h2>Was soll verbunden werden?</h2>
-        <p class="lead">Alle Teile sind original osVACneo: Bajonett, Toleranzen und Maße kommen aus dem Fusion-Master v366.</p>
         <div class="kinds" role="radiogroup" aria-label="Adaptertyp">
           {#each KINDS as k}
             <button
@@ -215,7 +235,11 @@
                 <strong>{k.title}</strong>
                 <small>{k.available ? k.description : 'Folgt in der nächsten Version.'}</small>
               </span>
-              <span class="kind-code">{k.code}</span>
+              <span class="kind-code" aria-label={k.code}>
+                {#each codeParts(k.code) as part}
+                  {#if part.key}<b class="ck ck-{part.t}">{part.t}</b>{:else}<span class="cx">{part.t}</span>{/if}
+                {/each}
+              </span>
             </button>
           {/each}
         </div>
@@ -296,6 +320,17 @@
         <p class="lead">
           {kind.title}, {kind.diameters.map((k) => `${LABELS[k].name} ${fmt(input[k])} mm`).join(', ')}{#if kind.machine}, Stutzen Ø {fmt(machine.dOpen)} / {fmt(machine.dDepth)} mm, {machine.length} mm tief{/if}.
         </p>
+
+        {#if filament}
+          <p class="filament">
+            Filament PETG: ca. {gramsText} g, das sind {Math.round(filament.gramsMin) === Math.round(filament.gramsMax) ? 'etwa' : 'bis zu'} {fmt(filament.metersMax)} m bei 1,75 mm{supports && hasSupport ? ' inklusive Druckhilfe' : ''}.
+            {#if Math.round(filament.gramsMin) === Math.round(filament.gramsMax)}
+              Die Wände sind so dünn, dass der Slicer sie mit 3 Perimetern praktisch massiv druckt.
+            {:else}
+              Der kleinere Wert gilt für 3 Wände und 15 % Infill, der größere für massiven Druck.
+            {/if}
+          </p>
+        {/if}
 
         {#if warnings.length}
           <ul class="warn">
