@@ -301,7 +301,7 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .num-in:focus-within { outline: 3px solid var(--cobalt); outline-offset: 1px; }
 .unit { color: var(--slate-2); font-size: 14px; }
 
-/* Maschinenstutzen */
+/* Stutzen */
 .sub { font-family: var(--cond); font-weight: 600; font-size: 22px; margin: 28px 0 10px; }
 .seg.wide { display: flex; margin-bottom: 14px; }
 .seg.wide button { flex: 1; padding: 8px 10px; font-size: 14.5px; }

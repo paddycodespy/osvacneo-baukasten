@@ -264,7 +264,7 @@
           </fieldset>
         {/each}
         {#if kind.machine}
-          <h3 class="sub">Maschinenstutzen</h3>
+          <h3 class="sub">Stutzen</h3>
           <div class="seg wide" role="radiogroup" aria-label="Befestigung">
             <button role="radio" aria-checked={machine.mode === 'over'} class:sel={machine.mode === 'over'} onclick={() => (machine.mode = 'over')}>Adapter wird aufgesteckt</button>
             <button role="radio" aria-checked={machine.mode === 'into'} class:sel={machine.mode === 'into'} onclick={() => (machine.mode = 'into')}>Adapter wird eingesteckt</button>

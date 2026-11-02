@@ -93,7 +93,7 @@ export const KINDS: AdapterKind[] = [
   {
     id: 'MACHINE_F',
     code: 'Fxx-Rohr',
-    title: 'Kupplung → Maschinenstutzen',
+    title: 'Kupplung → Stutzen',
     description: 'Kupplung auf einen gemessenen Stutzen, gerade oder konisch.',
     ends: { top: 'female', bottom: 'machine' },
     diameters: ['femaleDiameterInner'],
@@ -105,7 +105,7 @@ export const KINDS: AdapterKind[] = [
   {
     id: 'MACHINE_M',
     code: 'Mxx-Rohr',
-    title: 'Stecker → Maschinenstutzen',
+    title: 'Stecker → Stutzen',
     description: 'Stecker auf einen gemessenen Stutzen, gerade oder konisch.',
     ends: { top: 'male', bottom: 'machine' },
     diameters: ['maleDiameterInner'],
