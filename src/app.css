@@ -61,10 +61,9 @@ button { cursor: pointer; }
 /* Hover für alle Schaltflächen: nur leicht vergrößern, Farben bleiben gleich (wie osvacneo.de) */
 button { transition: transform 0.18s ease; }
 button:hover:not(:disabled) { transform: scale(var(--grow, 1.05)); }
-.dl { --grow: 1.025; }
-.chip { --grow: 1.08; }
-/* Ausnahmen ohne Vergrößerung: Verbindungstypen, Materialstärke, Reiter 1–4 (Pfeile im Zahlenfeld: NumberField) */
-.kind, .seg button, .step-tab { --grow: 1; }
+/* Ausnahmen ohne Vergrößerung: Verbindungstypen, Größen-Chips, Materialstärke, Schritte 1–4,
+   Download-Optionen (eigener Hover) und Pfeile im Zahlenfeld (NumberField) */
+.kind, .chip, .seg button, .step-tab, .dl { --grow: 1; }
 button:disabled { cursor: not-allowed; }
 :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -198,37 +197,55 @@ button:disabled { cursor: not-allowed; }
 .steps {
   list-style: none;
   margin: 0;
-  padding: 18px 20px 0;
+  padding: 18px 16px 14px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
   border-bottom: 1px solid var(--line);
 }
+.steps li { position: relative; }
+/* Verbindungslinie zwischen den Kreisen */
+.steps li + li::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--line);
+  z-index: 0;
+}
+.steps li:has(.done) + li::before { background: var(--sky); }
 .step-tab {
+  position: relative;
+  z-index: 1;
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
   border: 0;
   background: none;
-  padding: 6px 2px 12px;
-  font-size: 14px;
+  padding: 0;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--slate-2);
-  border-bottom: 3px solid transparent;
-  margin-bottom: -1px;
+  color: var(--grey);
 }
 .step-tab .num {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: #fff;
   font-family: var(--cond);
   font-weight: 700;
-  font-size: 20px;
-  line-height: 1;
-  color: #c9d0d4;
+  font-size: 14px;
+  color: var(--grey);
 }
-.step-tab.done .num { color: var(--slate-2); }
-.step-tab.current { color: var(--slate); border-bottom-color: var(--cobalt); }
-.step-tab.current .num { color: var(--cobalt); }
+.step-tab.done .num { border-color: var(--sky); color: var(--sky-d); }
+.step-tab.current .num { border-color: var(--sky); background: var(--sky); color: #fff; }
+.step-tab.current .label { color: var(--graphite); font-weight: 600; }
 
 .step-body {
   flex: 1;
@@ -350,11 +367,15 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
   border-radius: 10px;
   padding: 12px 16px;
   text-align: left;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
 .dl strong { font-size: 16px; font-weight: 600; }
-.dl small { font-size: 13.5px; color: var(--slate-2); }
-.dl.primary { background: var(--red); border-color: var(--red); color: #fff; }
-.dl.primary small { color: #ffe1de; }
+.dl small { font-size: 13.5px; color: var(--slate-2); transition: color 0.15s; }
+/* aktiver Eintrag wie die ausgewählte Verbindung in Schritt 1 */
+.dl.active { border-color: var(--sky); background: var(--sky-l); }
+/* übrige Einträge werden beim Darüberfahren rot */
+.dl:not(.active):hover:not(:disabled) { background: var(--red); border-color: var(--red); color: #fff; }
+.dl:not(.active):hover:not(:disabled) small { color: #ffe1de; }
 .dl:disabled { opacity: 0.45; }
 .status-line { min-height: 1.5em; font-size: 14px; color: var(--slate-2); margin: 10px 0; }
 .warn {

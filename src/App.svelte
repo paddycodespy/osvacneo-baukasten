@@ -12,6 +12,13 @@
   import { estimateFilament } from './lib/filament';
 
   const STEPS = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
+  const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
+    { id: '3mf', label: '3MF', hint: 'Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura' },
+    { id: 'stl', label: 'STL', hint: 'Funktioniert mit jedem Slicer' },
+    { id: 'step', label: 'STEP', hint: 'Exaktes CAD-Modell zum Weiterkonstruieren' },
+  ];
+  /** Hervorgehobenes Format: anfangs die Empfehlung, danach das zuletzt geladene */
+  let activeFormat = $state<ExportFormat>('3mf');
   let step = $state(0);
   let kindId = $state('MF');
   let input = $state<OsvacInput>({ ...DEFAULT_INPUT, maleDiameterInner: 25, femaleDiameterInner: 32 });
@@ -212,7 +219,7 @@
       {#each STEPS as s, i}
         <li>
           <button class="step-tab" class:current={step === i} class:done={i < step} aria-current={step === i ? 'step' : undefined} onclick={() => (step = i)}>
-            <span class="num">{i + 1}</span>{s}
+            <span class="num">{i + 1}</span><span class="label">{s}</span>
           </button>
         </li>
       {/each}
@@ -336,15 +343,16 @@
         {/if}
 
         <div class="downloads">
-          <button class="dl primary" disabled={status !== 'ready' || !!exporting} onclick={() => download('3mf')}>
-            <strong>3MF herunterladen</strong><small>Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura</small>
-          </button>
-          <button class="dl" disabled={status !== 'ready' || !!exporting} onclick={() => download('stl')}>
-            <strong>STL herunterladen</strong><small>Funktioniert mit jedem Slicer</small>
-          </button>
-          <button class="dl" disabled={status !== 'ready' || !!exporting} onclick={() => download('step')}>
-            <strong>STEP herunterladen</strong><small>Exaktes CAD-Modell zum Weiterkonstruieren</small>
-          </button>
+          {#each FORMATS as f (f.id)}
+            <button
+              class="dl"
+              class:active={activeFormat === f.id}
+              disabled={status !== 'ready' || !!exporting}
+              onclick={() => { activeFormat = f.id; download(f.id); }}
+            >
+              <strong>{f.label} herunterladen</strong><small>{f.hint}</small>
+            </button>
+          {/each}
         </div>
         {#if hasSupport}
           <label class="inline-check"><input type="checkbox" bind:checked={supports} /> Druckhilfe mit exportieren</label>
