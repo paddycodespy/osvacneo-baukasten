@@ -1,4 +1,4 @@
-osVAC neo Konfigurator
+﻿osVAC neo Konfigurator
 
 Basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart.
 

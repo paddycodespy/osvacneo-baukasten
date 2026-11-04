@@ -430,7 +430,7 @@
           Basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart. Lizenz:
           <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.de" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>
           – Weitergabe mit Namensnennung, nicht kommerziell, unter gleichen Bedingungen. Das gilt auch für die erzeugten Dateien.
-          <a href="./THIRD_PARTY_LICENSES.txt" target="_blank" rel="noopener">Verwendete Bausteine und ihre Lizenzen</a>
+          <a href="./lizenzen.html" target="_blank" rel="noopener">Verwendete Bausteine und ihre Lizenzen</a>
         </p>
       {/if}
 

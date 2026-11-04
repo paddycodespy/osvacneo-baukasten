@@ -112,7 +112,7 @@ Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stü
 Basiert auf **osVAC neo von Ludo Kerz**, ursprünglich entstanden im Hobbyhimmel Stuttgart.
 
 - **Dieses Projekt** (Quellcode und alle damit erzeugten Teile) steht wie osVAC neo unter **CC BY-NC-SA 4.0**: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen. Siehe `LICENSE`.
-- **Bausteine Dritter** mit eigenen Lizenzen, vollständig in `public/THIRD_PARTY_LICENSES.txt` (wird mit ausgeliefert und ist in der App im Download-Schritt verlinkt):
+- **Bausteine Dritter** mit eigenen Lizenzen, vollständig in `public/lizenzen.html` (in der App im Download-Schritt verlinkt) und als Text in `public/THIRD_PARTY_LICENSES.txt`:
   - OpenCascade (LGPL 2.1, als WebAssembly unverändert und austauschbar eingebunden)
   - replicad, three.js, Svelte, fflate (MIT)
   - Poppins (Oberfläche) und Liberation Sans Regular (Beschriftung): SIL Open Font License
