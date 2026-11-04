@@ -147,3 +147,23 @@ function threadSweep(p: OsvacParams, ext: number, phiA: number, phiB: number, ru
   }
   return genericSweep(wire, spine, { auxiliarySpine: auxSpine, transitionMode: 'right', law }) as Shape3D;
 }
+
+/**
+ * Verhältnis Volumen ohne / mit Überlappung (ext) der Gewinderippe – über die Profilfläche,
+ * damit für die Filamentschätzung kein zweites Gewinde gebaut werden muss.
+ */
+export function threadNetVolumeFactor(p: OsvacParams, ext = 0.5): number {
+  const area = (e: number) => {
+    const z0 = 0;
+    const rR = rootRadius(p, z0);
+    const zu = z0 + THREAD.upper;
+    const zd = z0 - THREAD.lower;
+    const P: [number, number][] = [
+      [-THREAD.depth, 0],
+      [rootRadius(p, zu) + e - rR, zu - z0 + e * 0.577],
+      [rootRadius(p, zd) + e - rR, zd - z0 - e * 0.577],
+    ];
+    return Math.abs((P[0][0] * (P[1][1] - P[2][1]) + P[1][0] * (P[2][1] - P[0][1]) + P[2][0] * (P[0][1] - P[1][1])) / 2);
+  };
+  return area(0) / area(ext);
+}

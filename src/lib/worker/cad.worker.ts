@@ -1,17 +1,18 @@
 /// <reference lib="webworker" />
 /**
  * CAD-Worker: OpenCascade (replicad) läuft hier, damit die Oberfläche flüssig bleibt.
+ * Mehrere dieser Worker bilden einen Pool (siehe ../cad.ts); jeder baut einzelne Körper eines Adapters
+ * und hält sie in einem Zwischenspeicher, damit unveränderte Teile nicht neu berechnet werden.
  */
 import opencascade from 'replicad-opencascadejs';
 import wasmUrl from 'replicad-opencascadejs/wasm?url';
-import { setOC, makeCompound, measureVolume, measureArea, type Shape3D } from 'replicad';
-import { hoseThread } from '../osvac/thread';
+import { setOC, makeCompound, measureVolume, measureArea, deserializeShape, type Shape3D } from 'replicad';
+import { threadNetVolumeFactor } from '../osvac/thread';
 import { deriveParams } from '../osvac/params';
 import { initFont } from '../osvac/text';
 import { kindById } from '../osvac/catalog';
-import type { Body } from '../osvac/assemblies';
-import { build3MF } from './threemf';
-import type { BuildRequest, ExportRequest, WorkerReply, MeshBody } from './protocol';
+import type { Part } from '../osvac/assemblies';
+import type { PartRef, WorkerRequest, WorkerReply } from './protocol';
 
 let ready: Promise<void> | null = null;
 
@@ -27,36 +28,45 @@ function init(baseUrl: string) {
   return ready;
 }
 
-let cache: { key: string; bodies: Body[] } | null = null;
+// --- Zwischenspeicher: Körper nach Schlüssel (LRU) ---
+const MAX_CACHE = 40;
+const cache = new Map<string, { shape: Shape3D; volume: number; area: number; zMin: number }>();
 
-function specKey(r: BuildRequest) {
-  return JSON.stringify({ k: r.kind, i: r.input, o: r.options });
-}
-
-function buildBodies(r: BuildRequest): Body[] {
-  const key = specKey(r);
-  if (cache && cache.key === key) return cache.bodies;
+function partSpec(r: PartRef): Part {
   const kind = kindById(r.kind);
-  if (!kind.build) throw new Error(`Adaptertyp ${kind.code} ist noch nicht verfügbar.`);
-  const p = deriveParams(r.input);
-  const bodies = kind.build(p, r.options);
-  if (cache) for (const b of cache.bodies) b.shape.delete?.();
-  cache = { key, bodies };
-  return bodies;
+  if (!kind.parts) throw new Error(`Adaptertyp ${kind.code} ist noch nicht verfügbar.`);
+  const parts = kind.parts(deriveParams(r.input), r.options);
+  const q = parts[r.index];
+  if (!q) throw new Error('Unbekannter Körper');
+  return q;
 }
 
-function toMesh(shape: Shape3D, tol: number): Omit<MeshBody, 'name' | 'helper'> {
-  const m = shape.mesh({ tolerance: tol, angularTolerance: 0.25 });
-  return {
-    positions: new Float32Array(m.vertices),
-    normals: new Float32Array(m.normals),
-    indices: new Uint32Array(m.triangles),
-  };
+function getPart(r: PartRef) {
+  const q = partSpec(r);
+  const hit = cache.get(q.key);
+  if (hit) {
+    cache.delete(q.key);
+    cache.set(q.key, hit);
+    return { q, ...hit };
+  }
+  const shape = q.make();
+  let volume = measureVolume(shape);
+  // Gewinde: die 0,5-mm-Überlappung mit der Wand nicht als Filament zählen
+  if (q.name === 'Gewinde') volume *= threadNetVolumeFactor(deriveParams(r.input));
+  if (q.volumeOffset) volume -= q.volumeOffset;
+  const entry = { shape, volume, area: measureArea(shape), zMin: shape.boundingBox.bounds[0][2] };
+  cache.set(q.key, entry);
+  while (cache.size > MAX_CACHE) {
+    const [k, v] = cache.entries().next().value as [string, { shape: Shape3D }];
+    cache.delete(k);
+    v.shape.delete?.();
+  }
+  return { q, ...entry };
 }
 
 const post = (msg: WorkerReply, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(msg, transfer);
 
-self.onmessage = async (ev: MessageEvent<BuildRequest | ExportRequest | { type: 'init'; baseUrl: string }>) => {
+self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
   const msg = ev.data;
   try {
     if (msg.type === 'init') {
@@ -65,60 +75,44 @@ self.onmessage = async (ev: MessageEvent<BuildRequest | ExportRequest | { type: 
       return;
     }
     await ready;
-    if (msg.type === 'build') {
+    if (msg.type === 'part') {
       const t0 = performance.now();
-      const bodies = buildBodies(msg);
-      const meshes: MeshBody[] = bodies.map((b) => ({ name: b.name, helper: !!b.helper, ...toMesh(b.shape, msg.options.text ? 0.03 : 0.05) }));
-      // Druckvolumen: Gewinde ohne die 0,5-mm-Überlappung mit der Wand zählen
-      const p = deriveParams(msg.input);
-      let volume = 0;
-      let area = 0;
-      let helperVolume = 0;
-      let helperArea = 0;
-      const runout = bodies.some((b) => b.name === 'Knickschutz');
-      for (const b of bodies) {
-        const v = b.name === 'Gewinde' ? measureVolume(hoseThread(p, 0, runout)) : measureVolume(b.shape);
-        const a = measureArea(b.shape);
-        if (b.helper) {
-          helperVolume += v;
-          helperArea += a;
-        } else {
-          volume += v;
-          area += a;
-        }
-      }
-      post(
-        { type: 'mesh', id: msg.id, bodies: meshes, ms: performance.now() - t0, volume, area, helperVolume, helperArea },
-        meshes.flatMap((m) => [m.positions.buffer, m.normals.buffer, m.indices.buffer]),
-      );
+      const { q, shape, volume, area, zMin } = getPart(msg);
+      const m = shape.mesh({ tolerance: msg.options.text ? 0.03 : 0.05, angularTolerance: 0.25 });
+      const body = {
+        name: q.name,
+        helper: !!q.helper,
+        positions: new Float32Array(m.vertices),
+        normals: new Float32Array(m.normals),
+        indices: new Uint32Array(m.triangles),
+      };
+      post({ type: 'part', id: msg.id, body, volume, area, zMin, ms: performance.now() - t0 }, [body.positions.buffer, body.normals.buffer, body.indices.buffer]);
       return;
     }
-    if (msg.type === 'export') {
-      const bodies = buildBodies(msg.build);
-      const selected = bodies.filter((b) => msg.includeHelpers || !b.helper);
-      let blob: Blob;
-      // makeCompound übernimmt die Körper → mit Kopien arbeiten, der Cache bleibt gültig
-      // Unterseite auf z = 0 legen, damit das Teil im Slicer direkt auf dem Bett steht
-      const zMin = Math.min(...selected.map((b) => b.shape.boundingBox.bounds[0][2]));
-      const placed = selected.map((b) => ({ name: b.name, shape: b.shape.clone().translate([0, 0, -zMin]) as Shape3D }));
-      const compound = () => makeCompound(placed.map((b) => b.shape.clone())) as Shape3D;
-      if (msg.format === 'step') {
-        const c = compound();
-        blob = c.blobSTEP();
-        c.delete();
-      } else if (msg.format === 'stl') {
-        const c = compound();
-        blob = c.blobSTL({ tolerance: 0.01, angularTolerance: 0.1, binary: true });
-        c.delete();
-      } else {
-        const parts = placed.map((b) => {
-          const m = b.shape.mesh({ tolerance: 0.01, angularTolerance: 0.1 });
-          return { name: b.name, vertices: m.vertices, triangles: m.triangles };
-        });
-        blob = build3MF(parts, msg.fileName);
-      }
-      for (const b of placed) b.shape.delete();
-      post({ type: 'file', id: msg.id, blob, fileName: `${msg.fileName}.${msg.format}` });
+    if (msg.type === 'partMesh') {
+      const { shape } = getPart(msg);
+      const placed = shape.clone().translate([0, 0, msg.dz]) as Shape3D;
+      const m = placed.mesh({ tolerance: 0.01, angularTolerance: 0.1 });
+      placed.delete();
+      const vertices = new Float32Array(m.vertices);
+      const triangles = new Uint32Array(m.triangles);
+      post({ type: 'partMesh', id: msg.id, vertices, triangles }, [vertices.buffer, triangles.buffer]);
+      return;
+    }
+    if (msg.type === 'partBrep') {
+      const { shape } = getPart(msg);
+      const placed = shape.clone().translate([0, 0, msg.dz]) as Shape3D;
+      const data = placed.serialize();
+      placed.delete();
+      post({ type: 'partBrep', id: msg.id, data });
+      return;
+    }
+    if (msg.type === 'step') {
+      const shapes = msg.breps.map((b) => deserializeShape(b) as Shape3D);
+      const c = makeCompound(shapes) as Shape3D;
+      const blob = c.blobSTEP();
+      c.delete();
+      post({ type: 'file', id: msg.id, blob });
       return;
     }
   } catch (e) {
