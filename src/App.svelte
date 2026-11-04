@@ -440,11 +440,11 @@
     <nav class="step-nav">
       <!-- Beschriftung = Ziel-Schritt mit Pfeil; im ersten Schritt bleibt der Platz des Zurück-Knopfs frei -->
       <button class="ghost" class:hidden={step === 0} disabled={step === 0} aria-label={step > 0 ? `Zurück zu ${STEPS[step - 1]}` : undefined} onclick={() => (step = Math.max(0, step - 1))}>
-        <svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" /></svg>{step > 0 ? STEPS[step - 1] : ''}
+        <svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5" /></svg>{step > 0 ? STEPS[step - 1] : ''}
       </button>
       {#if step < STEPS.length - 1}
         <button class="next" aria-label="Weiter zu {STEPS[step + 1]}" onclick={() => (step = step + 1)}>
-          {STEPS[step + 1]}<svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8.5 3.5 13 8l-4.5 4.5" /></svg>
+          {STEPS[step + 1]}<svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
         </button>
       {/if}
     </nav>
