@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { PartViewer, type Dimensions } from './lib/viewer';
-  import { build, exportFile, makeBuild, partNames } from './lib/cad';
+  import { build, exportFile, makeBuild, partNames, partCached } from './lib/cad';
   import { KINDS, kindById, type DiameterKey } from './lib/osvac/catalog';
   import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './lib/osvac/params';
   import type { ExportFormat, MeshBody } from './lib/worker/protocol';
@@ -33,6 +33,8 @@
   let dims = $state<Dimensions | null>(null);
   let status = $state<'start' | 'preview' | 'detail' | 'ready' | 'error'>('start');
   let errorMsg = $state('');
+  /** Körper, die in der vollen Berechnung noch fehlen (für die Statuszeile) */
+  let pending = $state<string[]>([]);
   let section = $state(false);
   let exporting = $state<ExportFormat | null>(null);
   let files = $state<{ fileName: string; url: string; size: number; key: string }[]>([]);
@@ -99,6 +101,30 @@
     return code.split(/([MFH](?=[xy]{2}|$|-))/).filter(Boolean).map((t) => ({ t, key: /^[MFH]$/.test(t) }));
   }
 
+  /** Was in der vollen Berechnung noch fehlt, in Worten (Körpernamen → Bauteile) */
+  const PART_WORDS: Record<string, string> = {
+    Female: 'Kupplung',
+    Male: 'Stecker',
+    Druckhilfe: 'Druckhilfe',
+    Übergang: 'Übergang',
+    Schlauchteil: 'Schlauchteil',
+    Gewinde: 'Gewinde',
+    Knickschutz: 'Knickschutz',
+    Gehäuse: 'Gehäuse',
+    Rohr: 'Rohr',
+    'Dichtnut-Füllung': 'Kupplung',
+    'Drehring außen': 'Drehring',
+    'Drehring innen': 'Drehring',
+  };
+  function detailText(names: string[]) {
+    const words: string[] = [];
+    for (const n of names) {
+      const w = n.startsWith('Rändelung') ? 'Rändelung' : n.startsWith('Textfeld') || (n === 'Male' && text) ? (n === 'Male' ? 'Stecker mit Beschriftung' : 'Beschriftung') : (PART_WORDS[n] ?? n);
+      if (!words.includes(w)) words.push(w);
+    }
+    return words.length ? `Wird berechnet: ${words.join(', ')}…` : 'Wird fertiggestellt…';
+  }
+
   function round1(v: number) {
     return Math.round(v * 100) / 100;
   }
@@ -131,11 +157,17 @@
       // (die volle Berechnung hat zusätzlich die Rändelung als eigene Körper, daher Zuordnung über den Namen)
       const req = spec();
       const quickByName = new Map(quick.bodies.map((b) => [b.name, b]));
-      const cur: (MeshBody | undefined)[] = partNames(req).map((n) => quickByName.get(n));
+      const names = partNames(req);
+      const cur: (MeshBody | undefined)[] = names.map((n) => quickByName.get(n));
+      const cached = partCached(req);
+      const open = new Set(names.map((_, i) => i).filter((i) => !cached[i]));
+      pending = [...open].map((k) => names[k]);
       let raf = 0;
       const full = await build(req, (i, b) => {
         if (token !== buildToken) return;
         cur[i] = b;
+        open.delete(i);
+        pending = [...open].map((k) => names[k]);
         cancelAnimationFrame(raf);
         raf = requestAnimationFrame(() => {
           if (token === buildToken) viewer!.setBodies(cur.filter((x): x is MeshBody => !!x));
@@ -224,7 +256,7 @@
       <p class="status" data-s={status} role="status">
         {#if status === 'start'}CAD-Kern wird geladen…
         {:else if status === 'preview'}Vorschau wird berechnet…
-        {:else if status === 'detail'}Rändelung und Beschriftung werden berechnet…
+        {:else if status === 'detail'}{detailText(pending)}
         {:else if status === 'ready'}Bereit zum Download
         {:else}Fehler beim Berechnen{/if}
       </p>
