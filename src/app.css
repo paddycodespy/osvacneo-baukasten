@@ -55,6 +55,9 @@ html, body { margin: 0; height: 100%; }
 .wordmark .os, .wordmark .neo { color: #ef453b; }
 .wordmark .vac { color: var(--sky); }
 .wordmark .wm-sub { color: #fff; font-weight: 500; font-size: 17px; margin-left: 6px; }
+/* Verweis auf die Projekt-Website rechts in der Kopfzeile */
+.site-link { margin-left: auto; color: #fff; font-weight: 600; font-size: 15px; }
+.site-link:hover, .site-link:active { color: var(--red); }
 button, input { font: inherit; color: inherit; }
 /* Links grundsätzlich ohne Unterstreichung */
 a { text-decoration: none; transition: color 0.15s; }
