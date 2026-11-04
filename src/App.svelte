@@ -21,7 +21,9 @@
   let activeFormat = $state<ExportFormat>('3mf');
   let step = $state(0);
   let kindId = $state('MF');
-  let input = $state<OsvacInput>({ ...DEFAULT_INPUT, maleDiameterInner: 25, femaleDiameterInner: 32 });
+  /** Startwerte (auf diese setzt „Zurücksetzen“ zurück) */
+  const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 25, femaleDiameterInner: 32 };
+  let input = $state<OsvacInput>({ ...START_INPUT });
   let text = $state(true);
   /** Eine Einstellung für Anzeige und Export der Druckhilfe (wird immer mitberechnet) */
   let supports = $state(true);
@@ -232,7 +234,7 @@
     class="reset"
     class:sm={small}
     class:hidden={isDefault}
-    title="Auf den Standardwert {fmt(def, 2)} mm zurücksetzen"
+    data-tip="Zurück auf {fmt(def, 2)} mm"
     aria-label="{label} auf den Standardwert {fmt(def, 2)} mm zurücksetzen"
     onclick={apply}
   >
@@ -240,11 +242,11 @@
   </button>
 {/snippet}
 
-{#snippet reset(key: 'maleFemaleGapSize' | 'slipRingGapSize', label: string)}
-  {@render resetBtn(input[key] === DEFAULT_INPUT[key], DEFAULT_INPUT[key], label, () => (input[key] = DEFAULT_INPUT[key]))}
+{#snippet reset(key: 'maleFemaleGapSize' | 'slipRingGapSize' | DiameterKey, label: string)}
+  {@render resetBtn(input[key] === START_INPUT[key], START_INPUT[key], label, () => (input[key] = START_INPUT[key]))}
 {/snippet}
 
-{#snippet machineReset(key: 'wall' | 'allowance' | 'transition', label: string)}
+{#snippet machineReset(key: 'dOpen' | 'dDepth' | 'length' | 'wall' | 'allowance' | 'transition', label: string)}
   {@render resetBtn(machine[key] === MACHINE_DEFAULT[key], MACHINE_DEFAULT[key], label, () => (machine[key] = MACHINE_DEFAULT[key]), true)}
 {/snippet}
 
@@ -336,6 +338,7 @@
                 {/each}
               </div>
               <NumberField value={input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => setDia(k, v)} />
+              {@render reset(k, LABELS[k].name)}
             </div>
           </fieldset>
         {/each}
@@ -352,9 +355,9 @@
               : 'Innendurchmesser der Absaugöffnung messen: vorne an der Kante und in der Tiefe, bis zu der der Adapter hineinreichen soll.'}
           </p>
           <div class="grid2">
-            <div class="field"><span class="field-label">Ø vorne</span><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" /></div>
-            <div class="field"><span class="field-label">Ø in der Tiefe</span><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" /></div>
-            <div class="field"><span class="field-label">Tiefe (Steckweg)</span><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></div>
+            <div class="field"><span class="field-label">Ø vorne{@render machineReset('dOpen', 'Ø vorne')}</span><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" /></div>
+            <div class="field"><span class="field-label">Ø in der Tiefe{@render machineReset('dDepth', 'Ø in der Tiefe')}</span><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" /></div>
+            <div class="field"><span class="field-label">Tiefe (Steckweg){@render machineReset('length', 'Tiefe (Steckweg)')}</span><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></div>
             <div class="field"><span class="field-label">Wandstärke{@render machineReset('wall', 'Wandstärke')}</span><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" /></div>
             <div class="field"><span class="field-label">Zugabe für den Sitz{@render machineReset('allowance', 'Zugabe für den Sitz')}</span><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></div>
             <div class="field"><span class="field-label">Übergangslänge{@render machineReset('transition', 'Übergangslänge')}</span><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" /></div>
