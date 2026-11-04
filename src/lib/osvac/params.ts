@@ -18,8 +18,6 @@ export interface OsvacInput {
   slipRingGapSize: number;
   /** Spaltmaß Stützstruktur */
   supportStructureGapSize: number;
-  /** GeneralTextFieldWidthVariation: Breite des großen Textfelds am Schlauchadapter (40 mm + Wert) */
-  generalTextFieldWidthVariation: number;
 }
 
 export const DEFAULT_INPUT: OsvacInput = {
@@ -30,7 +28,6 @@ export const DEFAULT_INPUT: OsvacInput = {
   maleFemaleGapSize: 0.2,
   slipRingGapSize: 0.3,
   supportStructureGapSize: 0.3,
-  generalTextFieldWidthVariation: 0,
 };
 
 export interface OsvacParams extends OsvacInput {

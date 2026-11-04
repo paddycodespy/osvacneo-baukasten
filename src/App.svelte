@@ -153,7 +153,7 @@
   $effect(() => {
     // Abhängigkeiten registrieren
     void [kindId, input.maleDiameterInner, input.femaleDiameterInner, input.hoseDiameterInner, input.generalMaterialWidth,
-      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, input.generalTextFieldWidthVariation, text, JSON.stringify(pipe)];
+      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, text, JSON.stringify(pipe)];
     if (viewer) schedule();
   });
 
@@ -337,17 +337,6 @@
           </div>
           <p class="hint">9 mm macht die Kupplung stabiler und außen {fmt(4)} mm dicker.</p>
         </fieldset>
-
-        {#if hasSwivel}
-          <fieldset class="opt">
-            <legend>Breite des Textfelds (Schlauchseite)</legend>
-            <div class="slider">
-              <input type="range" min="-1" max="1" step="0.1" bind:value={input.generalTextFieldWidthVariation} aria-describedby="tfw-hint" />
-              <output>{input.generalTextFieldWidthVariation > 0 ? '+' : ''}{fmt(input.generalTextFieldWidthVariation, 1)} mm</output>
-            </div>
-            <p class="hint" id="tfw-hint">Falls die Schrift auf Schlauchteil oder Gehäuse nicht sauber druckt, in Schritten von 0,1 mm verändern (wie im Original). Original: 0 mm.</p>
-          </fieldset>
-        {/if}
 
         <fieldset class="opt checks">
           <legend>Extras</legend>

@@ -32,14 +32,13 @@ export const TEXT = {
   midLabel: -3.03,
 };
 
-/** wVar: GeneralTextFieldWidthVariation des Originals – verbreitert Feld A am Schlauchadapter (Bogenlänge 40 + wVar) */
-function fields(r: number, zTop: number, zBot: number, layout: GripLayout, wVar = 0) {
+function fields(r: number, zTop: number, zBot: number, layout: GripLayout) {
   const zc = (zTop + zBot) / 2;
   const hA = FIELD_A_H[layout];
   return {
     zc,
     hA,
-    a: { c: 270, half: deg((FIELD_A_W + wVar) / 2 / r), z0: zc + hA / 2 },
+    a: { c: 270, half: deg(FIELD_A_W / 2 / r), z0: zc + hA / 2 },
     b: layout === 'housing' ? null : { c: 90, half: deg(FIELD_B_W / 2 / r), z0: zc + FIELD_B_H / 2 },
   };
 }
@@ -54,10 +53,10 @@ export function addGrip(
   r: number,
   zTop: number,
   zBot: number,
-  o: { knurl?: boolean; layout?: GripLayout; wVar?: number } = {},
+  o: { knurl?: boolean; layout?: GripLayout } = {},
 ): Shape3D {
   if (o.knurl === false) return body;
-  const f = fields(r, zTop, zBot, o.layout ?? 'full', o.wVar);
+  const f = fields(r, zTop, zBot, o.layout ?? 'full');
   let knurl = extrudeDown(knurlRing(100, r, 0.475, r - 0.3), zTop, zTop - zBot);
   knurl = knurl.cut(extrudeDown(annularSector(r - 0.5, r + 1, f.a.c - f.a.half, f.a.c + f.a.half), f.a.z0, f.hA)) as Shape3D;
   if (f.b) knurl = knurl.cut(extrudeDown(annularSector(r - 0.5, r + 1, f.b.c - f.b.half, f.b.c + f.b.half), f.b.z0, FIELD_B_H)) as Shape3D;
@@ -72,14 +71,14 @@ export function addGrip(
 const FIELD_OVERLAP = 0.05;
 
 /** Volumen, mit dem die Textfelder in den Grundkörper eingreifen (für die Filamentschätzung abziehen). */
-export function gripFieldsOverlap(r: number, zTop: number, zBot: number, layout: GripLayout, wVar = 0): number {
-  const f = fields(r, zTop, zBot, layout, wVar);
+export function gripFieldsOverlap(r: number, zTop: number, zBot: number, layout: GripLayout): number {
+  const f = fields(r, zTop, zBot, layout);
   const ring = (half: number, h: number) => rad(2 * half) * ((r * r - (r - FIELD_OVERLAP) ** 2) / 2) * h;
   return ring(f.a.half, f.hA) + (f.b ? ring(f.b.half, FIELD_B_H) : 0);
 }
 
-export function gripFields(r: number, zTop: number, zBot: number, layout: GripLayout, label: string | null, wVar = 0): Shape3D {
-  const f = fields(r, zTop, zBot, layout, wVar);
+export function gripFields(r: number, zTop: number, zBot: number, layout: GripLayout, label: string | null): Shape3D {
+  const f = fields(r, zTop, zBot, layout);
   let a = extrudeDown(annularSector(r - FIELD_OVERLAP, r + 0.5, f.a.c - f.a.half, f.a.c + f.a.half), f.a.z0, f.hA);
   let b = f.b ? extrudeDown(annularSector(r - FIELD_OVERLAP, r + 0.5, f.b.c - f.b.half, f.b.c + f.b.half), f.b.z0, FIELD_B_H) : null;
   if (label !== null) {
