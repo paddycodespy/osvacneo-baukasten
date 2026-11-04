@@ -138,8 +138,6 @@ const ref = (req: BuildRequest, index: number): PartRef => ({ kind: req.kind, in
 /** Namen der Körper einer Berechnung (ohne etwas zu bauen) */
 export const partNames = (req: BuildRequest) => partsOf(req).map((q) => q.name);
 
-/** Je Körper: liegt er schon in einem Worker vor (kommt also sofort)? */
-export const partCached = (req: BuildRequest) => partsOf(req).map((q) => slots.some((s) => s.known.has(q.key)));
 
 export function makeBuild(kind: string, input: OsvacInput, options: BuildOptions): BuildRequest {
   return { type: 'build', id: nextId++, kind, input: { ...input }, options: { ...options } };
