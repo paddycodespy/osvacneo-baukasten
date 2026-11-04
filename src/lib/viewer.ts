@@ -57,6 +57,46 @@ export interface Dimensions {
   diameter: number;
 }
 
+/**
+ * Wortmarke „osVAC neo“ vorne links auf dem Druckbett (wie das Logo auf einer Druckplatte),
+ * in den Farben der Kopfzeile: „os“ und „neo“ rot, „VAC“ himmelblau.
+ */
+function bedLogo(onReady: () => void): THREE.Mesh {
+  const W = 1024, H = 256;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  const draw = () => {
+    const g = c.getContext('2d')!;
+    g.clearRect(0, 0, W, H);
+    g.font = '700 150px Poppins, sans-serif';
+    g.textBaseline = 'middle';
+    const parts: [string, string][] = [['os', '#ef453b'], ['VAC', '#28a3e5'], [' neo', '#ef453b']];
+    let x = 8;
+    for (const [t, col] of parts) {
+      g.fillStyle = col;
+      g.fillText(t, x, H / 2);
+      x += g.measureText(t).width;
+    }
+    tex.needsUpdate = true;
+    onReady();
+  };
+  draw();
+  // Poppins wird erst bei Bedarf geladen: danach neu zeichnen
+  document.fonts?.load('700 150px Poppins').then(draw, () => {});
+  const w = 62; // Breite auf dem Bett in mm
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, (w * H) / W),
+    new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.7, metalness: 0.1, depthWrite: false }),
+  );
+  // vordere Kante (y = −BED/2), rechts zur vorderen Ecke hin, Leserichtung zur Kamera
+  m.position.set(BED / 2 - 10 - w / 2, -BED / 2 + 11, 0.05);
+  return m;
+}
+
 export class PartViewer {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
@@ -109,6 +149,7 @@ export class PartViewer {
     );
     edge.position.z = -3.05;
     this.bed.add(edge);
+    this.bed.add(bedLogo(() => (this.needsRender = true)));
     this.scene.add(this.bed);
     this.scene.add(this.model);
 
