@@ -35,10 +35,15 @@ export function hoseBody(p: OsvacParams, variant: 'plain' | 'housed', opt: HoseO
     segs.push(L(rO, zs), L(rO, zs - 0.1));
     gripTop = zs - 0.1;
   } else {
-    const rN = rH + p.generalMaterialWidth - 1.6; // schmaler Kopf im Gehäuse
+    // schmaler Kopf im Gehäuse: radial (g + 0,1) Luft zur Gehäusebohrung, Schulter im Abstand g
+    // parallel zur 35°-Unterkante des Gehäuses (bei g = 0,3 genau die Fusion-Maße)
+    const g = p.slipRingGapSize;
+    const rB = rH + p.generalMaterialWidth - 1.2;
+    const rN = housedHeadRadius(rH, p.generalMaterialWidth, g);
     const z1 = -(rN - rH - 1.743) / cone;
-    segs.push(L(rN, z1), L(rN, -8.246));
-    const z2 = -8.246 - (rO - rN) * (1.12 / 1.6);
+    const zFlank = (r: number) => HOUSING_FLANK_TOP + T35 * (rB - r) - g * Math.hypot(1, T35);
+    segs.push(L(rN, z1), L(rN, zFlank(rN)));
+    const z2 = zFlank(rO);
     segs.push(L(rO, z2), L(rO, z2 - 1));
     gripTop = z2 - 1;
   }
@@ -106,9 +111,17 @@ export function hoseSkirt(p: OsvacParams): Shape3D {
 /**
  * Drehring (zwei ineinandergreifende Ringe, im Druck beweglich). Gemessen bei 7 und 9 mm Materialstärke:
  * Alle Hakenflanken laufen unter 35° (dz/dr = 0,7), die Haken-Versätze wachsen mit a = W/3,
- * der Spalt zwischen den Ringen beträgt 0,3 mm (SlipRingGapSize).
+ * der Spalt zwischen den Ringen ist SlipRingGapSize (Standard 0,3 mm wie im Original).
  */
 const T35 = 0.7;
+
+/** Unterkante des Gehäuses an der Bohrung im Schlauchteil-System (MxxHyy), gemessen. */
+const HOUSING_FLANK_TOP = -8.159;
+
+/** Radius des Schlauchkopfs und des Innenrings im Gehäuse: Bohrung rH + W − 1,2 minus (g + 0,1). */
+function housedHeadRadius(rH: number, W: number, g: number): number {
+  return rH + W - 1.2 - (g + 0.1);
+}
 
 /** Außenring: Haken außen, hängt an Kupplung (FxxHyy) bzw. sitzt im Gehäuse (MxxHyy). */
 function swivelOuterPts(rH: number, W: number, housed: boolean): P2[] {
@@ -129,25 +142,59 @@ function swivelOuterPts(rH: number, W: number, housed: boolean): P2[] {
   return [[rH, 0], [rH + W, 0], [rH + W, p4[1]], p4, p5, ...hook];
 }
 
-/** Innenring: sitzt auf dem Gewindekörper. */
-function swivelInnerPts(rH: number, W: number, housed: boolean): P2[] {
-  const a = W / 3;
-  const q3: P2 = [rH + a, 0];
-  const q2: P2 = [rH + 1.2, -T35 * (a - 1.2)];
-  const q4: P2 = [rH + 2 * a - 0.15, -T35 * (a - 0.15)];
-  const q5: P2 = [q4[0], q4[1] - 0.3];
-  const q6: P2 = [rH + a - 0.15, q5[1] - T35 * a];
-  const q7: P2 = [q6[0], q6[1] - 0.612];
-  const top: P2[] = [[rH, q2[1]], q2, q3, q4, q5, q6, q7];
-  if (housed) {
-    const rN = rH + W - 1.6;
-    const q12: P2 = [rH + 1.743, -6.634];
-    return [...top, [rN, q7[1] - T35 * (rN - q7[0])], [rN, q12[1] - T35 * (rN - q12[0])], q12, [rH, q12[1]]];
+/** Abstand des Innenrings unter dem Außenring im Stapel (Fusion-Messung, gilt für alle Größen). */
+export const INNER_BELOW_OUTER = 1.367;
+
+/**
+ * Innenring: sitzt auf dem Gewindekörper. Die Kontaktseite folgt dem Außenring im Abstand g
+ * (SlipRingGapSize, Standard 0,3 wie im Original): jede Fläche des Außenrings wird um g nach außen
+ * versetzt (waagerecht/senkrecht um g, die 35°-Flanken senkrecht zur Flanke um g). Der untere Teil
+ * (Anschluss an den Gewindekörper) bleibt fest.
+ */
+function swivelInnerPts(rH: number, W: number, housed: boolean, g: number): P2[] {
+  const outer = swivelOuterPts(rH, W, housed);
+  // Kontaktkette des Außenrings: vom Außenrand (bzw. der Schräge zur Bohrung) bis zur Innenkante oben
+  const chain = outer.slice(2); // ohne die beiden oberen Eckpunkte
+  // Polygonorientierung → Außennormale
+  let area = 0;
+  for (let i = 0; i < outer.length; i++) {
+    const [x1, y1] = outer[i];
+    const [x2, y2] = outer[(i + 1) % outer.length];
+    area += x1 * y2 - x2 * y1;
   }
-  const q8: P2 = [rH + 2 * a, q7[1] - T35 * (a + 0.15)];
-  const q9: P2 = [rH + W - 1.105, q8[1] + T35 * (W - 1.105 - 2 * a)];
+  const sgn = area > 0 ? 1 : -1;
+  type Line = { p: P2; d: P2 };
+  const lines: Line[] = [];
+  for (let i = 0; i + 1 < chain.length; i++) {
+    const [x1, z1] = chain[i];
+    const [x2, z2] = chain[i + 1];
+    const l = Math.hypot(x2 - x1, z2 - z1);
+    const d: P2 = [(x2 - x1) / l, (z2 - z1) / l];
+    const n: P2 = [sgn * d[1], -sgn * d[0]];
+    lines.push({ p: [x1 + n[0] * g, z1 + n[1] * g], d });
+  }
+  const meet = (A: Line, B: Line): P2 => {
+    const den = A.d[0] * B.d[1] - A.d[1] * B.d[0];
+    const t = ((B.p[0] - A.p[0]) * B.d[1] - (B.p[1] - A.p[1]) * B.d[0]) / den;
+    return [A.p[0] + t * A.d[0], A.p[1] + t * A.d[1]];
+  };
+  const atR = (L: Line, r: number): P2 => [r, L.p[1] + ((r - L.p[0]) * L.d[1]) / L.d[0]];
+  const verts: P2[] = [];
+  for (let i = 0; i + 1 < lines.length; i++) verts.push(meet(lines[i], lines[i + 1]));
+  const first = lines[0];
+  const last = lines[lines.length - 1];
+  const a = W / 3;
+  const toLocal = (q: P2): P2 => [q[0], q[1] + INNER_BELOW_OUTER];
+  const contact = [atR(last, rH), ...verts.reverse()].map(toLocal); // von innen oben nach außen unten
+  if (housed) {
+    const rN = housedHeadRadius(rH, W, g);
+    const q12: P2 = [rH + 1.743, -6.634];
+    return [...contact, toLocal(atR(first, rN)), [rN, q12[1] - T35 * (rN - q12[0])], q12, [rH, q12[1]]];
+  }
+  void a;
   const q12: P2 = [rH + 1.743, -4.634];
-  return [...top, q8, q9, [rH + W, q9[1]], [rH + W, q12[1] - T35 * (W - 1.743)], q12, [rH, q12[1]]];
+  const iEdge = toLocal(atR(first, rH + W));
+  return [...contact, iEdge, [rH + W, q12[1] - T35 * (W - 1.743)], q12, [rH, q12[1]]];
 }
 
 export function swivelOuter(p: OsvacParams, housed: boolean): Shape3D {
@@ -155,7 +202,7 @@ export function swivelOuter(p: OsvacParams, housed: boolean): Shape3D {
 }
 
 export function swivelInner(p: OsvacParams, housed: boolean): Shape3D {
-  return revolveProfile(...poly(swivelInnerPts(p.hoseDiameterInner / 2, p.generalMaterialWidth, housed)));
+  return revolveProfile(...poly(swivelInnerPts(p.hoseDiameterInner / 2, p.generalMaterialWidth, housed, p.slipRingGapSize)));
 }
 
 /** Gehäuse zwischen Male (oben, Spitze nach oben) und Drehring (MxxHyy). */
