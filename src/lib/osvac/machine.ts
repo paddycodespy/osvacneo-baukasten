@@ -4,7 +4,12 @@
  * Lokales System: Oberkante des Übergangs bei z = 0, nach unten.
  */
 import type { Shape3D } from 'replicad';
-import { makeCylinder } from 'replicad';
+import { makeCylinder, loft, assembleWire, makeLine, type Point } from 'replicad';
+
+/** Geschlossener Polygonzug als Kanten (für Regelflächen-Loft). */
+function makePolygonWire(pts: Point[]) {
+  return pts.map((p, i) => makeLine(p, pts[(i + 1) % pts.length]));
+}
 import type { OsvacParams } from './params';
 import { revolveProfile, L, A, rad } from './geom';
 import { textOnCylinder, engrave } from './text';
@@ -65,19 +70,33 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
   ]);
 
   if (s.screwHoles) {
-    // 3 Schraubenlöcher Ø4 mit 90°-Senkung (Ø8 an der Außenfläche), wie im Original bei 90/210/330°
-    const zH = -(L0 - 7.82);
+    // 3 Schraubenlöcher Ø4 bei 90/210/330° mit Senkung wie im Original (dort eine Fase an der Bohrungskante):
+    // beginnt 2,0 mm unter der Außenfläche in der Bohrung und endet auf der Außenfläche überall bei Ø 7,88;
+    // nachgebaut als Regelfläche zwischen den beiden Randkurven
+    const zH = -(L0 - 7.867);
+    const rOutAt = (z: number) => r1i + w + slope * -z;
     const rAt = r1i + slope * -zH;
-    const uOut = rAt + w; // Außenfläche auf Lochachse (Konus ist nahezu zylindrisch)
-    const sink = revolveProfile([0, 0], [L(2, 0), L(5, 3), L(0, 3)]); // Spitze bei Ø4, 45° Flanken
     for (const a of HOLE_ANGLES) {
-      const dir: [number, number, number] = [Math.cos(rad(a)), Math.sin(rad(a)), 0];
-      const start: [number, number, number] = [dir[0] * (rAt - 2), dir[1] * (rAt - 2), zH];
-      body = body.cut(makeCylinder(2, w + 6, start, dir));
-      const us = uOut - 2;
-      body = body.cut(
-        sink.clone().rotate(90, [0, 0, 0], [0, 1, 0]).rotate(a, [0, 0, 0], [0, 0, 1]).translate([dir[0] * us, dir[1] * us, zH]),
-      );
+      const e: [number, number, number] = [Math.cos(rad(a)), Math.sin(rad(a)), 0];
+      const t: [number, number, number] = [-e[1], e[0], 0];
+      const start: [number, number, number] = [e[0] * (rAt - 2), e[1] * (rAt - 2), zH];
+      body = body.cut(makeCylinder(2, w + 6, start, e));
+      const P = (y: number, rho: number, ph: number): Point => {
+        const c = rho * Math.cos(ph), zz = zH + rho * Math.sin(ph);
+        return [y * e[0] + c * t[0], y * e[1] + c * t[1], zz];
+      };
+      const N = 48;
+      const ring = (f: (ph: number) => Point) => {
+        const pts: Point[] = [];
+        for (let i = 0; i < N; i++) pts.push(f((2 * Math.PI * i) / N));
+        return assembleWire(makePolygonWire(pts));
+      };
+      const rimY = (ph: number, rho: number) => Math.sqrt(rOutAt(zH + rho * Math.sin(ph)) ** 2 - (rho * Math.cos(ph)) ** 2);
+      const w0 = ring((ph) => P(rimY(ph, 2) - 2.3, 1.7, ph)); // etwas innerhalb der Bohrung beginnen
+      const w1 = ring((ph) => P(rimY(ph, 2) - 2.0, 2, ph));
+      const w2 = ring((ph) => P(rimY(ph, 3.94), 3.94, ph));
+      const w3 = ring((ph) => P(rimY(ph, 3.94) + 1.5, 3.94, ph));
+      body = body.cut(loft([w0, w1, w2, w3], { ruled: true }));
     }
   }
 
@@ -85,13 +104,13 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
     const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('en-US');
     // Lage und Größe wie im Original (Arial/Liberation Sans Regular, Versalhöhe ≈ 4 mm)
     const lines: { t: string; z: number; c: number; size?: number }[] = [
-      { t: `${f(s.d1Inner)}/${f(s.d1Inner + 2 * w)}`, z: -4.65, c: 270 },
-      { t: `${f(w)}/${f(L0)}`, z: -L0 / 2 - 1.2, c: 270 },
-      { t: `${f(s.d2Inner)}/${f(s.d2Inner + 2 * w)}`, z: -L0 + 1.75, c: 270 },
+      { t: `${f(s.d1Inner)}/${f(s.d1Inner + 2 * w)}`, z: -4.7, c: 270 },
+      { t: `${f(w)}/${f(L0)}`, z: -L0 / 2 - 1.44, c: 270 },
+      { t: `${f(s.d2Inner)}/${f(s.d2Inner + 2 * w)}`, z: -L0 + 1.9, c: 270 },
       { t: 'osVAC neo', z: -7.55, c: 90, size: 7.2 },
     ];
     const tools = lines
-      .filter((l) => !(l.z > -4.3 || l.z < -L0 + 1.7))
+      .filter((l) => !(l.z > -4.3 || l.z < -L0 + 1.85))
       .map((l) => textOnCylinder(r1i + w + slope * -(l.z + 2), { text: l.t, size: l.size ?? TEXT.small, centerDeg: l.c, baselineZ: l.z }, 0.5));
     body = engrave(body, tools);
   }

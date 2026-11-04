@@ -3,19 +3,26 @@
  * ca. 3,8 Umdrehungen + Auslauf, Konus −4°, Dreiecksprofil (Coil SectionSize 3 mm).
  * Vermessen am Fusion-Export H32/H36: Spitzen bei z = −4.5 − φ/72 (φ in Grad).
  */
-import { makeBSplineApproximation, assembleWire, draw, genericSweep, getOC, Plane, type Shape3D } from 'replicad';
+import { makeBSplineApproximation, assembleWire, draw, genericSweep, getOC, makePolygon, makeSolid, Plane, type Shape3D, type Point } from 'replicad';
 import type { OsvacParams } from './params';
-import { rad } from './geom';
+import { rad, deg } from './geom';
 
 export const THREAD = {
   pitch: 5,
-  startDeg: 60,
-  /** volles Profil bis hier (Spitze z = −24.5), danach Auslauf */
-  fullEndDeg: 1440,
-  /** Ende des Auslaufs im Knickschutz (Tiefe 0 bei z ≈ −34.1) */
-  runoutEndDeg: 2131,
-  /** Ende ohne Knickschutz (MxxHyy): Stirnfläche wie im Original */
-  plainEndDeg: 1455,
+  /** Sweep beginnt hier; die eigentliche Anschnittkante entsteht durch startCut */
+  startDeg: 50,
+  startCut: { dist: 9.42, normalDeg: -62.6, refDeg: 55, aMin: 30, zTop: -1, zBot: -7.8 },
+  /** Ende ohne Knickschutz: senkrechte Ebene wie am Anfang (Rippe läuft dort von voller Tiefe auf 0) */
+  endCut: { dist: 10.55, normalDeg: 135.4, refDeg: 15, aMax: 45, zTop: -22.0, zBot: -28.5 },
+  /**
+   * Auslauf: Stützstellen der Profilskalierung. Gemessen am Original (H32/H36, 7 und 9 mm):
+   * Tiefe fällt linear von 2,8 bei φ 1441,8° auf 0 bei φ 2127,6°. Die Werte hier sind so gewählt,
+   * dass das gebaute Gewinde genau das ergibt (die Interpolation rundet den Knick etwas ab).
+   */
+  fullEndDeg: 1419.4,
+  runoutEndDeg: 2124.8,
+  /** Sweep-Ende ohne Knickschutz (MxxHyy); die eigentliche Endkante entsteht durch endCut */
+  plainEndDeg: 1470,
   taperDeg: 4,
   /** Gewindegrund oben: r = H/2 + Einrückung bei z = −2.276 */
   rootZ0: -2.276,
@@ -34,11 +41,50 @@ export function rootRadius(p: OsvacParams, z: number): number {
  * Gewinderippe als Volumenkörper im Hose-System (Oberkante Hose = z 0).
  * ext: wie weit das Profil in die Wand ragt (0.5 für sicheres Verschmelzen, 0 für die Volumenberechnung).
  * runout: Auslauf im Trichter (Knickschutz) wie im Original – die Rippe läuft nach dem vollen Gewinde
- * über knapp 2 Umdrehungen linear auf Tiefe 0 aus. Ohne Knickschutz endet sie kurz nach Beginn des Auslaufs.
+ * über knapp 2 Umdrehungen linear auf Tiefe 0 aus. Ohne Knickschutz behält sie die volle Tiefe bis zur Endkante.
  */
 export function hoseThread(p: OsvacParams, ext = 0.5, runout = false): Shape3D {
-  const phi2 = runout ? THREAD.runoutEndDeg : THREAD.plainEndDeg;
-  return threadSweep(p, ext, THREAD.startDeg, phi2);
+  const s = THREAD.startCut;
+  let t = threadSweep(p, ext, THREAD.startDeg, runout ? THREAD.runoutEndDeg : THREAD.plainEndDeg, runout);
+  t = t.cut(planeCut(s.dist, s.normalDeg, s.refDeg, s.aMin, s.zTop, s.zBot)) as Shape3D;
+  if (!runout) {
+    const e = THREAD.endCut;
+    t = t.cut(planeCut(e.dist, e.normalDeg, e.refDeg, e.aMax, e.zTop, e.zBot)) as Shape3D;
+  }
+  return t;
+}
+
+/**
+ * Anschnitt am Gewindeanfang und (ohne Knickschutz) am Ende wie im Original: die Rippe ist von einer
+ * senkrechten Ebene abgeschnitten, deren Lage nicht von der Schlauchgröße abhängt (gemessen an H32 und H36,
+ * 7 und 9 mm). Weggeschnitten wird die Seite n·p > −dist. Das Werkzeug reicht vom Schnittpunkt der Ebene
+ * mit dem Gewinde bis zum Winkel aFar und ist in z auf die betroffene Windung begrenzt.
+ */
+function planeCut(dist: number, normalDeg: number, refDeg: number, aFar: number, zTop: number, zBot: number): Shape3D {
+  const nA = rad(normalDeg);
+  const n: [number, number] = [Math.cos(nA), Math.sin(nA)];
+  const dir: [number, number] = [-n[1], n[0]];
+  const d0 = -dist;
+  const onLine = (r: number): [number, number] => {
+    const foot: [number, number] = [n[0] * d0, n[1] * d0];
+    const t = Math.sqrt(Math.max(0, r * r - d0 * d0));
+    const c1: [number, number] = [foot[0] + dir[0] * t, foot[1] + dir[1] * t];
+    const c2: [number, number] = [foot[0] - dir[0] * t, foot[1] - dir[1] * t];
+    const ang = (q: [number, number]) => Math.abs(((deg(Math.atan2(q[1], q[0])) - refDeg + 540) % 360) - 180);
+    return ang(c1) < ang(c2) ? c1 : c2;
+  };
+  const pol = (r: number, a: number): [number, number] => [r * Math.cos(rad(a)), r * Math.sin(rad(a))];
+  const pts = [onLine(30), onLine(11), pol(11, aFar), pol(30, aFar)];
+  // Umlaufsinn für makePolygon egal; ShapeFix richtet die Flächen aus
+  const P = (q: [number, number], z: number): Point => [q[0], q[1], z];
+  const top = pts.map((q) => P(q, zTop));
+  const bot = pts.map((q) => P(q, zBot));
+  const faces = [makePolygon(top), makePolygon([...bot].reverse())];
+  for (let i = 0; i < 4; i++) {
+    const j = (i + 1) % 4;
+    faces.push(makePolygon([bot[i], bot[j], top[j], top[i]]));
+  }
+  return makeSolid(faces) as unknown as Shape3D;
 }
 
 /** Profilskalierung über φ: 1 bis fullEndDeg, dann linear auf 0 bei runoutEndDeg (min. 3 %). */
@@ -50,7 +96,7 @@ function scaleAt(phi: number): number {
 const zOf = (phi: number) => -4.5 - (THREAD.pitch * phi) / 360;
 
 /** Sweep der Rippe zwischen phiA und phiB; Spine auf dem Gewindegrund, Profil mit scaleAt(φ) skaliert. */
-function threadSweep(p: OsvacParams, ext: number, phiA: number, phiB: number): Shape3D {
+function threadSweep(p: OsvacParams, ext: number, phiA: number, phiB: number, runout: boolean): Shape3D {
   const steps = Math.max(8, Math.ceil(((phiB - phiA) / 360) * 36));
   const pts: [number, number, number][] = [];
   for (let i = 0; i <= steps; i++) {
@@ -83,7 +129,7 @@ function threadSweep(p: OsvacParams, ext: number, phiA: number, phiB: number): S
   const sk = prof.sketchOnPlane(plane);
   const wire = (sk as unknown as { wire: Parameters<typeof genericSweep>[0] }).wire;
   let law = null;
-  if (phiB > THREAD.fullEndDeg) {
+  if (runout) {
     // Interpolierte Skalierung über dem Spine-Parameter (Stützstellen gleichmäßig in φ)
     const oc = getOC();
     const ad = (spineEdge.curve as unknown as { wrapped: { FirstParameter(): number; LastParameter(): number } }).wrapped;

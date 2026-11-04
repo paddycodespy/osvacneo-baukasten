@@ -4,7 +4,7 @@
  */
 import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
-import { revolveProfile, extrudeDown, channelOutline, L, A } from './geom';
+import { revolveProfile, extrudeDown, channelOutline, drawPath, L, A } from './geom';
 import { textOnCylinder, engrave } from './text';
 import { TEXT, LICENSE_TEXT } from './grip';
 import { fmt } from './female';
@@ -15,6 +15,21 @@ export const MALE_NOSE_ANGLES = [30, 150, 270];
 export interface MaleOptions {
   text?: boolean;
   label?: string;
+}
+
+/** Grundriss einer Bajonettnase (entlang +X, halbe Breite h) mit Ausrundungen R 1 außen und am Rohr. */
+function noseOutline(h: number, rMo: number, Rn: number) {
+  let d = channelOutline(2 * h, Rn, 1, rMo - 1);
+  for (const sgn of [1, -1]) {
+    const C: [number, number] = [Math.sqrt((rMo + 1) ** 2 - (h + 1) ** 2), sgn * (h + 1)];
+    const Tw: [number, number] = [C[0], sgn * h];
+    const Tt: [number, number] = [(C[0] * rMo) / (rMo + 1), (C[1] * rMo) / (rMo + 1)];
+    const ri = rMo - 0.5;
+    const Ti: [number, number] = [(Tt[0] * ri) / rMo, (Tt[1] * ri) / rMo];
+    const Wi: [number, number] = [Math.sqrt(ri * ri - h * h), sgn * h];
+    d = d.fuse(drawPath(Wi, [L(...Tw), A(...Tt, ...C), L(...Ti), A(...Wi, 0, 0)]));
+  }
+  return d;
 }
 
 export function maleTube(p: OsvacParams, opt: MaleOptions = {}): Shape3D {
@@ -34,10 +49,13 @@ export function maleTube(p: OsvacParams, opt: MaleOptions = {}): Shape3D {
   const zBot = -H + p.bajonettNaseMaleRandAbstand; // -28.7
   const zTop = zBot + p.bajonettNaseHoehe1 + p.bayonetChamfer; // -22.0
   const Rn = rMo + p.bajonettNaseDicke;
-  const top2D = channelOutline(p.maleBayonetNoseWidth, Rn, 1, rMo - 1);
-  const zBevel = zTop - p.bayonetChamfer * (p.bajonettNaseDicke / 2); // Fase 59° über volle Nasendicke
-  const noseProfile = revolveProfile([rMo - 1, zTop], [L(rMo, zTop), L(Rn, zTop - (Rn - rMo) * 0.6), L(Rn, zBot), L(rMo - 1, zBot)]);
-  void zBevel;
+  // Grundriss: Kanalform mit R 1 an den Außenecken und R 1 (konkav) am Übergang zum Rohr, wie im Original
+  const top2D = noseOutline(p.maleBayonetNoseWidth / 2, rMo, Rn);
+  // Profil: 59°-Fase oben, Außenkante mit R 1 gerundet
+  const k = Math.hypot(0.6, 1);
+  const zc = zTop - k - 0.6 * (Rn - 1 - rMo);
+  const tP: [number, number] = [Rn - 1 + 0.6 / k, zc + 1 / k];
+  const noseProfile = revolveProfile([rMo - 1, zTop], [L(rMo, zTop), L(...tP), A(Rn, zc, Rn - 1, zc), L(Rn, zBot), L(rMo - 1, zBot)]);
   for (const a of MALE_NOSE_ANGLES) {
     const prism = extrudeDown(top2D, zTop, zTop - zBot).rotate(a, [0, 0, 0], [0, 0, 1]);
     body = body.fuse(prism.intersect(noseProfile) as Shape3D);

@@ -75,19 +75,20 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 
 ## Abgleich mit Fusion
 
+Geprüft mit waagerechten Schnitten alle 0,25 mm (Draufsicht) und Volumen gegen die Fusion-STEP-Exporte
+(M25/F32/H36, M32/F32/H32, M25/F25/H25, 7 und 9 mm, Maschinenadapter). Außer an Beschriftung und Rändelung
+weicht keine Schnittkontur mehr als 0,15 mm ab.
+
 | Teil | Volumen gegenüber Fusion | Anmerkung |
 |---|---|---|
-| Male M32 (mit Text) | −0,4 % | Druckhilfe +0,03 % |
-| Female F32 (mit Text) | +0,1 % | Einführkanal mit R-1-Oberkante, Einlaufschräge, Rastnase mit R-1-Übergängen, Nutende mit Fase (F25: Nut endet wie im Original 60° hinter dem Kanal) |
-| MxxFyy M25/F32 | +0,3 % | |
-| FxxHyy F32/H32 | +0,1 % | |
-| MxxHyy M25/H36 | −0,5 % | Gewinde als eigener Körper; die 0,5-mm-Überlappung mit der Wand ist herausgerechnet |
-| Fxx to Pipe Cone | +0,7 % | |
-| Hose H36 (Schlauchteil, Gewinde, Knickschutz) | −0,9 % | Gewinde mit Auslauf im Knickschutz (knapp 2 Umdrehungen bis Tiefe 0) |
+| Female F32 / F25 (mit Text) | +0,2 % / +0,1 % | Einführkanal mit R-1-Oberkante, Einlaufschräge (Ebene, < 0,1 mm), Rastnase mit R-1-Übergängen, Nutende mit Fase |
+| Male M25 / M32 (mit Text) | +0,5 % / +0,4 % | Unterschied nur in der Beschriftung (Schrift); Nasen mit R 1 am Rohr und an der oberen Außenkante |
+| Druckhilfe | +0,03 % | |
+| Drehringe, Übergänge, Gehäuse | ±0,2 % | |
+| Hose H36 (Schlauchteil, Gewinde, Knickschutz) | +0,1 % | Gewinde mit Anschnitt am Anfang, Auslauf im Knickschutz bzw. Endanschnitt ohne Knickschutz wie im Original |
+| Rohrkonus, Übergang, Dichtnut-Füllung | ±0,15 % | Senkung als Fase der Bohrung wie im Original |
 
-Die Drehringe stimmen auf den Kubikmillimeter mit Fusion überein. Schlauchseite, Drehring und Knickschutz sind zusätzlich bei 9 mm Materialstärke gegen Fusion geprüft (Außenmaße auf 0,03 mm genau). Bajonett, Nut, Rastnase, Dichtnut, Drehring und Gewinde liegen in den Schnitten deckungsgleich auf den Fusion-Exporten.
-
-Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation Sans Regular ist maßgleich zu Arial, Abweichung ≤ 0,15 mm). Die Lizenzzeile „CC BY-NC-SA 4.0“ steht wie im Original auf dem Band (Kupplung, Schlauchteil) und oben am Stecker; zusätzlich wird die Lizenz beim Download verlinkt. Schraubenlöcher am Rohrkonus mit 90°-Senkung Ø 8 bei 90/210/330° wie im Original.
+Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation Sans Regular ist maßgleich zu Arial, Abweichung ≤ 0,15 mm). Die Lizenzzeile „CC BY-NC-SA 4.0“ steht wie im Original auf dem Band (Kupplung, Schlauchteil) und oben am Stecker; zusätzlich wird die Lizenz beim Download verlinkt.
 
 Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, einstellbares Spaltmaß am Drehring (fest 0,3 mm wie im Original), Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“.
 

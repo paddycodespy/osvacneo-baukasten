@@ -3,7 +3,7 @@
  * Lokales System: Oberkante z = 0, Unterkante z = -femaleHeight (33.5).
  * Vermessen an osVAC neo Master v366 (F32 und F25).
  */
-import { makePolygon, makeSolid, type Shape3D, type Point } from 'replicad';
+import { makePolygon, makeSolid, makeCylinder, type Shape3D, type Point } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, revolveProfileSector, extrudeDown, channelOutline, drawPath, L, A, rad, deg, type P2 } from './geom';
 import { addGrip, addLabels } from './grip';
@@ -66,31 +66,37 @@ function circleCircle(c0: P2, r0: number, c1: P2, r1: number, ySign: number): P2
 }
 
 /**
- * Einlaufschräge vom Kanal in die Nut (im Original eine Freiformfläche): Keil zwischen Kanalwand
- * und der Schräge durch die gemessenen Eckpunkte an Bohrung (rFm) und Rastnase (rr).
- * t = Abstand von der Kanalmitte zur Nutseite hin.
+ * Einlaufschräge vom Kanal in die Nut. Im Original eine nahezu ebene Fläche (Abweichung < 0,04 mm),
+ * die durch drei gemessene Eckpunkte festgelegt ist: zwei auf der Bohrung (rFm), einer auf der Rastnase (rr).
+ * Werkzeug = Bereich unter dieser Ebene neben dem Kanal, begrenzt auf r ≤ rr (Rastnase wird danach angesetzt).
+ * Kanal-System: x = Abstand von der Kanalmitte zur Nutseite hin, y = radial entlang der Kanalachse.
  */
 function rampWedge(a: number, h: number, rFm: number, rr: number): Shape3D {
-  const P = (t: number, r: number, z: number): Point => {
-    const phi = rad(a) - Math.asin(t / r);
-    return [r * Math.cos(phi), r * Math.sin(phi), z];
-  };
-  const ts = h - 0.6;
-  const ri = rFm - 0.3;
-  const ro = rr + 0.05;
-  const zA = -17.884, zB = -19.8, zC = -20.354, zD = -18.823, zE = -20.807;
-  const Ai = P(h + 0.697, ri, zA), Bi = P(h + 2.584, ri, zB), Bs = P(ts, ri, zB - 1), As = P(ts, ri, zA);
-  const Do = P(h + 0.279, ro, zD), Co = P(h + 1.791, ro, zC), Eo = P(h + 2.173, ro, zE), Es = P(ts, ro, zE - 1), Ds = P(ts, ro, zD);
-  const tri = (p: Point, q: Point, r: Point) => makePolygon([p, q, r]);
-  const quad = (p: Point, q: Point, r: Point, s: Point) => [tri(p, q, r), tri(p, r, s)];
-  return makeSolid([
-    ...quad(As, Ai, Bi, Bs), // innen
-    tri(Ds, Es, Eo), tri(Ds, Eo, Co), tri(Ds, Co, Do), // außen
-    ...quad(As, Ds, Do, Ai), // oben
-    tri(Ai, Do, Co), tri(Ai, Co, Eo), tri(Ai, Eo, Bi), // Schräge
-    ...quad(Bi, Eo, Es, Bs), // unten
-    ...quad(Bs, Es, Ds, As), // Kanalseite
-  ]) as unknown as Shape3D;
+  type V3 = [number, number, number];
+  const onR = (t: number, r: number, z: number): V3 => [t, Math.sqrt(r * r - t * t), z];
+  // Eckpunkte gemessen an F25 (rFm 15,6) und F32 (rFm 19,1), dazwischen linear
+  const k = (rFm - 15.6) / 3.5;
+  const lin = (a: number, b: number) => a + (b - a) * k;
+  const A = onR(h + lin(0.633, 0.697), rFm, lin(-17.836, -17.884));
+  const B = onR(h + lin(2.551, 2.584), rFm, -19.8);
+  const D = onR(h + lin(0.288, 0.279), rr, lin(-18.847, -18.823));
+  const u: V3 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+  const v: V3 = [D[0] - A[0], D[1] - A[1], D[2] - A[2]];
+  const n: V3 = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+  const zOn = (x: number, y: number) => A[2] - (n[0] * (x - A[0]) + n[1] * (y - A[1])) / n[2];
+  const er: [number, number] = [Math.cos(rad(a)), Math.sin(rad(a))];
+  const et: [number, number] = [Math.sin(rad(a)), -Math.cos(rad(a))]; // zur Nut hin (negative Winkel)
+  const G = (x: number, y: number, z: number): Point => [y * er[0] + x * et[0], y * er[1] + x * et[1], z];
+  const x0 = h - 0.6, x1 = h + 4.5, y0 = rFm - 1.5, y1 = rr + 0.6, zb = -26;
+  const top = [G(x0, y0, zOn(x0, y0)), G(x1, y0, zOn(x1, y0)), G(x1, y1, zOn(x1, y1)), G(x0, y1, zOn(x0, y1))];
+  const bot = [G(x0, y0, zb), G(x1, y0, zb), G(x1, y1, zb), G(x0, y1, zb)];
+  const faces = [makePolygon(top), makePolygon([...bot].reverse())];
+  for (let i = 0; i < 4; i++) {
+    const j = (i + 1) % 4;
+    faces.push(makePolygon([bot[i], bot[j], top[j], top[i]]));
+  }
+  const box = makeSolid(faces) as unknown as Shape3D;
+  return box.intersect(makeCylinder(rr + 0.3, 10, [0, 0, zb - 1])) as Shape3D;
 }
 
 export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
