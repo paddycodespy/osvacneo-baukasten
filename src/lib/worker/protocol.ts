@@ -1,6 +1,7 @@
 import type { OsvacInput } from '../osvac/params';
 import type { BuildOptions } from '../osvac/assemblies';
 
+/** Was gebaut werden soll (ganzer Adapter). */
 export interface BuildRequest {
   type: 'build';
   id: number;
@@ -11,15 +12,6 @@ export interface BuildRequest {
 
 export type ExportFormat = 'stl' | '3mf' | 'step';
 
-export interface ExportRequest {
-  type: 'export';
-  id: number;
-  build: BuildRequest;
-  format: ExportFormat;
-  fileName: string;
-  includeHelpers: boolean;
-}
-
 export interface MeshBody {
   name: string;
   helper: boolean;
@@ -28,8 +20,37 @@ export interface MeshBody {
   indices: Uint32Array;
 }
 
+/** Ein einzelner Körper eines Adapters (Index in kind.parts). */
+export interface PartRef {
+  kind: string;
+  input: OsvacInput;
+  options: BuildOptions;
+  index: number;
+}
+
+export type WorkerRequest =
+  | { type: 'init'; baseUrl: string }
+  /** Körper bauen (oder aus dem Zwischenspeicher), Vorschaunetz + Kennwerte zurück */
+  | ({ type: 'part'; id: number } & PartRef)
+  /** feines Netz für STL/3MF, um dz verschoben */
+  | ({ type: 'partMesh'; id: number; dz: number } & PartRef)
+  /** BRep-Text des Körpers (für den STEP-Export), um dz verschoben */
+  | ({ type: 'partBrep'; id: number; dz: number } & PartRef)
+  /** STEP aus BRep-Texten zusammensetzen */
+  | { type: 'step'; id: number; breps: string[] };
+
 export type WorkerReply =
   | { type: 'ready' }
-  | { type: 'mesh'; id: number; bodies: MeshBody[]; ms: number; volume: number; area: number; helperVolume: number; helperArea: number }
-  | { type: 'file'; id: number; blob: Blob; fileName: string }
+  | {
+      type: 'part';
+      id: number;
+      body: MeshBody;
+      volume: number;
+      area: number;
+      zMin: number;
+      ms: number;
+    }
+  | { type: 'partMesh'; id: number; vertices: Float32Array; triangles: Uint32Array }
+  | { type: 'partBrep'; id: number; data: string }
+  | { type: 'file'; id: number; blob: Blob }
   | { type: 'error'; id: number; message: string };

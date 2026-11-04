@@ -18,6 +18,8 @@ export interface AdapterKind {
   diameters: DiameterKey[];
   available: boolean;
   build?: (p: OsvacParams, o: asm.BuildOptions) => asm.Body[];
+  /** Körper einzeln (für parallele Berechnung) */
+  parts?: (p: OsvacParams, o: asm.BuildOptions) => asm.Part[];
   /** Maschinenadapter: fragt Stutzenmaße ab */
   machine?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
@@ -44,6 +46,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['femaleDiameterInner', 'maleDiameterInner'],
     available: true,
     build: asm.buildMxxFyy,
+    parts: asm.partsMxxFyy,
     fileName: (p) => `osVAC neo M${n(p.maleDiameterInner)}F${n(p.femaleDiameterInner)}`,
   },
   {
@@ -55,6 +58,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['femaleDiameterInner'],
     available: true,
     build: asm.buildFemale,
+    parts: asm.partsFemale,
     fileName: (p) => `osVAC neo F${n(p.femaleDiameterInner)}`,
   },
   {
@@ -66,6 +70,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['maleDiameterInner'],
     available: true,
     build: asm.buildMale,
+    parts: asm.partsMale,
     fileName: (p) => `osVAC neo M${n(p.maleDiameterInner)}`,
   },
   {
@@ -77,6 +82,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['femaleDiameterInner', 'hoseDiameterInner'],
     available: true,
     build: asm.buildFxxHyy,
+    parts: asm.partsFxxHyy,
     fileName: (p) => `osVAC neo F${n(p.femaleDiameterInner)}H${n(p.hoseDiameterInner)}`,
   },
   {
@@ -88,6 +94,7 @@ export const KINDS: AdapterKind[] = [
     diameters: ['maleDiameterInner', 'hoseDiameterInner'],
     available: true,
     build: asm.buildMxxHyy,
+    parts: asm.partsMxxHyy,
     fileName: (p) => `osVAC neo M${n(p.maleDiameterInner)}H${n(p.hoseDiameterInner)}`,
   },
   {
@@ -100,6 +107,7 @@ export const KINDS: AdapterKind[] = [
     machine: true,
     available: true,
     build: asm.buildMachineF,
+    parts: asm.partsMachineF,
     fileName: (p, o) => `osVAC neo F${n(p.femaleDiameterInner)}-Rohr${pipeName(o)}`,
   },
   {
@@ -112,6 +120,7 @@ export const KINDS: AdapterKind[] = [
     machine: true,
     available: true,
     build: asm.buildMachineM,
+    parts: asm.partsMachineM,
     fileName: (p, o) => `osVAC neo M${n(p.maleDiameterInner)}-Rohr${pipeName(o)}`,
   },
 ];

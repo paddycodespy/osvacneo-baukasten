@@ -7,8 +7,8 @@ import { zipSync, strToU8 } from 'fflate';
 
 export interface MeshPart {
   name: string;
-  vertices: number[];
-  triangles: number[];
+  vertices: ArrayLike<number>;
+  triangles: ArrayLike<number>;
 }
 
 /**

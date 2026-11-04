@@ -8,7 +8,7 @@ import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, L, A, type P2, type Seg } from './geom';
 import { hoseThread, rootRadius } from './thread';
-import { addGrip, addLabels } from './grip';
+import { addGrip, gripFields, gripFieldsOverlap } from './grip';
 import { fmt } from './female';
 
 export interface HoseOptions {
@@ -59,9 +59,37 @@ export function hoseBody(p: OsvacParams, variant: 'plain' | 'housed', opt: HoseO
   // Spline-Flächen der Schraubenlinie würden die Berechnung um Minuten verlängern.
   let body = revolveProfile([rH, 0], segs);
   const layout = variant === 'plain' ? 'full' : 'housedHose';
-  body = addGrip(body, rO, gripTop, gripBot, { knurl: opt.knurl, layout });
-  if (opt.text !== false) body = addLabels(body, rO, gripTop, gripBot, opt.label ?? `H${fmt(p.hoseDiameterInner)}`, layout);
+  void gripBot;
+  const gz = hoseGripZone(p, variant);
+  body = addGrip(body, rO, gz.top, gz.bot, { knurl: opt.knurl, layout });
   return body;
+}
+
+/** Griffbereich des Schlauchteils (oben/unten) – gemeinsam für Rändelung und Textfelder. */
+function hoseGripZone(p: OsvacParams, variant: 'plain' | 'housed') {
+  const rH = p.hoseDiameterInner / 2;
+  const rO = rH + p.generalMaterialWidth;
+  const cone = 5.257 / 3.681;
+  if (variant === 'plain') {
+    const zs = -(rO - rH - 1.743) / cone;
+    return { top: zs - 0.1, bot: -26 };
+  }
+  const g = p.slipRingGapSize;
+  const rB = rH + p.generalMaterialWidth - 1.2;
+  const z2 = HOUSING_FLANK_TOP + T35 * (rB - rO) - g * Math.hypot(1, T35);
+  return { top: z2 - 1, bot: -25.5 };
+}
+
+/** Textfelder des Schlauchteils (eigener Körper, siehe gripFields). */
+export function hoseFields(p: OsvacParams, variant: 'plain' | 'housed', opt: HoseOptions = {}): Shape3D {
+  const gz = hoseGripZone(p, variant);
+  const label = opt.text === false ? null : (opt.label ?? `H${fmt(p.hoseDiameterInner)}`);
+  return gripFields(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose', label);
+}
+
+export function hoseFieldsOverlap(p: OsvacParams, variant: 'plain' | 'housed'): number {
+  const gz = hoseGripZone(p, variant);
+  return gripFieldsOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose');
 }
 
 /**
@@ -222,9 +250,15 @@ export function maleHousing(p: OsvacParams, opt: HoseOptions = {}): Shape3D {
     [rH, -3.006],
   ]));
   body = addGrip(body, rO, -4.006, -19.006, { knurl: opt.knurl, layout: 'housing' });
-  if (opt.text !== false) body = addLabels(body, rO, -4.006, -19.006, '', 'housing');
   return body;
 }
+
+/** Textfeld des Gehäuses (eigener Körper). */
+export function housingFields(p: OsvacParams, opt: HoseOptions = {}): Shape3D {
+  return gripFields(p.hoseDiameterInner / 2 + p.generalMaterialWidth, -4.006, -19.006, 'housing', opt.text === false ? null : '');
+}
+
+export const housingFieldsOverlap = (p: OsvacParams) => gripFieldsOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, -4.006, -19.006, 'housing');
 
 /** Übergangskonus Female-Boden → Drehring (FxxHyy). Höhe wie Fusion: |H−F|/2 + 5·MiniValue. */
 export function transitionConeFH(p: OsvacParams): { shape: Shape3D; h: number } {

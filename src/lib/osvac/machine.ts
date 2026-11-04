@@ -4,7 +4,7 @@
  * Lokales System: Oberkante des Übergangs bei z = 0, nach unten.
  */
 import type { Shape3D } from 'replicad';
-import { makeCylinder, loft, assembleWire, makeLine, type Point } from 'replicad';
+import { makeCylinder, loft, assembleWire, makeLine, makeBSplineApproximation, type Point } from 'replicad';
 
 /** Geschlossener Polygonzug als Kanten (für Regelflächen-Loft). */
 function makePolygonWire(pts: Point[]) {
@@ -85,11 +85,12 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
         const c = rho * Math.cos(ph), zz = zH + rho * Math.sin(ph);
         return [y * e[0] + c * t[0], y * e[1] + c * t[1], zz];
       };
-      const N = 48;
+      // Randkurven als glatte B-Splines (wenige Flächen → schneller Schnitt als ein Polygonzug)
+      const N = 24;
       const ring = (f: (ph: number) => Point) => {
         const pts: Point[] = [];
-        for (let i = 0; i < N; i++) pts.push(f((2 * Math.PI * i) / N));
-        return assembleWire(makePolygonWire(pts));
+        for (let i = 0; i <= N; i++) pts.push(f((2 * Math.PI * i) / N));
+        return assembleWire([makeBSplineApproximation(pts, { tolerance: 1e-4, degMax: 5 })]);
       };
       const rimY = (ph: number, rho: number) => Math.sqrt(rOutAt(zH + rho * Math.sin(ph)) ** 2 - (rho * Math.cos(ph)) ** 2);
       const w0 = ring((ph) => P(rimY(ph, 2) - 2.3, 1.7, ph)); // etwas innerhalb der Bohrung beginnen

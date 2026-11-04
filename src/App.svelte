@@ -126,7 +126,18 @@
       if (token !== buildToken) return;
       dims = viewer!.setBodies(quick.bodies);
       status = 'detail';
-      const full = await build(spec());
+      // Fertige Körper sofort zeigen, die übrigen bleiben aus der schnellen Vorschau stehen
+      const cur = quick.bodies.slice();
+      let raf = 0;
+      const full = await build(spec(), (i, b) => {
+        if (token !== buildToken) return;
+        cur[i] = b;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          if (token === buildToken) viewer!.setBodies(cur);
+        });
+      });
+      cancelAnimationFrame(raf);
       if (token !== buildToken) return;
       dims = viewer!.setBodies(full.bodies);
       measures = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };

@@ -55,8 +55,8 @@ Danach reicht nach Änderungen `git add -A`, `git commit -m "…"` und `git push
 src/
   App.svelte                 Wizard und Oberfläche
   lib/viewer.ts              3D-Ansicht (three.js) mit Druckbett
-  lib/cad.ts                 Aufrufe an den CAD-Worker
-  lib/worker/cad.worker.ts   OpenCascade (replicad) im Web Worker, Export STL/STEP/3MF
+  lib/cad.ts                 Worker-Pool, Auftragsverteilung, Export STL/STEP/3MF
+  lib/worker/cad.worker.ts   OpenCascade (replicad) im Web Worker, Teile-Cache
   lib/worker/threemf.ts      3MF-Writer
   lib/osvac/params.ts        Parameter und Formeln aus Fusion
   lib/osvac/female.ts        Kupplung mit Bajonett, Rastnase, Dichtnut
@@ -65,11 +65,19 @@ src/
   lib/osvac/thread.ts        Schlauchgewinde (linksgängig, Steigung 5 mm, Konus 4°)
   lib/osvac/machine.ts       Rohrkonus für Stutzen
   lib/osvac/grip.ts          Rändelung und Textfelder
+  lib/osvac/assemblies.ts    Baugruppen als Liste einzelner Teile
   lib/osvac/catalog.ts       Adaptertypen für den Wizard
 scripts/
   build-ref.ts               Einzelteil in Node bauen (npm run part -- MxxFyy 25 32 32)
   matrix.ts                  Alle Typen mit Grenzwerten bauen (npm run test:geometry)
 ```
+
+### Rechenzeit
+
+- Jede Baugruppe ist eine Liste einzelner Teile. Jedes Teil hat einen Schlüssel aus den Parametern, von denen es wirklich abhängt. Ändert sich nur die Beschriftung, wird nur das Textfeld neu gerechnet; Gewinde, Drehring und Kupplung kommen aus dem Cache.
+- Mehrere Web Worker (bis zu 4, je nach CPU-Kernen) rechnen die Teile parallel, teure Teile zuerst. Fertige Teile erscheinen sofort in der Vorschau.
+- Rändelung und Beschriftung sind getrennte Körper: Die Rändelung spart die Textfelder aus, die Textfelder (mit gravierter Schrift) liegen als eigene Körper darin und greifen 0,05 mm in den Grundkörper. Im 3MF sind sie Teile desselben Objekts, der Slicer vereinigt sie.
+- Der Senkkonus des Rohrstutzens nutzt glatte BSpline-Ringe statt Polygonen.
 
 Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Radien hängen über die Fusion-Formeln von den Eingaben ab, axiale Maße sind fest.
 

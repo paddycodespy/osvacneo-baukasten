@@ -6,7 +6,7 @@
 import { makePolygon, makeSolid, makeCylinder, type Shape3D, type Point } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, revolveProfileSector, extrudeDown, channelOutline, drawPath, L, A, rad, deg, type P2 } from './geom';
-import { addGrip, addLabels } from './grip';
+import { addGrip, gripFields, gripFieldsOverlap } from './grip';
 
 export interface FemaleOptions {
   text?: boolean;
@@ -159,7 +159,7 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
     return FEMALE_SLOT_ANGLES.some((a) => Math.abs(((th - a + 540) % 360) - 180) < slotHalf) ? 1 : null;
   });
 
-  // --- Rändelung + Textfelder ---
+  // --- Rändelung (die Textfelder sind ein eigener Körper: femaleFields) ---
   body = addGrip(body, rFo, -2, -31.5, { knurl: opt.knurl });
 
   // --- Rastnasen: 0,4-mm-Steg neben dem Kanal mit R-1-Übergängen ---
@@ -169,10 +169,16 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
     body = body.fuse(extrudeDown(ridge2D, -18.8, -18.8 - zGrooveBot).rotate(a, [0, 0, 0], [0, 0, 1]));
   }
 
-  // --- Beschriftung ---
-  if (opt.text !== false) body = addLabels(body, rFo, -2, -31.5, opt.label ?? `F${fmt(p.femaleDiameterInner)}`);
   return body;
 }
+
+/** Textfelder der Kupplung (eigener Körper, siehe gripFields). */
+export function femaleFields(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
+  const label = opt.text === false ? null : (opt.label ?? `F${fmt(p.femaleDiameterInner)}`);
+  return gripFields(p.femaleDiameterOuter / 2, -2, -31.5, 'full', label);
+}
+
+export const femaleFieldsOverlap = (p: OsvacParams) => gripFieldsOverlap(p.femaleDiameterOuter / 2, -2, -31.5, 'full');
 
 export function fmt(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1).replace(/\.0$/, '');
