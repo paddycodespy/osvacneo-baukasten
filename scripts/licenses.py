@@ -45,7 +45,16 @@ for title, p, spdx, note, text in items:
     out += ['-' * 62, title, f'Paket: {p}', f'Lizenz: {spdx}', note, '-' * 62, '', text, '', '']
 (root / 'public/THIRD_PARTY_LICENSES.txt').write_text('\ufeff' + '\n'.join(out).rstrip() + '\n', encoding='utf-8')
 
-# HTML-Fassung
+# HTML-Fassung: Poppins wie in der App (eigene Kopie, die Seite lädt das App-CSS nicht)
+import shutil
+fdir = root / 'public/fonts'
+faces = ''
+for w, st in (('400', 'normal'), ('500', 'normal'), ('600', 'normal'), ('700', 'normal'), ('700', 'italic')):
+    for sub, rng in (('latin', 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD'),
+                     ('latin-ext', 'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF')):
+        fn = f'poppins-{sub}-{w}-{st}.woff2'
+        shutil.copyfile(nm / '@fontsource/poppins/files' / fn, fdir / fn)
+        faces += f"@font-face{{font-family:Poppins;font-style:{st};font-weight:{w};font-display:swap;src:url(./fonts/{fn}) format('woff2');unicode-range:{rng}}}\n"
 e = html.escape
 toc = ''.join(f'<li><a href="#l{i}">{e(t)}</a> <span>{e(s)}</span></li>' for i, (t, p, s, n, x) in enumerate(items))
 secs = ''.join(
@@ -55,9 +64,11 @@ page = f'''<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lizenzen – osVAC neo Konfigurator</title><link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <style>
-body{{margin:0;font-family:Poppins,Arial,sans-serif;color:#333;background:#f5f7f8;line-height:1.5}}
-header{{background:#333;color:#fff;padding:16px 28px;font-weight:700;font-size:20px}}
-header .os,header .neo{{color:#ef453b}} header .vac{{color:#28a3e5}} header small{{font-weight:500;font-size:16px;margin-left:6px}}
+{faces}body{{margin:0;font-family:Poppins,system-ui,sans-serif;color:#333;background:#f5f7f8;line-height:1.5}}
+header{{height:64px;display:flex;align-items:center;padding:0 36px;background:#333}}
+.wordmark{{margin:0;font-weight:700;font-size:22px;letter-spacing:-0.01em;color:#fff}}
+.wordmark .os,.wordmark .neo{{color:#ef453b}} .wordmark .vac{{color:#28a3e5}}
+.wordmark .wm-sub{{color:#fff;font-weight:500;font-size:17px;margin-left:6px}}
 main{{max-width:880px;margin:0 auto;padding:24px 28px 60px}}
 h1{{font-style:italic;font-size:26px;margin:0 0 8px}} h2{{font-size:18px;margin:0 0 4px}}
 .lead{{color:#555;margin:0 0 18px}} a{{color:#1d86c2;text-decoration:none;font-weight:600}} a:hover{{color:#ff4136}}
@@ -67,7 +78,7 @@ section{{background:#fff;border:1px solid #e1e5e8;border-radius:10px;padding:16p
 .meta{{color:#7a7a7a;font-size:13px;margin:0 0 10px}}
 pre{{white-space:pre-wrap;word-wrap:break-word;font:12.5px/1.45 ui-monospace,Consolas,monospace;background:#f5f7f8;border-radius:6px;padding:12px;margin:0;max-height:420px;overflow:auto}}
 </style></head><body>
-<header><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span><small>Konfigurator · Lizenzen</small></header>
+<header><p class="wordmark"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span> <span class="wm-sub">Konfigurator · Lizenzen</span></p></header>
 <main><h1>Lizenzen</h1><p class="lead">{e(intro)} <a href="./LICENSE.txt">Lizenztext CC BY-NC-SA 4.0</a></p>
 <ul>{toc}</ul>{secs}</main></body></html>
 '''
