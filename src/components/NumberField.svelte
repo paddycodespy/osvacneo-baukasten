@@ -23,13 +23,18 @@
 
   const decimals = $derived((String(step).split('.')[1] ?? '').length);
 
-  function commit(v: number) {
-    if (!Number.isFinite(v)) return;
+  function commit(v: number, el?: HTMLInputElement) {
+    if (!Number.isFinite(v)) {
+      if (el) el.value = String(value); // ungültige Eingabe verwerfen
+      return;
+    }
     if (min !== undefined) v = Math.max(min, v);
     if (max !== undefined) v = Math.min(max, v);
     v = Number(v.toFixed(decimals));
     value = v;
     oncommit?.(v);
+    // Feld zeigt immer den übernommenen Wert, auch wenn er begrenzt wurde und sich dadurch nicht geändert hat
+    if (el) el.value = String(v);
   }
 </script>
 
@@ -41,7 +46,7 @@
     {step}
     {value}
     aria-label={label}
-    onchange={(e) => commit(+(e.currentTarget as HTMLInputElement).value)}
+    onchange={(e) => { const el = e.currentTarget as HTMLInputElement; commit(el.value.trim() === '' ? NaN : +el.value.replace(',', '.'), el); }}
   />
   <span class="unit">{unit}</span>
   <span class="spin">

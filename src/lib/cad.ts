@@ -27,10 +27,14 @@ let nextId = 1;
 const pending = new Map<number, { resolve: (v: WorkerReply) => void; reject: (e: Error) => void; slot: Slot }>();
 const baseUrl = new URL(import.meta.env.BASE_URL, location.href).href;
 
-const slots: Slot[] = Array.from({ length: POOL_SIZE }, () => {
+/** Worker starten; stürzt er ab (z. B. kein Speicher mehr), werden seine Aufträge abgebrochen und er wird ersetzt */
+function startWorker(slot: Slot) {
   const w = new CadWorker();
   let r!: () => void;
-  const slot: Slot = { w, busy: false, ready: new Promise<void>((res) => (r = res)), known: new Set() };
+  slot.w = w;
+  slot.busy = false;
+  slot.known = new Set();
+  slot.ready = new Promise<void>((res) => (r = res));
   w.onmessage = (ev: MessageEvent<WorkerReply>) => {
     const m = ev.data;
     if (m.type === 'ready') return r();
@@ -42,7 +46,24 @@ const slots: Slot[] = Array.from({ length: POOL_SIZE }, () => {
     else p.resolve(m);
     pump();
   };
+  w.onerror = (ev) => {
+    ev.preventDefault();
+    for (const [id, p] of pending) {
+      if (p.slot !== slot) continue;
+      pending.delete(id);
+      p.reject(new Error('Der CAD-Kern ist abgestürzt. Bitte die Berechnung neu starten (Wert ändern oder Seite neu laden).'));
+    }
+    w.terminate();
+    startWorker(slot);
+    pump();
+  };
   w.postMessage({ type: 'init', baseUrl } satisfies WorkerRequest);
+  return r;
+}
+
+const slots: Slot[] = Array.from({ length: POOL_SIZE }, () => {
+  const slot = {} as Slot;
+  startWorker(slot);
   return slot;
 });
 

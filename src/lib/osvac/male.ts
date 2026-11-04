@@ -103,12 +103,13 @@ export function maleSupport(p: OsvacParams): Shape3D {
     L(rBrimIn, zCupTop),
   ]);
   // Stützblöcke unter den Bajonettnasen (wie im Original): Grundriss der Nase, innen ab rMo + 0,8,
-  // oben an der Nasenunterseite mit 45°-Fase nach innen, unten auf Fangring und Teller
+  // oben an der Nasenunterseite mit 45°-Fase nach innen, unten bündig mit der Steckerunterkante (z = −H);
+  // darunter bleibt wie im Original die Kerbe zur Fangring-Schräge frei
   const Rn = rMo + p.bajonettNaseDicke;
   const zNose = -H + p.bajonettNaseMaleRandAbstand; // Unterseite der Nasen (−28,7)
   const nose2D = channelOutline(p.maleBayonetNoseWidth, Rn, 1, rMo - 1);
-  const blockProfile = revolveProfile([rMo + 0.8, zBrimTop - 0.25], [
-    L(Rn, zBrimTop - 0.25),
+  const blockProfile = revolveProfile([rMo + 0.8, -H], [
+    L(Rn, -H),
     L(Rn, zNose),
     L(rMo + 1.6, zNose),
     L(rMo + 0.8, zNose - 1),
