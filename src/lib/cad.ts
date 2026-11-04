@@ -135,6 +135,9 @@ function partsOf(req: BuildRequest): Part[] {
 
 const ref = (req: BuildRequest, index: number): PartRef => ({ kind: req.kind, input: req.input, options: req.options, index });
 
+/** Namen der Körper einer Berechnung (ohne etwas zu bauen) */
+export const partNames = (req: BuildRequest) => partsOf(req).map((q) => q.name);
+
 export function makeBuild(kind: string, input: OsvacInput, options: BuildOptions): BuildRequest {
   return { type: 'build', id: nextId++, kind, input: { ...input }, options: { ...options } };
 }

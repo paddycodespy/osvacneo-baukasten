@@ -6,7 +6,7 @@
 import { makePolygon, makeSolid, makeCylinder, type Shape3D, type Point } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, revolveProfileSector, extrudeDown, channelOutline, drawPath, L, A, rad, deg, type P2 } from './geom';
-import { addGrip, gripFields, gripFieldsOverlap } from './grip';
+import { gripKnurl, gripKnurlOverlap, gripFields, gripFieldsOverlap } from './grip';
 
 export interface FemaleOptions {
   text?: boolean;
@@ -166,9 +166,6 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
     return FEMALE_SLOT_ANGLES.some((a) => Math.abs(((th - a + 540) % 360) - 180) < slotHalf) ? 1 : null;
   });
 
-  // --- Rändelung (die Textfelder sind ein eigener Körper: femaleFields) ---
-  body = addGrip(body, rFo, -2, -31.5, { knurl: opt.knurl });
-
   // --- Rastnasen: 0,4-mm-Steg neben dem Kanal mit R-1-Übergängen ---
   const yOut = 6.88 + (w - 10.2) / 2; // Ende der Rastnasenfläche, tangential zur Kanalmitte (gemessen bei F32)
   const ridge2D = rastnase2D(h, Rb, rr, yOut);
@@ -187,6 +184,10 @@ export function femaleFields(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
   const label = opt.text === false ? null : (opt.label ?? `F${fmt(p.femaleDiameterInner)}`);
   return gripFields(p.femaleDiameterOuter / 2, -2, -31.5, 'full', label);
 }
+
+/** Rändelung der Kupplung (eigener Körper). */
+export const femaleKnurl = (p: OsvacParams) => gripKnurl(p.femaleDiameterOuter / 2, -2, -31.5, 'full');
+export const femaleKnurlOverlap = (p: OsvacParams) => gripKnurlOverlap(p.femaleDiameterOuter / 2, -2, -31.5, 'full');
 
 export const femaleFieldsOverlap = (p: OsvacParams) => gripFieldsOverlap(p.femaleDiameterOuter / 2, -2, -31.5, 'full');
 

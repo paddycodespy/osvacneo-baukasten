@@ -76,7 +76,8 @@ scripts/
 
 - Jede Baugruppe ist eine Liste einzelner Teile. Jedes Teil hat einen Schlüssel aus den Parametern, von denen es wirklich abhängt. Ändert sich nur die Beschriftung, wird nur das Textfeld neu gerechnet; Gewinde, Drehring und Kupplung kommen aus dem Cache.
 - Mehrere Web Worker (bis zu 4, je nach CPU-Kernen) rechnen die Teile parallel, teure Teile zuerst. Fertige Teile erscheinen sofort in der Vorschau.
-- Rändelung und Beschriftung sind getrennte Körper: Die Rändelung spart die Textfelder aus, die Textfelder (mit gravierter Schrift) liegen als eigene Körper darin und greifen 0,05 mm in den Grundkörper. Im 3MF sind sie Teile desselben Objekts, der Slicer vereinigt sie.
+- Grundkörper, Rändelung und Textfelder sind getrennte Körper: Der Rändelring greift 0,3 mm in den Grundkörper und spart die Textfelder aus, die Textfelder (mit gravierter Schrift) greifen 0,05 mm hinein. Rändelung und Schrift hängen nur vom Außendurchmesser ab; ein anderes Spaltmaß rechnet nur den Grundkörper neu, und die volle Berechnung übernimmt den Grundkörper aus der schnellen Vorschau. Im 3MF sind alle Körper Teile desselben Objekts, der Slicer vereinigt sie. Volumen und Fläche der Überlappungen werden für die Filamentangabe herausgerechnet.
+- `npm run test:keys` prüft, dass gleiche Zwischenspeicher-Schlüssel in allen Adaptertypen denselben Körper liefern.
 - Der Senkkonus des Rohrstutzens nutzt glatte BSpline-Ringe statt Polygonen.
 
 Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Radien hängen über die Fusion-Formeln von den Eingaben ab, axiale Maße sind fest.

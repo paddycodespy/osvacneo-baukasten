@@ -44,23 +44,30 @@ function fields(r: number, zTop: number, zBot: number, layout: GripLayout) {
 }
 
 /**
- * Rändelung des Griffbereichs. Unter den Textfeldern wird sie ausgespart: die Felder sind eigene Körper
- * (siehe gripFields), die der Slicer mit dem Grundkörper verschmilzt. So bleiben die langsamen
- * Schriftschnitte auf den kleinen Feldkörpern und laufen parallel zum Rest.
+ * Rändelung des Griffbereichs als eigener Körper (Ring, KNURL_BASE in den Grundkörper greifend). Unter den
+ * Textfeldern ist sie ausgespart; die Felder sind ebenfalls eigene Körper (siehe gripFields). Der Slicer
+ * verschmilzt alles. So hängt der Grundkörper nicht an Rändelung und Schrift, und die langsamen
+ * Schriftschnitte laufen auf den kleinen Feldkörpern parallel zum Rest.
  */
-export function addGrip(
-  body: Shape3D,
-  r: number,
-  zTop: number,
-  zBot: number,
-  o: { knurl?: boolean; layout?: GripLayout } = {},
-): Shape3D {
-  if (o.knurl === false) return body;
-  const f = fields(r, zTop, zBot, o.layout ?? 'full');
-  let knurl = extrudeDown(knurlRing(100, r, 0.475, r - 0.3), zTop, zTop - zBot);
+export function gripKnurl(r: number, zTop: number, zBot: number, layout: GripLayout = 'full'): Shape3D {
+  const f = fields(r, zTop, zBot, layout);
+  let knurl = extrudeDown(knurlRing(100, r, 0.475, r - KNURL_BASE), zTop, zTop - zBot);
   knurl = knurl.cut(extrudeDown(annularSector(r - 0.5, r + 1, f.a.c - f.a.half, f.a.c + f.a.half), f.a.z0, f.hA)) as Shape3D;
   if (f.b) knurl = knurl.cut(extrudeDown(annularSector(r - 0.5, r + 1, f.b.c - f.b.half, f.b.c + f.b.half), f.b.z0, FIELD_B_H)) as Shape3D;
-  return body.fuse(knurl) as Shape3D;
+  return knurl;
+}
+
+/** Rändelring greift KNURL_BASE in den Grundkörper (Volumen und innere Flächen werden herausgerechnet). */
+const KNURL_BASE = 0.3;
+
+/** Doppelt gezähltes Volumen und innere Fläche (Ring-Innenseite + verdeckte Außenfläche des Grundkörpers). */
+export function gripKnurlOverlap(r: number, zTop: number, zBot: number, layout: GripLayout = 'full') {
+  const f = fields(r, zTop, zBot, layout);
+  const h = zTop - zBot;
+  const cut = rad(2 * f.a.half) * f.hA + (f.b ? rad(2 * f.b.half) * FIELD_B_H : 0); // Winkel·Höhe der Aussparungen
+  const ri = r - KNURL_BASE;
+  const ang = 2 * Math.PI * h - cut;
+  return { volume: ((r * r - ri * ri) / 2) * ang, area: (r + ri) * ang };
 }
 
 /**

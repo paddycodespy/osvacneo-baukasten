@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { PartViewer, type Dimensions } from './lib/viewer';
-  import { build, exportFile, makeBuild, cadReady } from './lib/cad';
+  import { build, exportFile, makeBuild, partNames } from './lib/cad';
   import { KINDS, kindById, type DiameterKey } from './lib/osvac/catalog';
   import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './lib/osvac/params';
-  import type { ExportFormat } from './lib/worker/protocol';
+  import type { ExportFormat, MeshBody } from './lib/worker/protocol';
   import KindIcon from './components/KindIcon.svelte';
   import MeasureFigure from './components/MeasureFigure.svelte';
   import NumberField from './components/NumberField.svelte';
@@ -127,15 +127,18 @@
       if (token !== buildToken) return;
       dims = viewer!.setBodies(quick.bodies);
       status = 'detail';
-      // Fertige Körper sofort zeigen, die übrigen bleiben aus der schnellen Vorschau stehen
-      const cur = quick.bodies.slice();
+      // Fertige Körper sofort zeigen; bis dahin bleiben die Körper der schnellen Vorschau stehen
+      // (die volle Berechnung hat zusätzlich die Rändelung als eigene Körper, daher Zuordnung über den Namen)
+      const req = spec();
+      const quickByName = new Map(quick.bodies.map((b) => [b.name, b]));
+      const cur: (MeshBody | undefined)[] = partNames(req).map((n) => quickByName.get(n));
       let raf = 0;
-      const full = await build(spec(), (i, b) => {
+      const full = await build(req, (i, b) => {
         if (token !== buildToken) return;
         cur[i] = b;
         cancelAnimationFrame(raf);
         raf = requestAnimationFrame(() => {
-          if (token === buildToken) viewer!.setBodies(cur);
+          if (token === buildToken) viewer!.setBodies(cur.filter((x): x is MeshBody => !!x));
         });
       });
       cancelAnimationFrame(raf);
