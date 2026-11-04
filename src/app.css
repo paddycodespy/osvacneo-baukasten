@@ -358,26 +358,19 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .slider { display: flex; align-items: center; gap: 14px; }
 .slider input { flex: 1; accent-color: var(--cobalt); }
 .slider output { font-family: var(--cond); font-weight: 600; font-size: 20px; min-width: 70px; text-align: right; }
-/* Zurücksetzen auf den Standardwert; unsichtbar (Platz bleibt), solange der Standard eingestellt ist */
-.reset { display: grid; place-items: center; width: 30px; height: 30px; margin-left: -6px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: var(--slate-2); }
-.reset svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Zurücksetzen auf den Standardwert (Pfeil + Standardwert, kein Tooltip); unsichtbar (Platz bleibt), solange der Standard eingestellt ist */
+.reset {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  height: 28px; padding: 0 10px 0 8px; margin-left: -4px;
+  border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--slate-2);
+  font-family: var(--cond); font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.reset svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .reset.hidden { visibility: hidden; }
 .reset:hover { border-color: var(--sky); }
-/* eigener Tooltip in den Farben der Anwendung (der des Browsers lässt sich nicht gestalten) */
-.reset { position: relative; }
-.reset::after {
-  content: attr(data-tip);
-  position: absolute; right: -4px; bottom: calc(100% + 8px);
-  padding: 5px 9px; border-radius: 6px;
-  background: var(--graphite, #333); color: #fff;
-  font-family: var(--body); font-size: 13px; font-weight: 500; line-height: 1.2; white-space: nowrap;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
-  opacity: 0; pointer-events: none; transition: opacity 0.12s;
-  z-index: 20;
-}
-.reset:hover::after, .reset:focus-visible::after { opacity: 1; }
-.reset.sm { width: 24px; height: 24px; margin: 0; }
-.reset.sm svg { width: 14px; height: 14px; }
+/* kleine Ausführung in der Beschriftungszeile der Stutzen-Felder */
+.reset.sm { height: 22px; padding: 0 8px 0 6px; margin: 0; font-size: 12px; }
+.reset.sm svg { width: 12px; height: 12px; }
 .field-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
 .hint { margin: 6px 0 0; font-size: 14px; color: var(--slate-2); }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
