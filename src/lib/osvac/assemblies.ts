@@ -73,8 +73,6 @@ const dFT = (p: OsvacParams, o: BuildOptions) => ({ ...dF(p, o), text: o.text })
 const dM = (p: OsvacParams, o: BuildOptions) => ({ maleDiameterInner: p.maleDiameterInner, maleFemaleGapSize: p.maleFemaleGapSize, generalMaterialWidth: p.generalMaterialWidth, text: o.text });
 const dS = (p: OsvacParams) => ({ maleDiameterInner: p.maleDiameterInner, maleFemaleGapSize: p.maleFemaleGapSize, generalMaterialWidth: p.generalMaterialWidth, supportStructureGapSize: p.supportStructureGapSize });
 const dH = (p: OsvacParams) => ({ hoseDiameterInner: p.hoseDiameterInner, generalMaterialWidth: p.generalMaterialWidth, slipRingGapSize: p.slipRingGapSize });
-/** Schlauchseitige Griffzonen hängen zusätzlich von der Textfeld-Breite ab */
-const dHT = (p: OsvacParams) => ({ ...dH(p), tv: p.generalTextFieldWidthVariation });
 const dAll = (p: OsvacParams, o: BuildOptions) => ({ ...p, text: o.text, knurl: o.knurl });
 
 const female = (p: OsvacParams, o: BuildOptions): Part[] => [
@@ -134,8 +132,8 @@ export function partsMachineM(p: OsvacParams, o: BuildOptions = {}): Part[] {
 /** Hose (Schlauch) einzeln: Gewindekörper + Knickschutz. */
 export function partsHose(p: OsvacParams, o: BuildOptions = {}): Part[] {
   return [
-    part('Schlauchteil', 4, { ...dHT(p), knurl: o.knurl, variant: 'plain' }, () => hoseBody(p, 'plain', { ...o, text: false })),
-    part('Textfeld Schlauchteil', 7, { ...dHT(p), text: o.text, variant: 'plain' }, () => hoseFields(p, 'plain', o), false, hoseFieldsOverlap(p, 'plain')),
+    part('Schlauchteil', 4, { ...dH(p), knurl: o.knurl, variant: 'plain' }, () => hoseBody(p, 'plain', { ...o, text: false })),
+    part('Textfeld Schlauchteil', 7, { ...dH(p), text: o.text, variant: 'plain' }, () => hoseFields(p, 'plain', o), false, hoseFieldsOverlap(p, 'plain')),
     part('Gewinde', 8, { ...dH(p), variant: 'runout' }, () => hoseThreadBody(p, true)),
     part('Knickschutz', 0.1, dH(p), () => hoseSkirt(p)),
   ];
@@ -156,8 +154,8 @@ export function partsFxxHyy(p: OsvacParams, o: BuildOptions = {}): Part[] {
     part('Übergang', 0.1, dAll(p, o), () => t(transitionConeFH(p).shape, -p.femaleHeight)),
     part('Drehring außen', 0.1, { ...dH(p), z: zO }, () => t(swivelOuter(p, false), zO)),
     part('Drehring innen', 0.1, { ...dH(p), z: zI }, () => t(swivelInner(p, false), zI)),
-    part('Schlauchteil', 4, { ...dHT(p), knurl: o.knurl, z: zH, variant: 'plain' }, () => t(hoseBody(p, 'plain', { ...o, text: false }), zH)),
-    part('Textfeld Schlauchteil', 7, { ...dHT(p), text: o.text, z: zH, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zH), false, hoseFieldsOverlap(p, 'plain')),
+    part('Schlauchteil', 4, { ...dH(p), knurl: o.knurl, z: zH, variant: 'plain' }, () => t(hoseBody(p, 'plain', { ...o, text: false }), zH)),
+    part('Textfeld Schlauchteil', 7, { ...dH(p), text: o.text, z: zH, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zH), false, hoseFieldsOverlap(p, 'plain')),
     part('Gewinde', 8, { ...dH(p), z: zH, variant: 'runout' }, () => t(hoseThreadBody(p, true), zH)),
     part('Knickschutz', 0.1, { ...dH(p), z: zH }, () => t(hoseSkirt(p), zH)),
   ];
@@ -170,15 +168,15 @@ export function partsMxxHyy(p: OsvacParams, o: BuildOptions = {}): Part[] {
   const zI = zO - SWIVEL.innerBelowOuter;
   const zH = zI - SWIVEL.housedHoseBelowInner;
   const t = (sh: Shape3D, z: number) => sh.translate([0, 0, z]);
-  const dHM = { ...dHT(p), maleDiameterInner: p.maleDiameterInner, maleFemaleGapSize: p.maleFemaleGapSize };
+  const dHM = { ...dH(p), maleDiameterInner: p.maleDiameterInner, maleFemaleGapSize: p.maleFemaleGapSize };
   return [
     part('Male', 9, { ...dM(p, o), rot: 'flip' }, () => flippedMale(p, o)),
     part('Gehäuse', 3, { ...dHM, knurl: o.knurl, z: zHousing }, () => t(maleHousing(p, { ...o, text: false }), zHousing)),
-    part('Textfeld Gehäuse', 2, { ...dHT(p), text: o.text, z: zHousing }, () => t(housingFields(p, o), zHousing), false, housingFieldsOverlap(p)),
+    part('Textfeld Gehäuse', 2, { ...dH(p), text: o.text, z: zHousing }, () => t(housingFields(p, o), zHousing), false, housingFieldsOverlap(p)),
     part('Drehring außen', 0.1, { ...dH(p), z: zO, variant: 'housed' }, () => t(swivelOuter(p, true), zO)),
     part('Drehring innen', 0.1, { ...dH(p), z: zI, variant: 'housed' }, () => t(swivelInner(p, true), zI)),
-    part('Schlauchteil', 4, { ...dHT(p), knurl: o.knurl, z: zH, variant: 'housed' }, () => t(hoseBody(p, 'housed', { ...o, text: false }), zH)),
-    part('Textfeld Schlauchteil', 5, { ...dHT(p), text: o.text, z: zH, variant: 'housed' }, () => t(hoseFields(p, 'housed', o), zH), false, hoseFieldsOverlap(p, 'housed')),
+    part('Schlauchteil', 4, { ...dH(p), knurl: o.knurl, z: zH, variant: 'housed' }, () => t(hoseBody(p, 'housed', { ...o, text: false }), zH)),
+    part('Textfeld Schlauchteil', 5, { ...dH(p), text: o.text, z: zH, variant: 'housed' }, () => t(hoseFields(p, 'housed', o), zH), false, hoseFieldsOverlap(p, 'housed')),
     part('Gewinde', 8, { ...dH(p), z: zH, variant: 'plain' }, () => t(hoseThreadBody(p, false), zH)),
   ];
 }
