@@ -61,7 +61,7 @@ export function hoseBody(p: OsvacParams, variant: 'plain' | 'housed', opt: HoseO
   const layout = variant === 'plain' ? 'full' : 'housedHose';
   void gripBot;
   const gz = hoseGripZone(p, variant);
-  body = addGrip(body, rO, gz.top, gz.bot, { knurl: opt.knurl, layout });
+  body = addGrip(body, rO, gz.top, gz.bot, { knurl: opt.knurl, layout, wVar: p.generalTextFieldWidthVariation });
   return body;
 }
 
@@ -84,12 +84,12 @@ function hoseGripZone(p: OsvacParams, variant: 'plain' | 'housed') {
 export function hoseFields(p: OsvacParams, variant: 'plain' | 'housed', opt: HoseOptions = {}): Shape3D {
   const gz = hoseGripZone(p, variant);
   const label = opt.text === false ? null : (opt.label ?? `H${fmt(p.hoseDiameterInner)}`);
-  return gripFields(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose', label);
+  return gripFields(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose', label, p.generalTextFieldWidthVariation);
 }
 
 export function hoseFieldsOverlap(p: OsvacParams, variant: 'plain' | 'housed'): number {
   const gz = hoseGripZone(p, variant);
-  return gripFieldsOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose');
+  return gripFieldsOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose', p.generalTextFieldWidthVariation);
 }
 
 /**
@@ -249,16 +249,16 @@ export function maleHousing(p: OsvacParams, opt: HoseOptions = {}): Shape3D {
     [rB, -3.006],
     [rH, -3.006],
   ]));
-  body = addGrip(body, rO, -4.006, -19.006, { knurl: opt.knurl, layout: 'housing' });
+  body = addGrip(body, rO, -4.006, -19.006, { knurl: opt.knurl, layout: 'housing', wVar: p.generalTextFieldWidthVariation });
   return body;
 }
 
 /** Textfeld des Gehäuses (eigener Körper). */
 export function housingFields(p: OsvacParams, opt: HoseOptions = {}): Shape3D {
-  return gripFields(p.hoseDiameterInner / 2 + p.generalMaterialWidth, -4.006, -19.006, 'housing', opt.text === false ? null : '');
+  return gripFields(p.hoseDiameterInner / 2 + p.generalMaterialWidth, -4.006, -19.006, 'housing', opt.text === false ? null : '', p.generalTextFieldWidthVariation);
 }
 
-export const housingFieldsOverlap = (p: OsvacParams) => gripFieldsOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, -4.006, -19.006, 'housing');
+export const housingFieldsOverlap = (p: OsvacParams) => gripFieldsOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, -4.006, -19.006, 'housing', p.generalTextFieldWidthVariation);
 
 /** Übergangskonus Female-Boden → Drehring (FxxHyy). Höhe wie Fusion: |H−F|/2 + 5·MiniValue. */
 export function transitionConeFH(p: OsvacParams): { shape: Shape3D; h: number } {
