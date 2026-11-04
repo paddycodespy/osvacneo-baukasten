@@ -93,7 +93,8 @@ const dS = (p: OsvacParams) => ({ maleDiameterInner: p.maleDiameterInner, maleFe
 const dH = (p: OsvacParams) => ({ hoseDiameterInner: p.hoseDiameterInner, generalMaterialWidth: p.generalMaterialWidth, slipRingGapSize: p.slipRingGapSize });
 /** Griffzone der Schlauchseite: nur beim Schlauchteil im Gehäuse hängt ihre Lage am Drehring-Spalt */
 const dHK = (p: OsvacParams, housed = false) => ({ hoseDiameterInner: p.hoseDiameterInner, generalMaterialWidth: p.generalMaterialWidth, ...(housed ? { slipRingGapSize: p.slipRingGapSize } : {}) });
-const dAll = (p: OsvacParams, o: BuildOptions) => ({ ...p, text: o.text, knurl: o.knurl });
+/** Übergänge: von allen Maßen abhängig, aber nicht von Schrift und Rändelung */
+const dAll = (p: OsvacParams, _o?: BuildOptions) => ({ ...p });
 
 const female = (p: OsvacParams, o: BuildOptions): Part[] => [
   part('Female', 8, dF(p), () => femaleRing(p, { text: false })),
