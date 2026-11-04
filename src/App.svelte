@@ -25,7 +25,7 @@
   let text = $state(true);
   /** Eine Einstellung für Anzeige und Export der Druckhilfe (wird immer mitberechnet) */
   let supports = $state(true);
-  let machine = $state({ mode: 'over' as 'over' | 'into', dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true });
+  let machine = $state({ mode: 'over' as 'over' | 'into', dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true, transition: 8 });
   let measures = $state<{ volume: number; area: number; helperVolume: number; helperArea: number } | null>(null);
 
   let host: HTMLDivElement;
@@ -62,7 +62,7 @@
     const w = Math.max(2, m.wall);
     const toInner = (d: number) => (m.mode === 'over' ? d + m.allowance : d - m.allowance - 2 * w);
     // D1 (am Übergang, tief im Adapter) ↔ Stutzen vorne; D2 (Öffnung des Adapters) ↔ Stutzen in der Tiefe
-    return { d1Inner: round1(toInner(m.dOpen)), d2Inner: round1(toInner(m.dDepth)), length: m.length, wall: w, transition: 8, screwHoles: m.holes };
+    return { d1Inner: round1(toInner(m.dOpen)), d2Inner: round1(toInner(m.dDepth)), length: m.length, wall: w, transition: Math.max(2, m.transition), screwHoles: m.holes };
   });
   const buildOpts = $derived(kind.machine ? { pipe } : {});
   const fileName = $derived(kind.fileName(params, buildOpts));
@@ -153,7 +153,7 @@
   $effect(() => {
     // Abhängigkeiten registrieren
     void [kindId, input.maleDiameterInner, input.femaleDiameterInner, input.hoseDiameterInner, input.generalMaterialWidth,
-      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, text, JSON.stringify(pipe)];
+      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, input.generalTextFieldWidthVariation, text, JSON.stringify(pipe)];
     if (viewer) schedule();
   });
 
@@ -299,6 +299,7 @@
             <div class="field"><span>Tiefe (Steckweg)</span><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></div>
             <div class="field"><span>Wandstärke</span><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" /></div>
             <div class="field"><span>Zugabe für den Sitz</span><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></div>
+            <div class="field"><span>Übergangslänge</span><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" /></div>
             <label class="field check"><input type="checkbox" bind:checked={machine.holes} /> 3 Schraubenlöcher Ø 4</label>
           </div>
           <p class="hint">Rohr innen: Ø {fmt(pipe.d2Inner, 2)} an der Öffnung, Ø {fmt(pipe.d1Inner, 2)} am Übergang, Wand {fmt(pipe.wall)} mm.</p>
@@ -336,6 +337,17 @@
           </div>
           <p class="hint">9 mm macht die Kupplung stabiler und außen {fmt(4)} mm dicker.</p>
         </fieldset>
+
+        {#if hasSwivel}
+          <fieldset class="opt">
+            <legend>Breite des Textfelds (Schlauchseite)</legend>
+            <div class="slider">
+              <input type="range" min="-1" max="1" step="0.1" bind:value={input.generalTextFieldWidthVariation} aria-describedby="tfw-hint" />
+              <output>{input.generalTextFieldWidthVariation > 0 ? '+' : ''}{fmt(input.generalTextFieldWidthVariation, 1)} mm</output>
+            </div>
+            <p class="hint" id="tfw-hint">Falls die Schrift auf Schlauchteil oder Gehäuse nicht sauber druckt, in Schritten von 0,1 mm verändern (wie im Original). Original: 0 mm.</p>
+          </fieldset>
+        {/if}
 
         <fieldset class="opt checks">
           <legend>Extras</legend>

@@ -16,7 +16,7 @@ Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Orig
 | Kupplung → Stutzen | Female, Dichtnut-Füllung, Übergang, Rohrkonus | Fxx To Pipe Cone |
 | Stecker → Stutzen | Male, Übergang, Rohrkonus | Mxx To Pipe Cone |
 
-Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Spaltmaß Drehring (0,2–0,6 mm, Standard 0,3 wie im Original), Materialstärke (7 oder 9 mm), Beschriftung, Druckhilfe sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe und Schraubenlöcher.
+Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Spaltmaß Drehring (0,2–0,6 mm, Standard 0,3 wie im Original), Materialstärke (7 oder 9 mm), Breite des Textfelds auf der Schlauchseite (GeneralTextFieldWidthVariation, −1 bis +1 mm, Standard 0), Beschriftung, Druckhilfe sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe, Übergangslänge (TransitionConeLength, Standard 8 mm) und Schraubenlöcher.
 
 Wie in Fusion besteht ein Adapter aus mehreren Körpern, die sich berühren oder überlappen. Slicer verschmelzen sie beim Laden. In 3MF liegen sie als Teile eines Objekts vor, in STEP als einzelne Volumenkörper.
 
