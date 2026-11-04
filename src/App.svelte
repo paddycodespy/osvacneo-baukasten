@@ -225,6 +225,19 @@
   }
 </script>
 
+{#snippet reset(key: 'maleFemaleGapSize' | 'slipRingGapSize', label: string)}
+  <button
+    type="button"
+    class="reset"
+    class:hidden={input[key] === DEFAULT_INPUT[key]}
+    title="Auf den Standardwert {fmt(DEFAULT_INPUT[key], 2)} mm zurücksetzen"
+    aria-label="{label} auf den Standardwert {fmt(DEFAULT_INPUT[key], 2)} mm zurücksetzen"
+    onclick={() => (input[key] = DEFAULT_INPUT[key])}
+  >
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg>
+  </button>
+{/snippet}
+
 <header class="topbar">
   <p class="wordmark"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span> <span class="wm-sub">Konfigurator</span></p>
   <a class="site-link" href="https://osvacneo.de" target="_blank" rel="noopener noreferrer">osvacneo.de <span aria-hidden="true">↗</span></a>
@@ -348,6 +361,7 @@
           <div class="slider">
             <input type="range" min="0.1" max="0.5" step="0.05" bind:value={input.maleFemaleGapSize} aria-describedby="gap-hint" />
             <output>{fmt(input.maleFemaleGapSize, 2)} mm</output>
+            {@render reset('maleFemaleGapSize', 'Spaltmaß Stecker / Kupplung')}
           </div>
           <p class="hint" id="gap-hint">Größer, wenn der Stecker zu stramm sitzt. Kleiner, wenn er wackelt. Original: 0,2 mm.</p>
         </fieldset>
@@ -358,6 +372,7 @@
             <div class="slider">
               <input type="range" min="0.2" max="0.6" step="0.05" bind:value={input.slipRingGapSize} aria-describedby="swivel-hint" />
               <output>{fmt(input.slipRingGapSize, 2)} mm</output>
+              {@render reset('slipRingGapSize', 'Spaltmaß Drehring')}
             </div>
             <p class="hint" id="swivel-hint">Größer, wenn der Drehring nach dem Druck festsitzt (bei PETG oft 0,35–0,4 mm). Kleiner, wenn er zu viel Spiel hat. Original: 0,3 mm.</p>
           </fieldset>
