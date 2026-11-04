@@ -203,11 +203,10 @@
     class="reset"
     class:sm={small}
     class:hidden={isDefault}
-    data-tip="Zurück auf {fmt(def, 2)} mm"
     aria-label="{label} auf den Standardwert {fmt(def, 2)} mm zurücksetzen"
     onclick={apply}
   >
-    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg>
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg><span>{fmt(def, 2)}</span>
   </button>
 {/snippet}
 
@@ -327,7 +326,7 @@
             <div class="field"><span class="field-label">Ø in der Tiefe{@render machineReset('dDepth', 'Ø in der Tiefe')}</span><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" /></div>
             <div class="field"><span class="field-label">Tiefe (Steckweg){@render machineReset('length', 'Tiefe (Steckweg)')}</span><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></div>
             <div class="field"><span class="field-label">Wandstärke{@render machineReset('wall', 'Wandstärke')}</span><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" /></div>
-            <div class="field"><span class="field-label">Zugabe für den Sitz{@render machineReset('allowance', 'Zugabe für den Sitz')}</span><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></div>
+            <div class="field"><span class="field-label">Zugabe (Sitz){@render machineReset('allowance', 'Zugabe für den Sitz')}</span><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></div>
             <div class="field"><span class="field-label">Übergangslänge{@render machineReset('transition', 'Übergangslänge')}</span><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" /></div>
             <label class="field check"><input type="checkbox" bind:checked={machine.holes} /> 3 Schraubenlöcher Ø 4</label>
           </div>
