@@ -20,14 +20,16 @@ const notext = args.includes('--notext');
 if (!notext) await initFont(fs.readFileSync(path.join(here, '../public/fonts/LiberationSans-Regular.ttf')).buffer as ArrayBuffer);
 const wArg = args.find((a) => a.startsWith('--w='));
 const W = wArg ? +wArg.slice(4) : 7;
-const p = deriveParams({ maleDiameterInner: +M, femaleDiameterInner: +F, hoseDiameterInner: +H, generalMaterialWidth: W });
+const sgArg = args.find((a) => a.startsWith('--sg='));
+const SG = sgArg ? +sgArg.slice(5) : 0.3;
+const p = deriveParams({ maleDiameterInner: +M, femaleDiameterInner: +F, hoseDiameterInner: +H, generalMaterialWidth: W, slipRingGapSize: SG });
 const fn = (asm as Record<string, unknown>)['build' + part] as (p: unknown, o: unknown) => asm.Body[];
 const t0 = Date.now();
 const bodies = fn(p, { text: !notext });
 console.log('build ms', Date.now() - t0);
 const outDir = path.join(here, '../out');
 fs.mkdirSync(outDir, { recursive: true });
-const base = path.join(outDir, `${part}_M${M}_F${F}_H${H}${W !== 7 ? '_W' + W : ''}`);
+const base = path.join(outDir, `${part}_M${M}_F${F}_H${H}${W !== 7 ? '_W' + W : ''}${SG !== 0.3 ? '_SG' + SG : ''}`);
 for (const b of bodies) {
   const stl = b.shape.blobSTL({ tolerance: 0.01, angularTolerance: 0.1 });
   fs.writeFileSync(`${base}__${b.name}.stl`, Buffer.from(await stl.arrayBuffer()));

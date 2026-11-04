@@ -56,6 +56,7 @@
   });
   /** Druckhilfe gibt es nur, wenn der Stecker mit der Spitze nach unten gedruckt wird */
   const hasSupport = $derived(kind.id === 'M' || kind.id === 'MF');
+  const hasSwivel = $derived(kind.id === 'FH' || kind.id === 'MH');
   const pipe = $derived.by((): PipeSpec => {
     const m = machine;
     const w = Math.max(2, m.wall);
@@ -301,6 +302,17 @@
           </div>
           <p class="hint" id="gap-hint">Größer, wenn der Stecker zu stramm sitzt. Kleiner, wenn er wackelt. Original: 0,2 mm.</p>
         </fieldset>
+
+        {#if hasSwivel}
+          <fieldset class="opt">
+            <legend>Spaltmaß Drehring</legend>
+            <div class="slider">
+              <input type="range" min="0.2" max="0.6" step="0.05" bind:value={input.slipRingGapSize} aria-describedby="swivel-hint" />
+              <output>{fmt(input.slipRingGapSize, 2)} mm</output>
+            </div>
+            <p class="hint" id="swivel-hint">Größer, wenn der Drehring nach dem Druck festsitzt (bei PETG oft 0,35–0,4 mm). Kleiner, wenn er zu viel Spiel hat. Original: 0,3 mm.</p>
+          </fieldset>
+        {/if}
 
         <fieldset class="opt">
           <legend>Materialstärke</legend>
