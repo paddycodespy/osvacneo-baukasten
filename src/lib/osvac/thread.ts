@@ -13,7 +13,7 @@ export const THREAD = {
   startDeg: 50,
   startCut: { dist: 9.42, normalDeg: -62.6, refDeg: 55, aMin: 30, zTop: -1, zBot: -7.8 },
   /** Ende ohne Knickschutz: senkrechte Ebene wie am Anfang (Rippe läuft dort von voller Tiefe auf 0) */
-  endCut: { dist: 10.55, normalDeg: 135.4, refDeg: 15, aMax: 45, zTop: -22.0, zBot: -28.5 },
+  endCut: { dist: 10.55, distPerMm: 0.0057, normalDeg: 135.4, refDeg: 15, aMax: 45, zTop: -22.0, zBot: -28.5 },
   /**
    * Auslauf: Stützstellen der Profilskalierung. Gemessen am Original (H32/H36, 7 und 9 mm):
    * Tiefe fällt linear von 2,8 bei φ 1441,8° auf 0 bei φ 2127,6°. Die Werte hier sind so gewählt,
@@ -49,15 +49,17 @@ export function hoseThread(p: OsvacParams, ext = 0.5, runout = false): Shape3D {
   t = t.cut(planeCut(s.dist, s.normalDeg, s.refDeg, s.aMin, s.zTop, s.zBot)) as Shape3D;
   if (!runout) {
     const e = THREAD.endCut;
-    t = t.cut(planeCut(e.dist, e.normalDeg, e.refDeg, e.aMax, e.zTop, e.zBot)) as Shape3D;
+    // Lage der Endebene wächst leicht mit dem Schlauchdurchmesser (gemessen: H25 10,55, H36 10,613)
+    const dist = e.dist + e.distPerMm * (p.hoseDiameterInner - 25);
+    t = t.cut(planeCut(dist, e.normalDeg, e.refDeg, e.aMax, e.zTop, e.zBot)) as Shape3D;
   }
   return t;
 }
 
 /**
  * Anschnitt am Gewindeanfang und (ohne Knickschutz) am Ende wie im Original: die Rippe ist von einer
- * senkrechten Ebene abgeschnitten, deren Lage nicht von der Schlauchgröße abhängt (gemessen an H32 und H36,
- * 7 und 9 mm). Weggeschnitten wird die Seite n·p > −dist. Das Werkzeug reicht vom Schnittpunkt der Ebene
+ * senkrechten Ebene abgeschnitten. Die Anfangsebene hängt nicht von der Schlauchgröße ab, die Endebene
+ * rückt mit dem Durchmesser leicht nach außen (gemessen an H25, H32 und H36, 7 und 9 mm). Weggeschnitten wird die Seite n·p > −dist. Das Werkzeug reicht vom Schnittpunkt der Ebene
  * mit dem Gewinde bis zum Winkel aFar und ist in z auf die betroffene Windung begrenzt.
  */
 function planeCut(dist: number, normalDeg: number, refDeg: number, aFar: number, zTop: number, zBot: number): Shape3D {

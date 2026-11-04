@@ -71,7 +71,7 @@ function circleCircle(c0: P2, r0: number, c1: P2, r1: number, ySign: number): P2
  * Werkzeug = Bereich unter dieser Ebene neben dem Kanal, begrenzt auf r ≤ rr (Rastnase wird danach angesetzt).
  * Kanal-System: x = Abstand von der Kanalmitte zur Nutseite hin, y = radial entlang der Kanalachse.
  */
-function rampWedge(a: number, h: number, rFm: number, rr: number): Shape3D {
+function rampBelow(a: number, h: number, rFm: number, rr: number, x0 = h - 0.6): Shape3D {
   type V3 = [number, number, number];
   const onR = (t: number, r: number, z: number): V3 => [t, Math.sqrt(r * r - t * t), z];
   // Eckpunkte gemessen an F25 (rFm 15,6) und F32 (rFm 19,1), dazwischen linear
@@ -87,7 +87,7 @@ function rampWedge(a: number, h: number, rFm: number, rr: number): Shape3D {
   const er: [number, number] = [Math.cos(rad(a)), Math.sin(rad(a))];
   const et: [number, number] = [Math.sin(rad(a)), -Math.cos(rad(a))]; // zur Nut hin (negative Winkel)
   const G = (x: number, y: number, z: number): Point => [y * er[0] + x * et[0], y * er[1] + x * et[1], z];
-  const x0 = h - 0.6, x1 = h + 4.5, y0 = rFm - 1.5, y1 = rr + 0.6, zb = -26;
+  const x1 = h + 4.5, y0 = Math.sqrt(rFm * rFm - x1 * x1) - 0.5, y1 = rr + 0.6, zb = -26; // y0: bis an die Bohrung, auch bei kleinen Kupplungen
   const top = [G(x0, y0, zOn(x0, y0)), G(x1, y0, zOn(x1, y0)), G(x1, y1, zOn(x1, y1)), G(x0, y1, zOn(x0, y1))];
   const bot = [G(x0, y0, zb), G(x1, y0, zb), G(x1, y1, zb), G(x0, y1, zb)];
   const faces = [makePolygon(top), makePolygon([...bot].reverse())];
@@ -95,9 +95,11 @@ function rampWedge(a: number, h: number, rFm: number, rr: number): Shape3D {
     const j = (i + 1) % 4;
     faces.push(makePolygon([bot[i], bot[j], top[j], top[i]]));
   }
-  const box = makeSolid(faces) as unknown as Shape3D;
-  return box.intersect(makeCylinder(rr + 0.3, 10, [0, 0, zb - 1])) as Shape3D;
+  return makeSolid(faces) as unknown as Shape3D;
 }
+
+const rampWedge = (a: number, h: number, rFm: number, rr: number) =>
+  rampBelow(a, h, rFm, rr).intersect(makeCylinder(rr + 0.3, 10, [0, 0, -27])) as Shape3D;
 
 export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
   const rFi = p.femaleDiameterInner / 2;
@@ -136,15 +138,20 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
   // höchstens 60° vom Kanal entfernt (vermessen an F32 und F25)
   const endRot = deg(GROOVE_END_ARC / (Rb - 1));
   const clip = 60;
+  const clipped = endRot + deg(Math.asin(h / Rb)) > clip; // äußere Kante des Nutendes jenseits von 60°
   for (const a of FEMALE_SLOT_ANGLES) {
     // Einführkanal von oben bis Nutboden
     body = body.cut(extrudeDown(slot2D, 0.5, 0.5 - zGrooveBot).rotate(a, [0, 0, 0], [0, 0, 1]));
     // Umlaufende Nut (Sektor) inkl. 59°-Fase oben
-    const aEnd = a - Math.min(endRot, clip);
-    body = body.cut(grooveProfile(aEnd, a));
-    // Nutende; die 59°-Fase läuft wie im Original bis an die Stirnwand
-    const endPrism = extrudeDown(slot2D, zBevelTop + 0.01, zBevelTop + 0.01 - zGrooveBot).rotate(a - endRot, [0, 0, 0], [0, 0, 1]);
-    body = body.cut(endPrism.intersect(grooveProfile(Math.max(a - endRot - 30, a - clip), a - endRot + 30)) as Shape3D);
+    if (clipped) {
+      // Nutende läge hinter 60°: Nut endet wie im Original (F25) mit einer geraden, scharfkantigen Fläche bei 60°
+      body = body.cut(grooveProfile(a - clip, a));
+    } else {
+      body = body.cut(grooveProfile(a - endRot, a));
+      // Nutende; die 59°-Fase läuft wie im Original bis an die Stirnwand
+      const endPrism = extrudeDown(slot2D, zBevelTop + 0.01, zBevelTop + 0.01 - zGrooveBot).rotate(a - endRot, [0, 0, 0], [0, 0, 1]);
+      body = body.cut(endPrism.intersect(grooveProfile(a - endRot - 30, a - endRot + 30)) as Shape3D);
+    }
     // Einlaufschräge vom Kanal in die Nut oberhalb der Rastnase
     body = body.cut(rampWedge(a, h, rFm, rr));
   }
@@ -167,6 +174,9 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
   const ridge2D = rastnase2D(h, Rb, rr, yOut);
   for (const a of FEMALE_SLOT_ANGLES) {
     body = body.fuse(extrudeDown(ridge2D, -18.8, -18.8 - zGrooveBot).rotate(a, [0, 0, 0], [0, 0, 1]));
+    // Wo die Einlaufschräge höher liegt als −18,8, reicht die Rastnase bis an die Schräge (wie im Original)
+    const high = extrudeDown(ridge2D, -17.3, 1.55).rotate(a, [0, 0, 0], [0, 0, 1]).intersect(rampBelow(a, h, rFm, rr, h - 1.5)) as Shape3D;
+    body = body.fuse(high);
   }
 
   return body;

@@ -120,6 +120,7 @@
     if (!kind.available) return;
     const token = ++buildToken;
     errorMsg = '';
+    measures = null; // Filamentangabe gehört zur alten Konfiguration
     try {
       status = 'preview';
       const quick = await build(makeBuild(kindId, $state.snapshot(input), { text: false, knurl: false, supports: true, ...$state.snapshot(buildOpts) }));

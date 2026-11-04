@@ -83,15 +83,21 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 
 ## Abgleich mit Fusion
 
-Geprüft mit waagerechten Schnitten alle 0,25 mm (Draufsicht) und Volumen gegen die Fusion-STEP-Exporte
-(M25/F32/H36, M32/F32/H32, M25/F25/H25, 7 und 9 mm, Maschinenadapter). Außer an Beschriftung und Rändelung
-weicht keine Schnittkontur mehr als 0,15 mm ab.
+Geprüft gegen die Fusion-STEP-Exporte (M25/F32/H36, M32/F32/H32, M25/F25/H25, 7 und 9 mm, Maschinenadapter
+mit drei Rohrvarianten): Volumen, waagerechte Schnitte alle 0,25 mm und ein Flächenvergleich, bei dem für
+300 000 Punkte jeder Oberfläche der exakte Abstand zur Gegenfläche berechnet wird (Rändelung eingeschlossen,
+nur die Schrift ausgenommen). Ergebnis: Alle Flächen liegen innerhalb von 0,1 mm am Original, außer den
+Schraubenlöchern bei 4 mm Rohrwand (siehe unten).
+
+Nicht aus den vorhandenen Daten ableitbar:
+- Höhe der Schraubenlöcher im Rohrkonus: bei 3 mm Wand wie im Original, bei 4 mm Wand ohne Konus liegen sie im Original 0,13 mm höher. Die zugrunde liegende Regel lässt sich aus drei Exporten nicht eindeutig bestimmen.
+- Einführung der Nut zwischen F25 und F32 und der Endanschnitt des Gewindes zwischen H25 und H36 sind linear interpoliert.
 
 | Teil | Volumen gegenüber Fusion | Anmerkung |
 |---|---|---|
-| Female F32 / F25 (mit Text) | +0,2 % / +0,1 % | Einführkanal mit R-1-Oberkante, Einlaufschräge (Ebene, < 0,1 mm), Rastnase mit R-1-Übergängen, Nutende mit Fase |
+| Female F32 / F25 (mit Text) | +0,2 % / +0,1 % | Einführkanal mit R-1-Oberkante, Einlaufschräge (Ebene, < 0,1 mm), Rastnase mit R-1-Übergängen und bis an die Schräge reichend, Nutende mit Fase bzw. gerade bei 60° (F25) |
 | Male M25 / M32 (mit Text) | +0,5 % / +0,4 % | Unterschied nur in der Beschriftung (Schrift); Nasen mit R 1 am Rohr und an der oberen Außenkante |
-| Druckhilfe | +0,03 % | |
+| Druckhilfe | ±0,01 % | Stützblöcke enden an der Steckerunterkante, Kerbe zur Fangring-Schräge wie im Original |
 | Drehringe, Übergänge, Gehäuse | ±0,2 % | |
 | Hose H36 (Schlauchteil, Gewinde, Knickschutz) | +0,1 % | Gewinde mit Anschnitt am Anfang, Auslauf im Knickschutz bzw. Endanschnitt ohne Knickschutz wie im Original |
 | Rohrkonus, Übergang, Dichtnut-Füllung | ±0,15 % | Senkung als Fase der Bohrung wie im Original |
