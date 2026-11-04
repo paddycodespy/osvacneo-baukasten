@@ -109,7 +109,11 @@ Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stü
 
 ## Lizenzen
 
-- **osVAC neo** (Konstruktion, Maße, Formeln): CC BY-NC-SA 4.0. Diese Lizenz gilt auch für alle mit dem Konfigurator erzeugten Teile: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen.
-- **Liberation Sans Regular** (Beschriftung): SIL Open Font License, siehe `public/fonts/LICENSE-LiberationSans.txt`.
-- **Barlow** (Oberfläche): SIL Open Font License.
-- **replicad** (MIT) und **OpenCascade** (LGPL 2.1, als WebAssembly unverändert eingebunden), **three.js** (MIT).
+Basiert auf **osVAC neo von Ludo Kerz**, ursprünglich entstanden im Hobbyhimmel Stuttgart.
+
+- **Dieses Projekt** (Quellcode und alle damit erzeugten Teile) steht wie osVAC neo unter **CC BY-NC-SA 4.0**: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen. Siehe `LICENSE`.
+- **Bausteine Dritter** mit eigenen Lizenzen, vollständig in `public/THIRD_PARTY_LICENSES.txt` (wird mit ausgeliefert und ist in der App im Download-Schritt verlinkt):
+  - OpenCascade (LGPL 2.1, als WebAssembly unverändert und austauschbar eingebunden)
+  - replicad, three.js, Svelte, fflate (MIT)
+  - Poppins (Oberfläche) und Liberation Sans Regular (Beschriftung): SIL Open Font License
+- Nach neuen Abhängigkeiten `python3 scripts/licenses.py` ausführen, damit die Datei aktuell bleibt.
