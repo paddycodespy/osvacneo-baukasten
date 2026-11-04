@@ -25,7 +25,8 @@
   let text = $state(true);
   /** Eine Einstellung für Anzeige und Export der Druckhilfe (wird immer mitberechnet) */
   let supports = $state(true);
-  let machine = $state({ mode: 'over' as 'over' | 'into', dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true, transition: 8 });
+  const MACHINE_DEFAULT = { mode: 'over' as 'over' | 'into', dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true, transition: 8 };
+  let machine = $state({ ...MACHINE_DEFAULT });
   let measures = $state<{ volume: number; area: number; helperVolume: number; helperArea: number } | null>(null);
 
   let host: HTMLDivElement;
@@ -225,17 +226,26 @@
   }
 </script>
 
-{#snippet reset(key: 'maleFemaleGapSize' | 'slipRingGapSize', label: string)}
+{#snippet resetBtn(isDefault: boolean, def: number, label: string, apply: () => void, small = false)}
   <button
     type="button"
     class="reset"
-    class:hidden={input[key] === DEFAULT_INPUT[key]}
-    title="Auf den Standardwert {fmt(DEFAULT_INPUT[key], 2)} mm zurücksetzen"
-    aria-label="{label} auf den Standardwert {fmt(DEFAULT_INPUT[key], 2)} mm zurücksetzen"
-    onclick={() => (input[key] = DEFAULT_INPUT[key])}
+    class:sm={small}
+    class:hidden={isDefault}
+    title="Auf den Standardwert {fmt(def, 2)} mm zurücksetzen"
+    aria-label="{label} auf den Standardwert {fmt(def, 2)} mm zurücksetzen"
+    onclick={apply}
   >
     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg>
   </button>
+{/snippet}
+
+{#snippet reset(key: 'maleFemaleGapSize' | 'slipRingGapSize', label: string)}
+  {@render resetBtn(input[key] === DEFAULT_INPUT[key], DEFAULT_INPUT[key], label, () => (input[key] = DEFAULT_INPUT[key]))}
+{/snippet}
+
+{#snippet machineReset(key: 'wall' | 'allowance' | 'transition', label: string)}
+  {@render resetBtn(machine[key] === MACHINE_DEFAULT[key], MACHINE_DEFAULT[key], label, () => (machine[key] = MACHINE_DEFAULT[key]), true)}
 {/snippet}
 
 <header class="topbar">
@@ -342,12 +352,12 @@
               : 'Innendurchmesser der Absaugöffnung messen: vorne an der Kante und in der Tiefe, bis zu der der Adapter hineinreichen soll.'}
           </p>
           <div class="grid2">
-            <div class="field"><span>Ø vorne</span><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" /></div>
-            <div class="field"><span>Ø in der Tiefe</span><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" /></div>
-            <div class="field"><span>Tiefe (Steckweg)</span><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></div>
-            <div class="field"><span>Wandstärke</span><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" /></div>
-            <div class="field"><span>Zugabe für den Sitz</span><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></div>
-            <div class="field"><span>Übergangslänge</span><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" /></div>
+            <div class="field"><span class="field-label">Ø vorne</span><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" /></div>
+            <div class="field"><span class="field-label">Ø in der Tiefe</span><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" /></div>
+            <div class="field"><span class="field-label">Tiefe (Steckweg)</span><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></div>
+            <div class="field"><span class="field-label">Wandstärke{@render machineReset('wall', 'Wandstärke')}</span><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" /></div>
+            <div class="field"><span class="field-label">Zugabe für den Sitz{@render machineReset('allowance', 'Zugabe für den Sitz')}</span><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></div>
+            <div class="field"><span class="field-label">Übergangslänge{@render machineReset('transition', 'Übergangslänge')}</span><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" /></div>
             <label class="field check"><input type="checkbox" bind:checked={machine.holes} /> 3 Schraubenlöcher Ø 4</label>
           </div>
           <p class="hint">Rohr innen: Ø {fmt(pipe.d2Inner, 2)} an der Öffnung, Ø {fmt(pipe.d1Inner, 2)} am Übergang, Wand {fmt(pipe.wall)} mm.</p>
