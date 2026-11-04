@@ -420,10 +420,15 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
   border-top: 1px solid var(--line);
 }
 .ghost, .next {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border-radius: 999px;
   padding: 9px 18px;
   font-weight: 600;
 }
+.ghost.hidden { visibility: hidden; }
+.arr { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ghost { border: 1px solid var(--line); background: none; }
 .ghost:hover:not(:disabled) { border-color: var(--sky); }
 .ghost:disabled { opacity: 0.4; }
