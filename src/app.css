@@ -402,7 +402,12 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .files li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--shop-2); }
 .files a { color: var(--cobalt-d); font-weight: 600; text-decoration: none; }
 .filament { font-size: 14px; margin: -8px 0 18px; padding: 10px 14px; background: var(--mist); border-radius: 8px; }
-.license { font-size: 13px; color: var(--slate-2); border-top: 1px solid var(--line); padding-top: 12px; margin-top: 18px; }
+.license { font-size: 13px; line-height: 1.55; color: var(--slate-2); border-top: 1px solid var(--line); padding-top: 16px; margin-top: 22px; }
+.license p { margin: 0 0 12px; }
+.license p:last-child { margin-bottom: 0; }
+.license .credit strong { color: var(--graphite); font-weight: 600; }
+.license .more { display: inline-flex; align-items: center; gap: 4px; }
+.license .more .arr { width: 13px; height: 13px; }
 .error { color: #b02a20; font-size: 14px; }
 
 .step-nav {
