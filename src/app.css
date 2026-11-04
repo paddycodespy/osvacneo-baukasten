@@ -360,6 +360,9 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .reset { display: grid; place-items: center; width: 30px; height: 30px; margin-left: -6px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: var(--slate-2); }
 .reset svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .reset.hidden { visibility: hidden; }
+.reset.sm { width: 24px; height: 24px; margin: 0; }
+.reset.sm svg { width: 14px; height: 14px; }
+.field-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
 .hint { margin: 6px 0 0; font-size: 14px; color: var(--slate-2); }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
 .seg button { border: 0; background: none; padding: 7px 18px; font-weight: 500; }
