@@ -66,12 +66,9 @@ a { text-decoration: none; transition: color 0.15s; }
 .license a:hover, .license a:active, .files a:hover, .files a:active { color: var(--red); }
 button { cursor: pointer; }
 
-/* Hover für alle Schaltflächen: nur leicht vergrößern, Farben bleiben gleich (wie osvacneo.de) */
-button { transition: transform 0.18s ease; }
-button:hover:not(:disabled) { transform: scale(var(--grow, 1.05)); }
-/* Ausnahmen ohne Vergrößerung: Verbindungstypen, Größen-Chips, Materialstärke, Schritte 1–4,
-   Download-Optionen (eigener Hover) und Pfeile im Zahlenfeld (NumberField) */
-.kind, .chip, .seg button, .step-tab, .dl { --grow: 1; }
+/* Hover einheitlich ohne Vergrößerung: Rahmen bzw. Akzent in Himmelblau (wie die Auswahl),
+   der rote Weiter-Button wird dunkelrot. Ausgewählte Elemente ändern sich beim Hovern nicht. */
+button { transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
 button:disabled { cursor: not-allowed; }
 :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -143,6 +140,8 @@ button:disabled { cursor: not-allowed; }
   font-weight: 500;
 }
 .tool.on { background: #fff; color: var(--graphite); border-color: #fff; }
+/* auf dem blauen Hintergrund: leicht aufgehellt statt himmelblauem Rahmen */
+.tool:not(.on):hover { background: rgba(255, 255, 255, 0.18); border-color: #fff; }
 
 .stage-foot {
   position: absolute;
@@ -254,6 +253,7 @@ button:disabled { cursor: not-allowed; }
 .step-tab.done .num { border-color: var(--sky); color: var(--sky-d); }
 .step-tab.current .num { border-color: var(--sky); background: var(--sky); color: #fff; }
 .step-tab.current .label { color: var(--graphite); font-weight: 600; }
+.step-tab:not(.current):hover .num { border-color: var(--sky); }
 
 .step-body {
   flex: 1;
@@ -272,18 +272,19 @@ h2 {
 .lead strong { color: var(--graphite); font-weight: 700; }
 
 /* Adaptertypen */
-.kinds { display: flex; flex-direction: column; gap: 2px; }
-.kind {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-align: left;
-  border: 1px solid transparent;
+.kinds { display: flex; flex-direction: column; gap: 8px; }
+/* Auswahlkarten (Schritt 1 und 4 gleich): grauer Rahmen, ausgewählt himmelblau, Hover himmelblauer Rahmen */
+.kind, .dl {
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: none;
-  padding: 10px 10px;
+  background: #fff;
+  padding: 11px 14px;
+  text-align: left;
 }
-.kind.sel { border-color: var(--sky); background: var(--sky-l); --icon-fill: #9fd5f3; --icon-stroke: var(--sky-d); }
+.kind { display: flex; align-items: center; gap: 12px; }
+.kind.sel, .dl.active { border-color: var(--sky); background: var(--sky-l); }
+.kind.sel { --icon-fill: #9fd5f3; --icon-stroke: var(--sky-d); }
+.kind:not(.sel):hover:not(:disabled), .dl:not(.active):hover:not(:disabled) { border-color: var(--sky); }
 .kind:disabled { opacity: 0.5; }
 .kind-text { display: flex; flex-direction: column; flex: 1; }
 .kind-text { min-width: 0; }
@@ -320,6 +321,7 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
   font-size: 16px;
 }
 .chip.sel { background: var(--sky); color: #fff; border-color: var(--sky); }
+.chip:not(.sel):hover { border-color: var(--sky); }
 .num-in {
   display: flex;
   align-items: center;
@@ -360,6 +362,7 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .reset { display: grid; place-items: center; width: 30px; height: 30px; margin-left: -6px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: var(--slate-2); }
 .reset svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .reset.hidden { visibility: hidden; }
+.reset:hover { border-color: var(--sky); }
 /* eigener Tooltip in den Farben der Anwendung (der des Browsers lässt sich nicht gestalten) */
 .reset { position: relative; }
 .reset::after {
@@ -381,29 +384,15 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .seg button { border: 0; background: none; padding: 7px 18px; font-weight: 500; }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button.sel { background: var(--sky); color: #fff; }
+.seg button:not(.sel):hover { background: var(--sky-l); }
 .checks label, .inline-check { display: flex; gap: 10px; align-items: center; margin: 6px 0; }
 .checks input, .inline-check input { width: 18px; height: 18px; accent-color: var(--cobalt); }
 
 /* Download */
 .downloads { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-.dl {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  border: 1px solid var(--line);
-  background: #fff;
-  border-radius: 10px;
-  padding: 12px 16px;
-  text-align: left;
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-}
-.dl strong { font-size: 16px; font-weight: 600; }
-.dl small { font-size: 13.5px; color: var(--slate-2); transition: color 0.15s; }
-/* aktiver Eintrag wie die ausgewählte Verbindung in Schritt 1 */
-.dl.active { border-color: var(--sky); background: var(--sky-l); }
-/* übrige Einträge werden beim Darüberfahren rot */
-.dl:not(.active):hover:not(:disabled) { background: var(--red); border-color: var(--red); color: #fff; }
-.dl:not(.active):hover:not(:disabled) small { color: #ffe1de; }
+.dl { display: flex; flex-direction: column; align-items: flex-start; }
+.dl strong { font-weight: 600; font-size: 15px; }
+.dl small { font-size: 13.5px; color: var(--slate-2); line-height: 1.35; }
 .dl:disabled { opacity: 0.45; }
 .status-line { min-height: 1.5em; font-size: 14px; color: var(--slate-2); margin: 10px 0; }
 .warn {
@@ -436,8 +425,10 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
   font-weight: 600;
 }
 .ghost { border: 1px solid var(--line); background: none; }
+.ghost:hover:not(:disabled) { border-color: var(--sky); }
 .ghost:disabled { opacity: 0.4; }
 .next { border: 0; background: var(--red); color: #fff; margin-left: auto; }
+.next:hover { background: var(--red-d); }
 
 /* ---------- Mobil ---------- */
 @media (max-width: 860px) {
@@ -454,5 +445,4 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .status::before { animation: none !important; }
-  button:hover:not(:disabled) { transform: none; }
 }
