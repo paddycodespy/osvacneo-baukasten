@@ -360,6 +360,19 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .reset { display: grid; place-items: center; width: 30px; height: 30px; margin-left: -6px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: var(--slate-2); }
 .reset svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .reset.hidden { visibility: hidden; }
+/* eigener Tooltip in den Farben der Anwendung (der des Browsers lässt sich nicht gestalten) */
+.reset { position: relative; }
+.reset::after {
+  content: attr(data-tip);
+  position: absolute; right: -4px; bottom: calc(100% + 8px);
+  padding: 5px 9px; border-radius: 6px;
+  background: var(--graphite, #333); color: #fff;
+  font-family: var(--body); font-size: 13px; font-weight: 500; line-height: 1.2; white-space: nowrap;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
+  opacity: 0; pointer-events: none; transition: opacity 0.12s;
+  z-index: 20;
+}
+.reset:hover::after, .reset:focus-visible::after { opacity: 1; }
 .reset.sm { width: 24px; height: 24px; margin: 0; }
 .reset.sm svg { width: 14px; height: 14px; }
 .field-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
