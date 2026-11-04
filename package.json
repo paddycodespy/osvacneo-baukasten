@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "test:geometry": "tsx scripts/matrix.ts",
-    "part": "tsx scripts/build-ref.ts"
+    "part": "tsx scripts/build-ref.ts",
+    "test:keys": "tsx scripts/check-keys.ts"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",

@@ -8,7 +8,7 @@ import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, L, A, type P2, type Seg } from './geom';
 import { hoseThread, rootRadius } from './thread';
-import { addGrip, gripFields, gripFieldsOverlap } from './grip';
+import { gripKnurl, gripKnurlOverlap, gripFields, gripFieldsOverlap } from './grip';
 import { fmt } from './female';
 
 export interface HoseOptions {
@@ -57,12 +57,20 @@ export function hoseBody(p: OsvacParams, variant: 'plain' | 'housed', opt: HoseO
   );
   // Das Gewinde ist ein eigener Körper (siehe hoseThreadBody): Boolesche Operationen mit den
   // Spline-Flächen der Schraubenlinie würden die Berechnung um Minuten verlängern.
-  let body = revolveProfile([rH, 0], segs);
-  const layout = variant === 'plain' ? 'full' : 'housedHose';
   void gripBot;
+  void opt;
+  return revolveProfile([rH, 0], segs);
+}
+
+/** Rändelung des Schlauchteils (eigener Körper). */
+export function hoseKnurl(p: OsvacParams, variant: 'plain' | 'housed'): Shape3D {
   const gz = hoseGripZone(p, variant);
-  body = addGrip(body, rO, gz.top, gz.bot, { knurl: opt.knurl, layout });
-  return body;
+  return gripKnurl(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose');
+}
+
+export function hoseKnurlOverlap(p: OsvacParams, variant: 'plain' | 'housed') {
+  const gz = hoseGripZone(p, variant);
+  return gripKnurlOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose');
 }
 
 /** Griffbereich des Schlauchteils (oben/unten) – gemeinsam für Rändelung und Textfelder. */
@@ -240,7 +248,8 @@ export function maleHousing(p: OsvacParams, opt: HoseOptions = {}): Shape3D {
   const rB = rH + p.generalMaterialWidth - 1.2; // Bohrung für den Drehring
   const rMi = p.maleDiameterInner / 2;
   const rMo = p.maleDiameterOuter / 2;
-  let body = revolveProfile(...poly([
+  void opt;
+  return revolveProfile(...poly([
     [rMi, 0],
     [rMo, 0],
     [rO, -3.006],
@@ -249,9 +258,11 @@ export function maleHousing(p: OsvacParams, opt: HoseOptions = {}): Shape3D {
     [rB, -3.006],
     [rH, -3.006],
   ]));
-  body = addGrip(body, rO, -4.006, -19.006, { knurl: opt.knurl, layout: 'housing' });
-  return body;
 }
+
+/** Rändelung des Gehäuses (eigener Körper). */
+export const housingKnurl = (p: OsvacParams) => gripKnurl(p.hoseDiameterInner / 2 + p.generalMaterialWidth, -4.006, -19.006, 'housing');
+export const housingKnurlOverlap = (p: OsvacParams) => gripKnurlOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, -4.006, -19.006, 'housing');
 
 /** Textfeld des Gehäuses (eigener Körper). */
 export function housingFields(p: OsvacParams, opt: HoseOptions = {}): Shape3D {

@@ -54,7 +54,8 @@ function getPart(r: PartRef) {
   // Gewinde: die 0,5-mm-Überlappung mit der Wand nicht als Filament zählen
   if (q.name === 'Gewinde') volume *= threadNetVolumeFactor(deriveParams(r.input));
   if (q.volumeOffset) volume -= q.volumeOffset;
-  const entry = { shape, volume, area: measureArea(shape), zMin: shape.boundingBox.bounds[0][2] };
+  const area = measureArea(shape) - (q.areaOffset ?? 0);
+  const entry = { shape, volume, area, zMin: shape.boundingBox.bounds[0][2] };
   cache.set(q.key, entry);
   while (cache.size > MAX_CACHE) {
     const [k, v] = cache.entries().next().value as [string, { shape: Shape3D }];
