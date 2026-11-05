@@ -450,14 +450,18 @@
         <p class="lead">Innendurchmesser in Millimetern.</p>
         {#each kind.diameters as k}
           <fieldset class="dia dia-{LABELS[k].letter}">
-            <legend class="field-label"><span>{LABELS[k].word} (<b class="ck-{LABELS[k].letter}">{LABELS[k].letter}</b>)</span>{@render resetSm(k, LABELS[k].name)}</legend>
+            <legend>{LABELS[k].word} (<b class="ck-{LABELS[k].letter}">{LABELS[k].letter}</b>)</legend>
             <div class="dia-row">
               <div class="chips">
                 {#each LABELS[k].presets as v}
                   <button class="chip" class:sel={input[k] === v} onclick={() => setDia(k, v)}>{v}</button>
                 {/each}
               </div>
-              <NumberField value={input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => setDia(k, v)} />
+              <!-- Zahlenfeld und Zurücksetzen bleiben zusammen, auch wenn die Zeile umbricht -->
+              <span class="num-reset">
+                <NumberField value={input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => setDia(k, v)} />
+                {@render resetSm(k, LABELS[k].name)}
+              </span>
             </div>
           </fieldset>
         {/each}
@@ -474,12 +478,12 @@
               : 'Innendurchmesser der Absaugöffnung messen: vorne an der Kante und in der Tiefe, bis zu der der Adapter hineinreichen soll.'}
           </p>
           <div class="grid2">
-            <div class="field"><span class="field-label">Ø vorne{@render machineReset('dOpen', 'Ø vorne')}</span><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" /></div>
-            <div class="field"><span class="field-label">Ø in der Tiefe{@render machineReset('dDepth', 'Ø in der Tiefe')}</span><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" /></div>
-            <div class="field"><span class="field-label">Tiefe (Steckweg){@render machineReset('length', 'Tiefe (Steckweg)')}</span><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></div>
-            <div class="field"><span class="field-label">Wandstärke{@render machineReset('wall', 'Wandstärke')}</span><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" /></div>
-            <div class="field"><span class="field-label">Zugabe (Sitz){@render machineReset('allowance', 'Zugabe für den Sitz')}</span><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></div>
-            <div class="field"><span class="field-label">Übergangslänge{@render machineReset('transition', 'Übergangslänge')}</span><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" /></div>
+            <div class="field"><span class="field-label">Ø vorne</span><span class="num-reset"><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" />{@render machineReset('dOpen', 'Ø vorne')}</span></div>
+            <div class="field"><span class="field-label">Ø in der Tiefe</span><span class="num-reset"><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" />{@render machineReset('dDepth', 'Ø in der Tiefe')}</span></div>
+            <div class="field"><span class="field-label">Tiefe (Steckweg)</span><span class="num-reset"><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" />{@render machineReset('length', 'Tiefe (Steckweg)')}</span></div>
+            <div class="field"><span class="field-label">Wandstärke</span><span class="num-reset"><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" />{@render machineReset('wall', 'Wandstärke')}</span></div>
+            <div class="field"><span class="field-label">Zugabe (Sitz)</span><span class="num-reset"><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" />{@render machineReset('allowance', 'Zugabe für den Sitz')}</span></div>
+            <div class="field"><span class="field-label">Übergangslänge</span><span class="num-reset"><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" />{@render machineReset('transition', 'Übergangslänge')}</span></div>
             <label class="field check"><input type="checkbox" bind:checked={machine.holes} /> 3 Schraubenlöcher Ø 4</label>
           </div>
           <p class="hint"><strong>Zugabe:</strong> Luft zwischen Adapter und {machine.mode === 'over' ? 'Stutzen' : 'Öffnung'}. Größer, wenn der Adapter nicht {machine.mode === 'over' ? 'draufpasst' : 'hineinpasst'}, kleiner (bis 0), wenn er zu locker sitzt.</p>
