@@ -25,7 +25,7 @@
     <line x1="98" y1="46" x2="98" y2="104" class="dim" />
     <text x="250" y="80" class="lbl">Ø vorne</text>
     <line x1="246" y1="76" x2="210" y2="76" class="dim thin" />
-    <text x="98" y="130" class="lbl" text-anchor="middle">Ø in der Tiefe</text>
+    <text x="98" y="137" class="lbl" text-anchor="middle">Ø in der Tiefe</text>
     <line x1="98" y1="22" x2="218" y2="22" class="dim thin" />
     <text x="158" y="16" class="lbl" text-anchor="middle">Tiefe</text>
   {/if}
