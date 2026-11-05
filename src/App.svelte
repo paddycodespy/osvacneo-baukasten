@@ -303,16 +303,30 @@
     }
   }
 
-  /** Alle Maße und Einstellungen auf den Standard (der gewählte Adaptertyp bleibt) */
-  const allDefault = $derived(
-    JSON.stringify($state.snapshot(input)) === JSON.stringify(START_INPUT) &&
-      JSON.stringify($state.snapshot(machine)) === JSON.stringify(MACHINE_DEFAULT) && text && supports,
+  // --- Zurücksetzen je Schritt: nur die Werte, die im jeweiligen Schritt zu sehen sind ---
+  const MACHINE_KEYS = ['dOpen', 'dDepth', 'length', 'wall', 'allowance', 'holes', 'transition'] as const;
+  /** Größen: Durchmesser des gewählten Typs und beim Stutzen dessen Maße (die Befestigungsart bleibt) */
+  const sizesDefault = $derived(
+    kind.diameters.every((k) => input[k] === START_INPUT[k]) && (!kind.machine || MACHINE_KEYS.every((k) => machine[k] === machineDefault(k))),
   );
-  function resetAll() {
-    input = { ...START_INPUT };
-    machine = { ...MACHINE_DEFAULT };
+  function resetSizes() {
+    for (const k of kind.diameters) input[k] = START_INPUT[k];
+    if (kind.machine) for (const k of MACHINE_KEYS) (machine[k] as number | boolean) = machineDefault(k);
+  }
+  /** Passung: Spaltmaße, Materialstärke, Beschriftung, Druckhilfe */
+  const fitDefault = $derived(
+    input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
+      (!hasSwivel || input.slipRingGapSize === START_INPUT.slipRingGapSize) &&
+      input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
+      text &&
+      (!hasSupport || supports),
+  );
+  function resetFit() {
+    input.maleFemaleGapSize = START_INPUT.maleFemaleGapSize;
+    if (hasSwivel) input.slipRingGapSize = START_INPUT.slipRingGapSize;
+    input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
     text = true;
-    supports = true;
+    if (hasSupport) supports = true;
   }
 
   function setDia(k: DiameterKey, v: number) {
@@ -337,10 +351,10 @@
   {@render resetBtn(input[key] === START_INPUT[key], START_INPUT[key], label, () => (input[key] = START_INPUT[key]))}
 {/snippet}
 
-{#snippet resetAllBtn()}
-  {#if !allDefault}
-    <button type="button" class="reset-all" onclick={resetAll}>
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg>Alle Werte auf Standard zurücksetzen
+{#snippet resetStepBtn(isDefault: boolean, label: string, apply: () => void)}
+  {#if !isDefault}
+    <button type="button" class="reset-all" onclick={apply}>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg>{label}
     </button>
   {/if}
 {/snippet}
@@ -485,7 +499,7 @@
             </ul>
           {/if}
         {/if}
-        {@render resetAllBtn()}
+        {@render resetStepBtn(sizesDefault, kind.machine ? 'Größen und Stutzen-Maße auf Standard zurücksetzen' : 'Größen auf Standard zurücksetzen', resetSizes)}
       {:else if step === 2}
         <h2>Passung</h2>
         <p class="lead">Die Standardwerte passen für die meisten gut kalibrierten Drucker.</p>
@@ -529,7 +543,7 @@
             <label><input type="checkbox" bind:checked={supports} /> Druckhilfe unter dem Stecker</label>
           {/if}
         </fieldset>
-        {@render resetAllBtn()}
+        {@render resetStepBtn(fitDefault, 'Passung auf Standard zurücksetzen', resetFit)}
       {:else}
         <h2>Download</h2>
         <p class="lead">
