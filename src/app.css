@@ -309,8 +309,6 @@ h2 {
 fieldset { border: 0; margin: 0 0 22px; padding: 0; }
 legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .dia-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.dia-free { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
-.dia-free .free-label { font-size: 14px; color: var(--slate-2); min-width: 92px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
   min-width: 46px;
