@@ -4,7 +4,7 @@
  * Lokales System: Oberkante des Übergangs bei z = 0, nach unten.
  */
 import type { Shape3D } from 'replicad';
-import { makeCylinder, loft, assembleWire, makeLine, makeBSplineApproximation, type Point } from 'replicad';
+import { makeCompound, makeCylinder, loft, assembleWire, makeLine, makeBSplineApproximation, type Point } from 'replicad';
 
 /** Geschlossener Polygonzug als Kanten (für Regelflächen-Loft). */
 function makePolygonWire(pts: Point[]) {
@@ -73,14 +73,17 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
     // 3 Schraubenlöcher Ø4 bei 90/210/330° mit Senkung wie im Original (dort eine Fase an der Bohrungskante):
     // beginnt 2,0 mm unter der Außenfläche in der Bohrung und endet auf der Außenfläche überall bei Ø 7,88;
     // nachgebaut als Regelfläche zwischen den beiden Randkurven
-    const zH = -(L0 - 7.867);
+    // Achse 8 mm über dem Rohrende, bei konischem Rohr um 2 · Steigung höher
+    // (gemessen: gerade 8,000 bei Wand 3–6 und Ø 30/40, Konus 29,3→33,3 7,867, Konus 40→42 7,900)
+    const zH = -(L0 - 8 + 2 * slope);
     const rOutAt = (z: number) => r1i + w + slope * -z;
     const rAt = r1i + slope * -zH;
+    const tools: Shape3D[] = [];
     for (const a of HOLE_ANGLES) {
       const e: [number, number, number] = [Math.cos(rad(a)), Math.sin(rad(a)), 0];
       const t: [number, number, number] = [-e[1], e[0], 0];
       const start: [number, number, number] = [e[0] * (rAt - 2), e[1] * (rAt - 2), zH];
-      body = body.cut(makeCylinder(2, w + 6, start, e));
+      const bore = makeCylinder(2, w + 6, start, e);
       const P = (y: number, rho: number, ph: number): Point => {
         const c = rho * Math.cos(ph), zz = zH + rho * Math.sin(ph);
         return [y * e[0] + c * t[0], y * e[1] + c * t[1], zz];
@@ -95,10 +98,19 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
       const rimY = (ph: number, rho: number) => Math.sqrt(rOutAt(zH + rho * Math.sin(ph)) ** 2 - (rho * Math.cos(ph)) ** 2);
       const w0 = ring((ph) => P(rimY(ph, 2) - 2.3, 1.7, ph)); // etwas innerhalb der Bohrung beginnen
       const w1 = ring((ph) => P(rimY(ph, 2) - 2.0, 2, ph));
-      const w2 = ring((ph) => P(rimY(ph, 3.94), 3.94, ph));
-      const w3 = ring((ph) => P(rimY(ph, 3.94) + 1.5, 3.94, ph));
-      body = body.cut(loft([w0, w1, w2, w3], { ruled: true }));
+      // Fasenlinie über die Außenfläche hinaus verlängert (k = 1,25): liegt die Randkurve genau auf dem
+      // Außenzylinder, scheitert der Schnitt je nach Durchmesser (z. B. Ø 38–43 mm)
+      const k = 1.25;
+      const ext = (ph: number): [number, number] => {
+        const y1 = rimY(ph, 2) - 2.0, y2 = rimY(ph, 3.94);
+        return [y1 + k * (y2 - y1), 2 + k * (3.94 - 2)];
+      };
+      const w2 = ring((ph) => P(ext(ph)[0], ext(ph)[1], ph));
+      const w3 = ring((ph) => P(ext(ph)[0] + 1.5, ext(ph)[1], ph));
+      const sink = loft([w0, w1, w2, w3], { ruled: true });
+      tools.push(bore.fuse(sink));
     }
+    body = body.cut(makeCompound(tools));
   }
 
   if (opt.text !== false) {
@@ -123,7 +135,8 @@ export function femaleBeadFill(p: OsvacParams): Shape3D {
   const rFi = p.femaleDiameterInner / 2;
   const rFm = p.femaleDiameterMiddle / 2;
   const H = p.femaleHeight;
-  const beadC: [number, number] = [rFm - 0.95, -31.45];
+  // Dichtnut: Lage fest zum Innendurchmesser (bei Spalt 0,4 gemessen: wandert nicht mit der Bohrung)
+  const beadC: [number, number] = [p.femaleDiameterInner / 2 + 2.15, -31.45];
   const beadR = 1.95;
   const beadTopZ = beadC[1] + Math.sqrt(beadR ** 2 - (rFm - beadC[0]) ** 2);
   const zBot = -H + 0.1;

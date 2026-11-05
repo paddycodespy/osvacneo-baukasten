@@ -9,8 +9,11 @@ import { rad, deg } from './geom';
 
 export const THREAD = {
   pitch: 5,
-  /** Sweep beginnt hier; die eigentliche Anschnittkante entsteht durch startCut */
-  startDeg: 50,
+  /**
+   * Sweep beginnt hier; die eigentliche Anschnittkante entsteht durch startCut
+   * (H50: Ebene schneidet bei 46,9°, H60 bei 43,9°, daher früh genug beginnen)
+   */
+  startDeg: 40,
   startCut: { dist: 9.42, normalDeg: -62.6, refDeg: 55, aMin: 30, zTop: -1, zBot: -7.8 },
   /** Ende ohne Knickschutz: senkrechte Ebene wie am Anfang (Rippe läuft dort von voller Tiefe auf 0) */
   endCut: { dist: 10.55, distPerMm: 0.0057, normalDeg: 135.4, refDeg: 15, aMax: 45, zTop: -22.0, zBot: -28.5 },
