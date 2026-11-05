@@ -382,7 +382,7 @@ legend.field-label { width: 100%; }
 .field-label { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 24px; }
 .hint { margin: 6px 0 0; font-size: 14px; color: var(--slate-2); }
 .hint strong { color: var(--slate); font-weight: 600; }
-.pipe-sum { margin-top: 10px; padding: 8px 14px 10px; background: var(--mist); border-radius: 8px; color: var(--slate); font-size: 14px; }
+.pipe-sum { padding: 8px 14px 10px; background: var(--mist); border-radius: 8px; color: var(--slate); font-size: 14px; }
 .pipe-sum table { width: 100%; border-collapse: collapse; }
 .pipe-sum caption { text-align: left; font-weight: 600; padding-bottom: 4px; }
 .pipe-sum th, .pipe-sum td { padding: 3px 0; text-align: right; font-weight: 500; }
@@ -406,7 +406,6 @@ legend.field-label { width: 100%; }
 .dl:disabled { opacity: 0.45; }
 .status-line { min-height: 1.5em; font-size: 14px; color: var(--slate-2); margin: 10px 0; }
 .warn {
-  margin: 0 0 18px;
   padding: 10px 14px 10px 30px;
   background: #fdf6dc;
   border-left: 4px solid var(--signal);
@@ -418,14 +417,14 @@ legend.field-label { width: 100%; }
 .files ul { list-style: none; margin: 0; padding: 0; }
 .files li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--shop-2); }
 .files a { color: var(--cobalt-d); font-weight: 600; text-decoration: none; }
-.filament { font-size: 14px; margin: -8px 0 18px; padding: 10px 14px; background: var(--mist); border-radius: 8px; }
+.filament { font-size: 14px; padding: 10px 14px; background: var(--mist); border-radius: 8px; }
 .license { font-size: 13px; line-height: 1.55; color: var(--slate-2); border-top: 1px solid var(--line); padding-top: 16px; margin-top: 22px; }
 .license p { margin: 0 0 12px; }
 .license p:last-child { margin-bottom: 0; }
 .license .credit strong { color: var(--graphite); font-weight: 600; }
 .license .more { display: inline-flex; align-items: center; gap: 4px; }
 .license .more .arr { width: 13px; height: 13px; }
-.error { color: #b02a20; font-size: 14px; }
+.error { color: #b02a20; font-size: 14px; padding: 10px 14px; background: #fdecea; border-left: 4px solid #d93a2b; border-radius: 4px; }
 
 .step-nav {
   display: flex;
@@ -473,7 +472,7 @@ legend.field-label { width: 100%; }
 }
 
 /* Download: aufklappbare Kästen (Druckhinweise, Druckbett, Einstellung merken) */
-.box { margin: 14px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--mist); }
+.box { padding: 10px 14px; border-radius: 8px; background: var(--mist); }
 /* eigener Pfeil (wie bei den Navigationsknöpfen) statt des Browser-Dreiecks */
 .box summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .box summary::-webkit-details-marker { display: none; }
@@ -501,3 +500,7 @@ legend.field-label { width: 100%; }
 .plate .x:hover { color: var(--red); }
 .plate-dl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: 14px; }
 .plate-dl span { margin-right: 2px; }
+
+/* Hinweis- und Infokästen: in allen Schritten immer mit Abstand zu den Nachbarn */
+.warn, .error, .filament, .pipe-sum, .box { margin: 16px 0; }
+.box + .box { margin-top: 10px; }
