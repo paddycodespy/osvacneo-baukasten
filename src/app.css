@@ -308,6 +308,7 @@ h2 {
 /* Durchmesser */
 fieldset { border: 0; margin: 0 0 22px; padding: 0; }
 legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
+legend.field-label { width: 100%; }
 .dia-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
@@ -332,6 +333,7 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 }
 .num-in input {
   width: 70px;
+  min-width: 0;
   border: 0;
   background: none;
   padding: 7px 6px;
@@ -348,7 +350,7 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .sub { font-family: var(--cond); font-weight: 600; font-size: 22px; margin: 28px 0 10px; }
 .seg.wide { display: flex; margin-bottom: 14px; }
 .seg.wide button { flex: 1; padding: 8px 6px; font-size: 13px; white-space: nowrap; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; margin: 14px 0 6px; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 14px; margin: 14px 0 6px; align-items: end; }
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 500; }
 .field .num-in input { width: 100%; }
 .field.check { flex-direction: row; align-items: center; gap: 8px; grid-column: span 2; }
@@ -367,6 +369,9 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 }
 .reset svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .reset.hidden { visibility: hidden; }
+.reset-all { display: inline-flex; align-items: center; gap: 6px; margin: 18px 0 4px; padding: 0; border: 0; background: none; color: var(--grey); font: inherit; font-size: 14px; cursor: pointer; }
+.reset-all svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.reset-all:hover { color: var(--sky-d); }
 .reset:hover { border-color: var(--sky); }
 /* kleine Ausführung in der Beschriftungszeile der Stutzen-Felder */
 .reset.sm { height: 22px; padding: 0 8px 0 6px; margin: 0; font-size: 12px; }
@@ -436,18 +441,38 @@ legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 .next:hover { background: var(--red-d); }
 
 /* ---------- Mobil ---------- */
+.status-m { display: none; }
+
 @media (max-width: 860px) {
   .topbar { padding: 0 18px; height: 56px; }
-  .app { grid-template-columns: 1fr; grid-template-rows: 58vh auto; flex: none; }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58vh auto; flex: none; }
   .panel { border-left: 0; border-top: 1px solid var(--line); }
   .stage-head { top: 16px; left: 18px; }
   .stage-tools { top: auto; bottom: 74px; right: 14px; }
   .stage-foot { left: 18px; right: 14px; bottom: 14px; }
   .dims { gap: 18px; }
   .dims dd { font-size: 22px; }
-  .status { display: none; }
+  .stage-foot .status { display: none; }
+  .seg.wide button { white-space: normal; line-height: 1.25; padding-top: 7px; padding-bottom: 7px; }
+  /* auf dem Handy steht der Rechenstand oben bei der Kennung */
+  .status-m { display: inline-flex; margin-top: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .status::before { animation: none !important; }
 }
+
+/* Download: aufklappbare Kästen (Druckhinweise, Druckbett, Einstellung merken) */
+.box { margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.box summary { cursor: pointer; font-weight: 600; list-style-position: outside; }
+.box summary:hover { color: var(--sky-d); }
+.box[open] summary { margin-bottom: 6px; }
+.tips { margin: 0; padding-left: 18px; font-size: 14px; color: var(--slate-2); }
+.tips li + li { margin-top: 4px; }
+.ghost.sm { margin-top: 8px; padding: 6px 12px; font-size: 14px; }
+.plate { list-style: none; margin: 10px 0 0; padding: 0; font-size: 14px; }
+.plate li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid var(--line); }
+.plate .x { border: 0; background: none; font-size: 18px; line-height: 1; color: var(--grey); cursor: pointer; padding: 0 4px; }
+.plate .x:hover { color: var(--red); }
+.plate-dl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: 14px; }
+.plate-dl span { margin-right: 2px; }

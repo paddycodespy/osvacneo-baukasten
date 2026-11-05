@@ -1,5 +1,5 @@
 import opencascade from 'replicad-opencascadejs';
-import { setOC, measureVolume } from 'replicad';
+import { setOC, getOC, measureVolume } from 'replicad';
 import fs from 'fs'; import path from 'path'; import { fileURLToPath } from 'url';
 import { deriveParams } from '../src/lib/osvac/params';
 import { initFont } from '../src/lib/osvac/text';
@@ -13,7 +13,12 @@ const cases = [
   { m: 40, f: 45, h: 50, W: 9, g: 0.3, sg: 0.6, text: false },
   { m: 25, f: 25, h: 25, W: 9, g: 0.1, sg: 0.2, text: false },
 ];
-const pipes = [{ d1Inner: 29.3, d2Inner: 33.3, length: 30, wall: 3, transition: 8, screwHoles: true }, { d1Inner: 50, d2Inner: 50, length: 15, wall: 2, transition: 8, screwHoles: false }];
+const pipes = [
+  { d1Inner: 29.3, d2Inner: 33.3, length: 30, wall: 3, transition: 8, screwHoles: true },
+  { d1Inner: 50, d2Inner: 50, length: 15, wall: 2, transition: 8, screwHoles: false },
+  // Ø 38–43 mit Schraubenlöchern: hier scheiterte der Schnitt früher
+  { d1Inner: 40, d2Inner: 40, length: 30, wall: 4, transition: 12, screwHoles: true },
+];
 let fail = 0;
 // Jeder Fall in einem eigenen Prozess (lange Läufe in einem WASM-Speicher werden instabil)
 const only = process.env.MATRIX_CASE;
@@ -37,10 +42,17 @@ for (const c of [cases[+only]]) for (const k of KINDS) {
     try {
       const bodies = k.build(p, { text: c.text, pipe });
       const vols = bodies.map((b) => Math.round(measureVolume(b.shape)));
+      // gültige Topologie wie im Worker geprüft (BRepCheck)
+      const invalid = bodies.filter((b) => {
+        const a = new (getOC().BRepCheck_Analyzer)((b.shape as unknown as { wrapped: never }).wrapped, false, false);
+        const ok = a.IsValid();
+        a.delete();
+        return !ok;
+      }).map((b) => b.name);
       for (const b of bodies) b.shape.delete(); // WASM-Speicher freigeben, sonst läuft er bei vielen Fällen voll
-      const bad = vols.some((v) => !(v > 0));
+      const bad = vols.some((v) => !(v > 0)) || invalid.length > 0;
       if (bad) fail++;
-      console.log(`${bad ? 'FAIL' : 'ok  '} ${k.id.padEnd(10)} M${c.m} F${c.f} H${c.h} W${c.W} g${c.g} sg${c.sg} text=${c.text} ${pipe ? 'pipe' + pipe.d1Inner : ''} ${Date.now() - t}ms vols=${vols.join(',')}`);
+      console.log(`${bad ? 'FAIL' : 'ok  '} ${k.id.padEnd(10)} M${c.m} F${c.f} H${c.h} W${c.W} g${c.g} sg${c.sg} text=${c.text} ${pipe ? 'pipe' + pipe.d1Inner : ''} ${Date.now() - t}ms vols=${vols.join(',')}${invalid.length ? ' ungültig: ' + invalid.join(', ') : ''}`);
     } catch (e) { fail++; console.log(`FAIL ${k.id} M${c.m} F${c.f} H${c.h} W${c.W}: ${e}`); }
   }
 }

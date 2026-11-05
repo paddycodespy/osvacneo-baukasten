@@ -79,20 +79,33 @@ scripts/
 - Grundkörper, Rändelung und Textfelder sind getrennte Körper: Der Rändelring greift 0,3 mm in den Grundkörper und spart die Textfelder aus, die Textfelder (mit gravierter Schrift) greifen 0,05 mm hinein. Rändelung und Schrift hängen nur vom Außendurchmesser ab; ein anderes Spaltmaß rechnet nur den Grundkörper neu, und die volle Berechnung übernimmt den Grundkörper aus der schnellen Vorschau. Im 3MF sind alle Körper Teile desselben Objekts, der Slicer vereinigt sie. Volumen und Fläche der Überlappungen werden für die Filamentangabe herausgerechnet.
 - `npm run test:keys` prüft, dass gleiche Zwischenspeicher-Schlüssel in allen Adaptertypen denselben Körper liefern.
 - Der Senkkonus des Rohrstutzens nutzt glatte BSpline-Ringe statt Polygonen.
+- OpenCascade (22 MB WebAssembly) wird beim Laden der Seite einmal übersetzt und allen Workern übergeben.
+- Teure Körper werden zusätzlich im Browser gespeichert (IndexedDB, höchstens 150). Beim nächsten Öffnen ist ein schon einmal berechneter Adapter nach wenigen Sekunden da. Der Schlüssel enthält eine Prüfsumme des Geometrie-Codes; nach einem Update wird neu gerechnet.
+- Jeder berechnete Körper wird auf gültige Topologie geprüft (BRepCheck). Scheitert eine Boolesche Operation, erscheint eine Meldung statt eines kaputten Teils. `npm run test:geometry` prüft das ebenso.
+
+### Bedienung
+
+- Die letzte Einstellung bleibt im Browser gespeichert. Die Adresszeile enthält alle Abweichungen vom Standard (`#k=FH&sg=0.4…`), der Link öffnet genau diese Einstellung.
+- Im Download-Schritt lassen sich mehrere Adapter auf ein Druckbett legen und zusammen als 3MF, STL oder STEP herunterladen.
+- Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Drehring 0,4“).
 
 Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Radien hängen über die Fusion-Formeln von den Eingaben ab, axiale Maße sind fest.
 
 ## Abgleich mit Fusion
 
-Geprüft gegen die Fusion-STEP-Exporte (M25/F32/H36, M32/F32/H32, M25/F25/H25, 7 und 9 mm, Maschinenadapter
-mit drei Rohrvarianten): Volumen, waagerechte Schnitte alle 0,25 mm und ein Flächenvergleich, bei dem für
-300 000 Punkte jeder Oberfläche der exakte Abstand zur Gegenfläche berechnet wird (Rändelung eingeschlossen,
-nur die Schrift ausgenommen). Ergebnis: Alle Flächen liegen innerhalb von 0,1 mm am Original, außer den
-Schraubenlöchern bei 4 mm Rohrwand (siehe unten).
+Geprüft gegen die Fusion-STEP-Exporte M25/F32/H36, M32/F32/H32, M25/F25/H25, M50/F50/H50, M40/F40/H40,
+M25/F25/H27, M40/F25/H50 (7 mm), M25/F32/H36 und M32/F32/H32 (9 mm), M32/F32/H36 mit Spaltmaß 0,4 und
+Drehring 0,5 sowie sieben Rohrvarianten (konisch, gerade mit 3–6 mm Wand, Ø 30 und 40): Volumen, waagerechte
+Schnitte und ein Flächenvergleich, bei dem für 150 000–300 000 Punkte jeder Oberfläche der exakte Abstand zur
+Gegenfläche berechnet wird (Rändelung eingeschlossen, nur die Schrift ausgenommen). Ergebnis: Alle Flächen liegen
+innerhalb von 0,1 mm am Original. Einzige Ausnahme: Am Gewindeanfang großer Schläuche (H50) weicht die
+Anschnittfläche nahe am Gewindegrund an wenigen Punkten bis 0,15 mm ab; eine Ebene, die H50 genauer trifft,
+verschlechtert die kleinen Größen.
 
-Nicht aus den vorhandenen Daten ableitbar:
-- Höhe der Schraubenlöcher im Rohrkonus: bei 3 mm Wand wie im Original, bei 4 mm Wand ohne Konus liegen sie im Original 0,13 mm höher. Die zugrunde liegende Regel lässt sich aus drei Exporten nicht eindeutig bestimmen.
-- Einführung der Nut zwischen F25 und F32 und der Endanschnitt des Gewindes zwischen H25 und H36 sind linear interpoliert.
+Die Werkzeuge dafür liegen in `tools/fusion/` (Fusion-Exportskript und Vergleich, siehe dortige README).
+
+Nicht nachgemessen (fortgeschrieben): Größen unter 25 und über 50 mm, Spaltmaße außer 0,2/0,4 bzw. 0,3/0,5,
+Drehring bei 9 mm mit anderem Spaltmaß, Schraubenlöcher an sich verjüngenden Rohren.
 
 | Teil | Volumen gegenüber Fusion | Anmerkung |
 |---|---|---|

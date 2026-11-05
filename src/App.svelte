@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { PartViewer, type Dimensions } from './lib/viewer';
-  import { build, exportFile, makeBuild, partNames } from './lib/cad';
+  import { build, exportFile, exportPlate, makeBuild, partNames, type PlateItem } from './lib/cad';
   import { KINDS, kindById, type DiameterKey } from './lib/osvac/catalog';
   import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './lib/osvac/params';
   import type { ExportFormat, MeshBody } from './lib/worker/protocol';
@@ -11,6 +11,7 @@
   import type { PipeSpec } from './lib/osvac/machine';
   import { slipRingGapMax } from './lib/osvac/hose';
   import { estimateFilament } from './lib/filament';
+  import { loadSettings, saveSettings, type Settings } from './lib/settings';
 
   const STEPS = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
   const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
@@ -28,8 +29,47 @@
   let text = $state(true);
   /** Eine Einstellung für Anzeige und Export der Druckhilfe (wird immer mitberechnet) */
   let supports = $state(true);
-  const MACHINE_DEFAULT = { mode: 'over' as 'over' | 'into', dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true, transition: 8 };
+  type MachineMode = 'over' | 'into';
+  const MACHINE_DEFAULT = { mode: 'over' as MachineMode, dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true, transition: 8 };
+  /** Standardmaße je Befestigung: ein Stutzen wird zur Maschine hin dicker, eine Öffnung nach innen enger */
+  const machineDefault = (key: keyof typeof MACHINE_DEFAULT, mode: MachineMode = machine.mode) =>
+    mode === 'into' && (key === 'dOpen' || key === 'dDepth') ? (key === 'dOpen' ? 33 : 32) : MACHINE_DEFAULT[key];
   let machine = $state({ ...MACHINE_DEFAULT });
+  // Link (#…) oder zuletzt benutzte Einstellung übernehmen
+  const DEFAULT_SETTINGS: Settings = { kindId: 'MF', input: START_INPUT, machine: MACHINE_DEFAULT, text: true, supports: true };
+  {
+    const saved = loadSettings(DEFAULT_SETTINGS);
+    if (saved) {
+      kindId = saved.kindId;
+      input = saved.input;
+      machine = saved.machine;
+      text = saved.text;
+      supports = saved.supports;
+    }
+  }
+  $effect(() => {
+    saveSettings({ kindId, input: $state.snapshot(input), machine: $state.snapshot(machine), text, supports }, DEFAULT_SETTINGS);
+  });
+  let linkCopied = $state(false);
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      linkCopied = true;
+      setTimeout(() => (linkCopied = false), 2500);
+    } catch {
+      prompt('Link zum Kopieren:', location.href);
+    }
+  }
+  function setMode(mode: MachineMode) {
+    const old = machine.mode;
+    if (old === mode) return;
+    // unveränderte Standardmaße mitwechseln
+    if (machine.dOpen === machineDefault('dOpen', old) && machine.dDepth === machineDefault('dDepth', old)) {
+      machine.dOpen = machineDefault('dOpen', mode) as number;
+      machine.dDepth = machineDefault('dDepth', mode) as number;
+    }
+    machine.mode = mode;
+  }
   let measures = $state<{ volume: number; area: number; helperVolume: number; helperArea: number } | null>(null);
 
   let host: HTMLDivElement;
@@ -74,11 +114,20 @@
     return { d1Inner: round1(toInner(m.dOpen)), d2Inner: round1(toInner(m.dDepth)), length: m.length, wall: w, transition: Math.max(2, m.transition), screwHoles: m.holes };
   });
   const buildOpts = $derived(kind.machine ? { pipe } : {});
-  const fileName = $derived(kind.fileName(params, buildOpts));
+  /** Dateiname mit allen Abweichungen von den Standardeinstellungen, damit Testdrucke unterscheidbar bleiben */
+  const baseName = $derived(kind.fileName(params, buildOpts));
+  const fileName = $derived.by(() => {
+    const extra: string[] = [];
+    if (input.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(input.maleFemaleGapSize, 2)}`);
+    if (hasSwivel && input.slipRingGapSize !== START_INPUT.slipRingGapSize) extra.push(`Drehring ${fmt(input.slipRingGapSize, 2)}`);
+    if (input.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${input.generalMaterialWidth} mm`);
+    if (!text) extra.push('ohne Text');
+    return [baseName, ...extra].join(' ');
+  });
   const code = $derived(
     kind.machine
       ? `${kind.ends.top === 'female' ? 'F' : 'M'}${fmt(kind.ends.top === 'female' ? input.femaleDiameterInner : input.maleDiameterInner)}/${fmt(machine.dOpen)}`
-      : fileName.replace('osVAC neo ', ''),
+      : baseName.replace('osVAC neo ', ''),
   );
 
   const LABELS: Record<DiameterKey, { name: string; word: string; letter: 'F' | 'M' | 'H'; hint: string; presets: number[] }> = {
@@ -87,6 +136,24 @@
     hoseDiameterInner: { name: 'Schlauch (H)', word: 'Schlauch', letter: 'H', hint: 'Innendurchmesser des Schlauchs', presets: [27, 32, 36, 40, 50] },
   };
 
+  /** Plausibilität der Stutzen-Maße (wird schon im Schritt Größen angezeigt) */
+  const machineWarnings = $derived.by(() => {
+    const w: string[] = [];
+    if (!kind.machine) return w;
+    const m = machine;
+    if (m.mode === 'over' && m.dDepth < m.dOpen - 0.05)
+      w.push('Ø in der Tiefe ist kleiner als Ø vorne. Ein Stutzen wird zur Maschine hin meist dicker; so ließe sich der Adapter nicht aufschieben. Bitte die Messung prüfen.');
+    if (m.mode === 'into' && m.dDepth > m.dOpen + 0.05)
+      w.push('Ø in der Tiefe ist größer als Ø vorne. Eine Öffnung wird nach innen meist enger; so ließe sich der Adapter nicht hineinstecken. Bitte die Messung prüfen.');
+    if (Math.abs(m.dOpen - m.dDepth) > 8) w.push('Ø vorne und Ø in der Tiefe unterscheiden sich um mehr als 8 mm. Bitte die Messung prüfen.');
+    if (pipe.d1Inner < 8 || pipe.d2Inner < 8) w.push('Der Innendurchmesser des Rohrteils wird kleiner als 8 mm. Maße oder Wandstärke prüfen.');
+    else if (Math.min(pipe.d1Inner, pipe.d2Inner) < 0.5 * (kind.ends.top === 'female' ? input.femaleDiameterInner : input.maleDiameterInner))
+      w.push('Das Rohrteil ist innen weniger als halb so weit wie der Anschluss. Das bremst die Absaugung deutlich.');
+    if (m.length < 10) w.push(`Unter 10 mm Steckweg hält der Adapter kaum ${m.mode === 'over' ? 'auf dem Stutzen' : 'in der Öffnung'}.`);
+    if (m.holes && m.length < 12) w.push('Die Schraubenlöcher sitzen 8 mm über dem Rohrende und brauchen mindestens 12 mm Steckweg. Steckweg erhöhen oder Schraubenlöcher abwählen.');
+    return w;
+  });
+
   const warnings = $derived.by(() => {
     const w: string[] = [];
     for (const k of kind.diameters) {
@@ -94,11 +161,7 @@
       if (!(v >= 15 && v <= 60)) w.push(`${LABELS[k].name}: ${fmt(v)} mm liegt außerhalb von 15 bis 60 mm.`);
       else if (!LABELS[k].presets.includes(v)) w.push(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
     }
-    if (kind.machine) {
-      if (pipe.d1Inner < 8 || pipe.d2Inner < 8) w.push('Der Innendurchmesser des Rohrs wird kleiner als 8 mm. Maße oder Wandstärke prüfen.');
-      if (Math.abs(machine.dOpen - machine.dDepth) > 8) w.push('Öffnung und Tiefe unterscheiden sich um mehr als 8 mm. Bitte die Messung prüfen.');
-      if (machine.length < 10) w.push('Unter 10 mm Steckweg hält der Adapter kaum auf dem Stutzen.');
-    }
+    w.push(...machineWarnings);
     if (input.maleFemaleGapSize < 0.1 || input.maleFemaleGapSize > 0.5) w.push('Spaltmaß außerhalb von 0,1 bis 0,5 mm – Stecker und Kupplung passen dann kaum zusammen.');
     return w;
   });
@@ -117,6 +180,8 @@
 
   // --- Bauen: erst schnelle Vorschau, dann Details ---
   let buildToken = 0;
+  /** Adaptertyp, dessen Körper gerade angezeigt werden */
+  let shownKind = '';
   let timer: ReturnType<typeof setTimeout> | undefined;
   function spec() {
     return makeBuild(kindId, $state.snapshot(input), { text, knurl: true, supports: true, ...$state.snapshot(buildOpts) });
@@ -132,9 +197,14 @@
     measures = null; // Filamentangabe gehört zur alten Konfiguration
     try {
       status = 'preview';
+      if (shownKind && shownKind !== kindId) {
+        viewer!.setDimmed(true);
+        dims = null; // Maße gehören zum alten Typ
+      }
       const quick = await build(makeBuild(kindId, $state.snapshot(input), { text: false, knurl: false, supports: true, ...$state.snapshot(buildOpts) }));
       if (token !== buildToken) return;
       dims = viewer!.setBodies(quick.bodies);
+      shownKind = kindId;
       status = 'detail';
       // Fertige Körper sofort zeigen; bis dahin bleiben die Körper der schnellen Vorschau stehen
       // (die volle Berechnung hat zusätzlich die Rändelung als eigene Körper, daher Zuordnung über den Namen)
@@ -198,6 +268,53 @@
     }
   }
 
+  /** Druckhinweise je Adaptertyp (die Dateien sind schon so ausgerichtet wie in der Vorschau) */
+  const printTips = $derived.by(() => {
+    const t: string[] = ['So drucken, wie das Teil in der Vorschau auf dem Druckbett steht. Die Dateien sind bereits so ausgerichtet.'];
+    if (hasSupport)
+      t.push('Der Stecker steht mit der Spitze nach unten auf der Druckhilfe. Stützmaterial im Slicer ausschalten. Nach dem Druck die Druckhilfe abbrechen: Die Rippen sind an den Auflagen auf 0,4 mm verjüngt und lösen sich mit einer Zange.');
+    else t.push('Stützmaterial ist nicht nötig, im Slicer ausschalten.');
+    if (hasSwivel)
+      t.push(`Der Drehring wird in einem Stück mitgedruckt. Nach dem Druck den Schlauchteil gegen ${kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} kräftig drehen, bis sich der Ring frei bewegt. Sitzt er fest, beim nächsten Druck das Spaltmaß Drehring erhöhen.`);
+    if (kind.machine && machine.holes) t.push('Die drei Löcher Ø 4 mm mit Senkung nehmen Senkkopfschrauben auf, mit denen sich der Adapter zusätzlich sichern lässt.');
+    t.push('Die Filamentangabe oben gilt für PETG.');
+    return t;
+  });
+
+  // --- Druckbett: mehrere Adapter in einer Datei ---
+  // $state.raw: die Einträge gehen per postMessage an die Worker, Proxys ließen sich nicht übertragen
+  let plate = $state.raw<(PlateItem & { key: string })[]>([]);
+  let plateBusy = $state<ExportFormat | null>(null);
+  const plateKey = () => JSON.stringify([kindId, $state.snapshot(input), text, supports && hasSupport, kind.machine ? $state.snapshot(machine) : null]);
+  const onPlate = $derived(plate.some((p) => p.key === plateKey()));
+  function addToPlate() {
+    if (onPlate) return;
+    plate = [...plate, { req: spec(), includeHelpers: supports && hasSupport, label: fileName, key: plateKey() }];
+  }
+  async function downloadPlate(f: ExportFormat) {
+    plateBusy = f;
+    try {
+      const r = await exportPlate(plate.map(({ req, includeHelpers, label }) => ({ req, includeHelpers, label })), f, `osVAC neo Druckbett ${plate.length} Adapter`);
+      files = [{ ...r, key: 'plate' + f }, ...files.filter((x) => x.fileName !== r.fileName)];
+    } catch (e) {
+      errorMsg = e instanceof Error ? e.message : String(e);
+    } finally {
+      plateBusy = null;
+    }
+  }
+
+  /** Alle Maße und Einstellungen auf den Standard (der gewählte Adaptertyp bleibt) */
+  const allDefault = $derived(
+    JSON.stringify($state.snapshot(input)) === JSON.stringify(START_INPUT) &&
+      JSON.stringify($state.snapshot(machine)) === JSON.stringify(MACHINE_DEFAULT) && text && supports,
+  );
+  function resetAll() {
+    input = { ...START_INPUT };
+    machine = { ...MACHINE_DEFAULT };
+    text = true;
+    supports = true;
+  }
+
   function setDia(k: DiameterKey, v: number) {
     input[k] = Math.round(v * 10) / 10;
   }
@@ -220,8 +337,20 @@
   {@render resetBtn(input[key] === START_INPUT[key], START_INPUT[key], label, () => (input[key] = START_INPUT[key]))}
 {/snippet}
 
+{#snippet resetAllBtn()}
+  {#if !allDefault}
+    <button type="button" class="reset-all" onclick={resetAll}>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg>Alle Werte auf Standard zurücksetzen
+    </button>
+  {/if}
+{/snippet}
+
+{#snippet resetSm(key: DiameterKey, label: string)}
+  {@render resetBtn(input[key] === START_INPUT[key], START_INPUT[key], label, () => (input[key] = START_INPUT[key]), true)}
+{/snippet}
+
 {#snippet machineReset(key: 'dOpen' | 'dDepth' | 'length' | 'wall' | 'allowance' | 'transition', label: string)}
-  {@render resetBtn(machine[key] === MACHINE_DEFAULT[key], MACHINE_DEFAULT[key], label, () => (machine[key] = MACHINE_DEFAULT[key]), true)}
+  {@render resetBtn(machine[key] === machineDefault(key), machineDefault(key) as number, label, () => ((machine[key] as number) = machineDefault(key) as number), true)}
 {/snippet}
 
 <header class="topbar">
@@ -236,6 +365,7 @@
     <header class="stage-head">
       <h1 class="code" aria-live="polite">{code}</h1>
       <p class="kind-line">{kind.title}</p>
+      {#if status !== 'ready'}<p class="status status-m" data-s={status} aria-hidden="true">{status === 'error' ? 'Fehler beim Berechnen' : status === 'start' ? 'CAD-Kern wird geladen…' : 'Wird berechnet…'}</p>{/if}
     </header>
 
     <div class="stage-tools">
@@ -256,7 +386,7 @@
         {#if status === 'start'}CAD-Kern wird geladen…
         {:else if status === 'preview' || status === 'detail'}Wird berechnet…
         {:else if status === 'ready'}Bereit zum Download
-        {:else}Fehler beim Berechnen{/if}
+        {:else}Fehler beim Berechnen, Hinweis rechts{/if}
       </p>
     </footer>
   </section>
@@ -273,6 +403,9 @@
     </ol>
 
     <div class="step-body">
+      {#if errorMsg}
+        <p class="error" role="alert">{errorMsg}</p>
+      {/if}
       {#if step === 0}
         <h2>Verbindung</h2>
         <div class="kinds" role="radiogroup" aria-label="Adaptertyp">
@@ -303,7 +436,7 @@
         <p class="lead">Innendurchmesser in Millimetern.</p>
         {#each kind.diameters as k}
           <fieldset class="dia dia-{LABELS[k].letter}">
-            <legend>{LABELS[k].word} (<b class="ck-{LABELS[k].letter}">{LABELS[k].letter}</b>)</legend>
+            <legend class="field-label"><span>{LABELS[k].word} (<b class="ck-{LABELS[k].letter}">{LABELS[k].letter}</b>)</span>{@render resetSm(k, LABELS[k].name)}</legend>
             <div class="dia-row">
               <div class="chips">
                 {#each LABELS[k].presets as v}
@@ -311,15 +444,14 @@
                 {/each}
               </div>
               <NumberField value={input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => setDia(k, v)} />
-              {@render reset(k, LABELS[k].name)}
             </div>
           </fieldset>
         {/each}
         {#if kind.machine}
           <h3 class="sub">Stutzen</h3>
           <div class="seg wide" role="radiogroup" aria-label="Befestigung">
-            <button role="radio" aria-checked={machine.mode === 'over'} class:sel={machine.mode === 'over'} onclick={() => (machine.mode = 'over')}>Adapter wird aufgesteckt</button>
-            <button role="radio" aria-checked={machine.mode === 'into'} class:sel={machine.mode === 'into'} onclick={() => (machine.mode = 'into')}>Adapter wird eingesteckt</button>
+            <button role="radio" aria-checked={machine.mode === 'over'} class:sel={machine.mode === 'over'} onclick={() => setMode('over')}>Adapter wird aufgesteckt</button>
+            <button role="radio" aria-checked={machine.mode === 'into'} class:sel={machine.mode === 'into'} onclick={() => setMode('into')}>Adapter wird eingesteckt</button>
           </div>
           <MeasureFigure mode={machine.mode} />
           <p class="hint">
@@ -347,7 +479,13 @@
             {/if}
             Wand {fmt(pipe.wall)} mm.
           </p>
+          {#if machineWarnings.length}
+            <ul class="warn">
+              {#each machineWarnings as w}<li>{w}</li>{/each}
+            </ul>
+          {/if}
         {/if}
+        {@render resetAllBtn()}
       {:else if step === 2}
         <h2>Passung</h2>
         <p class="lead">Die Standardwerte passen für die meisten gut kalibrierten Drucker.</p>
@@ -391,6 +529,7 @@
             <label><input type="checkbox" bind:checked={supports} /> Druckhilfe unter dem Stecker</label>
           {/if}
         </fieldset>
+        {@render resetAllBtn()}
       {:else}
         <h2>Download</h2>
         <p class="lead">
@@ -429,6 +568,38 @@
         {#if hasSupport}
           <label class="inline-check"><input type="checkbox" bind:checked={supports} /> Druckhilfe mit exportieren</label>
         {/if}
+
+        <details class="box" open>
+          <summary>Druckhinweise</summary>
+          <ul class="tips">
+            {#each printTips as t}<li>{t}</li>{/each}
+          </ul>
+        </details>
+
+        <details class="box" open={plate.length > 0}>
+          <summary>Mehrere Adapter auf ein Druckbett{plate.length ? ` (${plate.length})` : ''}</summary>
+          <p class="hint">Den aktuellen Adapter hinzufügen, danach Typ oder Maße ändern und den nächsten hinzufügen, zum Beispiel zwei Spaltmaße zum Testen. Alle landen nebeneinander in einer Datei.</p>
+          <button class="ghost sm" disabled={onPlate || status !== 'ready'} onclick={addToPlate}>{onPlate ? 'Ist schon auf dem Druckbett' : 'Aktuellen Adapter hinzufügen'}</button>
+          {#if plate.length}
+            <ul class="plate">
+              {#each plate as p, i (p.key)}
+                <li><span>{p.label}{p.includeHelpers ? ' mit Druckhilfe' : ''}</span><button class="x" aria-label="{p.label} entfernen" onclick={() => (plate = plate.filter((_, j) => j !== i))}>×</button></li>
+              {/each}
+            </ul>
+            <div class="plate-dl">
+              <span>Druckbett herunterladen:</span>
+              {#each FORMATS as f (f.id)}
+                <button class="ghost sm" disabled={!!plateBusy || !!exporting} onclick={() => downloadPlate(f.id)}>{plateBusy === f.id ? 'Wird erzeugt…' : f.label}</button>
+              {/each}
+            </div>
+          {/if}
+        </details>
+
+        <details class="box">
+          <summary>Einstellung merken</summary>
+          <p class="hint">Der Konfigurator merkt sich die letzte Einstellung in diesem Browser. Zum Weitergeben oder als Lesezeichen gibt es den Link, er enthält alle Maße und Einstellungen.</p>
+          <button class="ghost sm" onclick={copyLink}>{linkCopied ? 'Link kopiert' : 'Link kopieren'}</button>
+        </details>
         <p class="status-line" role="status">
           {#if exporting}{exporting.toUpperCase()} wird erzeugt…{:else if status !== 'ready'}Die Downloads sind verfügbar, sobald die Berechnung fertig ist.{/if}
         </p>
@@ -452,9 +623,6 @@
         </div>
       {/if}
 
-      {#if errorMsg}
-        <p class="error" role="alert">{errorMsg}</p>
-      {/if}
     </div>
 
     <nav class="step-nav">

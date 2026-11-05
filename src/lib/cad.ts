@@ -5,6 +5,7 @@
  * Jeder Worker hält fertige Körper vor; ein Auftrag geht bevorzugt an den Worker, der den Körper schon kennt.
  */
 import CadWorker from './worker/cad.worker?worker';
+import wasmUrl from 'replicad-opencascadejs/wasm?url';
 import type { BuildRequest, ExportFormat, MeshBody, WorkerReply, WorkerRequest, PartRef } from './worker/protocol';
 import type { OsvacInput } from './osvac/params';
 import { deriveParams } from './osvac/params';
@@ -26,6 +27,19 @@ interface Slot {
 let nextId = 1;
 const pending = new Map<number, { resolve: (v: WorkerReply) => void; reject: (e: Error) => void; slot: Slot }>();
 const baseUrl = new URL(import.meta.env.BASE_URL, location.href).href;
+
+/**
+ * OpenCascade (22 MB WebAssembly) nur einmal übersetzen und das fertige Modul an alle Worker geben.
+ * Startet sofort beim Laden der Seite, also während man Schritt 1 ansieht.
+ */
+const wasmModule: Promise<WebAssembly.Module | undefined> = (async () => {
+  try {
+    const r = fetch(wasmUrl);
+    return await (WebAssembly.compileStreaming ? WebAssembly.compileStreaming(r) : r.then((x) => x.arrayBuffer()).then((b) => WebAssembly.compile(b)));
+  } catch {
+    return undefined; // dann lädt jeder Worker selbst
+  }
+})();
 
 /** Worker starten; stürzt er ab (z. B. kein Speicher mehr), werden seine Aufträge abgebrochen und er wird ersetzt */
 function startWorker(slot: Slot) {
@@ -57,7 +71,7 @@ function startWorker(slot: Slot) {
     startWorker(slot);
     pump();
   };
-  w.postMessage({ type: 'init', baseUrl } satisfies WorkerRequest);
+  wasmModule.then((module) => w.postMessage({ type: 'init', baseUrl, module } satisfies WorkerRequest));
   return r;
 }
 
@@ -106,7 +120,17 @@ function pump() {
     if (job.key) slot.known.add(job.key);
     pending.set(job.msg.id, { resolve: job.resolve, reject: job.reject, slot });
     const s = slot;
-    s.ready.then(() => s.w.postMessage(job.msg));
+    s.ready.then(() => {
+      try {
+        s.w.postMessage(job.msg);
+      } catch (e) {
+        // z. B. nicht übertragbare Daten: Auftrag mit Fehler beenden statt ewig zu warten
+        pending.delete(job.msg.id);
+        s.busy = false;
+        job.reject(e instanceof Error ? e : new Error(String(e)));
+        pump();
+      }
+    });
   }
 }
 
@@ -207,27 +231,8 @@ function stlBlob(meshes: { vertices: Float32Array; triangles: Uint32Array }[]): 
   return new Blob([buf], { type: 'model/stl' });
 }
 
-export async function exportFile(req: BuildRequest, format: ExportFormat, fileName: string, includeHelpers: boolean) {
-  await cadReady;
-  const parts = partsOf(req);
-  const sel = parts.map((q, i) => ({ q, i })).filter((x) => includeHelpers || !x.q.helper);
-  // Unterseite auf z = 0 legen, damit das Teil im Slicer direkt auf dem Bett steht
-  const infos = await Promise.all(sel.map((x) => enqueue<Extract<WorkerReply, { type: 'part' }>>({ type: 'part', id: nextId++, ...ref(req, x.i) }, x.q.cost, x.q.key, Infinity)));
-  const dz = -Math.min(...infos.map((r) => r.zMin));
-  let blob: Blob;
-  if (format === 'step') {
-    const breps = await Promise.all(
-      sel.map((x) => enqueue<Extract<WorkerReply, { type: 'partBrep' }>>({ type: 'partBrep', id: nextId++, dz, ...ref(req, x.i) }, x.q.cost, x.q.key, Infinity)),
-    );
-    const r = await enqueue<Extract<WorkerReply, { type: 'file' }>>({ type: 'step', id: nextId++, breps: breps.map((b) => b.data) }, 100, undefined, Infinity);
-    blob = r.blob;
-  } else {
-    const meshes = await Promise.all(
-      sel.map((x) => enqueue<Extract<WorkerReply, { type: 'partMesh' }>>({ type: 'partMesh', id: nextId++, dz, ...ref(req, x.i) }, x.q.cost, x.q.key, Infinity)),
-    );
-    blob = format === 'stl' ? stlBlob(meshes) : build3MF(meshes.map((m, k) => ({ name: sel[k].q.name, vertices: m.vertices, triangles: m.triangles })), fileName);
-  }
-  const name = `${fileName}.${format}`;
+/** Datei im Browser speichern; die URL bleibt gültig, damit sie über den Link erneut gespeichert werden kann */
+function saveBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -235,6 +240,79 @@ export async function exportFile(req: BuildRequest, format: ExportFormat, fileNa
   document.body.appendChild(a);
   a.click();
   a.remove();
-  // URL bleibt gültig, damit die Datei über den Link erneut gespeichert werden kann
   return { fileName: name, url, size: blob.size };
+}
+
+/** Ein Adapter auf dem Druckbett: Berechnung, Druckhilfe ja/nein, Name im 3MF */
+export interface PlateItem {
+  req: BuildRequest;
+  includeHelpers: boolean;
+  label: string;
+}
+
+/**
+ * Einen oder mehrere Adapter als eine Datei exportieren. Mehrere werden nebeneinander auf dem Druckbett
+ * angeordnet (Reihen bis ca. 220 mm Breite, 6 mm Abstand), jeweils mit der Unterseite auf z = 0.
+ */
+export async function exportPlate(items: PlateItem[], format: ExportFormat, fileName: string) {
+  await cadReady;
+  // reine Daten (keine reaktiven Proxys der Oberfläche), sonst lassen sie sich nicht an die Worker schicken
+  items = items.map((it) => ({ ...it, req: JSON.parse(JSON.stringify(it.req)) as BuildRequest }));
+  type Sel = { item: PlateItem; q: Part; i: number };
+  const groups = items.map((item) => {
+    const parts = partsOf(item.req);
+    return parts.map((q, i) => ({ item, q, i })).filter((x) => item.includeHelpers || !x.q.helper) as Sel[];
+  });
+  // Lage jedes Adapters aus den Vorschaunetzen (Zwischenspeicher der Worker, meist sofort da)
+  const infos = await Promise.all(
+    groups.map((g) => Promise.all(g.map((x) => enqueue<Extract<WorkerReply, { type: 'part' }>>({ type: 'part', id: nextId++, ...ref(x.item.req, x.i) }, x.q.cost, x.q.key, Infinity)))),
+  );
+  const boxes = infos.map((g) => {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const r of g) {
+      const p = r.body.positions;
+      for (let k = 0; k < p.length; k += 3) {
+        x0 = Math.min(x0, p[k]); x1 = Math.max(x1, p[k]); y0 = Math.min(y0, p[k + 1]); y1 = Math.max(y1, p[k + 1]);
+      }
+    }
+    return { x0, x1, y0, y1, dz: -Math.min(...g.map((r) => r.zMin)) };
+  });
+  // Anordnung in Reihen
+  const GAP = 6, ROW = 220;
+  const place: { dx: number; dy: number }[] = [];
+  let cx = 0, cy = 0, rowH = 0, maxW = 0;
+  for (const b of boxes) {
+    const w = b.x1 - b.x0, h = b.y1 - b.y0;
+    if (cx > 0 && cx + w > ROW) { cy -= rowH + GAP; cx = 0; rowH = 0; }
+    place.push({ dx: cx - b.x0, dy: cy - b.y1 });
+    cx += w + GAP;
+    rowH = Math.max(rowH, h);
+    maxW = Math.max(maxW, cx - GAP);
+  }
+  // Mitte des Ganzen auf den Ursprung
+  const totalH = -cy + rowH;
+  const ox = boxes.length > 1 ? -maxW / 2 : 0, oy = boxes.length > 1 ? totalH / 2 : 0;
+  if (boxes.length === 1) place[0] = { dx: 0, dy: 0 };
+  const jobs = groups.flatMap((g, gi) => g.map((x) => ({ ...x, gi, dx: place[gi].dx + ox, dy: place[gi].dy + oy, dz: boxes[gi].dz })));
+  let blob: Blob;
+  if (format === 'step') {
+    const breps = await Promise.all(jobs.map((x) => enqueue<Extract<WorkerReply, { type: 'partBrep' }>>({ type: 'partBrep', id: nextId++, dx: x.dx, dy: x.dy, dz: x.dz, ...ref(x.item.req, x.i) }, x.q.cost, x.q.key, Infinity)));
+    const r = await enqueue<Extract<WorkerReply, { type: 'file' }>>({ type: 'step', id: nextId++, breps: breps.map((b) => b.data) }, 100, undefined, Infinity);
+    blob = r.blob;
+  } else {
+    const meshes = await Promise.all(jobs.map((x) => enqueue<Extract<WorkerReply, { type: 'partMesh' }>>({ type: 'partMesh', id: nextId++, dx: x.dx, dy: x.dy, dz: x.dz, ...ref(x.item.req, x.i) }, x.q.cost, x.q.key, Infinity)));
+    blob =
+      format === 'stl'
+        ? stlBlob(meshes)
+        : build3MF(
+            meshes.map((m, k) => ({ name: jobs[k].q.name, group: jobs[k].gi, vertices: m.vertices, triangles: m.triangles })),
+            fileName,
+            items.map((it) => it.label),
+          );
+  }
+  return saveBlob(blob, `${fileName}.${format}`);
+}
+
+export function exportFile(req: BuildRequest, format: ExportFormat, fileName: string, includeHelpers: boolean) {
+  return exportPlate([{ req, includeHelpers, label: fileName }], format, fileName);
 }
