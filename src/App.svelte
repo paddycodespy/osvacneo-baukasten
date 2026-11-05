@@ -336,7 +336,17 @@
             <div class="field"><span class="field-label">Übergangslänge{@render machineReset('transition', 'Übergangslänge')}</span><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" /></div>
             <label class="field check"><input type="checkbox" bind:checked={machine.holes} /> 3 Schraubenlöcher Ø 4</label>
           </div>
-          <p class="hint">Rohr innen: Ø {fmt(pipe.d2Inner, 2)} an der Öffnung, Ø {fmt(pipe.d1Inner, 2)} am Übergang, Wand {fmt(pipe.wall)} mm.</p>
+          <p class="hint"><strong>Zugabe:</strong> Luft zwischen Adapter und {machine.mode === 'over' ? 'Stutzen' : 'Öffnung'}. Größer, wenn der Adapter nicht {machine.mode === 'over' ? 'draufpasst' : 'hineinpasst'}, kleiner (bis 0), wenn er zu locker sitzt.</p>
+          <p class="hint"><strong>Übergangslänge:</strong> Länge des Konus zwischen {kind.id === 'MACHINE_M' ? 'Stecker' : 'Kupplung'} und Rohrteil. Länger ergibt eine flachere Schräge, die sich besser druckt; der Adapter wird dafür länger. Original: 8 mm.</p>
+          <p class="hint pipe-sum">
+            Rohrteil des Adapters:
+            {#if machine.mode === 'over'}
+              innen Ø {fmt(pipe.d1Inner, 2)} vorne / {fmt(pipe.d2Inner, 2)} in der Tiefe, außen Ø {fmt(pipe.d1Inner + 2 * pipe.wall, 2)} / {fmt(pipe.d2Inner + 2 * pipe.wall, 2)},
+            {:else}
+              außen Ø {fmt(pipe.d1Inner + 2 * pipe.wall, 2)} vorne / {fmt(pipe.d2Inner + 2 * pipe.wall, 2)} in der Tiefe, innen Ø {fmt(pipe.d1Inner, 2)} / {fmt(pipe.d2Inner, 2)},
+            {/if}
+            Wand {fmt(pipe.wall)} mm.
+          </p>
         {/if}
       {:else if step === 2}
         <h2>Passung</h2>
