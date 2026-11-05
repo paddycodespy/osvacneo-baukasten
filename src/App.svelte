@@ -343,18 +343,18 @@
             <output>{fmt(input.maleFemaleGapSize, 2)} mm</output>
             {@render reset('maleFemaleGapSize', 'Spaltmaß Stecker / Kupplung')}
           </div>
-          <p class="hint" id="gap-hint">Größer, wenn der Stecker zu stramm sitzt. Kleiner, wenn er wackelt. Original: 0,2 mm.</p>
+          <p class="hint" id="gap-hint">Größer, wenn der Stecker zu stramm sitzt. Kleiner, wenn er wackelt. Original: 0,2 mm. Der Wert wirkt auf beide Teile. Steckt ein neu gedrucktes Teil in einem Original-Teil (0,2 mm), ergibt sich der Mittelwert: eingestellte 0,4 mm wirken dann wie 0,3 mm.</p>
         </fieldset>
 
         {#if hasSwivel}
           <fieldset class="opt">
             <legend>Spaltmaß Drehring</legend>
             <div class="slider">
-              <input type="range" min="0.2" max="0.6" step="0.05" bind:value={input.slipRingGapSize} aria-describedby="swivel-hint" />
+              <input type="range" min="0.2" max="0.8" step="0.05" bind:value={input.slipRingGapSize} aria-describedby="swivel-hint" />
               <output>{fmt(input.slipRingGapSize, 2)} mm</output>
               {@render reset('slipRingGapSize', 'Spaltmaß Drehring')}
             </div>
-            <p class="hint" id="swivel-hint">Größer, wenn der Drehring nach dem Druck festsitzt (bei PETG oft 0,35–0,4 mm). Kleiner, wenn er zu viel Spiel hat. Original: 0,3 mm.</p>
+            <p class="hint" id="swivel-hint">Größer, wenn der Drehring nach dem Druck festsitzt (bei PETG oft 0,35–0,5 mm). Kleiner, wenn er zu viel Spiel hat. Original: 0,3 mm.</p>
           </fieldset>
         {/if}
 
