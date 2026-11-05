@@ -76,7 +76,7 @@ button:disabled { cursor: not-allowed; }
 /* ---------- Grundlayout ---------- */
 .app {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 430px;
+  grid-template-columns: minmax(0, 1fr) clamp(460px, 38vw, 600px);
   flex: 1;
   min-height: 0;
 }
