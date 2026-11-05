@@ -9,6 +9,7 @@
   import MeasureFigure from './components/MeasureFigure.svelte';
   import NumberField from './components/NumberField.svelte';
   import type { PipeSpec } from './lib/osvac/machine';
+  import { slipRingGapMax } from './lib/osvac/hose';
   import { estimateFilament } from './lib/filament';
 
   const STEPS = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
@@ -60,6 +61,11 @@
   /** Druckhilfe gibt es nur, wenn der Stecker mit der Spitze nach unten gedruckt wird */
   const hasSupport = $derived(kind.id === 'M' || kind.id === 'MF');
   const hasSwivel = $derived(kind.id === 'FH' || kind.id === 'MH');
+  /** Beim Drehring an der Kupplung (FxxHyy) begrenzt die Geometrie des Originals das Spaltmaß (7 mm: 0,5, 9 mm: 0,35) */
+  const swivelMax = $derived(slipRingGapMax(input.generalMaterialWidth, kind.id === 'MH'));
+  $effect(() => {
+    if (hasSwivel && input.slipRingGapSize > swivelMax) input.slipRingGapSize = swivelMax;
+  });
   const pipe = $derived.by((): PipeSpec => {
     const m = machine;
     const w = Math.max(2, m.wall);
@@ -350,11 +356,11 @@
           <fieldset class="opt">
             <legend>Spaltmaß Drehring</legend>
             <div class="slider">
-              <input type="range" min="0.2" max="0.8" step="0.05" bind:value={input.slipRingGapSize} aria-describedby="swivel-hint" />
+              <input type="range" min="0.2" max={swivelMax} step="0.05" bind:value={input.slipRingGapSize} aria-describedby="swivel-hint" />
               <output>{fmt(input.slipRingGapSize, 2)} mm</output>
               {@render reset('slipRingGapSize', 'Spaltmaß Drehring')}
             </div>
-            <p class="hint" id="swivel-hint">Größer, wenn der Drehring nach dem Druck festsitzt (bei PETG oft 0,35–0,5 mm). Kleiner, wenn er zu viel Spiel hat. Original: 0,3 mm.</p>
+            <p class="hint" id="swivel-hint">Größer, wenn der Drehring nach dem Druck festsitzt (bei PETG oft 0,35–0,5 mm). Kleiner, wenn er zu viel Spiel hat. Original: 0,3 mm. Höchstens {fmt(swivelMax, 2)} mm{kind.id === 'FH' ? ` bei ${input.generalMaterialWidth} mm Materialstärke, sonst berührt der Außenring den Schlauchteil` : ''}.</p>
           </fieldset>
         {/if}
 

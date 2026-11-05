@@ -17,8 +17,12 @@ export interface FemaleOptions {
 /** Winkel der drei Einführkanäle (Grad). Nut läuft von hier aus um bayonetRotateAngle in negative Richtung. */
 export const FEMALE_SLOT_ANGLES = [90, 210, 330];
 
-/** Bogenlänge (Radius Rückwand − 1) vom Kanal bis zur Mitte des Nutendes. */
-const GROOVE_END_ARC = 12.7;
+/**
+ * Lage des Nutendes: Bogenlänge 12,896 + Spaltmaß auf dem Radius Rückwand − 0,38 vom Kanal bis zur Mitte
+ * des Nutendes (gemessen an F32, F40, F50 mit Spalt 0,2 und F32 mit Spalt 0,4, jeweils auf 0,01° genau).
+ */
+const GROOVE_END_ARC = 12.896;
+const GROOVE_END_R = 0.38;
 
 /**
  * Draufsicht der Rastnase im Kanal-System (Kanal entlang +X, Nut bei negativem y):
@@ -108,7 +112,8 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
   const H = p.femaleHeight;
 
   // --- Grundprofil (Rotationskörper) ---
-  const beadC: [number, number] = [rFm - 0.95, -31.45];
+  // Dichtnut: Lage fest zum Innendurchmesser (bei Spalt 0,4 gemessen: wandert nicht mit der Bohrung)
+  const beadC: [number, number] = [p.femaleDiameterInner / 2 + 2.15, -31.45];
   const beadR = 1.95;
   const beadTopZ = beadC[1] + Math.sqrt(beadR ** 2 - (rFm - beadC[0]) ** 2);
   let body = revolveProfile([rFi, -H], [
@@ -134,9 +139,9 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
   const slot2D = channelOutline(w, Rb, 1, rFm - 2, { rBore: rFm, fm: 1 });
   const grooveProfile = (a0: number, a1: number) =>
     revolveProfileSector([rFm - 1, zBevelTop], [L(rFm, zBevelTop), L(Rb, zGrooveTop), L(Rb, zGrooveBot), L(rFm - 1, zGrooveBot)], a0, a1);
-  // Nutende: gleiche Kontur wie der Kanal, um 12,7 mm (auf dem Radius der Eckrundungen) gedreht,
-  // höchstens 60° vom Kanal entfernt (vermessen an F32 und F25)
-  const endRot = deg(GROOVE_END_ARC / (Rb - 1));
+  // Nutende: gleiche Kontur wie der Kanal, gedreht um (12,896 + g) / (Rb − 0,38),
+  // höchstens 60° vom Kanal entfernt (vermessen an F25, F32, F40, F50)
+  const endRot = deg((GROOVE_END_ARC + p.maleFemaleGapSize) / (Rb - GROOVE_END_R));
   const clip = 60;
   const clipped = endRot + deg(Math.asin(h / Rb)) > clip; // äußere Kante des Nutendes jenseits von 60°
   for (const a of FEMALE_SLOT_ANGLES) {
