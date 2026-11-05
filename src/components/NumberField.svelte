@@ -46,8 +46,6 @@
     inputmode="decimal"
     value={show(value)}
     aria-label={label}
-    aria-valuemin={min}
-    aria-valuemax={max}
     onchange={(e) => { const el = e.currentTarget as HTMLInputElement; commit(el.value.trim() === '' ? NaN : +el.value.trim().replace(',', '.'), el); }}
     onkeydown={(e) => {
       if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
