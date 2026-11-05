@@ -488,15 +488,22 @@
           </div>
           <p class="hint"><strong>Zugabe:</strong> Luft zwischen Adapter und {machine.mode === 'over' ? 'Stutzen' : 'Öffnung'}. Größer, wenn der Adapter nicht {machine.mode === 'over' ? 'draufpasst' : 'hineinpasst'}, kleiner (bis 0), wenn er zu locker sitzt.</p>
           <p class="hint"><strong>Übergangslänge:</strong> Länge des Konus zwischen {kind.id === 'MACHINE_M' ? 'Stecker' : 'Kupplung'} und Rohrteil. Länger ergibt eine flachere Schräge, die sich besser druckt; der Adapter wird dafür länger. Original: 8 mm.</p>
-          <p class="hint pipe-sum">
-            Rohrteil des Adapters:
-            {#if machine.mode === 'over'}
-              innen Ø {fmt(pipe.d1Inner, 2)} vorne / {fmt(pipe.d2Inner, 2)} in der Tiefe, außen Ø {fmt(pipe.d1Inner + 2 * pipe.wall, 2)} / {fmt(pipe.d2Inner + 2 * pipe.wall, 2)},
-            {:else}
-              außen Ø {fmt(pipe.d1Inner + 2 * pipe.wall, 2)} vorne / {fmt(pipe.d2Inner + 2 * pipe.wall, 2)} in der Tiefe, innen Ø {fmt(pipe.d1Inner, 2)} / {fmt(pipe.d2Inner, 2)},
-            {/if}
-            Wand {fmt(pipe.wall)} mm.
-          </p>
+          {@const rows = [
+            { label: 'innen Ø', a: pipe.d1Inner, b: pipe.d2Inner },
+            { label: 'außen Ø', a: pipe.d1Inner + 2 * pipe.wall, b: pipe.d2Inner + 2 * pipe.wall },
+          ]}
+          <div class="pipe-sum">
+            <table>
+              <caption>Rohrteil des Adapters, Wand {fmt(pipe.wall)} mm</caption>
+              <thead><tr><th></th><th>vorne</th><th>in der Tiefe</th></tr></thead>
+              <tbody>
+                <!-- das Maß, auf das es ankommt, zuerst: aufgesteckt innen, eingesteckt außen -->
+                {#each machine.mode === 'over' ? rows : [...rows].reverse() as r}
+                  <tr><th>{r.label}</th><td>{fmt(r.a, 2)}</td><td>{fmt(r.b, 2)}</td></tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
           {#if machineWarnings.length}
             <ul class="warn">
               {#each machineWarnings as w}<li>{w}</li>{/each}
