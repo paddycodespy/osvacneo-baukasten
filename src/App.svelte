@@ -304,9 +304,6 @@
                   <button class="chip" class:sel={input[k] === v} onclick={() => setDia(k, v)}>{v}</button>
                 {/each}
               </div>
-            </div>
-            <div class="dia-free">
-              <span class="free-label">Freie Auswahl</span>
               <NumberField value={input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => setDia(k, v)} />
               {@render reset(k, LABELS[k].name)}
             </div>
