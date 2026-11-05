@@ -1,7 +1,8 @@
 <script lang="ts">
   /**
    * Zahlenfeld mit eigenen Pfeiltasten (mit Abstand zum Wert, in allen Browsern gleich).
-   * Pfeiltasten auf der Tastatur und das Mausrad funktionieren wie gewohnt über das Eingabefeld.
+   * Textfeld statt type=number, damit immer das deutsche Komma erscheint (0,2 statt 0.2);
+   * Eingabe mit Komma oder Punkt, Pfeiltasten hoch/runter ändern den Wert um eine Stufe.
    */
   let {
     value = $bindable(),
@@ -22,10 +23,11 @@
   } = $props();
 
   const decimals = $derived((String(step).split('.')[1] ?? '').length);
+  const show = (v: number) => (Number.isFinite(v) ? v.toLocaleString('de-DE', { maximumFractionDigits: Math.max(decimals, 2) }) : '');
 
   function commit(v: number, el?: HTMLInputElement) {
     if (!Number.isFinite(v)) {
-      if (el) el.value = String(value); // ungültige Eingabe verwerfen
+      if (el) el.value = show(value); // ungültige Eingabe verwerfen
       return;
     }
     if (min !== undefined) v = Math.max(min, v);
@@ -34,19 +36,26 @@
     value = v;
     oncommit?.(v);
     // Feld zeigt immer den übernommenen Wert, auch wenn er begrenzt wurde und sich dadurch nicht geändert hat
-    if (el) el.value = String(v);
+    if (el) el.value = show(v);
   }
 </script>
 
 <span class="num-in nf">
   <input
-    type="number"
-    {min}
-    {max}
-    {step}
-    {value}
+    type="text"
+    inputmode="decimal"
+    value={show(value)}
     aria-label={label}
-    onchange={(e) => { const el = e.currentTarget as HTMLInputElement; commit(el.value.trim() === '' ? NaN : +el.value.replace(',', '.'), el); }}
+    aria-valuemin={min}
+    aria-valuemax={max}
+    onchange={(e) => { const el = e.currentTarget as HTMLInputElement; commit(el.value.trim() === '' ? NaN : +el.value.trim().replace(',', '.'), el); }}
+    onkeydown={(e) => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      const el = e.currentTarget as HTMLInputElement;
+      const cur = +el.value.trim().replace(',', '.');
+      commit((Number.isFinite(cur) ? cur : value) + (e.key === 'ArrowUp' ? step : -step), el);
+    }}
   />
   <span class="unit">{unit}</span>
   <span class="spin">
@@ -61,9 +70,6 @@
 
 <style>
   .nf { padding-right: 4px; }
-  .nf input { appearance: textfield; -moz-appearance: textfield; }
-  .nf input::-webkit-inner-spin-button,
-  .nf input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   .spin {
     display: flex;
     flex-direction: column;

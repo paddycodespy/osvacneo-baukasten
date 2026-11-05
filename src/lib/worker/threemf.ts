@@ -7,6 +7,8 @@ import { zipSync, strToU8 } from 'fflate';
 
 export interface MeshPart {
   name: string;
+  /** Mehrere Adapter auf einem Druckbett: Nummer des Adapters (je Adapter ein eigenes Objekt) */
+  group?: number;
   vertices: ArrayLike<number>;
   triangles: ArrayLike<number>;
 }
@@ -37,13 +39,13 @@ export function weld(part: MeshPart): MeshPart {
     const c = remap[part.triangles[i + 2]];
     if (a !== b && b !== c && a !== c) tris.push(a, b, c);
   }
-  return { name: part.name, vertices: verts, triangles: tris };
+  return { name: part.name, group: part.group, vertices: verts, triangles: tris };
 }
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
 /** Nur Metadaten-Namen aus der 3MF-Kernspezifikation, sonst lehnen Slicer die Konfiguration ab. */
-export function build3MF(parts: MeshPart[], title: string): Blob {
+export function build3MF(parts: MeshPart[], title: string, groupNames?: string[]): Blob {
   let objects = '';
   parts = parts.map(weld);
   parts.forEach((p, i) => {
@@ -57,9 +59,16 @@ export function build3MF(parts: MeshPart[], title: string): Blob {
     }
     objects += `<object id="${i + 1}" name="${esc(p.name)}" type="model"><mesh><vertices>${v.join('')}</vertices><triangles>${t.join('')}</triangles></mesh></object>`;
   });
-  const parentId = parts.length + 1;
-  const comps = parts.map((_, i) => `<component objectid="${i + 1}"/>`).join('');
-  objects += `<object id="${parentId}" name="${esc(title)}" type="model"><components>${comps}</components></object>`;
+  // je Adapter ein Objekt aus seinen Körpern (Slicer laden es als ein zusammengehörendes Teil)
+  const groups = [...new Set(parts.map((p) => p.group ?? 0))];
+  let items = '';
+  groups.forEach((g, gi) => {
+    const parentId = parts.length + 1 + gi;
+    const comps = parts.map((p, i) => ((p.group ?? 0) === g ? `<component objectid="${i + 1}"/>` : '')).join('');
+    const name = groupNames?.[g] ?? title;
+    objects += `<object id="${parentId}" name="${esc(name)}" type="model"><components>${comps}</components></object>`;
+    items += `<item objectid="${parentId}"/>`;
+  });
 
   const model = `<?xml version="1.0" encoding="UTF-8"?>
 <model unit="millimeter" xml:lang="de-DE" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
@@ -68,7 +77,7 @@ export function build3MF(parts: MeshPart[], title: string): Blob {
 <metadata name="Description">Basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart. Erzeugt mit dem osVAC neo Konfigurator.</metadata>
 <metadata name="LicenseTerms">CC BY-NC-SA 4.0</metadata>
 <resources>${objects}</resources>
-<build><item objectid="${parentId}"/></build>
+<build>${items}</build>
 </model>`;
   const contentTypes = `<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>`;

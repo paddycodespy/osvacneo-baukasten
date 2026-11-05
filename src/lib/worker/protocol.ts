@@ -29,13 +29,13 @@ export interface PartRef {
 }
 
 export type WorkerRequest =
-  | { type: 'init'; baseUrl: string }
+  | { type: 'init'; baseUrl: string; module?: WebAssembly.Module }
   /** Körper bauen (oder aus dem Zwischenspeicher), Vorschaunetz + Kennwerte zurück */
   | ({ type: 'part'; id: number } & PartRef)
-  /** feines Netz für STL/3MF, um dz verschoben */
-  | ({ type: 'partMesh'; id: number; dz: number } & PartRef)
-  /** BRep-Text des Körpers (für den STEP-Export), um dz verschoben */
-  | ({ type: 'partBrep'; id: number; dz: number } & PartRef)
+  /** feines Netz für STL/3MF, um dz (und für das Druckbett um dx/dy) verschoben */
+  | ({ type: 'partMesh'; id: number; dz: number; dx?: number; dy?: number } & PartRef)
+  /** BRep-Text des Körpers (für den STEP-Export), um dz (dx/dy) verschoben */
+  | ({ type: 'partBrep'; id: number; dz: number; dx?: number; dy?: number } & PartRef)
   /** STEP aus BRep-Texten zusammensetzen */
   | { type: 'step'; id: number; breps: string[] };
 

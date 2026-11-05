@@ -280,6 +280,29 @@ export class PartViewer {
     this.needsRender = true;
   }
 
+  /**
+   * Bisheriges Modell abgeblendet zeigen, solange ein anderer Adaptertyp berechnet wird
+   * (sonst steht z. B. noch der Stecker mit Druckhilfe da, obwohl schon ein Schlauchadapter gewählt ist).
+   * Neue Körper aus setBodies sind wieder normal.
+   */
+  setDimmed(on: boolean) {
+    for (const c of this.model.children) {
+      const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial;
+      if (on) {
+        m.userData.base ??= { transparent: m.transparent, opacity: m.opacity };
+        m.transparent = true;
+        m.opacity = 0.18;
+        m.depthWrite = false;
+      } else if (m.userData.base) {
+        m.transparent = m.userData.base.transparent;
+        m.opacity = m.userData.base.opacity;
+        m.depthWrite = true;
+      }
+      m.needsUpdate = true;
+    }
+    this.needsRender = true;
+  }
+
   setHelpers(on: boolean) {
     this.showHelpers = on;
     for (const c of this.model.children) c.visible = !c.userData.helper || on;

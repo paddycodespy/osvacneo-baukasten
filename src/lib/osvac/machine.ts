@@ -4,7 +4,7 @@
  * Lokales System: Oberkante des Übergangs bei z = 0, nach unten.
  */
 import type { Shape3D } from 'replicad';
-import { makeCompound, makeCylinder, loft, assembleWire, makeLine, makeBSplineApproximation, type Point } from 'replicad';
+import { measureVolume, makeCompound, makeCylinder, loft, assembleWire, makeLine, makeBSplineApproximation, type Point } from 'replicad';
 
 /** Geschlossener Polygonzug als Kanten (für Regelflächen-Loft). */
 function makePolygonWire(pts: Point[]) {
@@ -110,7 +110,13 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
       const sink = loft([w0, w1, w2, w3], { ruled: true });
       tools.push(bore.fuse(sink));
     }
-    body = body.cut(makeCompound(tools));
+    // Gegenprobe: entfernt werden darf höchstens das Volumen der Werkzeuge (bei gescheitertem Schnitt
+    // blieb früher z. B. nur ein Rest des Rohrs übrig)
+    const before = measureVolume(body);
+    const toolVol = tools.reduce((sum, t) => sum + measureVolume(t), 0);
+    body = body.cut(makeCompound(tools) as unknown as Shape3D);
+    const removed = before - measureVolume(body);
+    if (!(removed > 0 && removed < toolVol * 1.02)) throw new Error('Die Schraubenlöcher ließen sich mit diesen Maßen nicht berechnen. Bitte die Maße leicht ändern oder die Schraubenlöcher abwählen.');
   }
 
   if (opt.text !== false) {

@@ -1,0 +1,10 @@
+{
+  "autodeskProduct": "Fusion",
+  "type": "script",
+  "author": "osVAC neo Konfigurator",
+  "description": {
+    "": "Exportiert weitere osVAC neo Referenzteile (Größen, Spaltmaße, Rohrwand) als STEP/STL"
+  },
+  "supportedOS": "windows|mac",
+  "editEnabled": true
+}
