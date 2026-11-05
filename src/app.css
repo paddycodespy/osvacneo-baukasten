@@ -463,9 +463,24 @@ legend.field-label { width: 100%; }
 }
 
 /* Download: aufklappbare Kästen (Druckhinweise, Druckbett, Einstellung merken) */
-.box { margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-.box summary { cursor: pointer; font-weight: 600; list-style-position: outside; }
-.box summary:hover { color: var(--sky-d); }
+.box { margin: 14px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--mist); }
+/* eigener Pfeil (wie bei den Navigationsknöpfen) statt des Browser-Dreiecks */
+.box summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.box summary::-webkit-details-marker { display: none; }
+.box summary::after {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-right: 3px;
+  border-right: 1.8px solid currentColor;
+  border-bottom: 1.8px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s;
+  color: var(--grey);
+}
+.box[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+.box summary:hover, .box summary:hover::after { color: var(--sky-d); }
 .box[open] summary { margin-bottom: 6px; }
 .tips { margin: 0; padding-left: 18px; font-size: 14px; color: var(--slate-2); }
 .tips li + li { margin-top: 4px; }
