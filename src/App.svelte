@@ -22,7 +22,7 @@
   let step = $state(0);
   let kindId = $state('MF');
   /** Startwerte (auf diese setzt „Zurücksetzen“ zurück) */
-  const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 25, femaleDiameterInner: 32 };
+  const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36 };
   let input = $state<OsvacInput>({ ...START_INPUT });
   let text = $state(true);
   /** Eine Einstellung für Anzeige und Export der Druckhilfe (wird immer mitberechnet) */
@@ -76,9 +76,9 @@
   );
 
   const LABELS: Record<DiameterKey, { name: string; word: string; letter: 'F' | 'M' | 'H'; hint: string; presets: number[] }> = {
-    femaleDiameterInner: { name: 'Kupplung (F)', word: 'Kupplung', letter: 'F', hint: 'Innendurchmesser der Bajonett-Kupplung', presets: [25, 32] },
-    maleDiameterInner: { name: 'Stecker (M)', word: 'Stecker', letter: 'M', hint: 'Innendurchmesser des Steckers', presets: [25, 32] },
-    hoseDiameterInner: { name: 'Schlauch (H)', word: 'Schlauch', letter: 'H', hint: 'Innendurchmesser des Schlauchs', presets: [25, 27, 32, 36, 38, 40, 50] },
+    femaleDiameterInner: { name: 'Kupplung (F)', word: 'Kupplung', letter: 'F', hint: 'Innendurchmesser der Bajonett-Kupplung', presets: [25, 32, 36, 40, 50] },
+    maleDiameterInner: { name: 'Stecker (M)', word: 'Stecker', letter: 'M', hint: 'Innendurchmesser des Steckers', presets: [25, 32, 36, 40, 50] },
+    hoseDiameterInner: { name: 'Schlauch (H)', word: 'Schlauch', letter: 'H', hint: 'Innendurchmesser des Schlauchs', presets: [27, 32, 36, 40, 50] },
   };
 
   const warnings = $derived.by(() => {
@@ -294,7 +294,7 @@
         </div>
       {:else if step === 1}
         <h2>Größen</h2>
-        <p class="lead">Innendurchmesser in Millimetern. <strong>25</strong> und <strong>32</strong> sind die Standardgrößen von osVAC neo.</p>
+        <p class="lead">Innendurchmesser in Millimetern.</p>
         {#each kind.diameters as k}
           <fieldset class="dia dia-{LABELS[k].letter}">
             <legend>{LABELS[k].word} (<b class="ck-{LABELS[k].letter}">{LABELS[k].letter}</b>)</legend>
@@ -304,6 +304,9 @@
                   <button class="chip" class:sel={input[k] === v} onclick={() => setDia(k, v)}>{v}</button>
                 {/each}
               </div>
+            </div>
+            <div class="dia-free">
+              <span class="free-label">Freie Auswahl</span>
               <NumberField value={input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => setDia(k, v)} />
               {@render reset(k, LABELS[k].name)}
             </div>
