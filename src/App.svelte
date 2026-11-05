@@ -510,7 +510,7 @@
             </ul>
           {/if}
         {/if}
-        {@render resetStepBtn(sizesDefault, kind.machine ? 'Größen und Stutzen-Maße auf Standard zurücksetzen' : 'Größen auf Standard zurücksetzen', resetSizes)}
+        {@render resetStepBtn(sizesDefault, 'Größen auf Standard zurücksetzen', resetSizes)}
       {:else if step === 2}
         <h2>Passung</h2>
         <p class="lead">Die Standardwerte passen für die meisten gut kalibrierten Drucker.</p>
