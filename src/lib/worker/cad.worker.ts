@@ -8,6 +8,7 @@ import opencascade from 'replicad-opencascadejs';
 import wasmUrl from 'replicad-opencascadejs/wasm?url';
 import { setOC, getOC, makeCompound, measureVolume, measureArea, deserializeShape, type Shape3D } from 'replicad';
 import { threadNetVolumeFactor } from '../osvac/thread';
+import { CREDIT, CHANGES, LICENSE_NAME, LICENSE_URL } from '../credits';
 import { deriveParams } from '../osvac/params';
 import { initFont } from '../osvac/text';
 import { kindById } from '../osvac/catalog';
@@ -15,6 +16,28 @@ import type { Part } from '../osvac/assemblies';
 import type { PartRef, WorkerRequest, WorkerReply } from './protocol';
 
 let ready: Promise<void> | null = null;
+
+/** STEP-Zeichenkette nach ISO 10303-21 (Nicht-ASCII als \X2\hhhh\X0\) */
+function stepStr(t: string) {
+  let out = '';
+  for (const ch of t.replace(/'/g, "''")) {
+    const c = ch.codePointAt(0)!;
+    out += c < 128 ? ch : `\\X2\\${c.toString(16).toUpperCase().padStart(4, '0')}\\X0\\`;
+  }
+  return `'${out}'`;
+}
+
+/** Kopf der STEP-Datei: Urheber, Hinweis auf Änderungen und Lizenz statt der OpenCascade-Platzhalter */
+async function stepWithCredits(blob: Blob, name: string) {
+  const text = await blob.text();
+  const ts = /FILE_NAME\([^,]*,'([^']*)'/.exec(text)?.[1] ?? '';
+  const head =
+    `FILE_DESCRIPTION((${[name, CREDIT, CHANGES, `Lizenz: ${LICENSE_NAME} ${LICENSE_URL}`].map(stepStr).join(',')}),'2;1');\n` +
+    `FILE_NAME(${stepStr(name)},${stepStr(ts)},(${stepStr('Ludo Kerz (osVAC neo)')}),(${stepStr('Hobbyhimmel Stuttgart')}),'Open CASCADE','osVAC neo Konfigurator','');\n`;
+  const i = text.indexOf('FILE_DESCRIPTION(');
+  const j = text.indexOf('FILE_SCHEMA(');
+  return new Blob([i >= 0 && j > i ? text.slice(0, i) + head + text.slice(j) : text], { type: 'application/step' });
+}
 
 function init(baseUrl: string, module?: WebAssembly.Module) {
   if (!ready) {
@@ -211,7 +234,7 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
     if (msg.type === 'step') {
       const shapes = msg.breps.map((b) => deserializeShape(b) as Shape3D);
       const c = makeCompound(shapes) as Shape3D;
-      const blob = c.blobSTEP();
+      const blob = await stepWithCredits(c.blobSTEP(), msg.name ?? 'osVAC neo');
       c.delete();
       post({ type: 'file', id: msg.id, blob });
       return;

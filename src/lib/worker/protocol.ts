@@ -37,7 +37,7 @@ export type WorkerRequest =
   /** BRep-Text des Körpers (für den STEP-Export), um dz (dx/dy) verschoben */
   | ({ type: 'partBrep'; id: number; dz: number; dx?: number; dy?: number } & PartRef)
   /** STEP aus BRep-Texten zusammensetzen */
-  | { type: 'step'; id: number; breps: string[] };
+  | { type: 'step'; id: number; breps: string[]; name?: string };
 
 export type WorkerReply =
   | { type: 'ready' }

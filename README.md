@@ -122,6 +122,9 @@ Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stü
 ## Lizenzen
 
 Basiert auf **osVAC neo von Ludo Kerz**, ursprünglich entstanden im Hobbyhimmel Stuttgart.
+Für diesen Konfigurator nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar.
+
+Auch die exportierten Dateien tragen Namensnennung und Lizenz: 3MF in den Metadaten, STL im Dateikopf, STEP im Kopfbereich (Autor, Organisation, Beschreibung).
 
 - **Dieses Projekt** (Quellcode und alle damit erzeugten Teile) steht wie osVAC neo unter **CC BY-NC-SA 4.0**: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen. Siehe `LICENSE`.
 - **Bausteine Dritter** mit eigenen Lizenzen, vollständig in `public/lizenzen.html` (in der App im Download-Schritt verlinkt) und als Text in `public/THIRD_PARTY_LICENSES.txt`:

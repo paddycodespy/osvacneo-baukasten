@@ -36,7 +36,7 @@ items.append(('Liberation Sans Regular', 'public/fonts/LiberationSans-Regular.tt
               (root / 'public/fonts/LICENSE-LiberationSans.txt').read_text(encoding='utf-8').strip()))
 
 intro = ('Der osVAC neo Konfigurator basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart, '
-         'und steht wie dieses unter CC BY-NC-SA 4.0 (siehe LICENSE.txt). Die folgenden Bausteine Dritter sind eingebunden '
+         'und steht wie dieses unter CC BY-NC-SA 4.0 (siehe LICENSE.txt). Für diesen Konfigurator nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar. Die folgenden Bausteine Dritter sind eingebunden '
          'und stehen unter ihren eigenen Lizenzen.')
 
 # Textfassung
