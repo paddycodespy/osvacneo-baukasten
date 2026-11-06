@@ -85,7 +85,6 @@ scripts/
 
 ### Bedienung
 
-- Die letzte Einstellung bleibt im Browser gespeichert. Die Adresszeile enthält alle Abweichungen vom Standard (`#k=FH&sg=0.4…`), der Link öffnet genau diese Einstellung.
 - Im Download-Schritt lassen sich mehrere Adapter auf ein Druckbett legen und zusammen als 3MF, STL oder STEP herunterladen.
 - Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Drehring 0,4“).
 
