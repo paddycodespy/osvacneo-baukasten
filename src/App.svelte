@@ -603,15 +603,13 @@
         </p>
         {#if files.length}
           <div class="files">
-            <p class="files-head">
-              <span>Erzeugte Dateien. Falls ein Download nicht gestartet ist, hier klicken:</span>
-              <button type="button" class="files-clear" onclick={clearFiles}>Liste leeren</button>
-            </p>
+            <p>Erzeugte Dateien. Falls ein Download nicht gestartet ist, hier klicken:</p>
             <ul>
               {#each files as f (f.fileName)}
                 <li><a href={f.url} download={f.fileName}>{f.fileName}</a> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span></li>
               {/each}
             </ul>
+            <button type="button" class="ghost sm" onclick={clearFiles}>Liste leeren</button>
           </div>
         {/if}
         <div class="license">
