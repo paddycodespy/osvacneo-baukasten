@@ -11,7 +11,6 @@
   import type { PipeSpec } from './lib/osvac/machine';
   import { slipRingGapMax } from './lib/osvac/hose';
   import { estimateFilament } from './lib/filament';
-  import { loadSettings, saveSettings, type Settings } from './lib/settings';
 
   const STEPS = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
   const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
@@ -35,31 +34,6 @@
   const machineDefault = (key: keyof typeof MACHINE_DEFAULT, mode: MachineMode = machine.mode) =>
     mode === 'into' && (key === 'dOpen' || key === 'dDepth') ? (key === 'dOpen' ? 33 : 32) : MACHINE_DEFAULT[key];
   let machine = $state({ ...MACHINE_DEFAULT });
-  // Link (#…) oder zuletzt benutzte Einstellung übernehmen
-  const DEFAULT_SETTINGS: Settings = { kindId: 'MF', input: START_INPUT, machine: MACHINE_DEFAULT, text: true, supports: true };
-  {
-    const saved = loadSettings(DEFAULT_SETTINGS);
-    if (saved) {
-      kindId = saved.kindId;
-      input = saved.input;
-      machine = saved.machine;
-      text = saved.text;
-      supports = saved.supports;
-    }
-  }
-  $effect(() => {
-    saveSettings({ kindId, input: $state.snapshot(input), machine: $state.snapshot(machine), text, supports }, DEFAULT_SETTINGS);
-  });
-  let linkCopied = $state(false);
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      linkCopied = true;
-      setTimeout(() => (linkCopied = false), 2500);
-    } catch {
-      prompt('Link zum Kopieren:', location.href);
-    }
-  }
   function setMode(mode: MachineMode) {
     const old = machine.mode;
     if (old === mode) return;
@@ -618,12 +592,6 @@
               {/each}
             </div>
           {/if}
-        </details>
-
-        <details class="box">
-          <summary>Einstellung merken</summary>
-          <p class="hint">Der Konfigurator merkt sich die letzte Einstellung in diesem Browser. Zum Weitergeben oder als Lesezeichen gibt es den Link, er enthält alle Maße und Einstellungen.</p>
-          <button class="ghost sm" onclick={copyLink}>{linkCopied ? 'Link kopiert' : 'Link kopieren'}</button>
         </details>
         <p class="status-line" role="status">
           {#if exporting}{exporting.toUpperCase()} wird erzeugt…{:else if status !== 'ready'}Die Downloads sind verfügbar, sobald die Berechnung fertig ist.{/if}
