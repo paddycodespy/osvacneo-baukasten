@@ -12,12 +12,14 @@ function geomVersion() {
   return h.digest('hex').slice(0, 16);
 }
 
-// base './' → der Build läuft aus jedem Unterordner (GitHub Pages, lokaler Webserver)
+// base './' → der Build läuft aus jedem Unterordner (lokaler Webserver, Windows-Programm)
 export default defineConfig({
   base: './',
   define: { __GEOM_VERSION__: JSON.stringify(geomVersion()) },
   plugins: [svelte()],
   worker: { format: 'es' },
+  // fester Port für „npm run desktop:dev“ (Tauri erwartet http://localhost:5173)
+  server: { port: 5173, strictPort: true },
   optimizeDeps: { exclude: ['replicad-opencascadejs'] },
   build: { target: 'es2022', chunkSizeWarningLimit: 4000 },
 });

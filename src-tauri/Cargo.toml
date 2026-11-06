@@ -1,0 +1,27 @@
+[package]
+name = "osvacneo-konfigurator"
+version = "0.1.0"
+description = "osVAC neo Konfigurator als Windows-Programm"
+authors = ["paddycodespy"]
+license = "CC-BY-NC-SA-4.0"
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "osvacneo_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+
+# kleines, schnelles Programm (die eigentliche Arbeit macht die Web-Oberfläche)
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
