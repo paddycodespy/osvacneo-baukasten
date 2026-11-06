@@ -54,6 +54,11 @@
   let section = $state(false);
   let exporting = $state<ExportFormat | null>(null);
   let files = $state<{ fileName: string; url: string; size: number; key: string }[]>([]);
+  /** Liste der erzeugten Dateien leeren und den Speicher der Dateien freigeben */
+  function clearFiles() {
+    for (const f of files) URL.revokeObjectURL(f.url);
+    files = [];
+  }
 
   const kind = $derived(kindById(kindId));
   const params = $derived(deriveParams(input));
@@ -578,7 +583,7 @@
         <details class="box" open={plate.length > 0}>
           <summary>Mehrere Adapter auf ein Druckbett{plate.length ? ` (${plate.length})` : ''}</summary>
           <p class="hint">Den aktuellen Adapter hinzufügen, danach Typ oder Maße ändern und den nächsten hinzufügen, zum Beispiel zwei Spaltmaße zum Testen. Alle landen nebeneinander in einer Datei.</p>
-          <button class="ghost sm" disabled={onPlate || status !== 'ready'} onclick={addToPlate}>{onPlate ? 'Ist schon auf dem Druckbett' : 'Aktuellen Adapter hinzufügen'}</button>
+          <button class="ghost sm" disabled={onPlate || status !== 'ready'} onclick={addToPlate}>{onPlate ? 'Adapter bereits auf Druckbett vorhanden' : 'Aktuellen Adapter hinzufügen'}</button>
           {#if plate.length}
             <ul class="plate">
               {#each plate as p, i (p.key)}
@@ -598,7 +603,10 @@
         </p>
         {#if files.length}
           <div class="files">
-            <p>Erzeugte Dateien. Falls ein Download nicht gestartet ist, hier klicken:</p>
+            <p class="files-head">
+              <span>Erzeugte Dateien. Falls ein Download nicht gestartet ist, hier klicken:</span>
+              <button type="button" class="files-clear" onclick={clearFiles}>Liste leeren</button>
+            </p>
             <ul>
               {#each files as f (f.fileName)}
                 <li><a href={f.url} download={f.fileName}>{f.fileName}</a> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span></li>
