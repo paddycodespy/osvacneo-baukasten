@@ -6,6 +6,7 @@
  */
 import CadWorker from './worker/cad.worker?worker';
 import wasmUrl from 'replicad-opencascadejs/wasm?url';
+import { STL_HEADER } from './credits';
 import type { BuildRequest, ExportFormat, MeshBody, WorkerReply, WorkerRequest, PartRef } from './worker/protocol';
 import type { OsvacInput } from './osvac/params';
 import { deriveParams } from './osvac/params';
@@ -211,6 +212,8 @@ function stlBlob(meshes: { vertices: Float32Array; triangles: Uint32Array }[]): 
   const n = meshes.reduce((s, m) => s + m.triangles.length / 3, 0);
   const buf = new ArrayBuffer(84 + n * 50);
   const dv = new DataView(buf);
+  // Kopf (80 Byte): Urheber und Lizenz, da STL sonst keine Angaben tragen kann
+  for (let i = 0; i < Math.min(80, STL_HEADER.length); i++) dv.setUint8(i, STL_HEADER.charCodeAt(i));
   dv.setUint32(80, n, true);
   let o = 84;
   for (const { vertices: v, triangles: t } of meshes) {
@@ -297,7 +300,7 @@ export async function exportPlate(items: PlateItem[], format: ExportFormat, file
   let blob: Blob;
   if (format === 'step') {
     const breps = await Promise.all(jobs.map((x) => enqueue<Extract<WorkerReply, { type: 'partBrep' }>>({ type: 'partBrep', id: nextId++, dx: x.dx, dy: x.dy, dz: x.dz, ...ref(x.item.req, x.i) }, x.q.cost, x.q.key, Infinity)));
-    const r = await enqueue<Extract<WorkerReply, { type: 'file' }>>({ type: 'step', id: nextId++, breps: breps.map((b) => b.data) }, 100, undefined, Infinity);
+    const r = await enqueue<Extract<WorkerReply, { type: 'file' }>>({ type: 'step', id: nextId++, breps: breps.map((b) => b.data), name: fileName }, 100, undefined, Infinity);
     blob = r.blob;
   } else {
     const meshes = await Promise.all(jobs.map((x) => enqueue<Extract<WorkerReply, { type: 'partMesh' }>>({ type: 'partMesh', id: nextId++, dx: x.dx, dy: x.dy, dz: x.dz, ...ref(x.item.req, x.i) }, x.q.cost, x.q.key, Infinity)));

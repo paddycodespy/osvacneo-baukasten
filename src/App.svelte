@@ -11,6 +11,7 @@
   import type { PipeSpec } from './lib/osvac/machine';
   import { slipRingGapMax } from './lib/osvac/hose';
   import { estimateFilament } from './lib/filament';
+  import { CHANGES } from './lib/credits';
 
   const STEPS = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
   const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
@@ -614,6 +615,7 @@
         {/if}
         <div class="license">
           <p class="credit">Basiert auf <strong>osVAC neo</strong> von Ludo Kerz,<br />ursprünglich entstanden im Hobbyhimmel Stuttgart.</p>
+          <p>{CHANGES}</p>
           <p>
             Lizenz: <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.de" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a><br />
             Weitergabe mit Namensnennung, nicht kommerziell, unter gleichen Bedingungen. Das gilt auch für die erzeugten Dateien.

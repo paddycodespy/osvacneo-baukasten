@@ -4,6 +4,7 @@
  * als zusammengehörendes Teil laden.
  */
 import { zipSync, strToU8 } from 'fflate';
+import { CREDIT, CHANGES, LICENSE_NAME, LICENSE_URL } from '../credits';
 
 export interface MeshPart {
   name: string;
@@ -74,8 +75,8 @@ export function build3MF(parts: MeshPart[], title: string, groupNames?: string[]
 <model unit="millimeter" xml:lang="de-DE" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
 <metadata name="Title">${esc(title)}</metadata>
 <metadata name="Designer">Ludo Kerz (osVAC neo)</metadata>
-<metadata name="Description">Basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart. Erzeugt mit dem osVAC neo Konfigurator.</metadata>
-<metadata name="LicenseTerms">CC BY-NC-SA 4.0</metadata>
+<metadata name="Description">${esc(CREDIT)} ${esc(CHANGES)} Erzeugt mit dem osVAC neo Konfigurator.</metadata>
+<metadata name="LicenseTerms">${LICENSE_NAME} ${LICENSE_URL}</metadata>
 <resources>${objects}</resources>
 <build>${items}</build>
 </model>`;
