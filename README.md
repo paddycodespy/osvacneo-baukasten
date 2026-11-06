@@ -119,6 +119,27 @@ Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation
 
 Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“.
 
+## Windows-Programm (Installer)
+
+Der Konfigurator lässt sich als eigenes Windows-Programm installieren (Tauri). Er läuft dann in einem eigenen
+Fenster mit dem in Windows eingebauten WebView2 (Edge), weiterhin vollständig lokal und ohne Internet.
+Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fenster.
+
+**Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
+Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
+`osVAC neo Konfigurator_0.1.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
+`git tag v0.1.0 && git push --tags`.
+
+**Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
+(Startmenü, Deinstallation über „Apps“). Da die Datei nicht signiert ist, meldet Windows beim ersten Start
+„Der Computer wurde durch Windows geschützt“: **Weitere Informationen → Trotzdem ausführen**.
+Fehlt WebView2 (nur sehr alte Windows-10-Installationen), lädt der Installer es nach.
+
+**Selbst bauen** (Windows mit Rust und Visual Studio Build Tools): `npm ci`, dann `npm run desktop:build`.
+Zum Entwickeln im Programmfenster: `npm run desktop:dev`.
+
+Die Version steht in `src-tauri/tauri.conf.json` (`version`) und sollte mit `package.json` übereinstimmen.
+
 ## Lizenzen
 
 Basiert auf **osVAC neo von Ludo Kerz**, ursprünglich entstanden im Hobbyhimmel Stuttgart.
