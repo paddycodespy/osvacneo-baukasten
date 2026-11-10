@@ -105,6 +105,9 @@ scripts/
 
 ### Bedienung
 
+- Ruhige Oberfläche für Laien: Jedes Feld hat eine kurze Beschriftung; die Erklärung steht hinter dem „?“ daneben (src/components/Field.svelte). Werte, die selten geändert werden (Luft/Zugabe, Wandstärke, Übergangslänge, Schraubenlöcher, Drehung, Fase), liegen in eingeklappten „Feineinstellungen“.
+- Texte in einfacher Sprache, Fachbegriffe vermieden (z. B. „Spiel“ statt „Spaltmaß“ in den Überschriften, „Tiefe“ statt „Steckweg“).
+- In Skizzen berührt keine Beschriftung eine Form, Linie oder andere Beschriftung; Eckradien sind mit Hinweislinien außerhalb der Form beschriftet.
 - Im Download-Schritt lassen sich mehrere Adapter auf ein Druckbett legen und zusammen als 3MF, STL oder STEP herunterladen.
 - Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Drehring 0,4“).
 

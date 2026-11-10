@@ -23,11 +23,10 @@
     <rect x="8" y="30" width="210" height="88" rx="4" class="machine" />
     <path d="M218 44 L78 52 L78 98 L218 106 Z" class="hole2" />
     <path d="M98 50.9 L218 44 L352 44 L352 106 L218 106 L98 99.1 Z M98 58.9 L218 52 L352 52 L352 98 L218 98 L98 91.1 Z" class="adapter" />
-    <line x1="208" y1="40" x2="208" y2="110" class="dim" />
+    <line x1="208" y1="40" x2="208" y2="114" class="dim" />
     {#if round}<line x1="98" y1="46" x2="98" y2="104" class="dim" />{/if}
-    <text x="250" y="80" class="lbl">{front}</text>
-    <line x1="246" y1="76" x2="210" y2="76" class="dim thin" />
-    {#if round}<text x="98" y="137" class="lbl" text-anchor="middle">Ø in der Tiefe</text>{/if}
+    <text x="208" y="130" class="lbl" text-anchor="middle">{front}</text>
+    {#if round}<text x="98" y="130" class="lbl" text-anchor="middle">Ø in der Tiefe</text>{/if}
     <line x1="98" y1="22" x2="218" y2="22" class="dim thin" />
     <text x="158" y="16" class="lbl" text-anchor="middle">Tiefe</text>
   {/if}

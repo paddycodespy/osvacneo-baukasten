@@ -420,6 +420,10 @@ legend.field-label { width: 100%; }
 .files li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--shop-2); }
 .files a { color: var(--cobalt-d); font-weight: 600; text-decoration: none; }
 .filament { font-size: 14px; padding: 10px 14px; background: var(--mist); border-radius: 8px; }
+.filament p { margin: 0; }
+.filament strong { font-weight: 600; color: var(--graphite); }
+.filament .help-btn, legend .help-btn { margin-left: 4px; vertical-align: 1px; }
+.filament .help-text { margin: 8px 0 0; background: #fff; }
 .license { font-size: 13px; line-height: 1.55; color: var(--slate-2); border-top: 1px solid var(--line); padding-top: 16px; margin-top: 22px; }
 .license p { margin: 0 0 12px; }
 .license p:last-child { margin-bottom: 0; }
@@ -506,3 +510,45 @@ legend.field-label { width: 100%; }
 /* Hinweis- und Infokästen: in allen Schritten immer mit Abstand zu den Nachbarn */
 .warn, .error, .filament, .pipe-sum, .box { margin: 16px 0; }
 .box + .box { margin-top: 10px; }
+
+/* Erklärung auf Klick: kleines „?“ neben einer Beschriftung */
+.help-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--grey);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.help-btn:hover, .help-btn.on { border-color: var(--sky); color: var(--sky-d); background: var(--sky-l); }
+.help-text { margin: 0 0 4px; padding: 7px 10px; border-radius: 6px; background: var(--sky-l); color: var(--slate); font-size: 13.5px; font-weight: 400; line-height: 1.45; }
+
+/* Feineinstellungen: einklappbar, für Werte, die meist nicht geändert werden müssen */
+.more { margin: 18px 0 0; border-top: 1px solid var(--line); }
+.more > summary { display: flex; align-items: center; gap: 8px; padding: 12px 0 4px; cursor: pointer; list-style: none; font-weight: 600; font-size: 14.5px; color: var(--slate); }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-right: 1.8px solid var(--grey);
+  border-bottom: 1.8px solid var(--grey);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  margin-right: 2px;
+}
+.more[open] > summary::before { transform: rotate(45deg); }
+.more > summary small { font-weight: 400; font-size: 13px; color: var(--grey); }
+.more > summary:hover, .more > summary:hover small { color: var(--sky-d); }
+.more-body { padding: 4px 0 2px; }
+/* geöffnete Erklärung: Feld nimmt in Zweierreihen die ganze Breite ein, damit der Text lesbar bleibt */
+.grid2 > .field:has(.help-text), .sec-fields > .field:has(.help-text) { grid-column: 1 / -1; }
+.grid2 > .field:has(.help-text) .num-in, .sec-fields > .field:has(.help-text) .num-in { max-width: calc(50% - 7px); }
