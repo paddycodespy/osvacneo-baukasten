@@ -55,6 +55,8 @@ const BED = 170;
 export interface Dimensions {
   height: number;
   diameter: number;
+  /** größte Ausdehnung in x oder y (für Adapter, die nicht rund sind) */
+  width: number;
 }
 
 /**
@@ -220,7 +222,7 @@ export class PartViewer {
     const size = partBox.getSize(new THREE.Vector3());
     if (!this.framed) this.frame(box);
     this.needsRender = true;
-    return { height: size.z, diameter: 2 * rMax };
+    return { height: size.z, diameter: 2 * rMax, width: Math.max(size.x, size.y) };
   }
 
   /** Kamera so setzen, dass Bauteil und Druckbett vollständig und mittig im Bild sind. */

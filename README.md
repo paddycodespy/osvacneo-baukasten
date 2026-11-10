@@ -15,8 +15,23 @@ Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Orig
 | Stecker ↔ Schlauch | Male, Gehäuse, Drehring (2 Ringe), Gewindekörper, Gewinde | MxxHyy |
 | Kupplung → Stutzen | Female, Dichtnut-Füllung, Übergang, Rohrkonus | Fxx To Pipe Cone |
 | Stecker → Stutzen | Male, Übergang, Rohrkonus | Mxx To Pipe Cone |
+| Freiform | Anschluss A (Female oder Male), Übergang, Bausteine, Ende B (Gerät oder Female/Male) | eigene Erweiterung, siehe unten |
 
 Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Spaltmaß Drehring (ab 0,2 mm, Standard 0,3 wie im Original; an der Kupplung höchstens 0,5 mm bei 7 mm bzw. 0,35 mm bei 9 mm Materialstärke, im Gehäuse bis 0,8 mm), Materialstärke (7 oder 9 mm), Beschriftung, Druckhilfe sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe, Übergangslänge (TransitionConeLength, Standard 8 mm) und Schraubenlöcher.
+
+### Freiform
+
+Für Geräte ohne runden Stutzen oder für Winkel und Versätze. Der Adapter wird im Schritt „Aufbau“ als Kette zusammengesetzt:
+
+- **Anschluss A** oben: Kupplung oder Stecker von osVAC neo in den Standardgrößen oder frei (15–60 mm), mit 8-mm-Übergangskonus auf die Wandstärke der Bausteine.
+- **Bausteine** in beliebiger Reihenfolge: **Gerade** (Länge), **Bogen** (Winkel, Radius der Mittellinie, Richtung), **Übergang** (neuer Querschnitt, Länge, Versatz, Knick, Verdrehung), **Absatz** (neuer Querschnitt mit 45°-Schräge, Länge automatisch).
+- **Ende B**: ein Geräteanschluss (aufgesteckt als Muffe/Haube oder eingesteckt als Zapfen, mit Steckweg, Zugabe, Drehung, Einführfase und beim Zapfen optional einem Anschlagring) oder wieder eine Kupplung bzw. ein Stecker. Ein automatischer Übergang führt vom letzten Baustein auf den Querschnitt des Endes.
+- Querschnitte: Kreis, Ellipse, Langloch, Rechteck (Eckradien oben und unten getrennt), D-Form (Kreis mit Abflachung), Trapez. Maße der Bausteine sind die lichte Weite, die Wandstärke (1,6–8 mm) kommt außen dazu; am Gerät wird das gemessene Maß eingegeben.
+- Vorlagen nach Beispielen von Thingiverse: Winkel 90° (stefanegg), rechteckige Haube (esbenrug, Bosch PSM 18 LI), Versatz mit Knick (dynamic-cube, Einhell TC-BJ 900), Gerade auf Stutzen.
+- Wahlweise liegt Ende B oder Anschluss A auf dem Druckbett. Ein Stecker unten bekommt die Druckhilfe; liegt eine Kupplung mit der Öffnung unten, erscheint ein Hinweis. Im Download-Schritt meldet die Überhang-Prüfung (Fläche der Bausteine, die steiler als 45° frei nach unten zeigt), ob Stützmaterial nötig ist.
+- Prüfungen in Klartext direkt am Baustein, z. B. zu kleiner Bogenradius, D-Form ohne Abflachung, zu steiler Übergang, zu kurzer Steckweg.
+
+Gerade, Bogen, Anschlagring und Muffe/Zapfen ohne Konus sind exakte Extrusionen bzw. Rotationen einer Ringfläche. Übergänge, Absätze, Fase und konische Geräteanschlüsse sind Lofts durch abgetastete Querschnitte (periodische B-Spline-Interpolation, gleiche Startlage und Laufrichtung bei allen Formen, damit sich nichts verwindet). Außenhaut, Innenhaut und die beiden Ringflächen werden direkt zu einem Körper vernäht statt Innen- von Außenkörper abzuziehen: das ist schneller (unter 1 s statt bis zu 70 s) und bei Freiformflächen zuverlässig. `npm run test:freeform` baut alle Vorlagen, alle Querschnitte auf- und eingesteckt und längere Ketten und prüft jeden Körper.
 
 Wie in Fusion besteht ein Adapter aus mehreren Körpern, die sich berühren oder überlappen. Slicer verschmelzen sie beim Laden. In 3MF liegen sie als Teile eines Objekts vor, in STEP als einzelne Volumenkörper.
 
@@ -66,10 +81,15 @@ src/
   lib/osvac/machine.ts       Rohrkonus für Stutzen
   lib/osvac/grip.ts          Rändelung und Textfelder
   lib/osvac/assemblies.ts    Baugruppen als Liste einzelner Teile
+  lib/osvac/freeform.ts      Freiform: Querschnitte, Bausteine, Prüfungen, Lage auf dem Druckbett
   lib/osvac/catalog.ts       Adaptertypen für den Wizard
+  components/FreeformEditor.svelte  Schritt „Aufbau“ (Vorlagen, Bausteine, Ende B)
+  components/SectionEditor.svelte   Querschnitt wählen und bemaßen, mit Skizze
+  components/BlockFigure.svelte     Erklärskizzen der Bausteine
 scripts/
   build-ref.ts               Einzelteil in Node bauen (npm run part -- MxxFyy 25 32 32)
   matrix.ts                  Alle Typen mit Grenzwerten bauen (npm run test:geometry)
+  freeform.ts                Freiform-Vorlagen und -Varianten bauen (npm run test:freeform, --stl schreibt out/)
 ```
 
 ### Rechenzeit

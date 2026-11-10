@@ -1,5 +1,7 @@
 <script lang="ts">
-  let { mode }: { mode: 'over' | 'into' } = $props();
+  /** round = false: nicht runder Querschnitt (Freiform) – ein Maß über die ganze Tiefe, Form siehe Querschnittsskizze */
+  let { mode, round = true }: { mode: 'over' | 'into'; round?: boolean } = $props();
+  const front = $derived(round ? 'Ø vorne' : 'Maß');
 </script>
 
 <!-- Schnittskizze: wo gemessen wird (vorne und in der Tiefe) -->
@@ -11,9 +13,9 @@
     <path d="M78 56 L300 60 L300 90 L78 94 Z" class="hole" />
     <path d="M140 38 L352 38 L352 112 L140 112 Z M140 47.7 L300 52 L352 52 L352 98 L300 98 L140 102.3 Z" class="adapter" />
     <line x1="290" y1="40" x2="290" y2="110" class="dim" />
-    <line x1="140" y1="34" x2="140" y2="116" class="dim" />
-    <text x="290" y="130" class="lbl" text-anchor="middle">Ø vorne</text>
-    <text x="140" y="130" class="lbl" text-anchor="middle">Ø in der Tiefe</text>
+    {#if round}<line x1="140" y1="34" x2="140" y2="116" class="dim" />{/if}
+    <text x="290" y="130" class="lbl" text-anchor="middle">{front}</text>
+    {#if round}<text x="140" y="130" class="lbl" text-anchor="middle">Ø in der Tiefe</text>{/if}
     <line x1="140" y1="22" x2="300" y2="22" class="dim thin" />
     <text x="220" y="16" class="lbl" text-anchor="middle">Tiefe</text>
   {:else}
@@ -22,10 +24,10 @@
     <path d="M218 44 L78 52 L78 98 L218 106 Z" class="hole2" />
     <path d="M98 50.9 L218 44 L352 44 L352 106 L218 106 L98 99.1 Z M98 58.9 L218 52 L352 52 L352 98 L218 98 L98 91.1 Z" class="adapter" />
     <line x1="208" y1="40" x2="208" y2="110" class="dim" />
-    <line x1="98" y1="46" x2="98" y2="104" class="dim" />
-    <text x="250" y="80" class="lbl">Ø vorne</text>
+    {#if round}<line x1="98" y1="46" x2="98" y2="104" class="dim" />{/if}
+    <text x="250" y="80" class="lbl">{front}</text>
     <line x1="246" y1="76" x2="210" y2="76" class="dim thin" />
-    <text x="98" y="137" class="lbl" text-anchor="middle">Ø in der Tiefe</text>
+    {#if round}<text x="98" y="137" class="lbl" text-anchor="middle">Ø in der Tiefe</text>{/if}
     <line x1="98" y1="22" x2="218" y2="22" class="dim thin" />
     <text x="158" y="16" class="lbl" text-anchor="middle">Tiefe</text>
   {/if}

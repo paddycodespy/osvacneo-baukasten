@@ -12,6 +12,7 @@
     "test:geometry": "tsx scripts/matrix.ts",
     "part": "tsx scripts/build-ref.ts",
     "test:keys": "tsx scripts/check-keys.ts",
+    "test:freeform": "tsx scripts/freeform.ts",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build"
