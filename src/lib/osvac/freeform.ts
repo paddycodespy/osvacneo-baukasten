@@ -149,7 +149,7 @@ export const TEMPLATES: { id: string; title: string; hint: string; make: () => F
   {
     id: 'elbow',
     title: 'Winkel 90°',
-    hint: 'Kupplung, Bogen, Stecker. Für enge Stellen hinter Maschinen.',
+    hint: 'Kupplung, Bogen, Stecker',
     make: () => ({
       a: { type: 'female', d: 32 },
       wall: 3,
@@ -161,7 +161,7 @@ export const TEMPLATES: { id: string; title: string; hint: string; make: () => F
   {
     id: 'hood',
     title: 'Rechteckige Haube',
-    hint: 'Stecker, Bogen, Haube über einen eckigen Auslass, z. B. am Schleifer.',
+    hint: 'Für eckige Auslässe',
     make: () => ({
       a: { type: 'male', d: 25 },
       wall: 2.5,
@@ -178,7 +178,7 @@ export const TEMPLATES: { id: string; title: string; hint: string; make: () => F
   {
     id: 'offset',
     title: 'Versatz mit Knick',
-    hint: 'Stecker, Gerade, geschwungener Übergang auf einen kleineren Zapfen mit Anschlag.',
+    hint: 'Geschwungen, mit Anschlag',
     make: () => ({
       a: { type: 'male', d: 32 },
       wall: 2.5,
@@ -198,7 +198,7 @@ export const TEMPLATES: { id: string; title: string; hint: string; make: () => F
   {
     id: 'straight',
     title: 'Gerade auf Stutzen',
-    hint: 'Kupplung und ein beliebig geformter Stutzen, als einfacher Anfang.',
+    hint: 'Einfacher Anfang',
     make: () => ({
       a: { type: 'female', d: 32 },
       wall: 3,
@@ -497,14 +497,14 @@ function checkSection(s: Section, what: string, out: Issue[]) {
   if (fields.includes('d') && s.d < 6) out.push({ level: 'error', text: `${what}: Der Durchmesser muss mindestens 6 mm betragen.` });
   if (fields.includes('w') && s.w < 6) out.push({ level: 'error', text: `${what}: Die Breite muss mindestens 6 mm betragen.` });
   if (fields.includes('h') && s.h < 4) out.push({ level: 'error', text: `${what}: Die Höhe muss mindestens 4 mm betragen.` });
-  if (s.shape === 'slot' && s.w < s.h) out.push({ level: 'warn', text: `${what}: Beim Langloch ist die Breite kleiner als die Höhe. Es wird hochkant gebaut.` });
+  if (s.shape === 'slot' && s.w < s.h) out.push({ level: 'warn', text: `${what}: Beim Langloch ist die Breite kleiner als die Höhe, es steht also hochkant. Das ist in Ordnung, falls so gewollt.` });
   if (s.shape === 'dshape') {
-    if (s.h >= s.d) out.push({ level: 'error', text: `${what}: Bei der D-Form muss die Höhe kleiner als der Durchmesser sein, sonst gibt es keine Abflachung.` });
-    if (s.h <= s.d / 2 + 1) out.push({ level: 'error', text: `${what}: Bei der D-Form muss die Höhe größer als der halbe Durchmesser (${f(s.d / 2 + 1)} mm) sein.` });
+    if (s.h >= s.d) out.push({ level: 'error', text: `${what}: Bei der D-Form muss die Höhe kleiner sein als der Durchmesser, sonst gibt es keine flache Seite.` });
+    if (s.h <= s.d / 2 + 1) out.push({ level: 'error', text: `${what}: Bei der D-Form muss die Höhe größer als ${f(s.d / 2 + 1)} mm sein (gut die Hälfte des Durchmessers).` });
   }
   if (s.shape === 'trapezoid' && s.w2 < 4) out.push({ level: 'error', text: `${what}: Die obere Breite des Trapezes muss mindestens 4 mm betragen.` });
   if (s.shape === 'rect' && (s.r > Math.min(s.w, s.h) / 2 || s.r2 > Math.min(s.w, s.h) / 2))
-    out.push({ level: 'warn', text: `${what}: Eckradius größer als die halbe Seite. Er wird auf ${f(Math.min(s.w, s.h) / 2)} mm begrenzt.` });
+    out.push({ level: 'warn', text: `${what}: Die Eckrundung ist größer als die halbe Seite. Sie wird auf ${f(Math.min(s.w, s.h) / 2)} mm verkleinert.` });
 }
 
 // ---------------------------------------------------------------- Planung
@@ -600,7 +600,7 @@ export function planFree(spec: FreeSpec): FreePlan {
   const issues: Issue[] = [];
   const bodies: FreeBody[] = [];
   const w = spec.wall;
-  if (!(w >= 1.6)) issues.push({ level: 'error', text: 'Die Wandstärke muss mindestens 1,6 mm betragen.' });
+  if (!(w >= 1.6)) issues.push({ level: 'error', text: 'Die Wandstärke muss mindestens 1,6 mm sein.' });
   if (w > 8) issues.push({ level: 'warn', text: 'Über 8 mm Wandstärke wird der Adapter sehr schwer.' });
 
   const zStart = -OSVAC_HEIGHT[spec.a.type] - OSVAC_TRANSITION;
@@ -632,10 +632,10 @@ export function planFree(spec: FreeSpec): FreePlan {
         return;
       }
       if (!(b.radius > need)) {
-        issues.push({ level: 'error', text: `${what}: Der Radius ist zu klein. Bei diesem Querschnitt muss er größer als ${f1(need)} mm sein, sonst schneidet sich der Bogen selbst.` });
+        issues.push({ level: 'error', text: `${what}: Der Radius ist zu klein. Er muss größer als ${f1(need)} mm sein, sonst überschneidet sich der Bogen innen.` });
         return;
       }
-      if (b.radius < need + w * 2) issues.push({ level: 'warn', text: `${what}: Sehr enger Bogen. Er bremst die Absaugung und braucht beim Druck meist Stützmaterial.` });
+      if (b.radius < need + w * 2) issues.push({ level: 'warn', text: `${what}: Sehr enger Bogen. Er bremst die Luft und braucht beim Druck meist Stützen. Ein größerer Radius hilft.` });
       const axis = unit(cross(f.t, D));
       const c = add(f.o, mul(D, b.radius));
       const th = rad(b.angle);
@@ -662,7 +662,7 @@ export function planFree(spec: FreeSpec): FreePlan {
         let m = 0;
         for (let i = 0; i < N; i++) m = Math.max(m, Math.hypot(pi1[i][0] - pi0[i][0], pi1[i][1] - pi0[i][1]), Math.hypot(po1[i][0] - po0[i][0], po1[i][1] - po0[i][1]));
         if (m < 0.05) {
-          issues.push({ level: 'warn', text: `${what}: Der Querschnitt ändert sich nicht, der Absatz entfällt.` });
+          issues.push({ level: 'warn', text: `${what}: Die Form ändert sich nicht, der Absatz hat keine Wirkung.` });
           return;
         }
         L = Math.max(1, m);
@@ -675,13 +675,13 @@ export function planFree(spec: FreeSpec): FreePlan {
           return;
         }
         if (Math.abs(tilt) > 90) {
-          issues.push({ level: 'error', text: `${what}: Der Knick darf höchstens 90° betragen. Für größere Winkel einen Bogen verwenden.` });
+          issues.push({ level: 'error', text: `${what}: Der Knick darf höchstens 90° sein. Für mehr einen Bogen verwenden.` });
           return;
         }
-        if (Math.abs(offset) > L) issues.push({ level: 'warn', text: `${what}: Der Versatz ist größer als die Länge. Das ergibt eine sehr steile Schräge, die sich schlecht druckt.` });
+        if (Math.abs(offset) > L) issues.push({ level: 'warn', text: `${what}: Der Versatz ist größer als die Länge. Das wird sehr steil und druckt sich schlecht; den Übergang länger machen.` });
         let m = 0;
         for (let i = 0; i < N; i++) m = Math.max(m, Math.hypot(po1[i][0] - po0[i][0], po1[i][1] - po0[i][1]));
-        if (m > L * 1.2) issues.push({ level: 'warn', text: `${what}: Der Querschnitt ändert sich auf kurzer Länge stark (Schräge steiler als 50°). Länger machen, damit er sich ohne Stützen druckt.` });
+        if (m > L * 1.2) issues.push({ level: 'warn', text: `${what}: Die Schräge ist sehr steil. Den Übergang länger machen, dann geht der Druck ohne Stützen.` });
       }
       // Mittellinie: kubische Kurve von der Startfläche zur versetzten, geknickten Endfläche
       const D = inPlane(start, b.dir);
@@ -729,7 +729,7 @@ export function planFree(spec: FreeSpec): FreePlan {
 
   const bedEnd = spec.bed === 'A' ? spec.a.type : spec.b.type;
   if (bedEnd === 'female')
-    issues.push({ level: 'warn', text: 'Die Kupplung liegt mit der Öffnung auf dem Druckbett. Sie ist dafür gebaut, mit der Öffnung nach oben gedruckt zu werden; die Nut innen bräuchte sonst Stützmaterial. Besser das andere Ende auf das Druckbett legen.' });
+    issues.push({ level: 'warn', text: 'Die Kupplung liegt mit der Öffnung nach unten. So bräuchte sie innen Stützen. Besser das andere Ende nach unten legen.' });
   const chainEnd = { frame: f, section: s, rot: rotS };
   let end: Frame = f;
   if (spec.b.type === 'device') end = planDevice(spec, chainEnd, bodies, issues, path);
@@ -776,14 +776,14 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
   const a = dv.allowance;
   const isCircle = dv.section.shape === 'circle';
   checkSection(dv.section, 'Gerät', issues);
-  if (!(dv.length >= 5)) issues.push({ level: 'error', text: 'Gerät: Der Steckweg muss mindestens 5 mm betragen.' });
-  else if (dv.length < 10) issues.push({ level: 'warn', text: `Gerät: Unter 10 mm Steckweg hält der Adapter kaum ${dv.mode === 'over' ? 'auf dem Stutzen' : 'in der Öffnung'}.` });
-  if (!(a >= 0 && a <= 3)) issues.push({ level: 'error', text: 'Gerät: Die Zugabe muss zwischen 0 und 3 mm liegen.' });
+  if (!(dv.length >= 5)) issues.push({ level: 'error', text: 'Gerät: Die Tiefe muss mindestens 5 mm sein.' });
+  else if (dv.length < 10) issues.push({ level: 'warn', text: `Gerät: Unter 10 mm Tiefe hält der Adapter kaum ${dv.mode === 'over' ? 'auf dem Stutzen' : 'in der Öffnung'}.` });
+  if (!(a >= 0 && a <= 3)) issues.push({ level: 'error', text: 'Gerät: Die Luft (Zugabe) muss zwischen 0 und 3 mm liegen.' });
   if (isCircle && Math.abs(dv.dDepth - dv.section.d) > 8) issues.push({ level: 'warn', text: 'Gerät: Ø vorne und Ø in der Tiefe unterscheiden sich um mehr als 8 mm. Bitte die Messung prüfen.' });
   if (isCircle && dv.mode === 'over' && dv.dDepth < dv.section.d - 0.05)
-    issues.push({ level: 'warn', text: 'Gerät: Ø in der Tiefe ist kleiner als Ø vorne. Ein Stutzen wird zur Maschine hin meist dicker; so ließe sich der Adapter nicht aufschieben.' });
+    issues.push({ level: 'warn', text: 'Gerät: Hinten ist der Stutzen dünner als vorne. Das ist ungewöhnlich, so ginge der Adapter nicht drauf. Bitte nachmessen.' });
   if (isCircle && dv.mode === 'into' && dv.dDepth > dv.section.d + 0.05)
-    issues.push({ level: 'warn', text: 'Gerät: Ø in der Tiefe ist größer als Ø vorne. Eine Öffnung wird nach innen meist enger; so ließe sich der Adapter nicht hineinstecken.' });
+    issues.push({ level: 'warn', text: 'Gerät: Innen ist die Öffnung weiter als vorne. Das ist ungewöhnlich, so ginge der Adapter nicht hinein. Bitte nachmessen.' });
   if (issues.some((x) => x.level === 'error')) return ce.frame;
 
   // Querschnitte des Anschlusses vorne (zur Kette hin) und am offenen Ende
@@ -799,7 +799,7 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
   };
   const F = ring(front), B = ring(back);
   if ((F.inn.shape === 'circle' ? F.inn.d : Math.min(F.inn.w, F.inn.h)) < 4)
-    issues.push({ level: 'error', text: 'Gerät: Innen bleibt weniger als 4 mm frei. Maße, Zugabe oder Wandstärke prüfen.' });
+    issues.push({ level: 'error', text: 'Gerät: Innen bleiben weniger als 4 mm frei. Maße, Luft oder Wandstärke prüfen.' });
   if (issues.some((x) => x.level === 'error')) return ce.frame;
 
   let f = ce.frame;
@@ -814,7 +814,7 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
     const N = 120;
     const p0 = samplePoints(grow(ce.section, w), N, ce.rot), p1 = samplePoints(F.out, N, rot1);
     for (let i = 0; i < N; i++) m = Math.max(m, Math.hypot(p1[i][0] - p0[i][0], p1[i][1] - p0[i][1]));
-    if (m > L0 * 1.2) issues.push({ level: 'warn', text: `Gerät: Der Übergang zum Geräteanschluss ist sehr steil (Querschnitt ändert sich um bis zu ${Math.round(m)} mm auf ${Math.round(L0)} mm). Übergangslänge erhöhen, damit er sich ohne Stützen druckt.` });
+    if (m > L0 * 1.2) issues.push({ level: 'warn', text: `Gerät: Die Schräge zum Gerät ist sehr steil (${Math.round(m)} mm auf ${Math.round(L0)} mm Länge). In den Feineinstellungen die Übergangslänge erhöhen, dann geht der Druck ohne Stützen.` });
     bodies.push(autoTransition('Übergang zum Gerät', f, ce.section, ce.rot, F.inn, rot1, L0, w, {}));
     f = advance(f, L0);
     path.push(f.o);

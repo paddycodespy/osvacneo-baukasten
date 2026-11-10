@@ -8,6 +8,7 @@
   import KindIcon from './components/KindIcon.svelte';
   import MeasureFigure from './components/MeasureFigure.svelte';
   import NumberField from './components/NumberField.svelte';
+  import Field from './components/Field.svelte';
   import type { PipeSpec } from './lib/osvac/machine';
   import { slipRingGapMax } from './lib/osvac/hose';
   import { estimateFilament } from './lib/filament';
@@ -48,6 +49,8 @@
     }
     machine.mode = mode;
   }
+  /** aufgeklappte Erklärungen (Schritt Passung) */
+  let helpOpen = $state<Record<string, boolean>>({});
   let measures = $state<{ volume: number; area: number; helperVolume: number; helperArea: number } | null>(null);
   /** Freiform: Aufbau aus Bausteinen (Startpunkt: erste Vorlage) */
   let free = $state<FreeSpec>(TEMPLATES[0].make());
@@ -94,6 +97,11 @@
   const hasSwivel = $derived(kind.id === 'FH' || kind.id === 'MH');
   /** Beim Drehring an der Kupplung (FxxHyy) begrenzt die Geometrie des Originals das Spaltmaß (7 mm: 0,5, 9 mm: 0,35) */
   const swivelMax = $derived(slipRingGapMax(input.generalMaterialWidth, kind.id === 'MH'));
+  const helpTexts: Record<string, string> = $derived({
+    gap: 'Der Wert gilt für Stecker und Kupplung zusammen. Steckt ein neues Teil in einem älteren mit 0,2 mm, wirkt nur die Hälfte: eingestellte 0,4 mm wirken dann wie 0,3 mm.',
+    swivel: `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(swivelMax, 2)} mm${kind.id === 'FH' ? ` bei ${input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
+    filament: 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
+  });
   $effect(() => {
     if (hasSwivel && input.slipRingGapSize > swivelMax) input.slipRingGapSize = swivelMax;
   });
@@ -104,6 +112,10 @@
     // D1 (am Übergang, tief im Adapter) ↔ Stutzen vorne; D2 (Öffnung des Adapters) ↔ Stutzen in der Tiefe
     return { d1Inner: round1(toInner(m.dOpen)), d2Inner: round1(toInner(m.dDepth)), length: m.length, wall: w, transition: Math.max(2, m.transition), screwHoles: m.holes };
   });
+  const pipeRows = $derived([
+    { label: 'innen Ø', a: pipe.d1Inner, b: pipe.d2Inner },
+    { label: 'außen Ø', a: pipe.d1Inner + 2 * pipe.wall, b: pipe.d2Inner + 2 * pipe.wall },
+  ]);
   const buildOpts = $derived(kind.freeform ? { free: $state.snapshot(free) } : kind.machine ? { pipe } : {});
   /** Dateiname mit allen Abweichungen von den Standardeinstellungen, damit Testdrucke unterscheidbar bleiben */
   const baseName = $derived(kind.fileName(params, buildOpts));
@@ -135,15 +147,15 @@
     if (!kind.machine) return w;
     const m = machine;
     if (m.mode === 'over' && m.dDepth < m.dOpen - 0.05)
-      w.push('Ø in der Tiefe ist kleiner als Ø vorne. Ein Stutzen wird zur Maschine hin meist dicker; so ließe sich der Adapter nicht aufschieben. Bitte die Messung prüfen.');
+      w.push('Hinten ist der Stutzen dünner als vorne. Das ist ungewöhnlich, so ginge der Adapter nicht drauf. Bitte nachmessen.');
     if (m.mode === 'into' && m.dDepth > m.dOpen + 0.05)
-      w.push('Ø in der Tiefe ist größer als Ø vorne. Eine Öffnung wird nach innen meist enger; so ließe sich der Adapter nicht hineinstecken. Bitte die Messung prüfen.');
-    if (Math.abs(m.dOpen - m.dDepth) > 8) w.push('Ø vorne und Ø in der Tiefe unterscheiden sich um mehr als 8 mm. Bitte die Messung prüfen.');
-    if (pipe.d1Inner < 8 || pipe.d2Inner < 8) w.push('Der Innendurchmesser des Rohrteils wird kleiner als 8 mm. Maße oder Wandstärke prüfen.');
+      w.push('Innen ist die Öffnung weiter als vorne. Das ist ungewöhnlich, so ginge der Adapter nicht hinein. Bitte nachmessen.');
+    if (Math.abs(m.dOpen - m.dDepth) > 8) w.push('Vorne und in der Tiefe unterscheiden sich um mehr als 8 mm. Bitte nachmessen.');
+    if (pipe.d1Inner < 8 || pipe.d2Inner < 8) w.push('Innen bleiben weniger als 8 mm frei. Maße oder Wandstärke prüfen.');
     else if (Math.min(pipe.d1Inner, pipe.d2Inner) < 0.5 * (kind.ends.top === 'female' ? input.femaleDiameterInner : input.maleDiameterInner))
-      w.push('Das Rohrteil ist innen weniger als halb so weit wie der Anschluss. Das bremst die Absaugung deutlich.');
-    if (m.length < 10) w.push(`Unter 10 mm Steckweg hält der Adapter kaum ${m.mode === 'over' ? 'auf dem Stutzen' : 'in der Öffnung'}.`);
-    if (m.holes && m.length < 12) w.push('Die Schraubenlöcher sitzen 8 mm über dem Rohrende und brauchen mindestens 12 mm Steckweg. Steckweg erhöhen oder Schraubenlöcher abwählen.');
+      w.push('Das Rohrteil ist innen weniger als halb so weit wie der Anschluss. Das bremst die Absaugung stark.');
+    if (m.length < 10) w.push(`Unter 10 mm Tiefe hält der Adapter kaum ${m.mode === 'over' ? 'auf dem Stutzen' : 'in der Öffnung'}.`);
+    if (m.holes && m.length < 12) w.push('Für die Schraubenlöcher braucht es mindestens 12 mm Tiefe. Tiefe erhöhen oder die Löcher in den Feineinstellungen abwählen.');
     return w;
   });
 
@@ -156,7 +168,7 @@
     }
     w.push(...machineWarnings);
     if (kind.freeform) w.push(...freeIssues.map((x) => x.text));
-    if (input.maleFemaleGapSize < 0.1 || input.maleFemaleGapSize > 0.5) w.push('Spaltmaß außerhalb von 0,1 bis 0,5 mm – Stecker und Kupplung passen dann kaum zusammen.');
+    if (input.maleFemaleGapSize < 0.1 || input.maleFemaleGapSize > 0.5) w.push('Das Spiel liegt außerhalb von 0,1 bis 0,5 mm. Stecker und Kupplung passen dann kaum zusammen.');
     return w;
   });
 
@@ -289,21 +301,20 @@
 
   /** Druckhinweise je Adaptertyp (die Dateien sind schon so ausgerichtet wie in der Vorschau) */
   const printTips = $derived.by(() => {
-    const t: string[] = ['So drucken, wie das Teil in der Vorschau auf dem Druckbett steht. Die Dateien sind bereits so ausgerichtet.'];
+    const t: string[] = ['Die Dateien liegen schon richtig herum, genau wie in der Vorschau. Im Slicer nicht drehen.'];
     if (hasSupport)
-      t.push('Der Stecker steht mit der Spitze nach unten auf der Druckhilfe. Stützmaterial im Slicer ausschalten. Nach dem Druck die Druckhilfe abbrechen: Die Rippen sind an den Auflagen auf 0,4 mm verjüngt und lösen sich mit einer Zange.');
-    else t.push('Stützmaterial ist nicht nötig, im Slicer ausschalten.');
+      t.push('Der Stecker steht mit der Spitze auf einer Druckhilfe (in der Vorschau weiß). Stützen im Slicer ausschalten. Nach dem Druck die Druckhilfe mit einer Zange abbrechen.');
+    else t.push('Stützen werden nicht gebraucht, im Slicer ausschalten.');
     if (hasSwivel)
-      t.push(`Der Drehring wird in einem Stück mitgedruckt. Nach dem Druck den Schlauchteil gegen ${kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} kräftig drehen, bis sich der Ring frei bewegt. Sitzt er fest, beim nächsten Druck das Spaltmaß Drehring erhöhen.`);
-    if (kind.machine && machine.holes) t.push('Die drei Löcher Ø 4 mm mit Senkung nehmen Senkkopfschrauben auf, mit denen sich der Adapter zusätzlich sichern lässt.');
+      t.push(`Nach dem Druck den Schlauchteil einmal kräftig gegen ${kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Klemmt er, beim nächsten Mal in „Passung“ das Spiel am Drehring erhöhen.`);
+    if (kind.machine && machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
     if (kind.freeform) {
-      // erster Hinweis gilt für die Anschlüsse; bei Freiform zählt, was frei in der Luft hängt
+      // bei Freiform zählt, was frei in der Luft hängt
       if (!hasSupport) t.splice(1, 1);
       if (overhang > 40)
-        t.push(`Stützmaterial nötig: Etwa ${Math.round(overhang / 100)} cm² der Bausteine hängen steiler als 45° frei nach unten (meist die Unterseite von Bogen oder Übergang). Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Eine andere Wahl bei „Auf dem Druckbett liegt“ kann das verringern.`);
-      else t.push('Die Bausteine haben keine nennenswerten Überhänge; Stützmaterial ist für sie nicht nötig.');
+        t.push('Stützen nötig: Ein Teil des Adapters hängt schräg in der Luft, meist unter einem Bogen oder Übergang. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Ein längerer Übergang oder ein anderes Ende auf dem Druckbett kann das vermeiden.');
+      else if (!hasSupport) t.push('Stützen werden nicht gebraucht, im Slicer ausschalten.');
     }
-    t.push('Die Filamentangabe oben gilt für PETG.');
     return t;
   });
 
@@ -359,6 +370,14 @@
     input[k] = Math.round(v * 10) / 10;
   }
 </script>
+
+{#snippet help(id: string)}
+  <button type="button" class="help-btn" class:on={helpOpen[id]} aria-expanded={!!helpOpen[id]} aria-label="Erklärung" onclick={() => (helpOpen[id] = !helpOpen[id])}>?</button>
+{/snippet}
+
+{#snippet helpText(id: string)}
+  {#if helpOpen[id]}<p class="help-text">{helpTexts[id]}</p>{/if}
+{/snippet}
 
 {#snippet resetBtn(isDefault: boolean, def: number, label: string, apply: () => void, small = false)}
   <button
@@ -480,7 +499,7 @@
         <FreeformEditor bind:spec={free} issues={freeIssues} />
       {:else if step === 1}
         <h2>Größen</h2>
-        <p class="lead">Innendurchmesser in Millimetern.</p>
+        <p class="lead">Die Zahl ist der Innendurchmesser in Millimetern. Die meisten Geräte und Schläuche nutzen 32.</p>
         {#each kind.diameters as k}
           <fieldset class="dia dia-{LABELS[k].letter}">
             <legend>{LABELS[k].word} (<b class="ck-{LABELS[k].letter}">{LABELS[k].letter}</b>)</legend>
@@ -499,74 +518,78 @@
           </fieldset>
         {/each}
         {#if kind.machine}
-          <h3 class="sub">Stutzen</h3>
+          <h3 class="sub">Stutzen am Gerät</h3>
           <div class="seg wide" role="radiogroup" aria-label="Befestigung">
-            <button role="radio" aria-checked={machine.mode === 'over'} class:sel={machine.mode === 'over'} onclick={() => setMode('over')}>Adapter wird aufgesteckt</button>
-            <button role="radio" aria-checked={machine.mode === 'into'} class:sel={machine.mode === 'into'} onclick={() => setMode('into')}>Adapter wird eingesteckt</button>
+            <button role="radio" aria-checked={machine.mode === 'over'} class:sel={machine.mode === 'over'} onclick={() => setMode('over')}>Adapter kommt über den Stutzen</button>
+            <button role="radio" aria-checked={machine.mode === 'into'} class:sel={machine.mode === 'into'} onclick={() => setMode('into')}>Adapter kommt in die Öffnung</button>
           </div>
           <MeasureFigure mode={machine.mode} />
           <p class="hint">
             {machine.mode === 'over'
-              ? 'Außendurchmesser des Stutzens mit dem Messschieber messen: vorne an der Öffnung und in der Tiefe, bis zu der der Adapter reichen soll.'
-              : 'Innendurchmesser der Absaugöffnung messen: vorne an der Kante und in der Tiefe, bis zu der der Adapter hineinreichen soll.'}
+              ? 'Mit dem Messschieber außen messen: einmal vorne und einmal dort, wo der Adapter enden soll.'
+              : 'Mit dem Messschieber innen messen: einmal vorne an der Kante und einmal dort, wo der Adapter enden soll.'}
           </p>
           <div class="grid2">
-            <div class="field"><span class="field-label">Ø vorne</span><span class="num-reset"><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" />{@render machineReset('dOpen', 'Ø vorne')}</span></div>
-            <div class="field"><span class="field-label">Ø in der Tiefe</span><span class="num-reset"><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" />{@render machineReset('dDepth', 'Ø in der Tiefe')}</span></div>
-            <div class="field"><span class="field-label">Tiefe (Steckweg)</span><span class="num-reset"><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" />{@render machineReset('length', 'Tiefe (Steckweg)')}</span></div>
-            <div class="field"><span class="field-label">Wandstärke</span><span class="num-reset"><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" />{@render machineReset('wall', 'Wandstärke')}</span></div>
-            <div class="field"><span class="field-label">Zugabe (Sitz)</span><span class="num-reset"><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" />{@render machineReset('allowance', 'Zugabe für den Sitz')}</span></div>
-            <div class="field"><span class="field-label">Übergangslänge</span><span class="num-reset"><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" />{@render machineReset('transition', 'Übergangslänge')}</span></div>
-            <label class="field check"><input type="checkbox" bind:checked={machine.holes} /> 3 Schraubenlöcher Ø 4</label>
-          </div>
-          <p class="hint"><strong>Zugabe:</strong> Luft zwischen Adapter und {machine.mode === 'over' ? 'Stutzen' : 'Öffnung'}. Größer, wenn der Adapter nicht {machine.mode === 'over' ? 'draufpasst' : 'hineinpasst'}, kleiner (bis 0), wenn er zu locker sitzt.</p>
-          <p class="hint"><strong>Übergangslänge:</strong> Länge des Konus zwischen {kind.id === 'MACHINE_M' ? 'Stecker' : 'Kupplung'} und Rohrteil. Länger ergibt eine flachere Schräge, die sich besser druckt; der Adapter wird dafür länger. Original: 8 mm.</p>
-          {@const rows = [
-            { label: 'innen Ø', a: pipe.d1Inner, b: pipe.d2Inner },
-            { label: 'außen Ø', a: pipe.d1Inner + 2 * pipe.wall, b: pipe.d2Inner + 2 * pipe.wall },
-          ]}
-          <div class="pipe-sum">
-            <table>
-              <caption>Rohrteil des Adapters, Wand {fmt(pipe.wall)} mm</caption>
-              <thead><tr><th></th><th>vorne</th><th>in der Tiefe</th></tr></thead>
-              <tbody>
-                <!-- das Maß, auf das es ankommt, zuerst: aufgesteckt innen, eingesteckt außen -->
-                {#each machine.mode === 'over' ? rows : [...rows].reverse() as r}
-                  <tr><th>{r.label}</th><td>{fmt(r.a, 2)}</td><td>{fmt(r.b, 2)}</td></tr>
-                {/each}
-              </tbody>
-            </table>
+            <Field label="Ø vorne"><span class="num-reset"><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" />{@render machineReset('dOpen', 'Ø vorne')}</span></Field>
+            <Field label="Ø in der Tiefe" help="Stutzen und Öffnungen sind oft leicht konisch. Sind beide Maße gleich, einfach denselben Wert eintragen."><span class="num-reset"><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" />{@render machineReset('dDepth', 'Ø in der Tiefe')}</span></Field>
+            <Field label="Tiefe" help={`Wie weit der Adapter ${machine.mode === 'over' ? 'über den Stutzen geht' : 'in die Öffnung reicht'}. 20 bis 30 mm halten gut.`}><span class="num-reset"><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" />{@render machineReset('length', 'Tiefe (Steckweg)')}</span></Field>
           </div>
           {#if machineWarnings.length}
             <ul class="warn">
               {#each machineWarnings as w}<li>{w}</li>{/each}
             </ul>
           {/if}
+          <details class="more">
+            <summary>Feineinstellungen <small>meist nicht nötig</small></summary>
+            <div class="more-body">
+              <div class="grid2">
+                <Field label="Luft (Zugabe)" help={`Etwas Spiel, damit der Adapter passt. Geht er nicht ${machine.mode === 'over' ? 'drauf' : 'hinein'}: Wert erhöhen. Sitzt er zu locker: verringern, bis 0.`}><span class="num-reset"><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" />{@render machineReset('allowance', 'Zugabe für den Sitz')}</span></Field>
+                <Field label="Wandstärke" help="Dicke der Wand am Rohrteil. 3 mm sind stabil."><span class="num-reset"><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" />{@render machineReset('wall', 'Wandstärke')}</span></Field>
+                <Field label="Übergangslänge" help={`Länge des schrägen Stücks zwischen ${kind.id === 'MACHINE_M' ? 'Stecker' : 'Kupplung'} und Rohrteil. Länger ist flacher und lässt sich besser drucken, der Adapter wird dafür länger. Standard: 8 mm.`}><span class="num-reset"><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" />{@render machineReset('transition', 'Übergangslänge')}</span></Field>
+              </div>
+              <label class="inline-check"><input type="checkbox" bind:checked={machine.holes} /> 3 Löcher für Schrauben (Ø 4 mm)</label>
+              <p class="hint">Mit kleinen Senkkopfschrauben hält der Adapter zusätzlich am Stutzen.</p>
+              <div class="pipe-sum">
+                <table>
+                  <caption>So wird das Rohrteil des Adapters</caption>
+                  <thead><tr><th></th><th>vorne</th><th>in der Tiefe</th></tr></thead>
+                  <tbody>
+                    <!-- das Maß, auf das es ankommt, zuerst: aufgesteckt innen, eingesteckt außen -->
+                    {#each machine.mode === 'over' ? pipeRows : [...pipeRows].reverse() as r}
+                      <tr><th>{r.label}</th><td>{fmt(r.a, 2)}</td><td>{fmt(r.b, 2)}</td></tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
         {/if}
         {@render resetStepBtn(sizesDefault, 'Größen auf Standard zurücksetzen', resetSizes)}
       {:else if step === 2}
         <h2>Passung</h2>
-        <p class="lead">Die Standardwerte passen für die meisten gut kalibrierten Drucker.</p>
+        <p class="lead">Die Standardwerte passen meistens. Ändern lohnt sich erst, wenn ein Testdruck nicht gut sitzt.</p>
 
         <fieldset class="opt">
-          <legend>Spaltmaß Stecker / Kupplung</legend>
+          <legend class="field-label">Spiel zwischen Stecker und Kupplung {@render help('gap')}</legend>
           <div class="slider">
             <input type="range" min="0.1" max="0.5" step="0.05" bind:value={input.maleFemaleGapSize} aria-describedby="gap-hint" />
             <output>{fmt(input.maleFemaleGapSize, 2)} mm</output>
             {@render reset('maleFemaleGapSize', 'Spaltmaß Stecker / Kupplung')}
           </div>
-          <p class="hint" id="gap-hint">Größer, wenn der Stecker zu stramm sitzt. Kleiner, wenn er wackelt. Original: 0,2 mm. Der Wert wirkt auf beide Teile. Steckt ein neu gedrucktes Teil in einem Original-Teil (0,2 mm), ergibt sich der Mittelwert: eingestellte 0,4 mm wirken dann wie 0,3 mm.</p>
+          {@render helpText('gap')}
+          <p class="hint" id="gap-hint">Sitzt der Stecker zu stramm: größer. Wackelt er: kleiner. Standard: 0,2 mm.</p>
         </fieldset>
 
         {#if hasSwivel}
           <fieldset class="opt">
-            <legend>Spaltmaß Drehring</legend>
+            <legend class="field-label">Spiel am Drehring {@render help('swivel')}</legend>
             <div class="slider">
               <input type="range" min="0.2" max={swivelMax} step="0.05" bind:value={input.slipRingGapSize} aria-describedby="swivel-hint" />
               <output>{fmt(input.slipRingGapSize, 2)} mm</output>
               {@render reset('slipRingGapSize', 'Spaltmaß Drehring')}
             </div>
-            <p class="hint" id="swivel-hint">Größer, wenn der Drehring nach dem Druck festsitzt (bei PETG oft 0,35–0,5 mm). Kleiner, wenn er zu viel Spiel hat. Original: 0,3 mm. Höchstens {fmt(swivelMax, 2)} mm{kind.id === 'FH' ? ` bei ${input.generalMaterialWidth} mm Materialstärke, sonst berührt der Außenring den Schlauchteil` : ''}.</p>
+            {@render helpText('swivel')}
+            <p class="hint" id="swivel-hint">Lässt sich der Ring nach dem Druck nicht drehen: größer (bei PETG oft 0,35–0,5 mm). Standard: 0,3 mm.</p>
           </fieldset>
         {/if}
 
@@ -577,14 +600,14 @@
               <button role="radio" aria-checked={input.generalMaterialWidth === v} class:sel={input.generalMaterialWidth === v} onclick={() => (input.generalMaterialWidth = v)}>{v} mm</button>
             {/each}
           </div>
-          <p class="hint">9 mm macht die Kupplung stabiler und außen {fmt(4)} mm dicker.</p>
+          <p class="hint">9 mm macht die Kupplung stabiler. Sie wird dann außen 4 mm dicker.</p>
         </fieldset>
 
         <fieldset class="opt checks">
           <legend>Extras</legend>
-          <label><input type="checkbox" bind:checked={text} /> Beschriftung ({code}, osVAC neo)</label>
+          <label><input type="checkbox" bind:checked={text} /> Beschriftung (Größe und „osVAC neo“)</label>
           {#if hasSupport}
-            <label><input type="checkbox" bind:checked={supports} /> Druckhilfe unter dem Stecker</label>
+            <label><input type="checkbox" bind:checked={supports} /> Druckhilfe unter dem Stecker (wird nach dem Druck abgebrochen)</label>
           {/if}
         </fieldset>
         {@render resetStepBtn(fitDefault, 'Passung auf Standard zurücksetzen', resetFit)}
@@ -599,14 +622,13 @@
         </p>
 
         {#if filament}
-          <p class="filament">
-            Filament PETG: ca. {gramsText} g, das sind {Math.round(filament.gramsMin) === Math.round(filament.gramsMax) ? 'etwa' : 'bis zu'} {fmt(filament.metersMax)} m bei 1,75 mm{supports && hasSupport ? ' inklusive Druckhilfe' : ''}.
-            {#if Math.round(filament.gramsMin) === Math.round(filament.gramsMax)}
-              Die Wände sind so dünn, dass der Slicer sie mit 3 Perimetern praktisch massiv druckt.
-            {:else}
-              Der kleinere Wert gilt für 3 Wände und 15 % Infill, der größere für massiven Druck.
-            {/if}
-          </p>
+          <div class="filament">
+            <p>
+              Material: ca. <strong>{gramsText} g PETG</strong>, rund {fmt(filament.metersMax)} m Filament (1,75 mm){supports && hasSupport ? ', mit Druckhilfe' : ''}.
+              {#if Math.round(filament.gramsMin) !== Math.round(filament.gramsMax)}{@render help('filament')}{/if}
+            </p>
+            {@render helpText('filament')}
+          </div>
         {/if}
 
         {#if warnings.length}
@@ -640,7 +662,7 @@
 
         <details class="box" open={plate.length > 0}>
           <summary>Mehrere Adapter auf ein Druckbett{plate.length ? ` (${plate.length})` : ''}</summary>
-          <p class="hint">Den aktuellen Adapter hinzufügen, danach Typ oder Maße ändern und den nächsten hinzufügen, zum Beispiel zwei Spaltmaße zum Testen. Alle landen nebeneinander in einer Datei.</p>
+          <p class="hint">Praktisch zum Testen: Adapter hinzufügen, dann etwas ändern (z. B. das Spiel) und wieder hinzufügen. Alle kommen nebeneinander in eine Datei.</p>
           <button class="ghost sm" disabled={onPlate || status !== 'ready'} onclick={addToPlate}>{onPlate ? 'Adapter bereits auf Druckbett vorhanden' : 'Aktuellen Adapter hinzufügen'}</button>
           {#if plate.length}
             <ul class="plate">
@@ -661,7 +683,7 @@
         </p>
         {#if files.length}
           <div class="files">
-            <p>Erzeugte Dateien. Falls ein Download nicht gestartet ist, hier klicken:</p>
+            <p>Fertige Dateien. Falls der Download nicht von selbst startet, hier klicken:</p>
             <ul>
               {#each files as f (f.fileName)}
                 <li><a href={f.url} download={f.fileName}>{f.fileName}</a> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span></li>
