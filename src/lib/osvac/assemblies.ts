@@ -10,6 +10,8 @@ import { maleTube, maleSupport } from './male';
 import { revolveProfile, L } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
+import { deriveParams, type OsvacInput } from './params';
+import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
 
 export interface Body {
   name: string;
@@ -42,6 +44,8 @@ export interface BuildOptions {
   supports?: boolean;
   /** Rohr für Maschinenadapter */
   pipe?: PipeSpec;
+  /** Aufbau des Freiform-Adapters */
+  free?: FreeSpec;
 }
 
 /** Male mit Spitze nach oben (Anschluss unten bei z = -maleHeight); Nasen wie im Original bei 30/150/270°. */
@@ -58,7 +62,7 @@ export function transitionConeMF(p: OsvacParams): Shape3D {
   return revolveProfile([rFi, 0], [L(rFi + p.generalMaterialWidth, 0), L(rMo, -h), L(rMi, -h)]);
 }
 
-type Dep = Partial<Record<keyof OsvacParams | 'text' | 'knurl' | 'pipe' | 'z' | 'rot' | 'variant' | 'kind', unknown>>;
+type Dep = Partial<Record<keyof OsvacParams | 'text' | 'knurl' | 'pipe' | 'z' | 'rot' | 'variant' | 'kind', unknown>> | object;
 
 interface PartExtra {
   helper?: boolean;
@@ -207,6 +211,96 @@ export function partsMxxHyy(p: OsvacParams, o: BuildOptions = {}): Part[] {
   ];
 }
 
+// ---------------------------------------------------------------- Freiform
+
+/** Teil an eine andere Lage legen (Schlüssel bekommt die Lage dazu; unverändert bei Einheitslage). */
+function placedPart(q: Part, pl: Placement): Part {
+  if (isIdentity(pl)) return q;
+  return { ...q, key: JSON.stringify([JSON.parse(q.key), placementKey(pl)]), make: () => placeShape(q.make(), pl) };
+}
+
+/** Parameter mit eigenem Durchmesser für ein Ende (Spaltmaß, Materialstärke usw. bleiben). */
+function withDiameter(p: OsvacParams, type: 'female' | 'male', d: number): OsvacParams {
+  const i: OsvacInput = {
+    maleDiameterInner: p.maleDiameterInner,
+    femaleDiameterInner: p.femaleDiameterInner,
+    hoseDiameterInner: p.hoseDiameterInner,
+    generalMaterialWidth: p.generalMaterialWidth,
+    maleFemaleGapSize: p.maleFemaleGapSize,
+    slipRingGapSize: p.slipRingGapSize,
+    supportStructureGapSize: p.supportStructureGapSize,
+  };
+  return deriveParams({ ...i, [type === 'female' ? 'femaleDiameterInner' : 'maleDiameterInner']: d });
+}
+
+const ringOf = (p: OsvacParams, type: 'female' | 'male') =>
+  type === 'female' ? { rIn: p.femaleDiameterInner / 2, rOut: p.femaleDiameterInner / 2 + p.generalMaterialWidth } : { rIn: p.maleDiameterInner / 2, rOut: p.maleDiameterOuter / 2 };
+
+/** Steht ein Stecker mit der Spitze auf dem Druckbett? Dann gibt es eine Druckhilfe. */
+export function freeMaleOnBed(spec: FreeSpec): boolean {
+  return spec.bed === 'A' ? spec.a.type === 'male' : spec.b.type === 'male';
+}
+
+/**
+ * Freiform-Adapter: Anschluss A (osVAC neo, oben in der Achse wie bei den Stutzen-Adaptern), Formstücke,
+ * Ende B (Gerät oder osVAC neo). Zum Schluss liegt das gewählte Ende flach auf dem Druckbett.
+ */
+export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
+  const spec = o.free ?? DEFAULT_FREE;
+  const plan = planFree(spec);
+  const err = plan.issues.find((x) => x.level === 'error');
+  if (err) throw new Error(err.text);
+  const G = bedPlacement(spec, plan);
+  const w = spec.wall;
+  const pipeFor = (d: number): PipeSpec => ({ d1Inner: d, d2Inner: d, length: 0, wall: w, transition: OSVAC_TRANSITION, screwHoles: false });
+  const out: Part[] = [];
+  const support = o.supports !== false && freeMaleOnBed(spec);
+
+  // Anschluss A
+  const pA = withDiameter(p, spec.a.type, spec.a.d);
+  const rA = ringOf(pA, spec.a.type);
+  if (spec.a.type === 'female') {
+    out.push(...female(pA, o), part('Dichtnut-Füllung', 0.2, dF(pA), () => femaleBeadFill(pA)));
+    out.push(part('Übergang A', 0.1, { kind: 'freeA', a: 'female', ...dAll(pA), w }, () => pipeTransition(rA.rIn, rA.rOut, pipeFor(spec.a.d)).translate([0, 0, -pA.femaleHeight])));
+  } else {
+    out.push(part('Male', 9, { ...dM(pA, o), rot: 'flip' }, () => flippedMale(pA, o)));
+    if (support && spec.bed === 'A')
+      out.push(part('Druckhilfe', 1, { ...dS(pA), rot: 'flip' }, () => maleSupport(pA).rotate(180, [0, 0, 0], [1, 0, 0]).rotate(180, [0, 0, 0], [0, 0, 1]).translate([0, 0, -pA.maleHeight]), { helper: true }));
+    out.push(part('Übergang A', 0.1, { kind: 'freeA', a: 'male', ...dAll(pA), w }, () => pipeTransition(rA.rIn, rA.rOut, pipeFor(spec.a.d)).translate([0, 0, -pA.maleHeight])));
+  }
+
+  // Formstücke und Geräteanschluss
+  for (const b of plan.bodies) out.push(part(b.name, b.cost, b.dep as object, b.make));
+
+  // Ende B als Anschluss von osVAC neo
+  if (spec.b.type !== 'device') {
+    const type = spec.b.type;
+    const pB = withDiameter(p, type, spec.b.d);
+    const rB = ringOf(pB, type);
+    const fe = plan.chainEnd.frame;
+    const at = (d: number): V3 => [fe.o[0] + fe.t[0] * d, fe.o[1] + fe.t[1] * d, fe.o[2] + fe.t[2] * d];
+    const cone = localPlacement(at(OSVAC_TRANSITION), fe.u, fe.t);
+    out.push(placedPart(part('Übergang B', 0.1, { kind: 'freeB', b: type, ...dAll(pB), w }, () => pipeTransition(rB.rIn, rB.rOut, pipeFor(spec.b.d))), cone));
+    if (type === 'female') {
+      const pl = localPlacement(at(OSVAC_TRANSITION + pB.femaleHeight), fe.u, fe.t);
+      for (const q of [...female(pB, o), part('Dichtnut-Füllung', 0.2, dF(pB), () => femaleBeadFill(pB))]) out.push(placedPart({ ...q, name: q.name + ' B' }, pl));
+    } else {
+      const neg: V3 = [-fe.t[0], -fe.t[1], -fe.t[2]];
+      const pl = localPlacement(at(OSVAC_TRANSITION), fe.u, neg);
+      out.push(placedPart(part('Male B', 9, dM(pB, o), () => maleTube(pB, o)), pl));
+      if (support && spec.bed === 'B') out.push(placedPart(part('Druckhilfe B', 1, dS(pB), () => maleSupport(pB), { helper: true }), pl));
+    }
+  }
+  // gleiche Anschlüsse an beiden Enden: Namen eindeutig halten (Vorschau ordnet über den Namen zu)
+  const seen = new Map<string, number>();
+  for (const q of out) {
+    const n = seen.get(q.name) ?? 0;
+    seen.set(q.name, n + 1);
+    if (n) q.name = `${q.name} ${n + 1}`;
+  }
+  return out.map((q) => placedPart(q, G));
+}
+
 // Kompatible Bau-Funktionen (alle Körper sofort)
 export const buildFemale = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFemale(p, o));
 export const buildMale = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMale(p, o));
@@ -216,3 +310,4 @@ export const buildMachineM = (p: OsvacParams, o: BuildOptions = {}) => buildAll(
 export const buildHose = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsHose(p, o));
 export const buildFxxHyy = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFxxHyy(p, o));
 export const buildMxxHyy = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMxxHyy(p, o));
+export const buildFree = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFree(p, o));

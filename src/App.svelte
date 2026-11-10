@@ -12,8 +12,11 @@
   import { slipRingGapMax } from './lib/osvac/hose';
   import { estimateFilament } from './lib/filament';
   import { CHANGES } from './lib/credits';
+  import FreeformEditor from './components/FreeformEditor.svelte';
+  import { TEMPLATES, planFree, freeSummary, type FreeSpec } from './lib/osvac/freeform';
+  import { freeMaleOnBed } from './lib/osvac/assemblies';
 
-  const STEPS = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
+  const STEPS_STD = ['Verbindung', 'Größen', 'Passung', 'Download'] as const;
   const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
     { id: '3mf', label: '3MF', hint: 'Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura' },
     { id: 'stl', label: 'STL', hint: 'Funktioniert mit jedem Slicer' },
@@ -46,6 +49,10 @@
     machine.mode = mode;
   }
   let measures = $state<{ volume: number; area: number; helperVolume: number; helperArea: number } | null>(null);
+  /** Freiform: Aufbau aus Bausteinen (Startpunkt: erste Vorlage) */
+  let free = $state<FreeSpec>(TEMPLATES[0].make());
+  /** Freiform: Fläche, die beim Druck frei nach unten hängt (mm², aus dem Vorschaunetz) */
+  let overhang = $state(0);
 
   let host: HTMLDivElement;
   let viewer: PartViewer | null = null;
@@ -62,6 +69,10 @@
   }
 
   const kind = $derived(kindById(kindId));
+  const STEPS = $derived(kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : STEPS_STD);
+  /** Prüfung des Freiform-Aufbaus (reine Rechnung, ohne CAD-Kern) */
+  const freePlan = $derived(kind.freeform ? planFree($state.snapshot(free)) : null);
+  const freeIssues = $derived(freePlan?.issues ?? []);
   const params = $derived(deriveParams(input));
   /** PETG-Bedarf; Druckhilfe zählt mit, wenn sie gedruckt wird */
   const filament = $derived.by(() => {
@@ -79,7 +90,7 @@
     return a === b ? `${a}` : `${a}–${b}`;
   });
   /** Druckhilfe gibt es nur, wenn der Stecker mit der Spitze nach unten gedruckt wird */
-  const hasSupport = $derived(kind.id === 'M' || kind.id === 'MF');
+  const hasSupport = $derived(kind.id === 'M' || kind.id === 'MF' || (!!kind.freeform && freeMaleOnBed(free)));
   const hasSwivel = $derived(kind.id === 'FH' || kind.id === 'MH');
   /** Beim Drehring an der Kupplung (FxxHyy) begrenzt die Geometrie des Originals das Spaltmaß (7 mm: 0,5, 9 mm: 0,35) */
   const swivelMax = $derived(slipRingGapMax(input.generalMaterialWidth, kind.id === 'MH'));
@@ -93,7 +104,7 @@
     // D1 (am Übergang, tief im Adapter) ↔ Stutzen vorne; D2 (Öffnung des Adapters) ↔ Stutzen in der Tiefe
     return { d1Inner: round1(toInner(m.dOpen)), d2Inner: round1(toInner(m.dDepth)), length: m.length, wall: w, transition: Math.max(2, m.transition), screwHoles: m.holes };
   });
-  const buildOpts = $derived(kind.machine ? { pipe } : {});
+  const buildOpts = $derived(kind.freeform ? { free: $state.snapshot(free) } : kind.machine ? { pipe } : {});
   /** Dateiname mit allen Abweichungen von den Standardeinstellungen, damit Testdrucke unterscheidbar bleiben */
   const baseName = $derived(kind.fileName(params, buildOpts));
   const fileName = $derived.by(() => {
@@ -105,7 +116,9 @@
     return [baseName, ...extra].join(' ');
   });
   const code = $derived(
-    kind.machine
+    kind.freeform
+      ? freeSummary(free).code
+      : kind.machine
       ? `${kind.ends.top === 'female' ? 'F' : 'M'}${fmt(kind.ends.top === 'female' ? input.femaleDiameterInner : input.maleDiameterInner)}/${fmt(machine.dOpen)}`
       : baseName.replace('osVAC neo ', ''),
   );
@@ -142,6 +155,7 @@
       else if (!LABELS[k].presets.includes(v)) w.push(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
     }
     w.push(...machineWarnings);
+    if (kind.freeform) w.push(...freeIssues.map((x) => x.text));
     if (input.maleFemaleGapSize < 0.1 || input.maleFemaleGapSize > 0.5) w.push('Spaltmaß außerhalb von 0,1 bis 0,5 mm – Stecker und Kupplung passen dann kaum zusammen.');
     return w;
   });
@@ -204,6 +218,7 @@
       cancelAnimationFrame(raf);
       if (token !== buildToken) return;
       dims = viewer!.setBodies(full.bodies);
+      overhang = kind.freeform ? overhangArea(full.bodies) : 0;
       measures = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
       status = 'ready';
     } catch (e) {
@@ -213,10 +228,34 @@
     }
   }
 
+  /**
+   * Fläche der Formstücke, die beim Druck steiler als 45° nach unten zeigt und nicht auf dem Druckbett liegt.
+   * Die Anschlüsse von osVAC neo zählen nicht mit: sie sind für den Druck ohne Stützen gebaut.
+   */
+  function overhangArea(bodies: MeshBody[]): number {
+    let zMin = Infinity;
+    for (const b of bodies) for (let i = 2; i < b.positions.length; i += 3) zMin = Math.min(zMin, b.positions[i]);
+    let area = 0;
+    for (const b of bodies) {
+      if (b.helper || !/^(Formstück|Übergang zu|Geräteanschluss|Anschlagring)/.test(b.name)) continue;
+      const p = b.positions, nr = b.normals, ix = b.indices;
+      for (let t = 0; t < ix.length; t += 3) {
+        const a = ix[t] * 3, c = ix[t + 1] * 3, d = ix[t + 2] * 3;
+        const nz = (nr[a + 2] + nr[c + 2] + nr[d + 2]) / 3;
+        if (nz > -0.72) continue;
+        if (Math.min(p[a + 2], p[c + 2], p[d + 2]) < zMin + 0.4) continue;
+        const ux = p[c] - p[a], uy = p[c + 1] - p[a + 1], uz = p[c + 2] - p[a + 2];
+        const vx = p[d] - p[a], vy = p[d + 1] - p[a + 1], vz = p[d + 2] - p[a + 2];
+        area += Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) / 2;
+      }
+    }
+    return area;
+  }
+
   $effect(() => {
     // Abhängigkeiten registrieren
     void [kindId, input.maleDiameterInner, input.femaleDiameterInner, input.hoseDiameterInner, input.generalMaterialWidth,
-      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, text, JSON.stringify(pipe)];
+      input.maleFemaleGapSize, input.slipRingGapSize, input.supportStructureGapSize, text, JSON.stringify(pipe), kind.freeform ? JSON.stringify(free) : ''];
     if (viewer) schedule();
   });
 
@@ -257,6 +296,13 @@
     if (hasSwivel)
       t.push(`Der Drehring wird in einem Stück mitgedruckt. Nach dem Druck den Schlauchteil gegen ${kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} kräftig drehen, bis sich der Ring frei bewegt. Sitzt er fest, beim nächsten Druck das Spaltmaß Drehring erhöhen.`);
     if (kind.machine && machine.holes) t.push('Die drei Löcher Ø 4 mm mit Senkung nehmen Senkkopfschrauben auf, mit denen sich der Adapter zusätzlich sichern lässt.');
+    if (kind.freeform) {
+      // erster Hinweis gilt für die Anschlüsse; bei Freiform zählt, was frei in der Luft hängt
+      if (!hasSupport) t.splice(1, 1);
+      if (overhang > 40)
+        t.push(`Stützmaterial nötig: Etwa ${Math.round(overhang / 100)} cm² der Bausteine hängen steiler als 45° frei nach unten (meist die Unterseite von Bogen oder Übergang). Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Eine andere Wahl bei „Auf dem Druckbett liegt“ kann das verringern.`);
+      else t.push('Die Bausteine haben keine nennenswerten Überhänge; Stützmaterial ist für sie nicht nötig.');
+    }
     t.push('Die Filamentangabe oben gilt für PETG.');
     return t;
   });
@@ -265,7 +311,7 @@
   // $state.raw: die Einträge gehen per postMessage an die Worker, Proxys ließen sich nicht übertragen
   let plate = $state.raw<(PlateItem & { key: string })[]>([]);
   let plateBusy = $state<ExportFormat | null>(null);
-  const plateKey = () => JSON.stringify([kindId, $state.snapshot(input), text, supports && hasSupport, kind.machine ? $state.snapshot(machine) : null]);
+  const plateKey = () => JSON.stringify([kindId, $state.snapshot(input), text, supports && hasSupport, kind.machine ? $state.snapshot(machine) : null, kind.freeform ? $state.snapshot(free) : null]);
   const onPlate = $derived(plate.some((p) => p.key === plateKey()));
   function addToPlate() {
     if (onPlate) return;
@@ -291,7 +337,7 @@
   );
   function resetSizes() {
     for (const k of kind.diameters) input[k] = START_INPUT[k];
-    if (kind.machine) for (const k of MACHINE_KEYS) (machine[k] as number | boolean) = machineDefault(k);
+    if (kind.machine) for (const k of MACHINE_KEYS) (machine[k] as number | boolean) = machineDefault(k) as number | boolean;
   }
   /** Passung: Spaltmaße, Materialstärke, Beschriftung, Druckhilfe */
   const fitDefault = $derived(
@@ -357,8 +403,8 @@
     <div class="viewport" bind:this={host}></div>
 
     <header class="stage-head">
-      <h1 class="code" aria-live="polite">{code}</h1>
-      <p class="kind-line">{kind.title}</p>
+      <h1 class="code" class:free={kind.freeform} aria-live="polite">{code}</h1>
+      <p class="kind-line">{kind.freeform ? freeSummary(free).sub : kind.title}</p>
       {#if status !== 'ready'}<p class="status status-m" data-s={status} aria-hidden="true">{status === 'error' ? 'Fehler beim Berechnen' : status === 'start' ? 'CAD-Kern wird geladen…' : 'Wird berechnet…'}</p>{/if}
     </header>
 
@@ -373,7 +419,11 @@
     <footer class="stage-foot">
       <dl class="dims">
         <div><dt>Höhe</dt><dd>{dims ? fmt(dims.height) : '–'}<span>mm</span></dd></div>
-        <div><dt>Größter Ø</dt><dd>{dims ? fmt(dims.diameter) : '–'}<span>mm</span></dd></div>
+        {#if kind.freeform}
+          <div><dt>Breite</dt><dd>{dims ? fmt(dims.width) : '–'}<span>mm</span></dd></div>
+        {:else}
+          <div><dt>Größter Ø</dt><dd>{dims ? fmt(dims.diameter) : '–'}<span>mm</span></dd></div>
+        {/if}
         <div><dt>PETG ca.</dt><dd>{gramsText}<span>g</span></dd></div>
       </dl>
       <p class="status" data-s={status} role="status">
@@ -425,6 +475,9 @@
             </button>
           {/each}
         </div>
+      {:else if step === 1 && kind.freeform}
+        <h2>Aufbau</h2>
+        <FreeformEditor bind:spec={free} issues={freeIssues} />
       {:else if step === 1}
         <h2>Größen</h2>
         <p class="lead">Innendurchmesser in Millimetern.</p>
@@ -538,7 +591,11 @@
       {:else}
         <h2>Download</h2>
         <p class="lead">
+          {#if kind.freeform}
+            Freiform: {freeSummary(free).long}{free.blocks.length ? `, dazwischen ${freeSummary(free).blocks}` : ''}.
+          {:else}
           {kind.title}, {kind.diameters.map((k) => `${LABELS[k].name} ${fmt(input[k])} mm`).join(', ')}{#if kind.machine}, Stutzen Ø {fmt(machine.dOpen)} / {fmt(machine.dDepth)} mm, {machine.length} mm tief{/if}.
+          {/if}
         </p>
 
         {#if filament}

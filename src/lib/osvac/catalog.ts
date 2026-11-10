@@ -4,6 +4,7 @@
  */
 import type { OsvacParams } from './params';
 import * as asm from './assemblies';
+import { DEFAULT_FREE, freeSummary } from './freeform';
 
 export type DiameterKey = 'maleDiameterInner' | 'femaleDiameterInner' | 'hoseDiameterInner';
 
@@ -22,10 +23,12 @@ export interface AdapterKind {
   parts?: (p: OsvacParams, o: asm.BuildOptions) => asm.Part[];
   /** Maschinenadapter: fragt Stutzenmaße ab */
   machine?: boolean;
+  /** Freiform: Aufbau aus Bausteinen statt fester Größen */
+  freeform?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
-export type EndType = 'female' | 'male' | 'hose' | 'machine';
+export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free';
 
 function pipeName(o?: asm.BuildOptions): string {
   const s = o?.pipe;
@@ -122,6 +125,19 @@ export const KINDS: AdapterKind[] = [
     build: asm.buildMachineM,
     parts: asm.partsMachineM,
     fileName: (p, o) => `osVAC neo M${n(p.maleDiameterInner)}-Rohr${pipeName(o)}`,
+  },
+  {
+    id: 'FREE',
+    code: 'Freiform',
+    title: 'Freiform',
+    description: 'Eigener Adapter aus Bausteinen: Bogen, Übergang, eckige Haube, Versatz. Für Geräte ohne runden Stutzen.',
+    ends: { top: 'female', bottom: 'free' },
+    diameters: [],
+    freeform: true,
+    available: true,
+    build: asm.buildFree,
+    parts: asm.partsFree,
+    fileName: (_p, o) => `osVAC neo ${freeSummary(o?.free ?? DEFAULT_FREE).file}`,
   },
 ];
 

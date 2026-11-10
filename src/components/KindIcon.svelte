@@ -18,6 +18,9 @@
     {:else if s === 'hose'}
       <path d="M10 {y} h24 l3 24 h-30 z" class="h" />
       {#each [5, 11, 17] as d}<line x1="12" x2="32" y1={y + d} y2={y + d + 3} class="rib" />{/each}
+    {:else if s === 'free'}
+      <!-- Bogen mit eckigem Ende -->
+      <path d="M13 {y} h18 v6 q0 10 6 12 v6 h-30 v-6 q6 -2 6 -12 z" class="h" />
     {:else}
       <path d="M12 {y} h20 v10 l4 14 h-28 l4 -14 z" class="h" />
     {/if}
