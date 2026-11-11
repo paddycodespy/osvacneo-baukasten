@@ -405,8 +405,10 @@ legend.field-label { width: 100%; }
 .license p { margin: 0 0 12px; }
 .license p:last-child { margin-bottom: 0; }
 .license .credit strong { color: var(--graphite); font-weight: 600; }
-.license .more { display: inline-flex; align-items: center; gap: 4px; }
-.license .more .arr { width: 13px; height: 13px; }
+.license .lic-link { display: inline-flex; align-items: center; gap: 4px; }
+.license .lic-link .arr { width: 13px; height: 13px; }
+/* Trenner vor dem Link zu den Lizenzen: so breit wie der Trenner über dem Block, eine Zeile Abstand */
+.license p.lic { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 1.55em; }
 .error { color: #b02a20; font-size: 14px; padding: 10px 14px; background: #fdecea; border-left: 4px solid #d93a2b; border-radius: 4px; }
 
 .step-nav {

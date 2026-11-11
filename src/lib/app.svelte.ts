@@ -366,7 +366,7 @@ class AppState {
       if (typeof s.kindId === 'string' && kindById(s.kindId)?.available) this.kindId = s.kindId;
       if (s.input && typeof s.input === 'object')
         for (const k of Object.keys(START_INPUT) as (keyof OsvacInput)[]) if (num(s.input[k])) (this.input[k] as number) = s.input[k];
-      if (typeof s.text === 'boolean') this.text = s.text;
+      // Beschriftung ist nicht mehr abwählbar: ein gespeichertes „ohne Text“ wird nicht übernommen
       if (typeof s.supports === 'boolean') this.supports = s.supports;
       if (s.machine && typeof s.machine === 'object') {
         for (const k of MACHINE_KEYS) if (MACHINE_FLAGS.includes(k) ? typeof s.machine[k] === 'boolean' : num(s.machine[k])) (this.machine[k] as number | boolean) = s.machine[k];
