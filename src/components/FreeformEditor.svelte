@@ -224,7 +224,7 @@
                 <NumberField bind:value={b.radius} min={5} max={500} step={1} label="Radius des Bogens" />
               </Field>
             </div>
-            <Field label="Richtung" help="In welche Richtung der Bogen abbiegt. Der blaue Pfeil in der Vorschau zeigt die Richtung an.">
+            <Field label="Richtung" help="In welche Richtung der Bogen abbiegt. Einfach ausprobieren und in der Vorschau ansehen.">
               <div class="row">
                 {@render chipsWithField([0, 90, 180, 270], () => b.dir, (v) => (b.dir = v))}
                 <span class="num-sm"><NumberField bind:value={b.dir} min={0} max={359} step={5} unit="°" label="Richtung des Bogens" /></span>
@@ -253,7 +253,7 @@
                   </Field>
                 </div>
                 {#if b.offset || b.tilt}
-                  <Field label="Richtung" help="In welche Richtung Versatz und Knick zeigen. Der blaue Pfeil in der Vorschau zeigt die Richtung an.">
+                  <Field label="Richtung" help="In welche Richtung Versatz und Knick zeigen. Einfach ausprobieren und in der Vorschau ansehen.">
                     <div class="row">
                       {@render chipsWithField([0, 90, 180, 270], () => b.dir, (v) => (b.dir = v))}
                       <span class="num-sm"><NumberField bind:value={b.dir} min={0} max={359} step={5} unit="°" label="Richtung von Versatz und Knick" /></span>
