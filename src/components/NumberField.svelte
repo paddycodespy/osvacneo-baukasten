@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   /**
    * Zahlenfeld mit eigenen Pfeiltasten (mit Abstand zum Wert, in allen Browsern gleich).
    * Textfeld statt type=number, damit immer das deutsche Komma erscheint (0,2 statt 0.2);
@@ -22,6 +23,10 @@
     oncommit?: (v: number) => void;
   } = $props();
 
+  /** Markierung aus einer Meldung („… auf … setzen“): rot bei Fehler, gelb bei Hinweis */
+  const flag = getContext<((label: string) => 'error' | 'warn' | null) | undefined>('fieldFlag');
+  const state = $derived(flag?.(label) ?? null);
+
   const decimals = $derived((String(step).split('.')[1] ?? '').length);
   const show = (v: number) => (Number.isFinite(v) ? v.toLocaleString('de-DE', { maximumFractionDigits: Math.max(decimals, 2) }) : '');
 
@@ -40,7 +45,7 @@
   }
 </script>
 
-<span class="num-in nf">
+<span class="num-in nf" class:flag-error={state === 'error'} class:flag-warn={state === 'warn'}>
   <input
     type="text"
     inputmode="decimal"

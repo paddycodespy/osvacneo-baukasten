@@ -5,6 +5,10 @@
   import Field from '../Field.svelte';
   import MeasureFigure from '../MeasureFigure.svelte';
   import ResetLink from '../ResetLink.svelte';
+  import { setContext } from 'svelte';
+
+  // Felder markieren, die ein Hinweis zum Stutzen betrifft
+  setContext('fieldFlag', (label: string) => (app.machineWarnings.some((w) => w.fixes?.some((fx) => fx.fields.includes(label))) ? 'warn' : null));
 </script>
 
 <h2>Größen</h2>
@@ -47,7 +51,14 @@
   </div>
   {#if app.machineWarnings.length}
     <ul class="warn">
-      {#each app.machineWarnings as w}<li>{w}</li>{/each}
+      {#each app.machineWarnings as w}
+        <li>
+          {w.text}
+          {#if w.fixes?.length}
+            <span class="fixes">{#each w.fixes as fx}<button type="button" class="fix" onclick={fx.set}>{fx.label}</button>{/each}</span>
+          {/if}
+        </li>
+      {/each}
     </ul>
   {/if}
   <details class="more">
