@@ -163,9 +163,21 @@ export const DEFAULT_DEVICE: DeviceEnd = {
   notchDir: 0,
 };
 
-/** Lage der Schraubenlöcher und Schlitze als Anteil am Umfang (ab +u, wie beim Rohrkonus 90/210/330°; Schlitze dazwischen) */
+/** Lage der Schraubenlöcher als Anteil am Umfang (ab +u, wie beim Rohrkonus 90/210/330°) */
 const HOLE_AT = [0.25, 7 / 12, 11 / 12];
-const SLOT_AT = [1 / 12, 5 / 12, 9 / 12];
+
+/**
+ * Schlitze für die Schlauchschelle, fest nach Größe des Adapters:
+ * 80 % der Tiefe lang (damit die Zungen federn), Breite Umfang/40 (2,5–4 mm, auf 0,5 mm gerundet),
+ * mit Schraubenlöchern 3 Stück genau zwischen den Löchern, sonst 3 / 4 / 6 je nach Umfang (unter 100 / bis 200 / darüber).
+ */
+function slotLayout(P: number, L: number, withHoles: boolean) {
+  const len = Math.max(6, Math.min(Math.round(L * 0.8), L - 3));
+  const width = Math.min(4, Math.max(2.5, Math.round((P / 40) * 2) / 2));
+  const n = withHoles ? 3 : P < 100 ? 3 : P <= 200 ? 4 : 6;
+  const at = withHoles ? [1 / 12, 5 / 12, 9 / 12] : Array.from({ length: n }, (_, k) => (k + 0.5) / n);
+  return { len, width, at };
+}
 /** Klemmrippen: so weit ragen sie über die Gerätefläche hinaus (werden beim Aufstecken zusammengedrückt) */
 const RIB_CRUSH = 0.3;
 
@@ -961,7 +973,6 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
     else if (dv.notchH > L - 3) issues.push({ level: 'error', text: `Gerät: Die Aussparung darf höchstens ${Math.round(L - 3)} mm tief sein, sonst hält der Adapter nicht mehr.` });
     if (issues.some((x) => x.level === 'error' && x.text.includes('Aussparung'))) notch = false;
   }
-  const slotLen = Math.max(6, Math.min(Math.round(L * 0.6), L - 3));
   const xHole = L - 8;
   const nRad = rad(dv.notchDir + rot1);
   const ray: P2 = [Math.cos(nRad), Math.sin(nRad)], perp: P2 = [-ray[1], ray[0]];
@@ -970,7 +981,9 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
   const inNotch = (q: P2, margin: number) => notch && Math.abs(q[0] * perp[0] + q[1] * perp[1]) < dv.notchW / 2 + margin && q[0] * ray[0] + q[1] * ray[1] > 0;
   const mid0 = grow(front, a + w / 2);
   const holeAt = HOLE_AT.filter((g) => !inNotch(contourAt(mid0, rot1, [g])[0].p, 6));
-  const slotAt = SLOT_AT.filter((g) => !inNotch(contourAt(mid0, rot1, [g])[0].p, 3));
+  const SL = slotLayout(P, L, holes);
+  const slotLen = SL.len, slotW = SL.width;
+  const slotAt = SL.at.filter((g) => !inNotch(contourAt(mid0, rot1, [g])[0].p, slotW / 2 + 2));
   if (holes && !holeAt.length) holes = false;
 
   /** Schnitte, die Muffe/Zapfen und Fase gemeinsam haben */
@@ -982,10 +995,11 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
         const q = (s1: number, s2: number): P2 => [p[0] + tg[0] * s1 + n[0] * s2, p[1] + tg[1] * s1 + n[1] * s2];
         const h = w + 4;
         const x0 = L - slotLen;
-        const face = makePolygon([at3(x0, q(-1, -h)), at3(x0, q(1, -h)), at3(x0, q(1, h)), at3(x0, q(-1, h))]);
+        const sw = slotW / 2;
+        const face = makePolygon([at3(x0, q(-sw, -h)), at3(x0, q(sw, -h)), at3(x0, q(sw, h)), at3(x0, q(-sw, h))]);
         t.push(basicFaceExtrusion(face, new Vector(mul(fb.t, slotLen + 1) as Point)) as unknown as Shape3D);
         // runder Schlitzgrund gegen Einreißen
-        t.push(makeCylinder(1, 2 * h, at3(x0, q(0, -h)), dir3(n) as Point) as unknown as Shape3D);
+        t.push(makeCylinder(sw, 2 * h, at3(x0, q(0, -h)), dir3(n) as Point) as unknown as Shape3D);
       }
     }
     if (notch) {
@@ -1038,7 +1052,7 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
       const n = Math.max(6, Math.min(24, Math.round(P / 10)));
       const arc = (f1: number, f2: number) => Math.min(Math.abs(f1 - f2), 1 - Math.abs(f1 - f2)) * P;
       const fr = Array.from({ length: n }, (_, k) => (k + 0.5) / n).filter(
-        (f) => !(holes && holeAt.some((g) => arc(f, g) < 5)) && !(slots && slotAt.some((g) => arc(f, g) < 3)),
+        (f) => !(holes && holeAt.some((g) => arc(f, g) < 5)) && !(slots && slotAt.some((g) => arc(f, g) < slotW / 2 + 2)),
       );
       const ribPts = (x: number) => {
         const base = grow(devAt(x), over ? a + 0.4 : -(a + 0.4));
@@ -1062,7 +1076,7 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
         };
     }
   }
-  const cutKey = [slots ? [slotLen, ...slotAt] : 0, notch ? [dv.notchW, dv.notchH, dv.notchDir].map(r6) : 0];
+  const cutKey = [slots ? [slotLen, slotW, ...slotAt] : 0, notch ? [dv.notchW, dv.notchH, dv.notchDir].map(r6) : 0];
   return { apply, ribs, any: holes || slots || notch, cutKey, key: [holes ? holeAt : 0, ...cutKey, dv.ribs ? 1 : 0] };
 }
 

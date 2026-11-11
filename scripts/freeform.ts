@@ -65,6 +65,12 @@ for (const [id, shape, mode, dDepth] of [
   s.b.device = { ...s.b.device, mode, section, dDepth: dDepth || 34, length: 28, ribs: true, slots: true, holes: true, notch: true, notchW: 14, notchH: 9, notchDir: 60, collar: mode === 'into' };
   cases.push([id, s]);
 }
+// Schlitze ohne Schraubenlöcher: Anzahl nach Umfang (Ø 34 → 4, Rechteck 120 × 60 → 6)
+for (const [id, shape] of [['schlitze-kreis', 'circle'], ['schlitze-rechteck', 'rect']] as const) {
+  const s = TEMPLATES[3].make();
+  s.b.device = { ...s.b.device, mode: 'over', section: sec(shape, { w: 120, h: 60, d: 34, r: 6 }), dDepth: 34, length: 30, slots: true, ribs: true };
+  cases.push([id, s]);
+}
 {
   const s = TEMPLATES[2].make();
   s.blocks.push(newBlock('bend', { angle: 180, radius: 40, dir: 270 }));
