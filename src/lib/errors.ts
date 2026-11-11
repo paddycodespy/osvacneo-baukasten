@@ -9,6 +9,12 @@ export class UserError extends Error {
   }
 }
 
+/**
+ * Hinweise eines Körpers, der trotzdem gebaut wurde (z. B. weggelassene Klemmrippen). Der Worker leert die Liste vor
+ * jedem Körper, liest sie danach aus und gibt sie mit dem Ergebnis (und im Browser-Speicher) weiter.
+ */
+export const partNotes: string[] = [];
+
 export const GENERIC_ERROR =
   'Mit diesen Maßen lässt sich der Adapter nicht berechnen. Bitte einen Wert etwas ändern. Hilft das nicht, die Seite neu laden.';
 

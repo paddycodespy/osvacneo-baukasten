@@ -48,6 +48,8 @@ export type WorkerReply =
       volume: number;
       area: number;
       zMin: number;
+      /** Hinweise zum Körper (gebaut, aber mit Einschränkung) */
+      notes: string[];
       ms: number;
     }
   | { type: 'partMesh'; id: number; vertices: Float32Array; triangles: Uint32Array }
