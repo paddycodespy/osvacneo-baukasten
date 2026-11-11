@@ -546,8 +546,6 @@ export interface FreePlan {
   end: Frame;
   /** Punkte entlang der Mittellinie (für Lage und Ausrichtung auf dem Druckbett) */
   path: V3[];
-  /** Rahmen am Anfang jedes Bausteins (für den Richtungspfeil in der Vorschau) */
-  starts: Frame[];
 }
 
 /** Länge des Übergangskonus zwischen Anschluss von osVAC neo und Formstück (TransitionConeLength) */
@@ -630,11 +628,9 @@ export function planFree(spec: FreeSpec): FreePlan {
   let s: Section = sec('circle', { d: spec.a.d });
   let rotS = 0;
   const path: V3[] = [[0, 0, 0], f.o];
-  const starts: Frame[] = [];
   const f1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
 
   spec.blocks.forEach((b, idx) => {
-    starts[idx] = f;
     const name = `Formstück ${idx + 1} · ${BLOCK_LABELS[b.type]}`;
     const what = `${BLOCK_LABELS[b.type]} (Baustein ${idx + 1})`;
     const start = f, s0 = s, rot0 = rotS;
@@ -776,7 +772,7 @@ export function planFree(spec: FreeSpec): FreePlan {
     chainEnd.section = target;
     chainEnd.rot = 0;
   }
-  return { bodies, issues, chainEnd, end, path, starts };
+  return { bodies, issues, chainEnd, end, path };
 }
 
 /** Gerader Loft zwischen zwei Querschnitten (für automatische Übergänge). */
@@ -1009,17 +1005,4 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
     file: [A, 'Freiform', fileMid, fileB].filter(Boolean).join(' '),
     blocks,
   };
-}
-
-/**
- * Richtungspfeil für Bogen bzw. Versatz/Knick von Baustein i in Modellkoordinaten (so wie die Vorschau den Adapter
- * auf das Druckbett legt): Anfang in der Mitte der Startfläche, Richtung, in die gebogen bzw. versetzt wird.
- */
-export function blockArrow(spec: FreeSpec, plan: FreePlan, i: number): { origin: V3; dir: V3 } | null {
-  const b = spec.blocks[i], f = plan.starts[i];
-  if (!b || !f) return null;
-  if (b.type !== 'bend' && !(b.type === 'transition' && (b.offset || b.tilt))) return null;
-  const G = bedPlacement(spec, plan);
-  const d = inPlane(f, b.dir);
-  return { origin: add(mulMV(G.R, f.o), G.tr), dir: unit(mulMV(G.R, d)) };
 }

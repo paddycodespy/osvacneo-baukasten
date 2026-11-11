@@ -2,14 +2,14 @@
   /**
    * Gerüst der Anwendung: 3D-Vorschau links, Schritte rechts.
    * Die Eingaben liegen in `app` (lib/app.svelte.ts), die Schritte in components/steps.
-   * Hier passiert nur, was die Vorschau betrifft: Berechnen, Anzeigen, Richtungspfeil, Speichern des Stands.
+   * Hier passiert nur, was die Vorschau betrifft: Berechnen, Anzeigen, Speichern des Stands.
    */
   import { onMount } from 'svelte';
   import { PartViewer } from './lib/viewer';
   import { build, partNames } from './lib/cad';
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
-  import { blockArrow, freeSummary } from './lib/osvac/freeform';
+  import { freeSummary } from './lib/osvac/freeform';
   import { app, fmt } from './lib/app.svelte';
   import FreeformEditor from './components/FreeformEditor.svelte';
   import StepKind from './components/steps/StepKind.svelte';
@@ -144,17 +144,6 @@
     saveTimer = setTimeout(() => app.save(), 400);
   });
 
-  // Freiform, Schritt Aufbau: Pfeil für die Richtung des aufgeklappten Bogens bzw. Übergangs
-  let viewerReady = $state(false);
-  const arrow = $derived.by(() => {
-    if (!app.kind.freeform || app.step !== 1 || app.status === 'error' || typeof app.freeOpen !== 'number' || !app.freePlan) return null;
-    const i = app.free.blocks.findIndex((b) => b.id === app.freeOpen);
-    return i < 0 ? null : blockArrow($state.snapshot(app.free), app.freePlan, i);
-  });
-  $effect(() => {
-    if (viewerReady) viewer?.setArrow(arrow);
-  });
-
   /** Hinweis zum Drucken schon im Aufbau (erst sicher, wenn die Berechnung fertig ist) */
   const printNote = $derived.by((): { text: string; level: 'ok' | 'warn' } | null => {
     if (app.status !== 'ready') return null;
@@ -168,7 +157,6 @@
   onMount(() => {
     viewer = new PartViewer(host);
     viewer.setHelpers(app.supports);
-    viewerReady = true;
     schedule();
     return () => {
       clearTimeout(timer);
