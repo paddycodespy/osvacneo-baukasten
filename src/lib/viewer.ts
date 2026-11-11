@@ -59,57 +59,6 @@ export interface Dimensions {
   width: number;
 }
 
-/**
- * Wortmarke „osVAC neo“ vorne links auf dem Druckbett (wie das Logo auf einer Druckplatte),
- * in den Farben der Kopfzeile: „os“ und „neo“ rot, „VAC“ himmelblau.
- */
-/** Breite der Wortmarke auf dem Bett in mm (Text füllt etwa die linken 70 %) */
-const LOGO_W = 62;
-/**
- * Mögliche Lagen der Wortmarke (Mitte, Bettkoordinaten), in dieser Reihenfolge versucht:
- * vorne rechts, vorne links, vorne Mitte, hinten links, hinten rechts, hinten Mitte. Leserichtung bleibt gleich.
- */
-const LOGO_SPOTS: [number, number][] = (() => {
-  const xr = BED / 2 - 10 - LOGO_W / 2, yf = -BED / 2 + 11;
-  return [[xr, yf], [-xr, yf], [0, yf], [-xr, -yf], [xr, -yf], [0, -yf]];
-})();
-
-function bedLogo(onReady: () => void): THREE.Mesh {
-  const W = 1024, H = 256;
-  const c = document.createElement('canvas');
-  c.width = W;
-  c.height = H;
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  const draw = () => {
-    const g = c.getContext('2d')!;
-    g.clearRect(0, 0, W, H);
-    g.font = '700 150px Poppins, sans-serif';
-    g.textBaseline = 'middle';
-    const parts: [string, string][] = [['os', '#ef453b'], ['VAC', '#28a3e5'], [' neo', '#ef453b']];
-    let x = 8;
-    for (const [t, col] of parts) {
-      g.fillStyle = col;
-      g.fillText(t, x, H / 2);
-      x += g.measureText(t).width;
-    }
-    tex.needsUpdate = true;
-    onReady();
-  };
-  draw();
-  // Poppins wird erst bei Bedarf geladen: danach neu zeichnen
-  document.fonts?.load('700 150px Poppins').then(draw, () => {});
-  const w = LOGO_W;
-  const m = new THREE.Mesh(
-    new THREE.PlaneGeometry(w, (w * H) / W),
-    new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.7, metalness: 0.1, depthWrite: false }),
-  );
-  // vordere Kante (y = −BED/2), rechts zur vorderen Ecke hin, Leserichtung zur Kamera
-  m.position.set(...LOGO_SPOTS[0], 0.05);
-  return m;
-}
-
 export class PartViewer {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
@@ -124,9 +73,6 @@ export class PartViewer {
   private disposed = false;
   private framed = false;
   private needsRender = true;
-  private logo!: THREE.Mesh;
-  private logoTimer: ReturnType<typeof setTimeout> | undefined;
-  private ray = new THREE.Raycaster();
   /** Schnitt je Körper (Freiform: Ebene durch die Mittellinie des Bausteins), sonst die gemeinsame Ebene */
   private planes: ((name: string) => { p: [number, number, number]; n: [number, number, number] } | null) | null = null;
   section = false;
@@ -151,7 +97,6 @@ export class PartViewer {
       this.needsRender = true;
       // Schnitt je Körper: abgeschnittene Seite folgt der Kamera
       if (this.section && this.planes) for (const c of this.model.children) this.clipFor(c as THREE.Mesh);
-      this.placeLogoSoon();
     });
 
     this.scene.add(new THREE.HemisphereLight(0xf4f7fb, 0x5b4a33, 1.3));
@@ -174,8 +119,6 @@ export class PartViewer {
     );
     edge.position.z = -3.05;
     this.bed.add(edge);
-    this.logo = bedLogo(() => (this.needsRender = true));
-    this.bed.add(this.logo);
     this.scene.add(this.bed);
     this.scene.add(this.model);
 
@@ -253,48 +196,8 @@ export class PartViewer {
     this.bed.scale.set(this.bedScale, this.bedScale, 1);
     if (!this.framed) this.frame(box);
     if (this.section) this.setSection(true);
-    this.placeLogoSoon();
     this.needsRender = true;
     return { height: size.z, diameter: 2 * rMax, width: Math.max(size.x, size.y) };
-  }
-
-  /** Wortmarke neu setzen, sobald die Ansicht zur Ruhe gekommen ist */
-  private placeLogoSoon() {
-    clearTimeout(this.logoTimer);
-    this.logoTimer = setTimeout(() => this.placeLogo(), 250);
-  }
-
-  /**
-   * Wortmarke dorthin legen, wo das Modell sie aus der aktuellen Blickrichtung nicht verdeckt:
-   * je Lage ein paar Punkte auf dem Schriftzug, Strahl von der Kamera dorthin, trifft er vorher das Modell, ist sie verdeckt.
-   */
-  private placeLogo() {
-    if (this.disposed) return;
-    const meshes = this.model.children.filter((c) => c.visible) as THREE.Mesh[];
-    if (!meshes.length) return;
-    this.scene.updateMatrixWorld();
-    const cam = this.camera.position;
-    const h = (LOGO_W * 256) / 1024;
-    const visible = (spot: [number, number]) => {
-      for (const fx of [-0.45, -0.15, 0.15]) {
-        for (const fy of [-0.3, 0.3]) {
-          // Punkt auf dem Bett (Bettkoordinaten → Welt, das Bett ist evtl. vergrößert)
-          const p = this.bed.localToWorld(new THREE.Vector3(spot[0] + fx * LOGO_W, spot[1] + fy * h, 0.05));
-          const dir = p.clone().sub(cam);
-          const dist = dir.length();
-          this.ray.set(cam, dir.normalize());
-          this.ray.far = dist - 0.5;
-          if (this.ray.intersectObjects(meshes, false).length) return false;
-        }
-      }
-      return true;
-    };
-    const cur = LOGO_SPOTS.findIndex(([x, y]) => x === this.logo.position.x && y === this.logo.position.y);
-    // aktuelle Lage behalten, solange sie frei ist (sonst springt der Schriftzug beim Drehen hin und her)
-    if (cur >= 0 && visible(LOGO_SPOTS[cur])) return;
-    const spot = LOGO_SPOTS.find(visible) ?? LOGO_SPOTS[0];
-    this.logo.position.set(spot[0], spot[1], 0.05);
-    this.needsRender = true;
   }
 
   /** Kamera so setzen, dass Bauteil und Druckbett vollständig und mittig im Bild sind. */
@@ -342,7 +245,6 @@ export class PartViewer {
     const box = new THREE.Box3().setFromObject(this.model);
     box.translate(this.model.position.clone().negate()); // zurück in Modellkoordinaten, frame() verschiebt wieder
     this.frame(box);
-    this.placeLogoSoon();
     this.needsRender = true;
   }
 
@@ -405,7 +307,6 @@ export class PartViewer {
   }
 
   dispose() {
-    clearTimeout(this.logoTimer);
     this.disposed = true;
     this.ro.disconnect();
     this.controls.dispose();
