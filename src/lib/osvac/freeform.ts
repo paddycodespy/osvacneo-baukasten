@@ -236,6 +236,9 @@ function slotLayout(P: number, L: number, holeAt: number[] | null) {
   }
   return { len, width, at };
 }
+/** Nur für die Prüfläufe: einzelne Klemmrippen künstlich scheitern lassen (Weg des Hinweises testen) */
+export const testHooks: { ribFail: ((i: number) => boolean) | null } = { ribFail: null };
+
 /** Klemmrippen: so weit ragen sie über die Gerätefläche hinaus (werden beim Aufstecken zusammengedrückt) */
 const RIB_CRUSH = 0.3;
 
@@ -1171,6 +1174,7 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
           let lost = 0;
           A.forEach((q, i) => {
             if (!keep[i]) return;
+            if (testHooks.ribFail?.(i)) return void lost++;
             const tries = tapered ? [() => loft([tri(x0, q), tri(x1, B[i])], { ruled: true }) as unknown as Shape3D, () => straight(M[i])] : [() => straight(q)];
             for (const t of tries) {
               try {

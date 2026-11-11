@@ -364,7 +364,7 @@
                       <Field label="Breite"><NumberField bind:value={dv.notchW} min={3} max={150} step={1} label="Breite der Aussparung" /></Field>
                       <Field label="Tiefe" help="Wie weit die Aussparung vom Rand in den Adapter reicht."><NumberField bind:value={dv.notchH} min={2} max={150} step={1} label="Tiefe der Aussparung" /></Field>
                     </div>
-                    <Field label="Lage" help="Auf welcher Seite die Aussparung sitzt. Die Skizze zeigt den Stutzen von vorne, rot ist die Aussparung. Auf die Skizze tippen oder einen Winkel wählen.">
+                    <Field label="Lage" help="Auf welcher Seite die Aussparung sitzt. Die Skizze zeigt die Öffnung des Adapters von außen, so wie du sie auf den Stutzen setzt. Rot ist die Aussparung. Auf die Skizze tippen oder einen Winkel wählen.">
                       <NotchFigure section={dv.section} dir={dv.notchDir} width={dv.notchW} onpick={(v) => (dv.notchDir = v)} />
                       <div class="row">
                         {@render chipsWithField([0, 90, 180, 270], () => dv.notchDir, (v) => (dv.notchDir = v))}

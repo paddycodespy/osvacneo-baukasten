@@ -64,8 +64,22 @@
           <NumberField bind:value={app.machine.transition} step={1} min={2} max={40} label="Übergangslänge" />
         </Field>
       </div>
-      <label class="inline-check"><input type="checkbox" bind:checked={app.machine.holes} /> 3 Löcher für Schrauben (Ø 4 mm)</label>
-      <p class="hint">Mit kleinen Senkkopfschrauben hält der Adapter zusätzlich am Stutzen.</p>
+      <div class="x-list">
+        <div class="x-item">
+          <label class="inline-check"><input type="checkbox" bind:checked={app.machine.holes} /> 3 Löcher für Schrauben (Ø 4 mm)</label>
+          <p class="hint">Mit kleinen Senkkopfschrauben hält der Adapter zusätzlich am Stutzen.</p>
+        </div>
+        <div class="x-item">
+          <label class="inline-check"><input type="checkbox" bind:checked={app.machine.ribs} /> Klemmrippen für festen Sitz</label>
+          <p class="hint">Schmale Rippen {m.mode === 'over' ? 'innen' : 'außen'}, die sich beim {m.mode === 'over' ? 'Aufstecken' : 'Einstecken'} etwas zusammendrücken. Hilft, wenn der {m.mode === 'over' ? 'Stutzen' : 'Rand der Öffnung'} nicht genau rund ist oder der Adapter sonst wackelt.</p>
+        </div>
+        {#if m.mode === 'over'}
+          <div class="x-item">
+            <label class="inline-check"><input type="checkbox" bind:checked={app.machine.slots} /> Schlitze für eine Schlauchschelle</label>
+            <p class="hint">Zwei Schlitze vom offenen Rand her, Größe passend zum Adapter. Eine Schelle außen drückt den Adapter dann fest auf den Stutzen.</p>
+          </div>
+        {/if}
+      </div>
       <div class="pipe-sum">
         <table>
           <caption>So wird das Rohrteil des Adapters</caption>

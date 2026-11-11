@@ -440,6 +440,17 @@ legend.field-label { width: 100%; }
 /* ---------- Mobil ---------- */
 .status-m { display: none; }
 
+/* schmale Vorschau (kleine Fenster, z. B. 900–1100 px): Werkzeuge nach unten, damit sie die Kennung nicht verdecken */
+@media (min-width: 861px) and (max-width: 1150px) {
+  .stage-head { left: 24px; right: 20px; }
+  .stage-tools { top: auto; bottom: 112px; right: 20px; }
+  .stage-foot { left: 24px; right: 20px; flex-wrap: wrap; align-items: flex-start; gap: 10px 20px; }
+  .stage-foot .status { order: -1; }
+  .dims { gap: 20px; flex-basis: 100%; }
+}
+.status { white-space: nowrap; }
+.dims dt { white-space: nowrap; }
+
 @media (max-width: 860px) {
   .topbar { padding: 0 18px; height: 56px; }
   .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58vh auto; flex: none; }
@@ -545,3 +556,9 @@ legend.field-label { width: 100%; }
 .confirm p { margin: 0 0 8px; }
 .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
 .license .version { margin-top: 10px; font-size: 12px; }
+
+/* Häkchen mit Beschreibung darunter (Extras): Beschreibung beginnt dort, wo der Text neben dem Kästchen beginnt */
+.x-list { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
+.x-list .x-item .inline-check { margin: 0; }
+.x-list .x-item .inline-check input { margin: 0; flex: none; }
+.x-list .x-item > .hint { margin: 2px 0 0 28px; }

@@ -17,7 +17,7 @@ Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Orig
 | Stecker → Stutzen | Male, Übergang, Rohrkonus | Mxx To Pipe Cone |
 | Freiform | Anschluss A (Female oder Male), Übergang, Bausteine, Ende B (Gerät oder Female/Male) | eigene Erweiterung, siehe unten |
 
-Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Spaltmaß Drehring (ab 0,2 mm, Standard 0,3 wie im Original; an der Kupplung höchstens 0,5 mm bei 7 mm bzw. 0,35 mm bei 9 mm Materialstärke, im Gehäuse bis 0,8 mm), Materialstärke (7 oder 9 mm), Beschriftung, Druckhilfe sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe, Übergangslänge (TransitionConeLength, Standard 8 mm) und Schraubenlöcher.
+Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Spaltmaß Drehring (ab 0,2 mm, Standard 0,3 wie im Original; an der Kupplung höchstens 0,5 mm bei 7 mm bzw. 0,35 mm bei 9 mm Materialstärke, im Gehäuse bis 0,8 mm), Materialstärke (7 oder 9 mm), Beschriftung, Druckhilfe sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe, Übergangslänge (TransitionConeLength, Standard 8 mm), Schraubenlöcher, Klemmrippen (aufgesteckt innen, eingesteckt außen; eingesteckt möglichst neben der Beschriftung) und beim Aufstecken Schlitze für eine Schlauchschelle (2 Stück bei 0° und 180°, zwischen Löchern und Schrift; 80 % der Rohrlänge, Breite Umfang/40).
 
 ### Freiform
 
@@ -94,7 +94,9 @@ scripts/
   matrix.ts                  Alle Typen mit Grenzwerten bauen (npm run test:geometry)
   freeform.ts                Freiform-Vorlagen und -Varianten bauen (npm run test:freeform, --stl schreibt out/)
   sketch-overlap.ts          Skizzen auf überlappende Beschriftungen prüfen (npm run build && npm run test:sketches)
-.github/workflows/tests.yml  Alle Prüfungen bei jedem Push (Typen, Build, Schlüssel, Freiform, Skizzen, Geometrie)
+  ui-flows.ts                Bedienabläufe im Browser prüfen (npm run build && npm run test:ui)
+  lib/preview.ts             gemeinsam für beide: vite preview + Chrome starten
+.github/workflows/tests.yml  Alle Prüfungen bei jedem Push (Typen, Build, Schlüssel, Freiform, Skizzen, Bedienabläufe, Geometrie)
 ```
 
 ### Prüfungen
@@ -103,8 +105,9 @@ scripts/
 |---|---|---|
 | `npm run check` | Typen (Svelte und TypeScript) | < 1 min |
 | `npm run test:keys` | gleiche Cache-Schlüssel ergeben gleiche Körper | ca. 1 min |
-| `npm run test:freeform` | alle Freiform-Vorlagen, Querschnitte und längere Ketten | ca. 1 min |
+| `npm run test:freeform` | alle Freiform-Vorlagen, Querschnitte, Extras und längere Ketten, Stutzen-Typen mit Klemmrippen/Schlitzen, Weg des Hinweises bei weggelassenen Rippen, Rahmen nicht gespiegelt | ca. 4 min |
 | `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen (braucht `npm run build` und Chrome, Pfad über `CHROME_PATH`) | < 1 min |
+| `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern, Stand nach dem Neuladen, Extras im Namen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 1 min |
 | `npm run test:geometry` | alle Adaptertypen mit Grenzwerten | ca. 10–15 min |
 
 Auf GitHub laufen alle bei jedem Push (Actions → Tests).

@@ -4,7 +4,7 @@
  * Lokales System: Oberkante des Übergangs bei z = 0, nach unten.
  */
 import type { Shape3D } from 'replicad';
-import { measureVolume, makeCompound, makeCylinder, loft, assembleWire, makeLine, makeBSplineApproximation, type Point } from 'replicad';
+import { measureVolume, makeCompound, makeCylinder, loft, assembleWire, makeLine, makeThreePointArc, makeFace, basicFaceExtrusion, makeBSplineApproximation, Vector, type Point } from 'replicad';
 
 /** Geschlossener Polygonzug als Kanten (für Regelflächen-Loft). */
 function makePolygonWire(pts: Point[]) {
@@ -14,7 +14,7 @@ import type { OsvacParams } from './params';
 import { revolveProfile, L, A, rad } from './geom';
 import { textOnCylinder, engrave } from './text';
 import { TEXT } from './grip';
-import { UserError } from '../errors';
+import { UserError, partNotes } from '../errors';
 
 const HOLE_ANGLES = [90, 210, 330];
 
@@ -31,6 +31,100 @@ export interface PipeSpec {
   transition: number;
   /** 3 radiale Schraubenlöcher Ø4 */
   screwHoles: boolean;
+  /** Befestigung am Gerät (für Klemmrippen und Schlitze): Rohr über den Stutzen oder in die Öffnung */
+  mode?: 'over' | 'into';
+  /** Zugabe auf den Durchmesser (wie viel Luft zum Gerät bleibt) */
+  allowance?: number;
+  /** Klemmrippen auf der Anlagefläche (aufgesteckt innen, eingesteckt außen) */
+  ribs?: boolean;
+  /** nur aufgesteckt: 2 Schlitze vom offenen Ende her für eine Schlauchschelle */
+  slots?: boolean;
+}
+
+/** Klemmrippen: so weit ragen sie über die Gerätefläche hinaus (wie bei Freiform) */
+const RIB_CRUSH = 0.3;
+/** Schlitze bei 0° und 180°: zwischen den Schraubenlöchern und neben der Beschriftung (90°/270°) */
+const SLOT_ANGLES = [0, 180];
+const r1iOf = (s: PipeSpec) => s.d1Inner / 2;
+const slopeOf = (s: PipeSpec) => (s.d2Inner / 2 - s.d1Inner / 2) / s.length;
+
+/** Maße der Schlitze, fest nach Größe: 80 % der Rohrlänge, Breite Umfang/40 (2,5–4 mm) */
+export function pipeSlotLayout(s: PipeSpec) {
+  const P = Math.PI * (s.d1Inner + s.d2Inner) / 2;
+  return { len: Math.max(6, Math.min(Math.round(s.length * 0.8), s.length - 3)), width: Math.min(4, Math.max(2.5, Math.round((P / 40) * 2) / 2)) };
+}
+
+/**
+ * Klemmrippen am Rohr (eigener Körper, Oberkante des Rohrs bei z = 0): dreieckig, 1,6 mm breit, 0,4 mm in der Wand,
+ * ragen RIB_CRUSH über die Gerätefläche. Nicht an den Schraubenlöchern, den Schlitzen und (eingesteckt außen) der Beschriftung.
+ */
+export function pipeRibs(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
+  const w = pipeWall(s);
+  const L0 = s.length;
+  const over = s.mode !== 'into';
+  const a = (s.allowance ?? 0.2) / 2;
+  const r1i = r1iOf(s), slope = slopeOf(s);
+  const rSurf = (z: number) => (over ? r1i + slope * -z : r1i + w + slope * -z);
+  const z0 = -1, z1 = -(L0 - w / 2 - 2);
+  const rMid = r1i + w / 2;
+  const P = 2 * Math.PI * rMid;
+  const n = Math.max(6, Math.min(24, Math.round(P / 10)));
+  const arcDeg = (mm: number) => (mm / rMid) * (180 / Math.PI);
+  const dist = (x: number, y: number) => Math.abs(((x - y + 540) % 360) - 180);
+  const sl = pipeSlotLayout(s);
+  // Beschriftung außen bei 90° („osVAC neo“, ca. 36 mm breit) und 270° (Maße, ca. 29 mm): eingesteckt möglichst dort keine Rippen
+  const rOut = r1i + w;
+  const textHalf = [{ c: 90, half: (20 / rOut) * (180 / Math.PI) }, { c: 270, half: (16.5 / rOut) * (180 / Math.PI) }];
+  const base = Array.from({ length: n }, (_, k) => ((k + 0.5) * 360) / n).filter(
+    (g) => !(s.screwHoles && L0 >= 12 && HOLE_ANGLES.some((h) => dist(g, h) < arcDeg(6))) && !(over && s.slots && SLOT_ANGLES.some((h) => dist(g, h) < arcDeg(sl.width / 2 + 2))),
+  );
+  const besideText = base.filter((g) => !(!over && opt.text !== false && textHalf.some((t) => dist(g, t.c) < t.half)));
+  // bei kleinen Rohren bedeckt die Schrift fast den halben Umfang: dann lieber Rippen über der Schrift als zu wenige
+  const angles = besideText.length >= 6 ? besideText : base;
+  const h = 0.4 + a + RIB_CRUSH;
+  const tri = (deg: number, z: number) => {
+    const e = [Math.cos(rad(deg)), Math.sin(rad(deg))], t = [-e[1], e[0]];
+    const rb = over ? rSurf(z) + 0.4 : rSurf(z) - 0.4;
+    const rt = over ? rb - h : rb + h;
+    const pts: Point[] = [
+      [e[0] * rb + t[0] * 0.8, e[1] * rb + t[1] * 0.8, z],
+      [e[0] * rt, e[1] * rt, z],
+      [e[0] * rb - t[0] * 0.8, e[1] * rb - t[1] * 0.8, z],
+    ];
+    return assembleWire(pts.map((p, i) => makeLine(p, pts[(i + 1) % 3])));
+  };
+  const expect = 0.5 * 1.6 * h * (z0 - z1);
+  const ok = (r: Shape3D) => {
+    const v = measureVolume(r);
+    return v > expect * 0.7 && v < expect * 1.3;
+  };
+  const tapered = Math.abs(slope) > 1e-9;
+  const solids: Shape3D[] = [];
+  let lost = 0;
+  for (const g of angles) {
+    const tries = [
+      ...(tapered ? [() => loft([tri(g, z0), tri(g, z1)], { ruled: true }) as unknown as Shape3D] : []),
+      () => basicFaceExtrusion(makeFace(tri(g, z0)), new Vector([0, 0, z1 - z0])) as unknown as Shape3D,
+    ];
+    let done = false;
+    for (const tr of tries) {
+      try {
+        const r = tr();
+        if (ok(r)) {
+          solids.push(r);
+          done = true;
+          break;
+        }
+      } catch {
+        /* nächster Versuch */
+      }
+    }
+    if (!done) lost++;
+  }
+  const total = solids.length + lost;
+  if (!solids.length) throw new UserError('Die Klemmrippen ließen sich mit diesen Maßen nicht berechnen. Bitte die Rippen in den Feineinstellungen abwählen.');
+  if (lost > total / 4) partNotes.push(`${lost} von ${total} Klemmrippen ließen sich nicht sauber berechnen und wurden weggelassen. Der Adapter klemmt dadurch etwas schwächer.`);
+  return makeCompound(solids) as unknown as Shape3D;
 }
 
 export const DEFAULT_PIPE: PipeSpec = { d1Inner: 29.3, d2Inner: 33.3, length: 30, wall: 3, transition: 8, screwHoles: true };
@@ -80,6 +174,8 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
     const rOutAt = (z: number) => r1i + w + slope * -z;
     const rAt = r1i + slope * -zH;
     const tools: Shape3D[] = [];
+    /** Bohrung und Senkung getrennt (Rückfall, wenn der gemeinsame Schnitt scheitert) */
+    const alt: [Shape3D, Shape3D][] = [];
     for (const a of HOLE_ANGLES) {
       const e: [number, number, number] = [Math.cos(rad(a)), Math.sin(rad(a)), 0];
       const t: [number, number, number] = [-e[1], e[0], 0];
@@ -110,14 +206,56 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
       const w3 = ring((ph) => P(ext(ph)[0] + 1.5, ext(ph)[1], ph));
       const sink = loft([w0, w1, w2, w3], { ruled: true });
       tools.push(bore.fuse(sink));
+      alt.push([bore, sink]);
     }
     // Gegenprobe: entfernt werden darf höchstens das Volumen der Werkzeuge (bei gescheitertem Schnitt
     // blieb früher z. B. nur ein Rest des Rohrs übrig)
-    const before = measureVolume(body);
-    const toolVol = tools.reduce((sum, t) => sum + measureVolume(t), 0);
-    body = body.cut(makeCompound(tools) as unknown as Shape3D);
-    const removed = before - measureVolume(body);
-    if (!(removed > 0 && removed < toolVol * 1.02)) throw new UserError('Die Schraubenlöcher ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern oder die Löcher in den Feineinstellungen abwählen.');
+    // einzeln schneiden: alle drei auf einmal scheiterten bei konischen Rohren ab etwa Ø 50 (Volumen wuchs statt zu sinken)
+    let removed = 0, toolVol = 0;
+    tools.forEach((tool, i) => {
+      const before = measureVolume(body);
+      const tv = measureVolume(tool);
+      let next = body.cut(tool);
+      let r = before - measureVolume(next);
+      if (!(r > 0 && r < tv * 1.02)) {
+        // Rückfall: erst die Bohrung, dann die Senkung (Volumen der Senkung allein ist als Regelfläche nicht verlässlich messbar)
+        next.delete?.();
+        const [bore, sink] = alt[i];
+        const b1 = body.cut(bore.clone() as Shape3D);
+        next = b1.cut(sink.clone() as Shape3D);
+        r = before - measureVolume(next);
+      }
+      body = next;
+      toolVol += tv;
+      removed += r > 0 && r < tv * 1.05 ? r : -Infinity;
+    });
+    if (!(removed > 0 && removed < toolVol * 1.05)) throw new UserError('Die Schraubenlöcher ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern oder die Löcher in den Feineinstellungen abwählen.');
+  }
+
+  if (s.slots && s.mode !== 'into') {
+    // Schlitze vom offenen Ende her, oben rund (gegen Einreißen); jeder einzeln geschnitten und geprüft
+    const { len, width } = pipeSlotLayout(s);
+    const sw = width / 2;
+    const zTop = -L0 + len - sw;
+    for (const deg of SLOT_ANGLES) {
+      const e: [number, number, number] = [Math.cos(rad(deg)), Math.sin(rad(deg)), 0];
+      const t: [number, number, number] = [-e[1], e[0], 0];
+      const r0 = Math.min(r1i, s.d2Inner / 2) - 3;
+      const Q = (y: number, z: number): Point => [e[0] * r0 + t[0] * y, e[1] * r0 + t[1] * y, z];
+      const zBot = -L0 - 2;
+      const wire = assembleWire([
+        makeLine(Q(-sw, zBot), Q(-sw, zTop)),
+        makeThreePointArc(Q(-sw, zTop), Q(0, zTop + sw), Q(sw, zTop)),
+        makeLine(Q(sw, zTop), Q(sw, zBot)),
+        makeLine(Q(sw, zBot), Q(-sw, zBot)),
+      ]);
+      const reach = w + 6 + Math.abs(slope) * L0;
+      const tool = basicFaceExtrusion(makeFace(wire), new Vector([e[0] * reach, e[1] * reach, 0])) as unknown as Shape3D;
+      const before = measureVolume(body);
+      body = body.cut(tool);
+      const after = measureVolume(body);
+      if (!(after < before - 1e-3 && after > before * 0.5)) throw new UserError('Die Schlitze ließen sich mit diesen Maßen nicht schneiden. Bitte die Tiefe etwas ändern oder die Schlitze in den Feineinstellungen abwählen.');
+    }
   }
 
   if (opt.text !== false) {

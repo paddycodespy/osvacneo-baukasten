@@ -25,9 +25,10 @@ export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
 export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36 };
 
 export type MachineMode = 'over' | 'into';
-export const MACHINE_DEFAULT = { mode: 'over' as MachineMode, dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true, transition: 8 };
+export const MACHINE_DEFAULT = { mode: 'over' as MachineMode, dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true, transition: 8, ribs: false, slots: false };
 export type Machine = typeof MACHINE_DEFAULT;
-const MACHINE_KEYS = ['dOpen', 'dDepth', 'length', 'wall', 'allowance', 'holes', 'transition'] as const;
+const MACHINE_KEYS = ['dOpen', 'dDepth', 'length', 'wall', 'allowance', 'holes', 'transition', 'ribs', 'slots'] as const;
+const MACHINE_FLAGS: readonly string[] = ['holes', 'ribs', 'slots'];
 
 export const LABELS: Record<DiameterKey, { name: string; word: string; letter: 'F' | 'M' | 'H'; hint: string; presets: number[] }> = {
   femaleDiameterInner: { name: 'Kupplung (F)', word: 'Kupplung', letter: 'F', hint: 'Innendurchmesser der Bajonett-Kupplung', presets: [25, 32, 36, 40, 50] },
@@ -100,7 +101,16 @@ class AppState {
     const w = Math.max(2, m.wall);
     const toInner = (d: number) => (m.mode === 'over' ? d + m.allowance : d - m.allowance - 2 * w);
     // D1 (am Übergang, tief im Adapter) ↔ Stutzen vorne; D2 (Öffnung des Adapters) ↔ Stutzen in der Tiefe
-    return { d1Inner: round2(toInner(m.dOpen)), d2Inner: round2(toInner(m.dDepth)), length: m.length, wall: w, transition: Math.max(2, m.transition), screwHoles: m.holes };
+    return {
+      d1Inner: round2(toInner(m.dOpen)),
+      d2Inner: round2(toInner(m.dDepth)),
+      length: m.length,
+      wall: w,
+      transition: Math.max(2, m.transition),
+      screwHoles: m.holes,
+      // Extras nur, wenn gewählt (sonst bleiben die Cache-Schlüssel wie bisher)
+      ...(m.ribs || m.slots ? { mode: m.mode, allowance: m.allowance, ribs: m.ribs, slots: m.slots && m.mode === 'over' } : {}),
+    };
   });
   pipeRows = $derived([
     { label: 'innen Ø', a: this.pipe.d1Inner, b: this.pipe.d2Inner },
@@ -117,6 +127,8 @@ class AppState {
     if (this.hasSwivel && i.slipRingGapSize !== START_INPUT.slipRingGapSize) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
     if (i.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${i.generalMaterialWidth} mm`);
     if (!this.text) extra.push('ohne Text');
+    if (this.kind.machine && this.machine.ribs) extra.push('Rippen');
+    if (this.kind.machine && this.machine.slots && this.machine.mode === 'over') extra.push('Schlitze');
     return [this.baseName, ...extra].join(' ');
   });
   code = $derived.by(() => {
@@ -357,7 +369,7 @@ class AppState {
       if (typeof s.text === 'boolean') this.text = s.text;
       if (typeof s.supports === 'boolean') this.supports = s.supports;
       if (s.machine && typeof s.machine === 'object') {
-        for (const k of MACHINE_KEYS) if (k === 'holes' ? typeof s.machine[k] === 'boolean' : num(s.machine[k])) (this.machine[k] as number | boolean) = s.machine[k];
+        for (const k of MACHINE_KEYS) if (MACHINE_FLAGS.includes(k) ? typeof s.machine[k] === 'boolean' : num(s.machine[k])) (this.machine[k] as number | boolean) = s.machine[k];
         if (s.machine.mode === 'over' || s.machine.mode === 'into') this.machine.mode = s.machine.mode;
       }
       if (s.free && typeof s.free === 'object' && Array.isArray(s.free.blocks) && s.free.a && s.free.b?.device) {
