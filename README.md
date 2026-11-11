@@ -68,7 +68,9 @@ Danach reicht nach Änderungen `git add -A`, `git commit -m "…"` und `git push
 
 ```
 src/
-  App.svelte                 Wizard und Oberfläche
+  App.svelte                 Gerüst: Vorschau, Berechnung mit Fortschritt, Schrittleiste
+  lib/app.svelte.ts          Zustand aller Schritte (Eingaben, abgeleitete Werte, Export, Speichern im Browser)
+  components/steps/          Die Schritte Verbindung, Größen, Passung, Download
   lib/viewer.ts              3D-Ansicht (three.js) mit Druckbett
   lib/cad.ts                 Worker-Pool, Auftragsverteilung, Export STL/STEP/3MF
   lib/worker/cad.worker.ts   OpenCascade (replicad) im Web Worker, Teile-Cache
@@ -90,7 +92,21 @@ scripts/
   build-ref.ts               Einzelteil in Node bauen (npm run part -- MxxFyy 25 32 32)
   matrix.ts                  Alle Typen mit Grenzwerten bauen (npm run test:geometry)
   freeform.ts                Freiform-Vorlagen und -Varianten bauen (npm run test:freeform, --stl schreibt out/)
+  sketch-overlap.ts          Skizzen auf überlappende Beschriftungen prüfen (npm run build && npm run test:sketches)
+.github/workflows/tests.yml  Alle Prüfungen bei jedem Push (Typen, Build, Schlüssel, Freiform, Skizzen, Geometrie)
 ```
+
+### Prüfungen
+
+| Befehl | Prüft | Dauer |
+|---|---|---|
+| `npm run check` | Typen (Svelte und TypeScript) | < 1 min |
+| `npm run test:keys` | gleiche Cache-Schlüssel ergeben gleiche Körper | ca. 1 min |
+| `npm run test:freeform` | alle Freiform-Vorlagen, Querschnitte und längere Ketten | ca. 1 min |
+| `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen (braucht `npm run build` und Chrome, Pfad über `CHROME_PATH`) | < 1 min |
+| `npm run test:geometry` | alle Adaptertypen mit Grenzwerten | ca. 10–15 min |
+
+Auf GitHub laufen alle bei jedem Push (Actions → Tests).
 
 ### Rechenzeit
 
@@ -110,6 +126,9 @@ scripts/
 - Schlicht: Zurücksetzen gibt es nur beim Stutzen (alle Stutzen-Maße inkl. Feineinstellungen, die Befestigungsart bleibt) und im Schritt „Passung“, jeweils nur sichtbar, wenn etwas geändert wurde; F, M und H haben keine eigenen Kennfarben mehr, Auswahlen sind überall gleich himmelblau markiert.
 - Fehler: Solange ein Fehler vorliegt (Berechnung gescheitert oder rot markierte Prüfung), sind der Reiter „Download“ und der Weiter-Knopf dorthin gesperrt, mit Hinweis über den Knöpfen. In der Oberfläche erscheinen nur verständliche Meldungen (src/lib/errors.ts: `UserError` für eigene Meldungen, alles andere wie WebAssembly-Ausnahmen von OpenCascade nur in der Konsole und als allgemeiner Hinweis bzw. „Baustein n (…) ließ sich mit diesen Maßen nicht berechnen“).
 - In Skizzen berührt keine Beschriftung eine Form, Linie oder andere Beschriftung; Eckradien sind mit Hinweislinien außerhalb der Form beschriftet.
+- Der Stand (Typ, Größen, Passung, Freiform-Aufbau, Schritt) wird im Browser gespeichert (localStorage) und beim nächsten Öffnen wiederhergestellt; beschädigte oder unbekannte Werte fallen auf den Standard zurück.
+- Freiform: Ist der Aufbau gegenüber der Vorlage verändert, fragt ein Klick auf eine Vorlage vorher nach. Beim aufgeklappten Bogen bzw. versetzten/geknickten Übergang zeigt ein blauer Pfeil in der Vorschau die Richtung. Nach der Berechnung steht schon im Aufbau, ob Stützen nötig sind. Die Zugabe am Gerät ist bei runden Formen 0,2 mm, bei eckigen 0,4 mm (wechselt mit, solange der Standard drinsteht).
+- Während der Berechnung zeigt die Vorschau den Fortschritt („3 von 9 Teilen“). Scheitert sie, bleibt das letzte Modell blass stehen; gab es noch keins, erscheint ein Hinweis statt einer leeren Vorschau.
 - Im Download-Schritt lassen sich mehrere Adapter auf ein Druckbett legen und zusammen als 3MF, STL oder STEP herunterladen.
 - Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Drehring 0,4“).
 
@@ -162,6 +181,12 @@ Fehlt WebView2 (nur sehr alte Windows-10-Installationen), lädt der Installer es
 
 **Selbst bauen** (Windows mit Rust und Visual Studio Build Tools): `npm ci`, dann `npm run desktop:build`.
 Zum Entwickeln im Programmfenster: `npm run desktop:dev`.
+
+## macOS-Programm
+
+Unter **Actions → macOS-Installer → Run workflow** entsteht eine DMG (Universal: Apple Silicon und Intel), ebenfalls als Artefakt.
+Auf einem Mac installiert und getestet: läuft. Da die App nicht signiert ist, beim ersten Start im Finder
+Rechtsklick → **Öffnen** (oder Systemeinstellungen → Datenschutz & Sicherheit → **Dennoch öffnen**), Einzelheiten in `docs/installation-mac.md`.
 
 Die Version steht in `src-tauri/tauri.conf.json` (`version`) und sollte mit `package.json` übereinstimmen.
 

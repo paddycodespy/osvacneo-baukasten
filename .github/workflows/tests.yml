@@ -1,0 +1,45 @@
+# Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen und die Geometrie aller Adapter.
+# Läuft bei jedem Push und jedem Pull Request; Ergebnis unter „Actions“ → „Tests“.
+name: Tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typen prüfen
+        run: npm run check
+
+      - name: Web-Oberfläche bauen
+        run: npm run build
+
+      - name: Cache-Schlüssel
+        run: npm run test:keys
+
+      - name: Freiform-Rechnung
+        run: npm run test:freeform
+
+      # Chrome ist auf den GitHub-Rechnern vorinstalliert
+      - name: Skizzen ohne Überschneidungen
+        run: npm run test:sketches
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      # dauert am längsten: alle Adaptertypen und Größen mit dem CAD-Kern
+      - name: Geometrie aller Adapter
+        run: npm run test:geometry
