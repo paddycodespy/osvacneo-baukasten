@@ -41,11 +41,11 @@
   <p class="hint">9 mm macht die Kupplung stabiler. Sie wird dann außen 4 mm dicker.</p>
 </fieldset>
 
-<fieldset class="opt checks">
-  <legend>Extras</legend>
-  <label><input type="checkbox" bind:checked={app.text} /> Beschriftung (Größe und „osVAC neo“)</label>
-  {#if app.hasSupport}
+<!-- Beschriftung ist immer dabei; ohne Stecker gibt es hier nichts zu wählen, dann auch keine Überschrift -->
+{#if app.hasSupport}
+  <fieldset class="opt checks">
+    <legend>Extras</legend>
     <label><input type="checkbox" bind:checked={app.supports} /> Druckhilfe unter dem Stecker (wird nach dem Druck abgebrochen)</label>
-  {/if}
-</fieldset>
+  </fieldset>
+{/if}
 <ResetLink show={!app.fitDefault} label="Passung auf Standard zurücksetzen" onclick={() => app.resetFit()} />
