@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Schritt „Aufbau“ des Freiform-Adapters: Vorlage, Anschluss A, Bausteine (von oben nach unten), Ende B, Druckbett.
+   * Schritt „Aufbau“ des Freiform-Adapters: Vorlage, Anschluss A, Bausteine (in der Reihenfolge von A nach B), Ende B, Druckbett.
    * Immer nur ein Baustein ist aufgeklappt; zugeklappt zeigt jeder Baustein eine Kurzfassung seiner Maße.
    * Erklärungen stehen hinter dem „?“ am Feld, selten gebrauchte Werte in den Feineinstellungen.
    */
@@ -168,7 +168,7 @@
   <div class="chips">{#each SIZES as v}<button type="button" class="chip" class:sel={get() === v} onclick={() => set(v)}>{v}</button>{/each}</div>
 {/snippet}
 
-<p class="lead">Setze deinen Adapter aus Bausteinen zusammen, von oben (A) nach unten (B). Die Vorschau zeigt jede Änderung sofort.</p>
+<p class="lead">Setze deinen Adapter aus Bausteinen zusammen, vom Anschluss A bis zum Ende B. In der Vorschau liegt {spec.bed === 'A' ? 'A' : 'B'} unten auf dem Druckbett. Jede Änderung ist sofort zu sehen.</p>
 
 <div class="tpl-label">Vorlage als Startpunkt</div>
 <div class="tpl" role="radiogroup" aria-label="Vorlage">
@@ -217,8 +217,8 @@
           <span class="chev" aria-hidden="true"></span>
         </button>
         <span class="card-tools">
-          <button type="button" class="icon" disabled={i === 0} title="Nach oben" aria-label="{BLOCK_LABELS[b.type]} nach oben" onclick={() => move(i, -1)}><svg viewBox="0 0 16 16"><path d="M3.5 10 8 5.5 12.5 10" /></svg></button>
-          <button type="button" class="icon" disabled={i === spec.blocks.length - 1} title="Nach unten" aria-label="{BLOCK_LABELS[b.type]} nach unten" onclick={() => move(i, 1)}><svg viewBox="0 0 16 16"><path d="M3.5 6 8 10.5 12.5 6" /></svg></button>
+          <button type="button" class="icon" disabled={i === 0} title="Näher zu A" aria-label="{BLOCK_LABELS[b.type]} näher zu Anschluss A" onclick={() => move(i, -1)}><svg viewBox="0 0 16 16"><path d="M3.5 10 8 5.5 12.5 10" /></svg></button>
+          <button type="button" class="icon" disabled={i === spec.blocks.length - 1} title="Näher zu B" aria-label="{BLOCK_LABELS[b.type]} näher zu Ende B" onclick={() => move(i, 1)}><svg viewBox="0 0 16 16"><path d="M3.5 6 8 10.5 12.5 6" /></svg></button>
           <button type="button" class="icon x" title="Entfernen" aria-label="{BLOCK_LABELS[b.type]} entfernen" onclick={() => remove(i)}>×</button>
         </span>
       </div>
@@ -472,7 +472,7 @@
   .print-note.warn { border-left-color: var(--signal); background: #fdf6dc; }
 
   .chain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; position: relative; }
-  /* Verbindungslinie zwischen den Karten: zeigt die Reihenfolge von oben nach unten */
+  /* Verbindungslinie zwischen den Karten: zeigt die Reihenfolge von A nach B */
   .chain::before { content: ''; position: absolute; left: 25px; top: 20px; bottom: 20px; width: 2px; background: var(--line); }
   .card { position: relative; border: 1px solid var(--line); border-radius: 10px; background: #fff; margin: 0 0 8px; }
   .card.open { border-color: var(--sky); }
