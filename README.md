@@ -1,6 +1,6 @@
-# osVAC neo Konfigurator
+# osVAC neo Baukasten
 
-Konfigurator für Absaugadapter von **osVAC neo**, der komplett im Browser läuft. Ein Wizard führt durch Verbindung, Größen, Passung und Download. Am Ende gibt es das Teil als **3MF**, **STL** oder **STEP**.
+Der **osVAC neo Baukasten** gestaltet Absaugadapter für das System osVAC neo und läuft komplett im Browser. Ein Wizard führt durch Verbindung, Größen, Passung und Download. Am Ende gibt es das Teil als **3MF**, **STL** oder **STEP**.
 
 Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Originalteil von osVAC neo: Profile, Bajonett, Toleranzen und Formeln stammen aus dem Fusion-360-Master **osVAC neo v366 (beta)** und wurden gegen Fusion-Exporte in mehreren Größen geprüft.
 
@@ -60,7 +60,7 @@ Der Ordner `dist/` ist eine statische Website und läuft mit jedem lokalen Webse
 Das Repository ist für die Nutzung auf dem eigenen Rechner gedacht. GitHub dient nur als Ablage und Versionsverwaltung, es wird nichts veröffentlicht. Empfohlen ist ein **privates** Repository.
 
 ```bash
-git remote add origin https://github.com/<dein-account>/osvacneo-konfigurator.git
+git remote add origin https://github.com/<dein-account>/osvacneo-baukasten.git
 git push -u origin main
 ```
 
@@ -172,13 +172,13 @@ Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stü
 
 ## Windows-Programm (Installer)
 
-Der Konfigurator lässt sich als eigenes Windows-Programm installieren (Tauri). Er läuft dann in einem eigenen
+Der Baukasten lässt sich als eigenes Windows-Programm installieren (Tauri). Er läuft dann in einem eigenen
 Fenster mit dem in Windows eingebauten WebView2 (Edge), weiterhin vollständig lokal und ohne Internet.
 Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fenster.
 
 **Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
 Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
-`osVAC neo Konfigurator_0.2.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
+`osVAC neo Baukasten_0.2.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
 `git tag v0.2.0 && git push --tags`.
 
 **Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
@@ -200,7 +200,7 @@ Die Version steht in `src-tauri/tauri.conf.json` (`version`) und sollte mit `pac
 ## Lizenzen
 
 Basiert auf **osVAC neo von Ludo Kerz**, ursprünglich entstanden im Hobbyhimmel Stuttgart.
-Für diesen Konfigurator nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar.
+Für den Baukasten nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar.
 
 Auch die exportierten Dateien tragen Namensnennung und Lizenz: 3MF in den Metadaten, STL im Dateikopf, STEP im Kopfbereich (Autor, Organisation, Beschreibung).
 

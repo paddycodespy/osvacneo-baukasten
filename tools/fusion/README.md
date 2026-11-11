@@ -1,6 +1,6 @@
 # Abgleich mit dem Original in Fusion
 
-Mit diesen Werkzeugen lässt sich nach jeder Geometrie-Änderung prüfen, ob der Konfigurator noch dem Original
+Mit diesen Werkzeugen lässt sich nach jeder Geometrie-Änderung prüfen, ob der Baukasten noch dem Original
 osVAC neo v366 entspricht.
 
 ## 1. Referenzteile in Fusion exportieren

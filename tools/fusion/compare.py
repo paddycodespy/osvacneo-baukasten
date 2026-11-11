@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Abgleich des Konfigurators mit Fusion-Exporten des Originals (osVAC neo v366).
+"""Abgleich des Baukastens mit Fusion-Exporten des Originals (osVAC neo v366).
 
 Baut für jeden Export-Ordner die passenden Teile mit scripts/build-ref.ts und vergleicht die Oberflächen
 mit surfcmp.py (exakter Punkt-Fläche-Abstand in beide Richtungen, Schrift ausgeblendet).

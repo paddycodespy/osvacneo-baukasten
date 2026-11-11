@@ -2,7 +2,7 @@ name: macOS-Installer
 
 # Baut ein DMG für macOS (Universal: Apple Silicon und Intel).
 # Start über „Run workflow“ oder durch einen Tag v*.
-# Ergebnis: Artefakt „osvacneo-konfigurator-macos“ mit der .dmg-Datei.
+# Ergebnis: Artefakt „osvacneo-baukasten-macos“ mit der .dmg-Datei.
 
 on:
   workflow_dispatch:
@@ -36,6 +36,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: osvacneo-konfigurator-macos
+          name: osvacneo-baukasten-macos
           path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: error

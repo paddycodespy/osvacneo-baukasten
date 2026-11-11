@@ -1,4 +1,4 @@
-//! Programmfenster für den osVAC neo Konfigurator.
+//! Programmfenster für den osVAC neo Baukasten.
 //! Die Anwendung selbst ist die Web-Oberfläche aus `dist/`; sie läuft vollständig lokal
 //! im eingebauten WebView2 (Edge). Externe Links öffnen im Standardbrowser (Plugin „opener“).
 
@@ -7,5 +7,5 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())
-        .expect("Fehler beim Starten des osVAC neo Konfigurators");
+        .expect("Fehler beim Starten des osVAC neo Baukastens");
 }

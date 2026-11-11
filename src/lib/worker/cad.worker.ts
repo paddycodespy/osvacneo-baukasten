@@ -34,7 +34,7 @@ async function stepWithCredits(blob: Blob, name: string) {
   const ts = /FILE_NAME\([^,]*,'([^']*)'/.exec(text)?.[1] ?? '';
   const head =
     `FILE_DESCRIPTION((${[name, CREDIT, CHANGES, `Lizenz: ${LICENSE_NAME} ${LICENSE_URL}`].map(stepStr).join(',')}),'2;1');\n` +
-    `FILE_NAME(${stepStr(name)},${stepStr(ts)},(${stepStr('Ludo Kerz (osVAC neo)')}),(${stepStr('Hobbyhimmel Stuttgart')}),'Open CASCADE','osVAC neo Konfigurator','');\n`;
+    `FILE_NAME(${stepStr(name)},${stepStr(ts)},(${stepStr('Ludo Kerz (osVAC neo)')}),(${stepStr('Hobbyhimmel Stuttgart')}),'Open CASCADE','osVAC neo Baukasten','');\n`;
   const i = text.indexOf('FILE_DESCRIPTION(');
   const j = text.indexOf('FILE_SCHEMA(');
   return new Blob([i >= 0 && j > i ? text.slice(0, i) + head + text.slice(j) : text], { type: 'application/step' });
@@ -78,7 +78,7 @@ let dbp: Promise<IDBDatabase | null> | null = null;
 function db() {
   dbp ??= new Promise((res) => {
     try {
-      const r = indexedDB.open('osvacneo-konfigurator', 1);
+      const r = indexedDB.open('osvacneo-konfigurator', 1); // alter Name: Cache bleibt erhalten
       r.onupgradeneeded = () => r.result.createObjectStore(STORE);
       r.onsuccess = () => res(r.result);
       r.onerror = () => res(null);

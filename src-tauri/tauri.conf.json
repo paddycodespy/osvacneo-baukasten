@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "osVAC neo Konfigurator",
+  "productName": "osVAC neo Baukasten",
   "version": "0.2.0",
-  "identifier": "de.paddycodespy.osvacneo-konfigurator",
+  "identifier": "de.paddycodespy.osvacneo-baukasten",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "osVAC neo Konfigurator",
+        "title": "osVAC neo Baukasten",
         "width": 1440,
         "height": 900,
         "minWidth": 900,
@@ -31,7 +31,7 @@
     "targets": ["nsis"],
     "publisher": "paddycodespy",
     "copyright": "Basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart. CC BY-NC-SA 4.0",
-    "shortDescription": "osVAC neo Konfigurator",
+    "shortDescription": "Absaugadapter selbst gestalten",
     "longDescription": "Absaugadapter von osVAC neo konfigurieren und als 3MF, STL oder STEP speichern.",
     "licenseFile": "../LICENSE",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
