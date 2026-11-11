@@ -10,7 +10,7 @@
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
   import { overhangArea, belowBedEnd } from './lib/overhang';
-  import { freeSummary } from './lib/osvac/freeform';
+  import { freeSummary, sectionPlanes } from './lib/osvac/freeform';
   import { app, fmt } from './lib/app.svelte';
   import FreeformEditor from './components/FreeformEditor.svelte';
   import StepKind from './components/steps/StepKind.svelte';
@@ -30,6 +30,8 @@
   });
   let viewer: PartViewer | null = null;
   let section = $state(false);
+  /** Vorschau steht (für Effekte, die den Viewer brauchen) */
+  let viewerOn = $state(false);
   /** Wurde schon einmal ein Modell angezeigt? (sonst bei Fehlern statt der Vorschau ein Hinweis) */
   let everShown = $state(false);
 
@@ -111,6 +113,14 @@
     if (viewer) schedule();
   });
 
+  // Freiform: Schnitt je Baustein entlang der Mittellinie (eine einzige Ebene träfe bei räumlichen Ketten nur einen Teil)
+  $effect(() => {
+    void viewerOn;
+    const plan = app.freePlan;
+    const fn = app.kind.freeform && plan ? sectionPlanes($state.snapshot(app.free), plan) : null;
+    viewer?.setSectionPlanes(fn);
+  });
+
   // Druckhilfe ein-/ausblenden ohne Neuberechnung
   $effect(() => {
     const on = app.supports; // zuerst lesen, damit Svelte die Abhängigkeit registriert
@@ -149,6 +159,7 @@
 
   onMount(() => {
     viewer = new PartViewer(host);
+    viewerOn = true;
     viewer.setHelpers(app.supports);
     schedule();
     return () => {
