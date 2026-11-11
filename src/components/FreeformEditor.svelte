@@ -10,7 +10,7 @@
   import BlockFigure from './BlockFigure.svelte';
   import MeasureFigure from './MeasureFigure.svelte';
   import ResetLink from './ResetLink.svelte';
-  import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, type FreeSpec, type Block, type BlockType, type Issue, type Section } from '../lib/osvac/freeform';
+  import { TEMPLATES, SLOT_SHAPES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, type FreeSpec, type Block, type BlockType, type Issue, type Section } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | null;
   let {
@@ -25,7 +25,7 @@
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
 
   /** Extras am Gerät: anfangs offen, wenn schon welche gewählt sind; danach so, wie der Nutzer es aufklappt */
-  const anyExtra = (d: FreeSpec['b']['device']) => d.ribs || d.holes || (d.mode === 'over' && (d.slots || d.notch));
+  const anyExtra = (d: FreeSpec['b']['device']) => d.ribs || d.holes || (d.mode === 'over' && ((d.slots && SLOT_SHAPES.has(d.section.shape)) || d.notch));
   let extrasOpen = $state(anyExtra(spec.b.device));
   /** Vorlage, die nach Rückfrage geladen werden soll (der eigene Aufbau ginge sonst verloren) */
   let pending = $state<string | null>(null);
@@ -331,21 +331,21 @@
           {@const dv = spec.b.device}
           {@const over = dv.mode === 'over'}
           <details class="more" bind:open={extrasOpen}>
-            <summary>Extras <small>{over ? 'Rippen, Schlitze, Schrauben, Aussparung' : 'Rippen, Schrauben'}</small></summary>
+            <summary>Extras <small>{over ? (SLOT_SHAPES.has(dv.section.shape) ? 'Rippen, Schlitze, Schrauben, Aussparung' : 'Rippen, Schrauben, Aussparung') : 'Rippen, Schrauben'}</small></summary>
             <div class="more-body extras">
               <div class="x-item">
                 <label class="inline-check"><input type="checkbox" bind:checked={dv.ribs} /> Klemmrippen für festen Sitz</label>
                 <p class="hint">Schmale Rippen {over ? 'innen' : 'außen'}, die sich beim {over ? 'Aufstecken' : 'Einstecken'} etwas zusammendrücken. Hilft, wenn der {over ? 'Stutzen' : 'Rand der Öffnung'} nicht genau rund ist oder der Adapter sonst wackelt.</p>
               </div>
-              {#if over}
+              {#if over && SLOT_SHAPES.has(dv.section.shape)}
                 <div class="x-item">
                   <label class="inline-check"><input type="checkbox" bind:checked={dv.slots} /> Schlitze für eine Schlauchschelle</label>
                   <p class="hint">Schlitze vom offenen Rand her, Anzahl und Größe passend zum Adapter. Eine Schelle außen drückt den Adapter dann fest auf den Stutzen.</p>
                 </div>
               {/if}
               <div class="x-item">
-                <label class="inline-check"><input type="checkbox" bind:checked={dv.holes} /> 3 Löcher für Schrauben</label>
-                <p class="hint">{over ? 'Ø 4 mm mit Senkung, für kleine Senkkopfschrauben in den Stutzen.' : 'Ø 3,2 mm zum Vorbohren: Schrauben von außen durch das Gerät in den Adapter drehen.'}</p>
+                <label class="inline-check"><input type="checkbox" bind:checked={dv.holes} /> Löcher für Schrauben</label>
+                <p class="hint">{over ? 'Ø 4 mm mit Senkung, für kleine Senkkopfschrauben in den Stutzen.' : 'Ø 3,2 mm zum Vorbohren: Schrauben von außen durch das Gerät in den Adapter drehen.'} {dv.section.shape === 'circle' || dv.section.shape === 'ellipse' ? '3 Löcher, gleichmäßig verteilt.' : 'Je ein Loch mittig auf den geraden Seiten.'}</p>
               </div>
               {#if over}
                 <div class="x-item">
