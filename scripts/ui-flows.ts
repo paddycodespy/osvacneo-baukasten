@@ -141,6 +141,31 @@ await withPreview(4180, async (url, browser) => {
     expect(label.includes('Schrauben'), `Name ohne Extras: ${label}`);
   });
 
+  await test('Flansch an Ende B', pg, async () => {
+    await step(pg, 'Aufbau');
+    if (!(await pg.getByRole('radio', { name: 'Mit Flansch' }).isVisible())) await pg.locator('.card-head', { hasText: 'Ende B' }).click();
+    await pg.getByRole('radio', { name: 'Mit Flansch' }).click();
+    await ready(pg);
+    expect((await pg.locator('.fi-opt').innerText()).includes('Der Flansch (Ende B) liegt flach'), 'Druckbett-Wahl nicht durch Hinweis ersetzt');
+    expect((await pg.locator('.card.open').innerText()).includes('Löcher Ø 4,5 mm'), 'Hinweis zu den Löchern fehlt');
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download mit Flansch gesperrt');
+    if (!(await pg.getByLabel('Nut für ein Dichtband').isVisible())) await pg.locator('.card.open summary', { hasText: 'Extras' }).click();
+    await pg.getByLabel('Nut für ein Dichtband').check();
+    expect((await pg.getByLabel('Rand des Flanschs', { exact: true }).inputValue()) === '18', 'Rand für die Dichtung nicht vergrößert');
+    await fill(pg, 'Rand des Flanschs', '10');
+    expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'zu schmaler Rand nicht gesperrt');
+    expect((await pg.locator('.card.open').innerText()).includes('mindestens 18 mm'), 'keine verständliche Meldung zum Rand');
+    await fill(pg, 'Rand des Flanschs', '18');
+    await pg.locator('.card.open summary', { hasText: 'Feineinstellungen' }).click();
+    await pg.getByRole('radio', { name: 'Rund', exact: true }).click();
+    expect(await pg.getByLabel('Lochkreis-Durchmesser', { exact: true }).first().isVisible(), 'Felder für den Lochkreis fehlen');
+    await ready(pg);
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Lochkreis aus der Vorbelegung passt nicht');
+    expect((await pg.locator('.stage-head').innerText()).includes('Flansch'), 'Untertitel ohne Flansch');
+    await pg.getByRole('radio', { name: 'Über den Stutzen' }).click();
+    await ready(pg);
+  });
+
   await test('Neu anfangen setzt alles zurück, Druckbett bleibt', pg, async () => {
     await step(pg, 'Verbindung');
     await pg.locator('.reset-all').click();

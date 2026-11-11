@@ -12,7 +12,7 @@
   import ResetLink from './ResetLink.svelte';
   import NotchFigure from './NotchFigure.svelte';
   import { reveal } from '../lib/reveal';
-  import { TEMPLATES, SLOT_SHAPES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, type FreeSpec, type Block, type BlockType, type Issue, type Section } from '../lib/osvac/freeform';
+  import { TEMPLATES, SLOT_SHAPES, BLOCK_LABELS, SEAL, AUTO_HOLE_D, newBlock, sec, sectionText, specKey, flangeGeom, flangeDefaults, flangeMinRim, type FreeSpec, type Block, type BlockType, type Issue, type Section, type FlangeLayout } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | null;
   let {
@@ -27,7 +27,7 @@
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
 
   /** Extras am Gerät: anfangs offen, wenn schon welche gewählt sind; danach so, wie der Nutzer es aufklappt */
-  const anyExtra = (d: FreeSpec['b']['device']) => d.ribs || d.holes || (d.mode === 'over' && ((d.slots && SLOT_SHAPES.has(d.section.shape)) || d.notch));
+  const anyExtra = (d: FreeSpec['b']['device']) => (d.mode === 'flange' ? d.seal : d.ribs || d.holes || (d.mode === 'over' && ((d.slots && SLOT_SHAPES.has(d.section.shape)) || d.notch)));
   let extrasOpen = $state(anyExtra(spec.b.device));
   /** „Versetzen, knicken, drehen“: anfangs offen, wenn Werte gesetzt sind; danach so, wie der Nutzer es aufklappt (nicht zuklappen, nur weil alles 0 ist) */
   const openMore = new Map<number, boolean>();
@@ -116,10 +116,34 @@
   const endName = (t: FreeSpec['b']['type']) => (t === 'device' ? 'Gerät' : t === 'female' ? 'Kupplung' : 'Stecker');
   const aText = $derived(`${spec.a.type === 'female' ? 'Kupplung F' : 'Stecker M'}${fmt(spec.a.d)}`);
   const bText = $derived(
-    spec.b.type === 'device'
+    spec.b.type === 'device' && spec.b.device.mode === 'flange'
+      ? `Öffnung ${sectionText(spec.b.device.section)}, mit Flansch${spec.b.device.seal ? ' und Dichtung' : ''}`
+      : spec.b.type === 'device'
       ? `${sectionText(spec.b.device.section)}${spec.b.device.section.shape === 'circle' && spec.b.device.dDepth !== spec.b.device.section.d ? `/${fmt(spec.b.device.dDepth)}` : ''}, ${spec.b.device.mode === 'over' ? 'über den Stutzen' : 'in die Öffnung'}, ${fmt(spec.b.device.length)} mm tief`
       : `${spec.b.type === 'female' ? 'Kupplung F' : 'Stecker M'}${fmt(spec.b.d)}`,
   );
+  /** Flansch: Ende B liegt immer unten (flache Platte auf dem Bett) */
+  const isFlange = $derived(spec.b.type === 'device' && spec.b.device.mode === 'flange');
+  function setDeviceMode(m: FreeSpec['b']['device']['mode']) {
+    spec.b.device.mode = m;
+    if (m === 'flange') spec.bed = 'B';
+  }
+  /** Lochbild wechseln: Werte nach Maß aus dem automatischen Flansch vorbelegen */
+  function setLayout(l: FlangeLayout) {
+    const dv = spec.b.device;
+    if (l !== 'auto' && dv.flangeLayout === 'auto') Object.assign(dv, flangeDefaults(dv, spec.wall));
+    dv.flangeLayout = l;
+  }
+  /** Dichtung braucht etwas mehr Rand: beim Anhaken passend vergrößern */
+  function toggleSeal(on: boolean) {
+    const dv = spec.b.device;
+    dv.seal = on;
+    if (on && dv.flangeLayout === 'auto') dv.flangeRim = Math.max(dv.flangeRim, flangeMinRim(spec.wall, true));
+  }
+  const flange = $derived(isFlange ? flangeGeom(spec.b.device, spec.wall) : null);
+  $effect(() => {
+    if (isFlange && spec.bed !== 'B') spec.bed = 'B';
+  });
   /** Kreis am Gerät: „Ø in der Tiefe“ läuft mit „Ø vorne“ mit, solange beide gleich waren */
   let lastFront = spec.b.device.section.d;
   $effect(() => {
@@ -317,9 +341,76 @@
         </div>
         {#if spec.b.type === 'device'}
           <div class="seg wide" role="radiogroup" aria-label="Befestigung am Gerät">
-            <button type="button" role="radio" aria-checked={spec.b.device.mode === 'over'} class:sel={spec.b.device.mode === 'over'} onclick={() => (spec.b.device.mode = 'over')}>Über den Stutzen</button>
-            <button type="button" role="radio" aria-checked={spec.b.device.mode === 'into'} class:sel={spec.b.device.mode === 'into'} onclick={() => (spec.b.device.mode = 'into')}>In die Öffnung</button>
+            <button type="button" role="radio" aria-checked={spec.b.device.mode === 'over'} class:sel={spec.b.device.mode === 'over'} onclick={() => setDeviceMode('over')}>Über den Stutzen</button>
+            <button type="button" role="radio" aria-checked={spec.b.device.mode === 'into'} class:sel={spec.b.device.mode === 'into'} onclick={() => setDeviceMode('into')}>In die Öffnung</button>
+            <button type="button" role="radio" aria-checked={spec.b.device.mode === 'flange'} class:sel={spec.b.device.mode === 'flange'} onclick={() => setDeviceMode('flange')}>Mit Flansch</button>
           </div>
+          {#if spec.b.device.mode === 'flange'}
+          {@const dv = spec.b.device}
+          <SectionEditor bind:section={dv.section} label="Form der Öffnung" measure="into" />
+          <div class="grid2">
+            {#if dv.flangeLayout === 'auto'}
+              <Field label="Rand" help="So breit steht die Platte rund um die Öffnung über. Darin sitzen die Schraubenlöcher.">
+                <NumberField bind:value={dv.flangeRim} min={10} max={80} step={1} label="Rand des Flanschs" />
+              </Field>
+            {/if}
+            <Field label="Dicke" help="Dicke der Platte. 5 mm sind stabil, bei großen Platten eher 6 bis 8 mm.">
+              <NumberField bind:value={dv.flangeT} min={3} max={15} step={0.5} label="Dicke des Flanschs" />
+            </Field>
+          </div>
+          <p class="hint">
+            {flange?.holes.length ? `${flange.holes.length} Löcher` : 'Löcher'} Ø {fmt(dv.flangeLayout === 'auto' ? AUTO_HOLE_D : dv.holeD)} mm mit Senkung für Senkkopfschrauben{dv.flangeLayout === 'auto' ? ' M4, automatisch verteilt' : ''}. Der Flansch liegt beim Drucken unten auf dem Bett, so geht es ohne Stützen.
+          </p>
+          {@render issueList(bIssues)}
+          <details class="more" bind:open={extrasOpen}>
+            <summary>Extras <small>Dichtung</small></summary>
+            <div class="more-body extras">
+              <div class="x-item">
+                <label class="inline-check"><input type="checkbox" checked={dv.seal} onchange={(e) => toggleSeal(e.currentTarget.checked)} /> Nut für ein Dichtband</label>
+                <p class="hint">Eine flache Nut rund um die Öffnung auf der Seite zum Gerät, {SEAL.width} mm breit und {fmt(SEAL.depth)} mm tief. Passt für selbstklebendes Moosgummi-Dichtband {SEAL.width} mm breit, etwa 3 mm dick. So zieht der Flansch keine Nebenluft.</p>
+              </div>
+            </div>
+          </details>
+          <details class="more">
+            <summary>Feineinstellungen <small>Lochbild nach Maß, Übergang</small></summary>
+            <div class="more-body">
+              <Field label="Lochbild" help="Automatisch: die Platte folgt der Öffnung, die Löcher setzt das Programm. Nach Maß: wenn am Gerät schon Gewindelöcher sind, Platte und Lochabstand selbst angeben.">
+                <div class="seg wide" role="radiogroup" aria-label="Lochbild">
+                  <button type="button" role="radio" aria-checked={dv.flangeLayout === 'auto'} class:sel={dv.flangeLayout === 'auto'} onclick={() => setLayout('auto')}>Automatisch</button>
+                  <button type="button" role="radio" aria-checked={dv.flangeLayout === 'rect'} class:sel={dv.flangeLayout === 'rect'} onclick={() => setLayout('rect')}>Rechteckig</button>
+                  <button type="button" role="radio" aria-checked={dv.flangeLayout === 'round'} class:sel={dv.flangeLayout === 'round'} onclick={() => setLayout('round')}>Rund</button>
+                </div>
+              </Field>
+              {#if dv.flangeLayout === 'rect'}
+                <div class="grid2">
+                  <Field label="Breite der Platte"><NumberField bind:value={dv.plateW} min={20} max={300} step={1} label="Breite der Platte" /></Field>
+                  <Field label="Höhe der Platte"><NumberField bind:value={dv.plateH} min={20} max={300} step={1} label="Höhe der Platte" /></Field>
+                  <Field label="Lochabstand waagerecht" help="Abstand der Lochmitten, an der Breite gemessen."><NumberField bind:value={dv.holeX} min={0} max={290} step={0.5} label="Lochabstand waagerecht" /></Field>
+                  <Field label="Lochabstand senkrecht" help="Abstand der Lochmitten, an der Höhe gemessen."><NumberField bind:value={dv.holeY} min={0} max={290} step={0.5} label="Lochabstand senkrecht" /></Field>
+                  <Field label="Loch-Ø" help="4,5 mm für M4, 5,5 mm für M5, 3,4 mm für M3. Die Senkung passt sich an."><NumberField bind:value={dv.holeD} min={2} max={10} step={0.1} label="Loch-Durchmesser" /></Field>
+                </div>
+                <p class="hint">4 Löcher an den Ecken des Lochabstands.</p>
+              {:else if dv.flangeLayout === 'round'}
+                <div class="grid2">
+                  <Field label="Platten-Ø"><NumberField bind:value={dv.plateD} min={20} max={300} step={1} label="Durchmesser der Platte" /></Field>
+                  <Field label="Lochkreis-Ø" help="Durchmesser des Kreises durch die Lochmitten."><NumberField bind:value={dv.holeCircle} min={5} max={290} step={0.5} label="Lochkreis-Durchmesser" /></Field>
+                  <Field label="Anzahl Löcher"><NumberField bind:value={dv.holeN} min={2} max={16} step={1} unit="" label="Anzahl der Löcher" /></Field>
+                  <Field label="Loch-Ø" help="4,5 mm für M4, 5,5 mm für M5, 3,4 mm für M3. Die Senkung passt sich an."><NumberField bind:value={dv.holeD} min={2} max={10} step={0.1} label="Loch-Durchmesser" /></Field>
+                </div>
+              {/if}
+              <div class="grid2">
+                <Field label="Übergangslänge" help="Strecke, auf der die Form der Bausteine in die Form der Öffnung übergeht. Länger ist flacher und lässt sich besser drucken.">
+                  <NumberField bind:value={spec.b.transition} min={2} max={150} step={1} label="Übergangslänge zum Flansch" />
+                </Field>
+                {#if dv.section.shape !== 'circle' || dv.flangeLayout === 'rect'}
+                  <Field label="Drehung" help="Dreht Öffnung und Platte um die Mitte, falls sie schräg zum Rest des Adapters stehen.">
+                    <NumberField bind:value={dv.rot} min={-180} max={180} step={5} unit="°" label="Drehung des Flanschs" />
+                  </Field>
+                {/if}
+              </div>
+            </div>
+          </details>
+          {:else}
           <MeasureFigure mode={spec.b.device.mode} round={spec.b.device.section.shape === 'circle'} />
           <SectionEditor
             bind:section={spec.b.device.section}
@@ -395,6 +486,7 @@
               <label class="inline-check"><input type="checkbox" bind:checked={spec.b.device.chamfer} /> Schräge Kante am Rand, erleichtert das {spec.b.device.mode === 'over' ? 'Aufstecken' : 'Einstecken'}</label>
             </div>
           </details>
+          {/if}
         {:else}
           <div class="dia dia-{spec.b.type === 'female' ? 'F' : 'M'}">
             <div class="dia-row">
@@ -422,11 +514,15 @@
 
 <fieldset class="opt fi-opt">
   <legend>Was liegt beim Drucken unten?</legend>
+  {#if isFlange}
+  <p class="hint">Der Flansch (Ende B) liegt flach auf dem Druckbett.</p>
+  {:else}
   <div class="seg wide" role="radiogroup" aria-label="Was liegt beim Drucken unten">
     <button type="button" role="radio" aria-checked={spec.bed === 'B'} class:sel={spec.bed === 'B'} onclick={() => (spec.bed = 'B')}>Ende B ({endName(spec.b.type)})</button>
     <button type="button" role="radio" aria-checked={spec.bed === 'A'} class:sel={spec.bed === 'A'} onclick={() => (spec.bed = 'A')}>Anschluss A ({spec.a.type === 'female' ? 'Kupplung' : 'Stecker'})</button>
   </div>
   <p class="hint">Dieses Ende liegt flach auf dem Druckbett.</p>
+  {/if}
   {#if printNote}<p class="print-note {printNote.level}" role="status">{printNote.text}</p>{/if}
 </fieldset>
 

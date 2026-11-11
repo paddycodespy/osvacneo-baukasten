@@ -381,6 +381,8 @@ class AppState {
       if (s.free && typeof s.free === 'object' && Array.isArray(s.free.blocks) && s.free.a && s.free.b?.device) {
         const fresh = TEMPLATES[0].make();
         this.free = withFreshIds({ ...fresh, ...s.free, a: { ...fresh.a, ...s.free.a }, b: { ...fresh.b, ...s.free.b, device: { ...fresh.b.device, ...s.free.b.device } } });
+        // Flansch liegt immer mit Ende B auf dem Bett
+        if (this.free.b.type === 'device' && this.free.b.device.mode === 'flange') this.free.bed = 'B';
       }
       if (typeof s.freeTemplate === 'string' && TEMPLATES.some((t) => t.id === s.freeTemplate)) this.freeTemplate = s.freeTemplate;
       if (num(s.step)) this.step = Math.max(0, Math.min(3, Math.round(s.step)));

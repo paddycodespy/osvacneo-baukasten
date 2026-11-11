@@ -60,9 +60,11 @@ export interface Block {
 
 export type OsvacEnd = 'female' | 'male';
 
+export type FlangeLayout = 'auto' | 'rect' | 'round';
+
 export interface DeviceEnd {
-  /** aufgesteckt (Muffe/Haube über den Stutzen) oder eingesteckt (Zapfen in die Öffnung) */
-  mode: 'over' | 'into';
+  /** aufgesteckt (Muffe/Haube über den Stutzen), eingesteckt (Zapfen in die Öffnung) oder angeschraubt (Flansch) */
+  mode: 'over' | 'into' | 'flange';
   /** gemessenes Maß am Gerät: Außenmaß des Stutzens bzw. Innenmaß der Öffnung (vorne) */
   section: Section;
   /** nur Kreis: Ø in der Tiefe */
@@ -88,6 +90,22 @@ export interface DeviceEnd {
   notchW: number;
   notchH: number;
   notchDir: number;
+  /** Flansch: Rand rund um die Öffnung (nur Lochbild automatisch) und Plattendicke */
+  flangeRim: number;
+  flangeT: number;
+  /** Lochbild: automatisch (Platte folgt der Öffnung), rechteckige Platte mit Lochabstand oder runde Platte mit Lochkreis */
+  flangeLayout: FlangeLayout;
+  plateW: number;
+  plateH: number;
+  holeX: number;
+  holeY: number;
+  plateD: number;
+  holeCircle: number;
+  holeN: number;
+  /** Loch-Ø beim Lochbild nach Maß (automatisch immer 4,5 für M4) */
+  holeD: number;
+  /** Extra: Nut für Moosgummi-Dichtband auf der Anlagefläche */
+  seal: boolean;
 }
 
 export interface FreeSpec {
@@ -161,6 +179,18 @@ export const DEFAULT_DEVICE: DeviceEnd = {
   notchW: 20,
   notchH: 10,
   notchDir: 0,
+  flangeRim: 15,
+  flangeT: 5,
+  flangeLayout: 'auto',
+  plateW: 120,
+  plateH: 90,
+  holeX: 100,
+  holeY: 70,
+  plateD: 100,
+  holeCircle: 82,
+  holeN: 4,
+  holeD: 4.5,
+  seal: false,
 };
 
 /** Lage der Schraubenlöcher als Anteil am Umfang (ab +u, wie beim Rohrkonus 90/210/330°) */
@@ -906,6 +936,7 @@ function autoTransition(name: string, f: Frame, s0: Section, rot0: number, s1: S
 function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: number }, bodies: FreeBody[], issues: Issue[], path: V3[]): Frame {
   const dv = spec.b.device;
   const w = spec.wall;
+  if (dv.mode === 'flange') return planFlange(spec, ce, bodies, issues, path);
   const a = dv.allowance;
   const isCircle = dv.section.shape === 'circle';
   checkSection(dv.section, 'Gerät', issues);
@@ -1005,6 +1036,247 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
   }
   if (X.ribs) bodies.push({ name: 'Geräteanschluss · Klemmrippen', cost: 0.5, dep: { ...base, part: 'ribs', L, mode: dv.mode, x: X.key }, make: X.ribs });
   f = advance(fb, L);
+  path.push(f.o);
+  return f;
+}
+
+// ---------------------------------------------------------------- Flansch
+
+/** Nut für Dichtband: 2 mm Steg an der Öffnung, 6 mm breit, 1,5 mm tief */
+export const SEAL = { lip: 2, width: 6, depth: 1.5 };
+/** Loch für M4-Senkkopfschrauben */
+export const AUTO_HOLE_D = 4.5;
+/** Größter Abstand zweier Löcher beim automatischen Lochbild */
+const HOLE_PITCH = 70;
+/** Senkung 90° für Senkkopfschrauben (Kopf etwa 2 × Gewinde-Ø) */
+const sinkR = (holeD: number) => Math.max(holeD / 2 + 1, holeD * 0.95);
+
+function inPoly(q: P2, poly: P2[]) {
+  let c = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if (yi > q[1] !== yj > q[1] && q[0] < ((xj - xi) * (q[1] - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+}
+function polyDist(q: P2, poly: P2[]) {
+  let m = Infinity;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [ax, ay] = poly[j], [bx, by] = poly[i];
+    const dx = bx - ax, dy = by - ay;
+    const l2 = dx * dx + dy * dy || 1;
+    const k = Math.max(0, Math.min(1, ((q[0] - ax) * dx + (q[1] - ay) * dy) / l2));
+    m = Math.min(m, Math.hypot(q[0] - ax - k * dx, q[1] - ay - k * dy));
+  }
+  return m;
+}
+
+/**
+ * Automatisches Lochbild auf der Kontur c: ein Loch in jeder Ecke (zwischen zwei geraden Seiten),
+ * an langen Rundungen an deren Enden, dazwischen gleichmäßig aufgefüllt, höchstens HOLE_PITCH Abstand.
+ * Runde Formen ohne gerade Seiten: gleichmäßig, mindestens 4.
+ */
+function autoHoles(c: Section, rotDeg: number, minGap: number): P2[] {
+  const P = perimeter(c);
+  const runs = flatRuns(c, rotDeg).filter((r) => r.len >= 10);
+  let at: number[];
+  if (!runs.length) {
+    const n = Math.max(4, Math.ceil(P / HOLE_PITCH));
+    at = Array.from({ length: n }, (_, k) => (k + 0.5) / n);
+  } else {
+    const anchors: number[] = [];
+    runs.forEach((r, i) => {
+      const nx = runs[(i + 1) % runs.length];
+      const end = r.mid + r.len / (2 * P);
+      let start = nx.mid - nx.len / (2 * P);
+      while (start < end) start += 1;
+      const gap = (start - end) * P;
+      if (gap < 40) anchors.push(((end + start) / 2) % 1);
+      else anchors.push(end % 1, start % 1);
+    });
+    anchors.sort((x, y) => x - y);
+    at = [];
+    anchors.forEach((f0, i) => {
+      let f1 = i + 1 < anchors.length ? anchors[i + 1] : anchors[0] + 1;
+      if (f1 <= f0) f1 += 1;
+      const d = (f1 - f0) * P;
+      const k = Math.max(1, Math.ceil(d / HOLE_PITCH - 1e-9));
+      for (let j = 0; j < k; j++) at.push((f0 + ((f1 - f0) * j) / k) % 1);
+    });
+  }
+  const pts = contourAt(c, rotDeg, at).map((x) => x.p);
+  // zu dicht beieinander (kleine Öffnungen): überzählige weglassen
+  const out: P2[] = [];
+  for (const q of pts) if (out.every((o) => Math.hypot(o[0] - q[0], o[1] - q[1]) >= minGap)) out.push(q);
+  return out;
+}
+
+/** Kleinster Rand beim automatischen Lochbild (Platz für Senkung, Wand und ggf. Dichtung) */
+export function flangeMinRim(wall: number, seal: boolean) {
+  const hr = AUTO_HOLE_D / 2, sr = sinkR(AUTO_HOLE_D);
+  const toOpen = Math.max(wall + sr + 0.5, (seal ? SEAL.lip + SEAL.width : 0) + hr + 1.5);
+  return Math.ceil(toOpen + sr + 1);
+}
+
+export interface FlangeGeom {
+  plate: Section;
+  /** Lochmitten in u/v (schon gedreht wie der Querschnitt) */
+  holes: P2[];
+  holeD: number;
+  errors: string[];
+}
+
+/** Platte und Löcher des Flanschs (rein rechnerisch, auch für die Oberfläche) */
+export function flangeGeom(dv: DeviceEnd, wall: number): FlangeGeom {
+  const o = dv.section;
+  const rot = dv.rot;
+  const errors: string[] = [];
+  const auto = dv.flangeLayout === 'auto';
+  const holeD = auto ? AUTO_HOLE_D : dv.holeD;
+  const hr = holeD / 2, sr = sinkR(holeD);
+  const toOpen = Math.max(wall + sr + 0.5, (dv.seal ? SEAL.lip + SEAL.width : 0) + hr + 1.5);
+  const toEdge = sr + 1;
+  let plate: Section;
+  let holes: P2[] = [];
+  const rotP = (q: P2): P2 => {
+    const c = Math.cos(rad(rot)), s = Math.sin(rad(rot));
+    return [q[0] * c - q[1] * s, q[0] * s + q[1] * c];
+  };
+  if (!(dv.flangeT >= 3 && dv.flangeT <= 15)) errors.push('Die Platte muss 3 bis 15 mm dick sein.');
+  else if (dv.flangeT < sr - hr + 1.5) errors.push(`Für Senkkopfschrauben muss die Platte mindestens ${Math.ceil(sr - hr + 1.5)} mm dick sein.`);
+  if (!auto && !(holeD >= 2 && holeD <= 10)) errors.push('Der Loch-Ø muss zwischen 2 und 10 mm liegen.');
+  if (auto) {
+    const minRim = flangeMinRim(wall, dv.seal);
+    if (!(dv.flangeRim >= minRim)) errors.push(`Der Rand muss hier mindestens ${minRim} mm breit sein, damit Schrauben${dv.seal ? ' und Dichtung' : ''} Platz haben.`);
+    if (dv.flangeRim > 80) errors.push('Der Rand darf höchstens 80 mm breit sein.');
+    plate = grow(o, Math.max(dv.flangeRim, 1));
+    if (!errors.length) {
+      // bei Ellipsen ist die vergrößerte Kontur nicht überall gleich weit weg: Lochkontur so weit nach außen, bis der Abstand reicht
+      const openPoly = samplePoints(o, 360, rot);
+      let h = Math.max(dv.flangeRim / 2, toOpen);
+      for (let k = 0; k < 4; k++) {
+        holes = autoHoles(grow(o, h), rot, 2 * sr + 3);
+        const m = Math.min(...holes.map((q) => polyDist(q, openPoly)));
+        if (m >= toOpen - 0.01) break;
+        h += toOpen - m + 0.05;
+      }
+    }
+  } else if (dv.flangeLayout === 'rect') {
+    plate = sec('rect', { w: dv.plateW, h: dv.plateH, r: 6, r2: 6 });
+    if (!(dv.plateW >= 20 && dv.plateH >= 20)) errors.push('Die Platte muss mindestens 20 × 20 mm groß sein.');
+    if (!(dv.holeX >= 0 && dv.holeY >= 0) || (dv.holeX < 2 * sr && dv.holeY < 2 * sr)) errors.push('Bitte einen Lochabstand eingeben.');
+    const xs = dv.holeX >= 2 * sr ? [-dv.holeX / 2, dv.holeX / 2] : [0];
+    const ys = dv.holeY >= 2 * sr ? [-dv.holeY / 2, dv.holeY / 2] : [0];
+    holes = xs.flatMap((x) => ys.map((y) => rotP([x, y])));
+  } else {
+    plate = sec('circle', { d: dv.plateD });
+    const n = Math.round(dv.holeN);
+    if (!(dv.plateD >= 20)) errors.push('Die Platte muss mindestens 20 mm groß sein.');
+    if (!(n >= 2 && n <= 16)) errors.push('Bitte 2 bis 16 Löcher wählen.');
+    else if (!(dv.holeCircle > 0)) errors.push('Bitte einen Lochkreis eingeben.');
+    else holes = Array.from({ length: n }, (_, k) => rotP([(dv.holeCircle / 2) * Math.cos(((k + 0.5) * 2 * Math.PI) / n), (dv.holeCircle / 2) * Math.sin(((k + 0.5) * 2 * Math.PI) / n)]));
+  }
+  if (errors.length) return { plate, holes: [], holeD, errors };
+  // Platte muss die Wand (und die Dichtung) rundum tragen
+  const platePoly = samplePoints(plate, 360, rot);
+  const need = grow(o, dv.seal ? SEAL.lip + SEAL.width + 1.5 : wall + 1);
+  if (!samplePoints(need, 180, rot).every((q) => inPoly(q, platePoly)))
+    errors.push(`Die Platte ist zu klein für diese Öffnung${dv.seal ? ' und die Dichtung' : ''}. Bitte größer machen.`);
+  const openPoly = samplePoints(o, 360, rot);
+  if (!errors.length) {
+    if (!holes.length) errors.push('Für diese Öffnung passen keine Schraubenlöcher. Bitte den Rand breiter machen.');
+    else if (holes.some((q) => inPoly(q, openPoly) || polyDist(q, openPoly) < toOpen - 0.01))
+      errors.push(`Die Löcher liegen zu nah an der Öffnung${dv.seal ? ' oder an der Dichtung' : ''}. Bitte den Lochabstand größer machen.`);
+    else if (holes.some((q) => !inPoly(q, platePoly) || polyDist(q, platePoly) < toEdge - 0.01))
+      errors.push('Die Löcher liegen zu nah am Rand der Platte. Bitte die Platte größer oder den Lochabstand kleiner machen.');
+    else if (holes.some((q, i) => holes.some((r, j) => j > i && Math.hypot(q[0] - r[0], q[1] - r[1]) < 2 * sr + 1)))
+      errors.push('Die Löcher liegen zu dicht beieinander. Bitte weniger Löcher oder einen größeren Lochkreis wählen.');
+  }
+  return { plate, holes, holeD, errors };
+}
+
+/** Werte für das Lochbild nach Maß, ausgehend vom automatischen Flansch (beim Umschalten vorbelegt) */
+export function flangeDefaults(dv: DeviceEnd, wall: number): Partial<DeviceEnd> {
+  const rim = Math.max(dv.flangeRim, flangeMinRim(wall, dv.seal));
+  const G = flangeGeom({ ...dv, flangeLayout: 'auto', flangeRim: rim, rot: 0 }, wall);
+  const pts = samplePoints(grow(dv.section, rim), 180, 0);
+  const up = (v: number, k = 1) => Math.ceil(v / k - 1e-9) * k;
+  const edge = sinkR(AUTO_HOLE_D) + 1.5;
+  const hx = up(2 * Math.max(0, ...G.holes.map((q) => Math.abs(q[0]))), 0.5);
+  const hy = up(2 * Math.max(0, ...G.holes.map((q) => Math.abs(q[1]))), 0.5);
+  // Lochkreis: alle Löcher gleich weit außen, also mindestens so weit, dass auch zwischen den automatischen Löchern Platz zur Öffnung bleibt
+  const toOpen = Math.max(wall + sinkR(AUTO_HOLE_D) + 0.5, (dv.seal ? SEAL.lip + SEAL.width : 0) + AUTO_HOLE_D / 2 + 1.5);
+  const reach = Math.max(...samplePoints(dv.section, 180, 0).map((q) => Math.hypot(q[0], q[1])));
+  const hc = up(2 * Math.max(reach + toOpen, ...G.holes.map((q) => Math.hypot(q[0], q[1]))), 0.5);
+  const pw = up(Math.max(2 * Math.max(...pts.map((q) => Math.abs(q[0]))), hx + 2 * edge));
+  const ph = up(Math.max(2 * Math.max(...pts.map((q) => Math.abs(q[1]))), hy + 2 * edge));
+  const pd = up(Math.max(2 * Math.max(...pts.map((q) => Math.hypot(q[0], q[1]))), hc + 2 * edge));
+  return { plateW: pw, plateH: ph, holeX: hx, holeY: hy, plateD: pd, holeCircle: hc, holeD: AUTO_HOLE_D };
+}
+
+function planFlange(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: number }, bodies: FreeBody[], issues: Issue[], path: V3[]): Frame {
+  const dv = spec.b.device;
+  const w = spec.wall;
+  const o = dv.section;
+  checkSection(o, 'Gerät', issues);
+  if ((o.shape === 'circle' ? o.d : Math.min(o.w, o.h)) < 4) issues.push({ level: 'error', text: 'Gerät: Die Öffnung muss mindestens 4 mm groß sein.' });
+  if (spec.bed === 'A') issues.push({ level: 'error', text: 'Gerät: Mit Flansch liegt Ende B beim Drucken unten. Bitte unten „Ende B“ wählen.' });
+  if (issues.some((x) => x.level === 'error')) return ce.frame;
+  const G = flangeGeom(dv, w);
+  for (const e of G.errors) issues.push({ level: 'error', text: `Gerät: ${e}` });
+  if (G.errors.length) return ce.frame;
+
+  let f = ce.frame;
+  const rot1 = dv.rot;
+  const out = grow(o, w);
+  if (!sameSection(ce.section, o) || Math.abs(ce.rot - rot1) > 1e-9) {
+    const L0 = spec.b.transition;
+    if (!(L0 >= 2)) {
+      issues.push({ level: 'error', text: 'Gerät: Die Übergangslänge muss mindestens 2 mm betragen.' });
+      return f;
+    }
+    let m = 0;
+    const N = 120;
+    const p0 = samplePoints(grow(ce.section, w), N, ce.rot), p1 = samplePoints(out, N, rot1);
+    for (let i = 0; i < N; i++) m = Math.max(m, Math.hypot(p1[i][0] - p0[i][0], p1[i][1] - p0[i][1]));
+    if (m > L0 * 1.2) issues.push({ level: 'warn', text: `Gerät: Die Schräge zum Flansch ist sehr steil (${Math.round(m)} mm auf ${Math.round(L0)} mm Länge). In den Feineinstellungen die Übergangslänge erhöhen, dann geht der Druck ohne Stützen.` });
+    bodies.push(autoTransition('Übergang zum Gerät', f, ce.section, ce.rot, o, rot1, L0, w, {}));
+    f = advance(f, L0);
+    path.push(f.o);
+  }
+  const fb = f;
+  const T = dv.flangeT;
+  const hr = G.holeD / 2, sr = sinkR(G.holeD);
+  const at3 = (x: number, q: P2): Point => add(add(add(fb.o, mul(fb.t, x)), mul(fb.u, q[0])), mul(fb.v, q[1])) as Point;
+  const ring = (x: number, q: P2, r: number) => assembleWire([makeCircle(r, at3(x, q), fb.t as Point)]);
+  bodies.push({
+    name: 'Geräteanschluss · Flansch',
+    cost: 0.6 + 0.05 * G.holes.length,
+    dep: { kind: 'free', t: 'device', part: 'flange', f: frameKey(fb), o: secKey(o), p: secKey(G.plate), rot: r6(rot1), T: r6(T), h: G.holes.map((q) => q.map(r6)), d: r6(G.holeD), seal: dv.seal },
+    make: () => {
+      let body = extrudeRing(fb, o, G.plate, rot1, T);
+      for (const q of G.holes) {
+        // Bohrung durch die Platte, Senkung oben (Seite zum Adapter, dort sitzt der Schraubenkopf)
+        const bore = makeCylinder(hr, T + 2, at3(-1, q), fb.t as Point) as unknown as Shape3D;
+        const depth = sr - hr;
+        const sink = loft([ring(-1, q, sr + 1), ring(depth, q, hr)], { ruled: true }) as unknown as Shape3D;
+        const before = measureVolume(body);
+        let next = body.cut(bore.fuse(sink));
+        if (!(measureVolume(next) < before - 1e-3)) next = body.cut(bore).cut(sink);
+        if (!(measureVolume(next) < before - 1e-3)) throw new UserError('Gerät: Ein Schraubenloch ließ sich im Flansch nicht schneiden. Bitte den Lochabstand etwas ändern.');
+        body = next;
+      }
+      if (dv.seal) {
+        const before = measureVolume(body);
+        const tool = extrudeRing(advance(fb, T - SEAL.depth), grow(o, SEAL.lip), grow(o, SEAL.lip + SEAL.width), rot1, SEAL.depth + 1);
+        const next = body.cut(tool);
+        if (!(measureVolume(next) < before - 1e-3)) throw new UserError('Gerät: Die Nut für die Dichtung ließ sich an dieser Form nicht schneiden. Bitte die Dichtung abwählen.');
+        body = next;
+      }
+      return body;
+    },
+  });
+  f = advance(fb, T);
   path.push(f.o);
   return f;
 }
@@ -1341,6 +1613,7 @@ export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) =>
 export function extrasText(spec: FreeSpec): string[] {
   const dv = spec.b.device;
   if (spec.b.type !== 'device') return [];
+  if (dv.mode === 'flange') return ['Flansch', ...(dv.seal ? ['Dichtung'] : [])];
   const over = dv.mode === 'over';
   return [
     dv.ribs && 'Rippen',
@@ -1362,7 +1635,7 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   const isDev = spec.b.type === 'device';
   const B = isDev ? dev : end(spec.b.type as OsvacEnd, spec.b.d);
   const blocks = spec.blocks.map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : BLOCK_LABELS[b.type])).join(', ');
-  const devText = `Gerät ${spec.b.device.mode === 'over' ? 'aufgesteckt' : 'eingesteckt'}`;
+  const devText = `Gerät ${{ over: 'aufgesteckt', into: 'eingesteckt', flange: 'mit Flansch' }[spec.b.device.mode]}`;
   const sub = ['Freiform', blocks, isDev ? devText : ''].filter(Boolean).join(' · ');
   const fileB = isDev ? `Geraet ${dev.replace(/ × /g, 'x').replace('Ø ', 'D')}` : B;
   const fileMid = spec.blocks.filter((b) => b.type === 'bend').map((b) => `Bogen${f(b.angle)}`).join(' ');
