@@ -21,7 +21,7 @@
     open = $bindable(null),
     template = $bindable('elbow'),
     printNote = null,
-  }: { spec: FreeSpec; issues?: Issue[]; open?: Open; template?: string; printNote?: { text: string; level: 'ok' | 'warn' } | null } = $props();
+  }: { spec: FreeSpec; issues?: Issue[]; open?: Open; template?: string; printNote?: { text: string; level: 'ok' | 'warn' | 'error' } | null } = $props();
 
   const SIZES = [25, 32, 36, 40, 50];
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
@@ -470,6 +470,7 @@
   .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
   .print-note { margin: 10px 0 0; padding: 8px 12px; border-radius: 4px; font-size: 14px; border-left: 4px solid var(--sky); background: var(--sky-l); }
   .print-note.warn { border-left-color: var(--signal); background: #fdf6dc; }
+  .print-note.error { border-left-color: #c4362b; background: #fdecea; color: #8a1f17; }
 
   .chain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; position: relative; }
   /* Verbindungslinie zwischen den Karten: zeigt die Reihenfolge von A nach B */

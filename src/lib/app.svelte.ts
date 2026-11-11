@@ -71,6 +71,8 @@ class AppState {
   overhang = $state(0);
   /** Hinweise aus der vollen Berechnung (z. B. weggelassene Klemmrippen) */
   buildNotes = $state<string[]>([]);
+  /** Freiform: Teil liegt tiefer als das Ende auf dem Druckbett (so nicht druckbar) */
+  layoutError = $state('');
 
   // ---------------------------------------------------------------- Export
   activeFormat = $state<ExportFormat>('3mf');
@@ -88,7 +90,7 @@ class AppState {
   freePlan = $derived(this.kind.freeform ? planFree($state.snapshot(this.free)) : null);
   freeIssues = $derived(this.freePlan?.issues ?? []);
   /** Download gesperrt, solange der Adapter einen Fehler hat (Berechnung gescheitert oder Aufbau fehlerhaft) */
-  blocked = $derived(this.status === 'error' || this.freeIssues.some((x) => x.level === 'error'));
+  blocked = $derived(this.status === 'error' || this.freeIssues.some((x) => x.level === 'error') || !!this.layoutError);
   params = $derived(deriveParams(this.input));
   /** Druckhilfe gibt es nur, wenn der Stecker mit der Spitze nach unten gedruckt wird */
   hasSupport = $derived(this.kind.id === 'M' || this.kind.id === 'MF' || (!!this.kind.freeform && freeMaleOnBed(this.free)));
@@ -165,6 +167,9 @@ class AppState {
     }
     w.push(...this.machineWarnings);
     if (this.kind.freeform) w.push(...this.freeIssues.map((x) => x.text), ...this.buildNotes);
+    // übliche Druckbetten: 220–256 mm Kantenlänge, Bauhöhe ab 250 mm
+    if (this.dims && (this.dims.width > 220 || this.dims.height > 250))
+      w.push(`Der Adapter ist ${fmt(this.dims.width, 0)} mm breit und ${fmt(this.dims.height, 0)} mm hoch. Das passt nicht auf jeden Drucker (viele haben 220 bis 256 mm). Bitte mit deinem Druckbett vergleichen.`);
     if (this.input.maleFemaleGapSize < 0.1 || this.input.maleFemaleGapSize > 0.5) w.push('Das Spiel liegt außerhalb von 0,1 bis 0,5 mm. Stecker und Kupplung passen dann kaum zusammen.');
     return w;
   });

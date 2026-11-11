@@ -13,6 +13,7 @@ import { initFont } from '../src/lib/osvac/text';
 import { partsFree } from '../src/lib/osvac/assemblies';
 import { TEMPLATES, newBlock, sec, planFree, testHooks, type FreeSpec, type SectionShape } from '../src/lib/osvac/freeform';
 import { partNotes } from '../src/lib/errors';
+import { belowBedEnd } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
 
@@ -52,6 +53,13 @@ for (const shape of shapes)
   s.bed = 'B';
   cases.push(['kette-alle-bausteine', s]);
   cases.push(['kette-A-unten', { ...structuredClone(s), bed: 'A' }]);
+}
+// Teil ragt unter das Ende auf dem Druckbett (U-Bogen nach unten): muss erkannt werden
+{
+  const s = TEMPLATES[3].make();
+  s.blocks = [newBlock('bend', { angle: 180, radius: 40, dir: 0 }), newBlock('straight', { length: 5 })];
+  s.b.device.length = 10;
+  cases.push(['unter-bett-u-bogen', s]);
 }
 // Extras am Geräteanschluss: Klemmrippen, Schlitze, Aussparung, Schraubenlöcher
 for (const [id, shape, mode, dDepth] of [
@@ -100,13 +108,18 @@ for (const [id, spec] of cases) {
     let vol = 0;
     const bad: string[] = [];
     const built: Shape3D[] = [];
+    const low: { name: string; helper: boolean; positions: number[]; normals: number[]; indices: number[] }[] = [];
     for (const q of parts) {
       const sh = q.make();
       const v = measureVolume(sh);
       vol += v;
       if (!valid(sh) || !(v > 0)) bad.push(q.name);
       built.push(sh);
+      low.push({ name: q.name, helper: !!q.helper, positions: [0, 0, sh.boundingBox.bounds[0][2]], normals: [], indices: [] });
     }
+    // das Ende auf dem Druckbett ist der tiefste Punkt (außer bei Fällen, die genau das prüfen)
+    const below = belowBedEnd(low, spec.bed);
+    if (id.startsWith('unter-bett') ? !(below > 5) : below > 0.3) bad.push(`Ende auf dem Bett ${below.toFixed(1)} mm über dem tiefsten Punkt`);
     const c = makeCompound(built) as Shape3D;
     const bb = c.boundingBox.bounds;
     if (writeStl) {

@@ -88,3 +88,22 @@ export function overhangArea(bodies: OverhangMesh[]): number {
   });
   return area;
 }
+
+/**
+ * Wie weit ragt der Adapter unter das Ende, das auf dem Druckbett liegen soll? (0 = alles darüber)
+ * Ende B: Geräteanschluss bzw. die Teile von Ende B („… B“); Anschluss A: die übrigen Teile von osVAC neo.
+ */
+export function belowBedEnd(bodies: OverhangMesh[], bed: 'A' | 'B'): number {
+  const isB = (n: string) => n.startsWith('Geräteanschluss') || / B( \d+)?$/.test(n);
+  const isChain = (n: string) => /^(Formstück|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(n);
+  const isEnd = (n: string) => (bed === 'B' ? isB(n) : !isB(n) && !isChain(n));
+  let zAll = Infinity, zEnd = Infinity;
+  for (const b of bodies) {
+    if (b.helper) continue;
+    let z = Infinity;
+    for (let i = 2; i < b.positions.length; i += 3) z = Math.min(z, b.positions[i]);
+    zAll = Math.min(zAll, z);
+    if (isEnd(b.name)) zEnd = Math.min(zEnd, z);
+  }
+  return Number.isFinite(zEnd) ? Math.max(0, zEnd - zAll) : 0;
+}
