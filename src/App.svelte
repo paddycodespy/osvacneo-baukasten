@@ -9,6 +9,7 @@
   import { build, partNames } from './lib/cad';
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
+  import { overhangArea } from './lib/overhang';
   import { freeSummary } from './lib/osvac/freeform';
   import { app, fmt } from './lib/app.svelte';
   import FreeformEditor from './components/FreeformEditor.svelte';
@@ -88,30 +89,6 @@
       // das zuletzt gezeigte Modell bleibt blass stehen: es gehört nicht mehr zu den Eingaben
       v.setDimmed(true);
     }
-  }
-
-  /**
-   * Fläche der Formstücke, die beim Druck steiler als 45° nach unten zeigt und nicht auf dem Druckbett liegt.
-   * Die Anschlüsse von osVAC neo zählen nicht mit: sie sind für den Druck ohne Stützen gebaut.
-   */
-  function overhangArea(bodies: MeshBody[]): number {
-    let zMin = Infinity;
-    for (const b of bodies) for (let i = 2; i < b.positions.length; i += 3) zMin = Math.min(zMin, b.positions[i]);
-    let area = 0;
-    for (const b of bodies) {
-      if (b.helper || !/^(Formstück|Übergang zu|Geräteanschluss|Anschlagring)/.test(b.name)) continue;
-      const p = b.positions, nr = b.normals, ix = b.indices;
-      for (let t = 0; t < ix.length; t += 3) {
-        const a = ix[t] * 3, c = ix[t + 1] * 3, d = ix[t + 2] * 3;
-        const nz = (nr[a + 2] + nr[c + 2] + nr[d + 2]) / 3;
-        if (nz > -0.72) continue;
-        if (Math.min(p[a + 2], p[c + 2], p[d + 2]) < zMin + 0.4) continue;
-        const ux = p[c] - p[a], uy = p[c + 1] - p[a + 1], uz = p[c + 2] - p[a + 2];
-        const vx = p[d] - p[a], vy = p[d + 1] - p[a + 1], vz = p[d + 2] - p[a + 2];
-        area += Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) / 2;
-      }
-    }
-    return area;
   }
 
   // neu berechnen, sobald sich etwas Relevantes ändert

@@ -10,7 +10,7 @@
  * Dieses Modul plant die Kette rein rechnerisch (Prüfungen laufen auch in der Oberfläche, ohne OpenCascade);
  * erst make() der einzelnen Körper ruft replicad auf.
  */
-import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, type Shape3D, type Point } from 'replicad';
+import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, measureVolume, type Shape3D, type Point } from 'replicad';
 import { UserError, partLabel } from '../errors';
 
 // ---------------------------------------------------------------- Datenmodell
@@ -77,6 +77,17 @@ export interface DeviceEnd {
   chamfer: boolean;
   /** nur eingesteckt: Anschlagring außen */
   collar: boolean;
+  /** Extras: Klemmrippen auf der Anlagefläche (Presssitz) */
+  ribs: boolean;
+  /** Extras, nur aufgesteckt: 3 Längsschlitze vom offenen Ende her, damit eine Schlauchschelle klemmen kann */
+  slots: boolean;
+  /** Extras: 3 Schraubenlöcher (aufgesteckt Ø 4 mit Senkung, eingesteckt Ø 3,2 zum Vorbohren) */
+  holes: boolean;
+  /** Extras, nur aufgesteckt: Aussparung am offenen Rand (Breite, Tiefe, Lage in Grad) */
+  notch: boolean;
+  notchW: number;
+  notchH: number;
+  notchDir: number;
 }
 
 export interface FreeSpec {
@@ -143,7 +154,20 @@ export const DEFAULT_DEVICE: DeviceEnd = {
   rot: 0,
   chamfer: true,
   collar: false,
+  ribs: false,
+  slots: false,
+  holes: false,
+  notch: false,
+  notchW: 20,
+  notchH: 10,
+  notchDir: 0,
 };
+
+/** Lage der Schraubenlöcher und Schlitze als Anteil am Umfang (ab +u, wie beim Rohrkonus 90/210/330°; Schlitze dazwischen) */
+const HOLE_AT = [0.25, 7 / 12, 11 / 12];
+const SLOT_AT = [1 / 12, 5 / 12, 9 / 12];
+/** Klemmrippen: so weit ragen sie über die Gerätefläche hinaus (werden beim Aufstecken zusammengedrückt) */
+const RIB_CRUSH = 0.3;
 
 /** Vorlagen als Startpunkt (nach den Vorbildern auf Thingiverse). */
 export const TEMPLATES: { id: string; title: string; hint: string; make: () => FreeSpec }[] = [
@@ -860,15 +884,20 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
     return { inn: mix(F.inn, B.inn), out: mix(F.out, B.out) };
   };
   const label = dv.mode === 'over' ? 'Muffe' : 'Zapfen';
+  const X = deviceExtras(spec, fb, front, back, w, a, rot1, L, c, issues);
   bodies.push({
     name: `Geräteanschluss · ${label}`,
-    cost: tapered ? 1 : 0.3,
-    dep: { ...base, part: 'body', L: Lm, mode: dv.mode },
+    cost: (tapered ? 1 : 0.3) + (X.any ? 0.7 : 0),
+    dep: { ...base, part: 'body', L: Lm, mode: dv.mode, x: X.key },
     make: () => {
-      if (!tapered) return extrudeRing(fb, F.inn, F.out, rot1, Lm);
-      const e = at(Lm);
-      const N = nFor(F.out, e.out);
-      return hollowLoft([fb, advance(fb, Lm)], [samplePoints(F.inn, N), samplePoints(e.inn, N)], [samplePoints(F.out, N), samplePoints(e.out, N)], true, `Geräteanschluss · ${label}`);
+      let body: Shape3D;
+      if (!tapered) body = extrudeRing(fb, F.inn, F.out, rot1, Lm);
+      else {
+        const e = at(Lm);
+        const N = nFor(F.out, e.out);
+        body = hollowLoft([fb, advance(fb, Lm)], [samplePoints(F.inn, N), samplePoints(e.inn, N)], [samplePoints(F.out, N), samplePoints(e.out, N)], true, `Geräteanschluss · ${label}`);
+      }
+      return X.apply(body, true);
     },
   });
   if (c > 0) {
@@ -880,13 +909,161 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
     bodies.push({
       name: 'Geräteanschluss · Einführfase',
       cost: 0.5,
-      dep: { ...base, part: 'chamfer', L, c, mode: dv.mode },
-      make: () => hollowLoft([fc, advance(fc, c)], [samplePoints(e0.inn, N, rot1), samplePoints(inn1, N, rot1)], [samplePoints(e0.out, N, rot1), samplePoints(out1, N, rot1)], true, 'Geräteanschluss · Einführfase'),
+      dep: { ...base, part: 'chamfer', L, c, mode: dv.mode, x: X.cutKey },
+      make: () => X.apply(hollowLoft([fc, advance(fc, c)], [samplePoints(e0.inn, N, rot1), samplePoints(inn1, N, rot1)], [samplePoints(e0.out, N, rot1), samplePoints(out1, N, rot1)], true, 'Geräteanschluss · Einführfase'), false),
     });
   }
+  if (X.ribs) bodies.push({ name: 'Geräteanschluss · Klemmrippen', cost: 0.5, dep: { ...base, part: 'ribs', L, mode: dv.mode, x: X.key }, make: X.ribs });
   f = advance(fb, L);
   path.push(f.o);
   return f;
+}
+
+/** Punkte der Kontur mit Normale (nach außen) und Tangente, gleichmäßig über den Umfang. */
+function contourAt(s: Section, rotDeg: number, fracs: number[]) {
+  const M = 720;
+  const pts = samplePoints(s, M, rotDeg);
+  const cx = pts.reduce((q, p) => q + p[0], 0) / M, cy = pts.reduce((q, p) => q + p[1], 0) / M;
+  return fracs.map((fr) => {
+    const i = ((Math.round(fr * M) % M) + M) % M;
+    const p = pts[i], a = pts[(i + M - 2) % M], b = pts[(i + 2) % M];
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const t: P2 = [(b[0] - a[0]) / l, (b[1] - a[1]) / l];
+    let n: P2 = [t[1], -t[0]];
+    if (n[0] * (p[0] - cx) + n[1] * (p[1] - cy) < 0) n = [-n[0], -n[1]];
+    return { p, n, t };
+  });
+}
+
+/**
+ * Extras am Geräteanschluss: Klemmrippen (eigener Körper), Schlitze, Aussparung und Schraubenlöcher (Schnitte).
+ * x läuft von der Kette (0) bis zum offenen Ende (L).
+ */
+function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, w: number, a: number, rot1: number, L: number, c: number, issues: Issue[]) {
+  const dv = spec.b.device;
+  const over = dv.mode === 'over';
+  const devAt = (x: number): Section => (front.shape === 'circle' ? { ...front, d: front.d + ((back.d - front.d) * x) / L } : front);
+  const P = perimeter(front);
+  const at3 = (x: number, q: P2): Point => add(add(add(fb.o, mul(fb.t, x)), mul(fb.u, q[0])), mul(fb.v, q[1])) as Point;
+  const dir3 = (q: P2): V3 => add(mul(fb.u, q[0]), mul(fb.v, q[1]));
+
+  let holes = dv.holes;
+  if (holes && L < 12) {
+    issues.push({ level: 'warn', text: 'Gerät: Für die Schraubenlöcher braucht es mindestens 12 mm Tiefe. Ohne Löcher gebaut.' });
+    holes = false;
+  }
+  const slots = over && dv.slots;
+  let notch = over && dv.notch;
+  if (notch) {
+    if (!(dv.notchW >= 3)) issues.push({ level: 'error', text: 'Gerät: Die Aussparung muss mindestens 3 mm breit sein.' });
+    else if (dv.notchW > P / 2) issues.push({ level: 'error', text: 'Gerät: Die Aussparung ist breiter als der halbe Umfang. Bitte schmaler machen.' });
+    if (!(dv.notchH >= 2)) issues.push({ level: 'error', text: 'Gerät: Die Aussparung muss mindestens 2 mm tief sein.' });
+    else if (dv.notchH > L - 3) issues.push({ level: 'error', text: `Gerät: Die Aussparung darf höchstens ${Math.round(L - 3)} mm tief sein, sonst hält der Adapter nicht mehr.` });
+    if (issues.some((x) => x.level === 'error' && x.text.includes('Aussparung'))) notch = false;
+  }
+  const slotLen = Math.max(6, Math.min(Math.round(L * 0.6), L - 3));
+  const xHole = L - 8;
+  const nRad = rad(dv.notchDir + rot1);
+  const ray: P2 = [Math.cos(nRad), Math.sin(nRad)], perp: P2 = [-ray[1], ray[0]];
+  const reach = Math.max(...samplePoints(grow(front, a + w + 2), 90, rot1).map(([x, y]) => Math.hypot(x, y))) + 10;
+  /** liegt ein Punkt der Kontur im Bereich der Aussparung? (dort entfallen Löcher, Schlitze und Rippen) */
+  const inNotch = (q: P2, margin: number) => notch && Math.abs(q[0] * perp[0] + q[1] * perp[1]) < dv.notchW / 2 + margin && q[0] * ray[0] + q[1] * ray[1] > 0;
+  const mid0 = grow(front, a + w / 2);
+  const holeAt = HOLE_AT.filter((g) => !inNotch(contourAt(mid0, rot1, [g])[0].p, 6));
+  const slotAt = SLOT_AT.filter((g) => !inNotch(contourAt(mid0, rot1, [g])[0].p, 3));
+  if (holes && !holeAt.length) holes = false;
+
+  /** Schnitte, die Muffe/Zapfen und Fase gemeinsam haben */
+  const cutTools = (): Shape3D[] => {
+    const t: Shape3D[] = [];
+    if (slots) {
+      const mid = grow(devAt(L - slotLen), a + w / 2);
+      for (const { p, n, t: tg } of contourAt(mid, rot1, slotAt)) {
+        const q = (s1: number, s2: number): P2 => [p[0] + tg[0] * s1 + n[0] * s2, p[1] + tg[1] * s1 + n[1] * s2];
+        const h = w + 4;
+        const x0 = L - slotLen;
+        const face = makePolygon([at3(x0, q(-1, -h)), at3(x0, q(1, -h)), at3(x0, q(1, h)), at3(x0, q(-1, h))]);
+        t.push(basicFaceExtrusion(face, new Vector(mul(fb.t, slotLen + 1) as Point)) as unknown as Shape3D);
+        // runder Schlitzgrund gegen Einreißen
+        t.push(makeCylinder(1, 2 * h, at3(x0, q(0, -h)), dir3(n) as Point) as unknown as Shape3D);
+      }
+    }
+    if (notch) {
+      const x0 = L - dv.notchH, W = dv.notchW / 2;
+      const q = (r: number, s1: number): P2 => [ray[0] * r + perp[0] * s1, ray[1] * r + perp[1] * s1];
+      const face = makePolygon([at3(x0, q(0, -W)), at3(x0, q(reach, -W)), at3(x0, q(reach, W)), at3(x0, q(0, W))]);
+      t.push(basicFaceExtrusion(face, new Vector(mul(fb.t, dv.notchH + 1) as Point)) as unknown as Shape3D);
+    }
+    return t;
+  };
+  /** Schraubenlöcher: aufgesteckt Ø 4 mit Senkung außen (wie beim Rohrkonus), eingesteckt Ø 3,2 zum Eindrehen */
+  const holeTools = (): Shape3D[] => {
+    const outer = over ? grow(devAt(xHole), a + w) : grow(devAt(xHole), -a);
+    return contourAt(outer, rot1, holeAt).map(({ p, n }) => {
+      const o = (d: number) => at3(xHole, [p[0] + n[0] * d, p[1] + n[1] * d]);
+      const N = dir3(n) as Point;
+      const bore = makeCylinder(over ? 2 : 1.6, w + 6, o(-(w + 3)), N) as unknown as Shape3D;
+      if (!over) return bore;
+      const ring = (d: number, r: number) => assembleWire([makeCircle(r, o(d), N)]);
+      const k = 1.25;
+      const sink = loft([ring(-2.0, 2), ring(-2 + 2 * k, 2 + 1.94 * k), ring(-2 + 2 * k + 1.5, 2 + 1.94 * k)], { ruled: true }) as unknown as Shape3D;
+      return bore.fuse(sink);
+    });
+  };
+
+  const apply = (body: Shape3D, withHoles: boolean): Shape3D => {
+    if (withHoles && holes) {
+      const tools = holeTools();
+      const before = measureVolume(body);
+      const toolVol = tools.reduce((q, x) => q + measureVolume(x), 0);
+      body = body.cut(makeCompound(tools) as unknown as Shape3D);
+      const removed = before - measureVolume(body);
+      if (!(removed > 0 && removed < toolVol * 1.02))
+        throw new UserError('Die Schraubenlöcher am Gerät ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern oder die Löcher abwählen.');
+    }
+    if (slots || notch) {
+      const before = measureVolume(body);
+      body = body.cut(makeCompound(cutTools()) as unknown as Shape3D);
+      if (!(measureVolume(body) > before * 0.3)) throw new UserError('Schlitze oder Aussparung am Gerät ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern.');
+    }
+    return body;
+  };
+
+  // Klemmrippen: dreieckig, 1,6 mm breit, 0,4 mm in der Wand verankert, ragen RIB_CRUSH über die Gerätefläche
+  let ribs: (() => Shape3D) | null = null;
+  if (dv.ribs) {
+    const x0 = 1, x1 = L - c - 2;
+    if (x1 - x0 < 4) issues.push({ level: 'warn', text: 'Gerät: Für Klemmrippen ist die Tiefe zu kurz. Ohne Rippen gebaut.' });
+    else {
+      const n = Math.max(6, Math.min(24, Math.round(P / 10)));
+      const arc = (f1: number, f2: number) => Math.min(Math.abs(f1 - f2), 1 - Math.abs(f1 - f2)) * P;
+      const fr = Array.from({ length: n }, (_, k) => (k + 0.5) / n).filter(
+        (f) => !(holes && holeAt.some((g) => arc(f, g) < 5)) && !(slots && slotAt.some((g) => arc(f, g) < 3)),
+      );
+      const ribPts = (x: number) => {
+        const base = grow(devAt(x), over ? a + 0.4 : -(a + 0.4));
+        return contourAt(base, rot1, fr).map(({ p, n: nn, t }) => {
+          const h = (a + 0.4 + RIB_CRUSH) * (over ? -1 : 1);
+          return [
+            [p[0] + t[0] * 0.8, p[1] + t[1] * 0.8],
+            [p[0] + nn[0] * h, p[1] + nn[1] * h],
+            [p[0] - t[0] * 0.8, p[1] - t[1] * 0.8],
+          ] as P2[];
+        });
+      };
+      // Rippen im Bereich der Aussparung weglassen
+      const keep = ribPts(x0).map((tri) => !inNotch(tri[1], 1.5));
+      if (keep.some(Boolean))
+        ribs = () => {
+          const A = ribPts(x0), B = ribPts(x1);
+          const tri = (x: number, q: P2[]) => assembleWire([makeLine(at3(x, q[0]), at3(x, q[1])), makeLine(at3(x, q[1]), at3(x, q[2])), makeLine(at3(x, q[2]), at3(x, q[0]))]);
+          const solids = A.flatMap((q, i) => (keep[i] ? [loft([tri(x0, q), tri(x1, B[i])], { ruled: true }) as unknown as Shape3D] : []));
+          return makeCompound(solids) as unknown as Shape3D;
+        };
+    }
+  }
+  const cutKey = [slots ? [slotLen, ...slotAt] : 0, notch ? [dv.notchW, dv.notchH, dv.notchDir].map(r6) : 0];
+  return { apply, ribs, any: holes || slots || notch, cutKey, key: [holes ? holeAt : 0, ...cutKey, dv.ribs ? 1 : 0] };
 }
 
 // ---------------------------------------------------------------- Lage im Raum

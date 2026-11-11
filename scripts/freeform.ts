@@ -1,6 +1,6 @@
 /**
  * Prüflauf Freiform (npm run test:freeform): baut alle Vorlagen und eine Reihe von Varianten
- * (alle Querschnitte, auf-/eingesteckt, Fase, Anschlag, osVAC neo an Ende B, beide Druckbett-Lagen)
+ * (alle Querschnitte, auf-/eingesteckt, Fase, Anschlag, Extras am Gerät, osVAC neo an Ende B, beide Druckbett-Lagen)
  * und prüft jeden Körper mit BRepCheck und auf positives Volumen. Optional STL nach out/freeform-<fall>.stl (--stl).
  */
 import opencascade from 'replicad-opencascadejs';
@@ -49,6 +49,21 @@ for (const shape of shapes)
   s.bed = 'B';
   cases.push(['kette-alle-bausteine', s]);
   cases.push(['kette-A-unten', { ...structuredClone(s), bed: 'A' }]);
+}
+// Extras am Geräteanschluss: Klemmrippen, Schlitze, Aussparung, Schraubenlöcher
+for (const [id, shape, mode, dDepth] of [
+  ['extras-kreis-auf', 'circle', 'over', 33],
+  ['extras-kreis-auf-gerade', 'circle', 'over', 32],
+  ['extras-rechteck-auf', 'rect', 'over', 0],
+  ['extras-dform-auf', 'dshape', 'over', 0],
+  ['extras-ellipse-ein', 'ellipse', 'into', 0],
+  ['extras-kreis-ein', 'circle', 'into', 34],
+] as const) {
+  const s = TEMPLATES[3].make();
+  const section = sec(shape, { w: 56, h: 34, d: 34, r: 5, r2: 3 });
+  if (shape === 'dshape') section.h = 26;
+  s.b.device = { ...s.b.device, mode, section, dDepth: dDepth || 34, length: 28, ribs: true, slots: true, holes: true, notch: true, notchW: 14, notchH: 9, notchDir: 60, collar: mode === 'into' };
+  cases.push([id, s]);
 }
 {
   const s = TEMPLATES[2].make();

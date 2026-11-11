@@ -24,6 +24,9 @@
   const SIZES = [25, 32, 36, 40, 50];
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
 
+  /** Extras am Gerät: anfangs offen, wenn schon welche gewählt sind; danach so, wie der Nutzer es aufklappt */
+  const anyExtra = (d: FreeSpec['b']['device']) => d.ribs || d.holes || (d.mode === 'over' && (d.slots || d.notch));
+  let extrasOpen = $state(anyExtra(spec.b.device));
   /** Vorlage, die nach Rückfrage geladen werden soll (der eigene Aufbau ginge sonst verloren) */
   let pending = $state<string | null>(null);
   /** Rückfrage oben bei den Vorlagen oder unten beim Zurücksetzen anzeigen (dort, wo geklickt wurde) */
@@ -325,6 +328,45 @@
             <label class="inline-check"><input type="checkbox" bind:checked={spec.b.device.collar} /> Rand außen, damit der Adapter nicht zu tief rutscht</label>
           {/if}
           {@render issueList(bIssues)}
+          {@const dv = spec.b.device}
+          {@const over = dv.mode === 'over'}
+          <details class="more" bind:open={extrasOpen}>
+            <summary>Extras <small>{over ? 'Rippen, Schlitze, Schrauben, Aussparung' : 'Rippen, Schrauben'}</small></summary>
+            <div class="more-body extras">
+              <div class="x-item">
+                <label class="inline-check"><input type="checkbox" bind:checked={dv.ribs} /> Klemmrippen für festen Sitz</label>
+                <p class="hint">Schmale Rippen {over ? 'innen' : 'außen'}, die sich beim {over ? 'Aufstecken' : 'Einstecken'} etwas zusammendrücken. Hilft, wenn der {over ? 'Stutzen' : 'Rand der Öffnung'} nicht genau rund ist oder der Adapter sonst wackelt.</p>
+              </div>
+              {#if over}
+                <div class="x-item">
+                  <label class="inline-check"><input type="checkbox" bind:checked={dv.slots} /> Schlitze für eine Schlauchschelle</label>
+                  <p class="hint">Drei Schlitze vom offenen Rand her. Eine Schelle außen drückt den Adapter dann fest auf den Stutzen.</p>
+                </div>
+              {/if}
+              <div class="x-item">
+                <label class="inline-check"><input type="checkbox" bind:checked={dv.holes} /> 3 Löcher für Schrauben</label>
+                <p class="hint">{over ? 'Ø 4 mm mit Senkung, für kleine Senkkopfschrauben in den Stutzen.' : 'Ø 3,2 mm zum Vorbohren: Schrauben von außen durch das Gerät in den Adapter drehen.'}</p>
+              </div>
+              {#if over}
+                <div class="x-item">
+                  <label class="inline-check"><input type="checkbox" bind:checked={dv.notch} /> Aussparung am Rand</label>
+                  <p class="hint">Ein Ausschnitt am offenen Rand, zum Beispiel für einen Schalter oder eine Lasche am Gerät. Liegt dieses Ende beim Drucken unten, überbrückt der Drucker die Aussparung, bis etwa 25 mm Breite geht das ohne Stützen.</p>
+                  {#if dv.notch}
+                    <div class="grid2">
+                      <Field label="Breite"><NumberField bind:value={dv.notchW} min={3} max={150} step={1} label="Breite der Aussparung" /></Field>
+                      <Field label="Tiefe" help="Wie weit die Aussparung vom Rand in den Adapter reicht."><NumberField bind:value={dv.notchH} min={2} max={150} step={1} label="Tiefe der Aussparung" /></Field>
+                    </div>
+                    <Field label="Lage" help="Auf welcher Seite die Aussparung sitzt. Einfach ausprobieren und in der Vorschau ansehen.">
+                      <div class="row">
+                        {@render chipsWithField([0, 90, 180, 270], () => dv.notchDir, (v) => (dv.notchDir = v))}
+                        <span class="num-sm"><NumberField bind:value={dv.notchDir} min={0} max={359} step={5} unit="°" label="Lage der Aussparung" /></span>
+                      </div>
+                    </Field>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          </details>
           <details class="more">
             <summary>Feineinstellungen <small>meist nicht nötig</small></summary>
             <div class="more-body">
@@ -458,6 +500,10 @@
   .add-btn svg { flex: none; width: 13px; height: 13px; stroke: var(--sky-d); stroke-width: 2; stroke-linecap: round; }
   .add-btn:hover { border-color: var(--sky); }
 
+  .extras { display: flex; flex-direction: column; gap: 12px; }
+  .x-item :global(.inline-check) { margin: 0; }
+  .x-item > .hint { margin: 2px 0 0 26px; }
+  .x-item :global(.grid2), .x-item :global(.field) { margin-left: 26px; }
   .fi-opt { margin-top: 22px; }
   .fi-issues { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
   .fi-issues li { padding: 8px 12px; border-radius: 4px; border-left: 4px solid var(--signal); background: #fdf6dc; }
