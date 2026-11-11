@@ -12,7 +12,7 @@ import type { Dimensions } from './viewer';
 import { slipRingGapMax } from './osvac/hose';
 import { estimateFilament } from './filament';
 import { userMessage } from './errors';
-import { TEMPLATES, planFree, freeSummary, withFreshIds, type FreeSpec } from './osvac/freeform';
+import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
@@ -238,7 +238,10 @@ class AppState {
   }
   /** schnelle Vorschau ohne Rändelung und Schrift */
   quickSpec() {
-    return makeBuild(this.kindId, $state.snapshot(this.input), { text: false, knurl: false, supports: true, ...$state.snapshot(this.buildOpts) });
+    const opts = $state.snapshot(this.buildOpts) as { free?: FreeSpec };
+    // Freiform: Extras am Gerät erst in der vollen Berechnung (jeder Schnitt kostet Zeit)
+    if (opts.free) opts.free.b.device = { ...opts.free.b.device, ribs: false, slots: false, holes: false, notch: false };
+    return makeBuild(this.kindId, $state.snapshot(this.input), { text: false, knurl: false, supports: true, ...opts });
   }
   /** alles, was eine neue Berechnung auslöst */
   buildKey = $derived(
@@ -303,6 +306,30 @@ class AppState {
       freeTemplate: this.freeTemplate,
     }),
   );
+  /** Stand beim ersten Start (zum Vergleich für „Neu anfangen“; ohne Schritt, Freiform ohne IDs) */
+  private static strip(j: string) {
+    const o = JSON.parse(j);
+    delete o.step;
+    if (o.free) o.free = specKey(o.free);
+    return JSON.stringify(o);
+  }
+  private readonly startKey = AppState.strip(this.saved);
+  /** Ist etwas anders als beim ersten Start der App? */
+  changed = $derived(AppState.strip(this.saved) !== this.startKey);
+  /** Alle Eingaben auf den Anfang; Druckbett und fertige Dateien bleiben */
+  resetAll() {
+    this.kindId = 'MF';
+    this.input = { ...START_INPUT };
+    this.text = true;
+    this.supports = true;
+    this.machine = { ...MACHINE_DEFAULT };
+    this.free = TEMPLATES[0].make();
+    this.freeTemplate = TEMPLATES[0].id;
+    this.freeOpen = null;
+    this.helpOpen = {};
+    this.errorMsg = '';
+    this.step = 0;
+  }
   save() {
     try {
       localStorage.setItem(STORE_KEY, this.saved);

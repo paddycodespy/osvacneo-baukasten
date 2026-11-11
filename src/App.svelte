@@ -129,7 +129,8 @@
     return { level: 'ok', text: `Druckt so ohne Stützen${app.hasSupport ? ' (nur die Druckhilfe unter dem Stecker wird mitgedruckt)' : ''}.` };
   });
 
-  const busyText = $derived(app.progress && app.progress.total > 1 ? `Wird berechnet… ${app.progress.done} von ${app.progress.total} Teilen` : 'Wird berechnet…');
+  // Zähler erst, wenn das erste Teil fertig ist („0 von 9“ sähe nach Stillstand aus)
+  const busyText = $derived(app.progress && app.progress.total > 1 && app.progress.done > 0 ? `Wird berechnet… ${app.progress.done} von ${app.progress.total} Teilen` : 'Wird berechnet…');
 
   onMount(() => {
     viewer = new PartViewer(host);

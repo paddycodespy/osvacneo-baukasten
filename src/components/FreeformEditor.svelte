@@ -10,6 +10,8 @@
   import BlockFigure from './BlockFigure.svelte';
   import MeasureFigure from './MeasureFigure.svelte';
   import ResetLink from './ResetLink.svelte';
+  import NotchFigure from './NotchFigure.svelte';
+  import { reveal } from '../lib/reveal';
   import { TEMPLATES, SLOT_SHAPES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, type FreeSpec, type Block, type BlockType, type Issue, type Section } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | null;
@@ -27,6 +29,12 @@
   /** Extras am Gerät: anfangs offen, wenn schon welche gewählt sind; danach so, wie der Nutzer es aufklappt */
   const anyExtra = (d: FreeSpec['b']['device']) => d.ribs || d.holes || (d.mode === 'over' && ((d.slots && SLOT_SHAPES.has(d.section.shape)) || d.notch));
   let extrasOpen = $state(anyExtra(spec.b.device));
+  /** „Versetzen, knicken, drehen“: anfangs offen, wenn Werte gesetzt sind; danach so, wie der Nutzer es aufklappt (nicht zuklappen, nur weil alles 0 ist) */
+  const openMore = new Map<number, boolean>();
+  function moreOpen(b: Block) {
+    if (!openMore.has(b.id)) openMore.set(b.id, !!(b.type === 'transition' && (b.offset || b.tilt || b.twist)));
+    return openMore.get(b.id)!;
+  }
   /** Vorlage, die nach Rückfrage geladen werden soll (der eigene Aufbau ginge sonst verloren) */
   let pending = $state<string | null>(null);
   /** Rückfrage oben bei den Vorlagen oder unten beim Zurücksetzen anzeigen (dort, wo geklickt wurde) */
@@ -133,7 +141,7 @@
 
 {#snippet confirmBox()}
   {@const t = TEMPLATES.find((x) => x.id === pending)}
-  <div class="confirm" class:bottom={pendingAt === 'bottom'} role="alertdialog" aria-label="Vorlage laden">
+  <div class="confirm" class:bottom={pendingAt === 'bottom'} role="alertdialog" aria-label="Vorlage laden" use:reveal>
     <p>Deine Änderungen am Aufbau gehen verloren, wenn du {pending === template ? `auf „${t?.title}“ zurücksetzt` : `„${t?.title}“ lädst`}.</p>
     <div class="confirm-btns">
       <button type="button" class="ghost sm" onclick={() => (pending = null)}>Behalten</button>
@@ -247,7 +255,7 @@
                 <NumberField bind:value={b.length} min={2} max={300} step={1} label="Länge des Übergangs" />
               </Field>
             </div>
-            <details class="more" open={!!(b.offset || b.tilt || b.twist)}>
+            <details class="more" open={moreOpen(b)} ontoggle={(e) => openMore.set(b.id, e.currentTarget.open)}>
               <summary>Versetzen, knicken, drehen <small>für geschwungene Formen</small></summary>
               <div class="more-body">
                 <div class="grid2">
@@ -356,7 +364,8 @@
                       <Field label="Breite"><NumberField bind:value={dv.notchW} min={3} max={150} step={1} label="Breite der Aussparung" /></Field>
                       <Field label="Tiefe" help="Wie weit die Aussparung vom Rand in den Adapter reicht."><NumberField bind:value={dv.notchH} min={2} max={150} step={1} label="Tiefe der Aussparung" /></Field>
                     </div>
-                    <Field label="Lage" help="Auf welcher Seite die Aussparung sitzt. Einfach ausprobieren und in der Vorschau ansehen.">
+                    <Field label="Lage" help="Auf welcher Seite die Aussparung sitzt. Die Skizze zeigt den Stutzen von vorne, rot ist die Aussparung. Auf die Skizze tippen oder einen Winkel wählen.">
+                      <NotchFigure section={dv.section} dir={dv.notchDir} width={dv.notchW} onpick={(v) => (dv.notchDir = v)} />
                       <div class="row">
                         {@render chipsWithField([0, 90, 180, 270], () => dv.notchDir, (v) => (dv.notchDir = v))}
                         <span class="num-sm"><NumberField bind:value={dv.notchDir} min={0} max={359} step={5} unit="°" label="Lage der Aussparung" /></span>

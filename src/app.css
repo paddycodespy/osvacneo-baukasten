@@ -539,3 +539,9 @@ legend.field-label { width: 100%; }
 /* Fehler, bevor je ein Modell zu sehen war: Hinweis statt leerer Vorschau */
 .stage-empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 12%; pointer-events: none; }
 .stage-empty p { margin: 0; max-width: 380px; padding: 14px 18px; border-radius: 10px; background: rgba(255, 255, 255, 0.94); text-align: center; font-size: 15px; line-height: 1.5; color: var(--slate); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12); }
+
+/* Rückfrage direkt an der Stelle des Klicks (Neu anfangen, Vorlage laden) */
+.confirm { margin: 18px 0 4px; padding: 10px 12px; border-radius: 8px; border-left: 4px solid var(--signal); background: #fdf6dc; font-size: 14px; }
+.confirm p { margin: 0 0 8px; }
+.confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.license .version { margin-top: 10px; font-size: 12px; }
