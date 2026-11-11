@@ -94,6 +94,12 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByLabel('Aussparung am Rand').check();
     await fill(pg, 'Breite der Aussparung', '150');
     expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'Download trotz Fehler wählbar');
+    // Meldung nennt Feld und Wert, das Feld ist markiert, der Knopf übernimmt den Wert
+    expect((await pg.locator('.num-in.flag-error input[aria-label="Breite der Aussparung"]').count()) === 1, 'Feld nicht markiert');
+    await pg.locator('.fix', { hasText: 'Breite der Aussparung auf' }).click();
+    await pg.waitForTimeout(200);
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Vorschlag behebt den Fehler nicht');
+    expect((await pg.locator('.num-in.flag-error').count()) === 0, 'Markierung bleibt nach dem Beheben');
     await fill(pg, 'Breite der Aussparung', '20');
     expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download nach Korrektur weiter gesperrt');
     await pg.getByLabel('Aussparung am Rand').uncheck();
@@ -155,7 +161,8 @@ await withPreview(4180, async (url, browser) => {
     await fill(pg, 'Rand des Flanschs', '10');
     expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'zu schmaler Rand nicht gesperrt');
     expect((await pg.locator('.card.open').innerText()).includes('mindestens 18 mm'), 'keine verständliche Meldung zum Rand');
-    await fill(pg, 'Rand des Flanschs', '18');
+    await pg.locator('.fix', { hasText: 'Rand auf 18 mm setzen' }).click();
+    expect((await pg.getByLabel('Rand des Flanschs', { exact: true }).inputValue()) === '18', 'Knopf setzt den Rand nicht');
     await pg.locator('.card.open summary', { hasText: 'Feineinstellungen' }).click();
     await pg.getByRole('radio', { name: 'Rund', exact: true }).click();
     expect(await pg.getByLabel('Lochkreis-Durchmesser', { exact: true }).first().isVisible(), 'Felder für den Lochkreis fehlen');

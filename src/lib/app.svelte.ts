@@ -142,20 +142,31 @@ class AppState {
   });
 
   /** Plausibilität der Stutzen-Maße (wird schon im Schritt Größen angezeigt) */
+  /** Hinweise zum Stutzen, mit Vorschlag „… auf … setzen“ (fields: Beschriftung der Zahlenfelder, die markiert werden) */
   machineWarnings = $derived.by(() => {
-    const w: string[] = [];
+    const w: { text: string; fixes?: { label: string; fields: string[]; set: () => void }[] }[] = [];
     if (!this.kind.machine) return w;
     const m = this.machine, pipe = this.pipe;
+    const f = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 1 });
+    const depth = (v: number) => ({ label: `Tiefe auf ${v} mm setzen`, fields: ['Tiefe (Steckweg)'], set: () => void (this.machine.length = v) });
     if (m.mode === 'over' && m.dDepth < m.dOpen - 0.05)
-      w.push('Hinten ist der Stutzen dünner als vorne. Das ist ungewöhnlich, so ginge der Adapter nicht drauf. Bitte nachmessen.');
+      w.push({ text: 'Hinten ist der Stutzen dünner als vorne. Das ist ungewöhnlich, so ginge der Adapter nicht drauf. Bitte nachmessen.' });
     if (m.mode === 'into' && m.dDepth > m.dOpen + 0.05)
-      w.push('Innen ist die Öffnung weiter als vorne. Das ist ungewöhnlich, so ginge der Adapter nicht hinein. Bitte nachmessen.');
-    if (Math.abs(m.dOpen - m.dDepth) > 8) w.push('Vorne und in der Tiefe unterscheiden sich um mehr als 8 mm. Bitte nachmessen.');
-    if (pipe.d1Inner < 8 || pipe.d2Inner < 8) w.push('Innen bleiben weniger als 8 mm frei. Maße oder Wandstärke prüfen.');
-    else if (Math.min(pipe.d1Inner, pipe.d2Inner) < 0.5 * (this.kind.ends.top === 'female' ? this.input.femaleDiameterInner : this.input.maleDiameterInner))
-      w.push('Das Rohrteil ist innen weniger als halb so weit wie der Anschluss. Das bremst die Absaugung stark.');
-    if (m.length < 10) w.push(`Unter 10 mm Tiefe hält der Adapter kaum ${m.mode === 'over' ? 'auf dem Stutzen' : 'in der Öffnung'}.`);
-    if (m.holes && m.length < 12) w.push('Für die Schraubenlöcher braucht es mindestens 12 mm Tiefe. Tiefe erhöhen oder die Löcher in den Feineinstellungen abwählen.');
+      w.push({ text: 'Innen ist die Öffnung weiter als vorne. Das ist ungewöhnlich, so ginge der Adapter nicht hinein. Bitte nachmessen.' });
+    if (Math.abs(m.dOpen - m.dDepth) > 8) w.push({ text: 'Vorne und in der Tiefe unterscheiden sich um mehr als 8 mm. Bitte nachmessen.' });
+    if (pipe.d1Inner < 8 || pipe.d2Inner < 8) {
+      // eingesteckt: dünnere Wand lässt innen mehr Platz (Innen-Ø = Öffnung − Luft − 2 × Wand)
+      const wMax = Math.floor(((Math.min(m.dOpen, m.dDepth) - m.allowance - 8) / 2) * 2) / 2;
+      const fix = m.mode === 'into' && wMax >= 2 && wMax < m.wall ? [{ label: `Wandstärke auf ${f(wMax)} mm setzen`, fields: ['Wandstärke'], set: () => void (this.machine.wall = wMax) }] : undefined;
+      w.push({ text: 'Innen bleiben weniger als 8 mm frei. Maße oder Wandstärke prüfen.', fixes: fix });
+    } else if (Math.min(pipe.d1Inner, pipe.d2Inner) < 0.5 * (this.kind.ends.top === 'female' ? this.input.femaleDiameterInner : this.input.maleDiameterInner))
+      w.push({ text: 'Das Rohrteil ist innen weniger als halb so weit wie der Anschluss. Das bremst die Absaugung stark.' });
+    if (m.length < 10) w.push({ text: `Unter 10 mm Tiefe hält der Adapter kaum ${m.mode === 'over' ? 'auf dem Stutzen' : 'in der Öffnung'}. Ab 10 mm hält er besser.`, fixes: [depth(10)] });
+    if (m.holes && m.length < 12)
+      w.push({
+        text: 'Für die Schraubenlöcher braucht es mindestens 12 mm Tiefe. Tiefe erhöhen oder die Löcher in den Feineinstellungen abwählen.',
+        fixes: [depth(12), { label: 'Schraubenlöcher abwählen', fields: [], set: () => void (this.machine.holes = false) }],
+      });
     return w;
   });
 
@@ -166,7 +177,7 @@ class AppState {
       if (!(v >= 15 && v <= 60)) w.push(`${LABELS[k].name}: ${fmt(v)} mm liegt außerhalb von 15 bis 60 mm.`);
       else if (!LABELS[k].presets.includes(v)) w.push(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
     }
-    w.push(...this.machineWarnings);
+    w.push(...this.machineWarnings.map((x) => x.text));
     if (this.kind.freeform) w.push(...this.freeIssues.map((x) => x.text), ...this.buildNotes);
     // übliche Druckbetten: 220–256 mm Kantenlänge, Bauhöhe ab 250 mm
     if (this.dims && (this.dims.width > 220 || this.dims.height > 250))

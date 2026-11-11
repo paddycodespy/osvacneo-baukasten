@@ -166,11 +166,11 @@ if (!only || only === 'flansch-pruefungen') {
     ['Löcher zu dicht', { flangeLayout: 'rect', plateW: 140, plateH: 140, holeX: 9, holeY: 100 }, 'zu dicht'],
     ['Platte zu dünn', { flangeT: 2 }, 'dick sein'],
   ];
-  const wrong = expect.filter(([, v, t]) => !flangeGeom({ ...base, ...v }, 3).errors.some((e) => e.includes(t))).map(([n]) => n);
+  const wrong = expect.filter(([, v, t]) => !flangeGeom({ ...base, ...v }, 3).errors.some((e) => e.text.includes(t))).map(([n]) => n);
   // Löcher je Seite: 3 × 2 → 6 auf dem Rand, 4 × 3 → 10 (nicht in der Mitte)
   for (const [nx, ny, n] of [[3, 2, 6], [4, 3, 10], [2, 2, 4]] as const) {
     const g = flangeGeom({ ...base, section: sec('rect', { w: 60, h: 40, r: 5, r2: 5 }), flangeLayout: 'rect', plateW: 170, plateH: 120, holeX: 150, holeY: 100, holeNX: nx, holeNY: ny }, 3);
-    if (g.errors.length || g.holes.length !== n) wrong.push(`Löcher je Seite ${nx} × ${ny}: ${g.holes.length} statt ${n} ${g.errors.join(' ')}`);
+    if (g.errors.length || g.holes.length !== n) wrong.push(`Löcher je Seite ${nx} × ${ny}: ${g.holes.length} statt ${n} ${g.errors.map((e) => e.text).join(' ')}`);
   }
   // breiteres Dichtband braucht mehr Rand
   if (!(flangeMinRim(3, true, 10) > flangeMinRim(3, true, 6))) wrong.push('Rand wächst nicht mit dem Dichtband');
@@ -190,14 +190,72 @@ if (!only || only === 'flansch-pruefungen') {
           const sealW = [6, 9, 10][d % 3];
           const dv = { ...base, section: sec(shape, { d, w: d * 1.6, h: d, r: 5, r2: 3, w2: d }), seal, sealW, flangeRim: flangeMinRim(3, seal, sealW) };
           const e = flangeGeom({ ...dv, ...flangeDefaults(dv, 3), flangeLayout: lay }, 3).errors;
-          if (e.length) wrong.push(`Vorbelegung ${shape} ${d} ${seal ? 'mit Dichtung ' : ''}${lay}: ${e[0]}`);
+          if (e.length) wrong.push(`Vorbelegung ${shape} ${d} ${seal ? 'mit Dichtung ' : ''}${lay}: ${e[0].text}`);
         }
   const okRim = flangeGeom({ ...base, seal: true, flangeRim: flangeMinRim(3, true) }, 3).errors;
-  if (okRim.length) wrong.push('kleinster Rand mit Dichtung: ' + okRim.join(' '));
+  if (okRim.length) wrong.push('kleinster Rand mit Dichtung: ' + okRim.map((e) => e.text).join(' '));
   const bedA = planFree({ ...TEMPLATES[3].make(), bed: 'A', b: { ...TEMPLATES[3].make().b, device: base } }).issues.some((x) => x.level === 'error' && x.text.includes('Ende B'));
   if (!bedA) wrong.push('Flansch mit A unten nicht abgefangen');
   if (wrong.length) fail++;
   console.log(`${wrong.length ? 'FEHLER' : 'ok    '} flansch-pruefungen         ${wrong.length ? wrong.join(', ') : `${expect.length + 7} Prüfungen`}`);
+}
+
+// Vorschläge („… auf … setzen“): jede Meldung mit Vorschlag verschwindet, wenn man ihn übernimmt
+if (!only || only === 'vorschlaege') {
+  const wrong: string[] = [];
+  let n = 0;
+  const flange = (v: Partial<FreeSpec['b']['device']>) => {
+    const s = TEMPLATES.find((t) => t.id === 'flange')!.make();
+    s.b.device = { ...s.b.device, ...v };
+    return s;
+  };
+  const broken: [string, FreeSpec][] = [];
+  {
+    const s = TEMPLATES[0].make();
+    s.blocks[0].radius = 10;
+    broken.push(['Bogen-Radius zu klein', s]);
+    const e = TEMPLATES[0].make();
+    e.blocks[0].radius = 25;
+    broken.push(['enger Bogen', e]);
+    const t = TEMPLATES[2].make();
+    t.blocks[1].length = 8;
+    broken.push(['Übergang steil/Versatz', t]);
+    const k = TEMPLATES[2].make();
+    k.blocks[1].tilt = 120;
+    broken.push(['Knick zu groß', k]);
+    const d = TEMPLATES[3].make();
+    d.b.device = { ...d.b.device, section: sec('dshape', { d: 40, h: 18, r: 3 }), length: 8, holes: true, ribs: true, notch: true, notchW: 200, notchH: 1 };
+    broken.push(['D-Form, Tiefe, Extras', d]);
+    const g = TEMPLATES[3].make();
+    g.b.device = { ...g.b.device, section: sec('circle', { d: 70 }), dDepth: 70 };
+    g.b.transition = 4;
+    broken.push(['Schräge zum Gerät', g]);
+    const w = TEMPLATES[3].make();
+    w.wall = 9;
+    broken.push(['Wand zu dick', w]);
+  }
+  broken.push(['Flansch Rand', flange({ flangeRim: 8 })]);
+  broken.push(['Flansch Dicke', flange({ flangeT: 2 })]);
+  broken.push(['Lochkreis zu klein', flange({ flangeLayout: 'round', plateD: 110, holeCircle: 64, holeN: 4 })]);
+  broken.push(['Löcher am Plattenrand rund', flange({ flangeLayout: 'round', plateD: 100, holeCircle: 98, holeN: 4 })]);
+  broken.push(['Löcher zu dicht rund', flange({ section: sec('circle', { d: 20 }), flangeLayout: 'round', plateD: 80, holeCircle: 46, holeN: 16 })]);
+  broken.push(['Platte zu klein rechteckig', flange({ flangeLayout: 'rect', plateW: 60, plateH: 60, holeX: 40, holeY: 40 })]);
+  broken.push(['Lochabstand zu klein', flange({ flangeLayout: 'rect', plateW: 140, plateH: 140, holeX: 40, holeY: 40 })]);
+  broken.push(['Löcher am Plattenrand rechteckig', flange({ flangeLayout: 'rect', plateW: 110, plateH: 110, holeX: 106, holeY: 106 })]);
+  broken.push(['Löcher zu dicht rechteckig', flange({ section: sec('circle', { d: 20 }), flangeLayout: 'rect', plateW: 80, plateH: 80, holeX: 40, holeY: 40, holeNX: 6, holeNY: 6 })]);
+  for (const [name, s] of broken) {
+    const issues = planFree(s).issues.filter((x) => x.fixes?.length);
+    if (!issues.length) wrong.push(`${name}: keine Meldung mit Vorschlag`);
+    for (const x of issues)
+      for (const fx of x.fixes!) {
+        n++;
+        const c = structuredClone(s);
+        fx.set(c);
+        if (planFree(c).issues.some((y) => y.text === x.text)) wrong.push(`${name}: „${fx.label}“ behebt „${x.text}“ nicht`);
+      }
+  }
+  if (wrong.length) fail++;
+  console.log(`${wrong.length ? 'FEHLER' : 'ok    '} vorschlaege                ${wrong.length ? wrong.join(' | ') : `${n} Vorschläge in ${broken.length} Fällen`}`);
 }
 
 // Stutzen-Typen mit Klemmrippen und Schlitzen (aufgesteckt/eingesteckt, gerade/konisch, mit/ohne Löcher und Text)

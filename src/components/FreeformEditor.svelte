@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { setContext } from 'svelte';
   /**
    * Schritt „Aufbau“ des Freiform-Adapters: Vorlage, Anschluss A, Bausteine (in der Reihenfolge von A nach B), Ende B, Druckbett.
    * Immer nur ein Baustein ist aufgeklappt; zugeklappt zeigt jeder Baustein eine Kurzfassung seiner Maße.
@@ -112,6 +113,15 @@
   const blockIssues = (i: number) => issues.filter((x) => x.text.includes(`(Baustein ${i + 1})`));
   const bIssues = $derived(issues.filter((x) => x.text.startsWith('Gerät') || x.text.startsWith('Ende B')));
   const otherIssues = $derived(issues.filter((x) => !/\(Baustein \d+\)/.test(x.text) && !x.text.startsWith('Gerät') && !x.text.startsWith('Ende B')));
+  /** Felder markieren, die eine Meldung der aufgeklappten Karte (oder des ganzen Aufbaus) betrifft */
+  const flagged = $derived.by(() => {
+    const idx = typeof open === 'number' ? spec.blocks.findIndex((b) => b.id === open) : -1;
+    const list = [...otherIssues, ...(open === 'B' ? bIssues : idx >= 0 ? blockIssues(idx) : [])];
+    const m = new Map<string, 'error' | 'warn'>();
+    for (const x of list) for (const fx of x.fixes ?? []) for (const f of fx.fields) if (m.get(f) !== 'error') m.set(f, x.level);
+    return m;
+  });
+  setContext('fieldFlag', (label: string) => flagged.get(label) ?? null);
   const strip = (t: string) => t.replace(/^[^:]*\(Baustein \d+\): /, '').replace(/^(Gerät|Ende B): /, '');
 
   const endName = (t: FreeSpec['b']['type']) => (t === 'device' ? 'Gerät' : t === 'female' ? 'Kupplung' : 'Stecker');
@@ -130,7 +140,7 @@
     if (m === 'flange') spec.bed = 'B';
   }
   /** Werte des Lochbilds nach Maß (für den Vergleich mit der Vorbelegung) */
-  const CUSTOM = ['plateW', 'plateH', 'holeX', 'holeY', 'holeNX', 'holeNY', 'plateD', 'holeCircle', 'holeD'] as const;
+  const CUSTOM = ['plateW', 'plateH', 'holeX', 'holeY', 'holeNX', 'holeNY', 'plateD', 'holeCircle', 'holeN', 'holeD'] as const;
   const customKey = (o: Partial<FreeSpec['b']['device']>) => JSON.stringify(CUSTOM.map((k) => o[k]));
   /** zuletzt vorbelegte Werte: solange nichts von Hand geändert wurde, laufen sie mit der Öffnung mit */
   let prefilled: string | null = null;
@@ -165,7 +175,7 @@
     dv.sealW = w;
     if (on && dv.flangeLayout === 'auto') dv.flangeRim = Math.max(dv.flangeRim, flangeMinRim(spec.wall, true, w));
   }
-  const flange = $derived(isFlange ? flangeGeom(spec.b.device, spec.wall) : null);
+  const flange = $derived(isFlange ? flangeGeom(spec.b.device, spec.wall, false) : null);
   $effect(() => {
     if (isFlange && spec.bed !== 'B') spec.bed = 'B';
   });
@@ -202,7 +212,14 @@
 {#snippet issueList(list: Issue[])}
   {#if list.length}
     <ul class="fi-issues">
-      {#each list as x}<li class={x.level}>{strip(x.text)}</li>{/each}
+      {#each list as x}
+        <li class={x.level}>
+          {strip(x.text)}
+          {#if x.fixes?.length}
+            <span class="fixes">{#each x.fixes as fx}<button type="button" class="fix" onclick={() => fx.set(spec)}>{fx.label}</button>{/each}</span>
+          {/if}
+        </li>
+      {/each}
     </ul>
   {/if}
 {/snippet}
