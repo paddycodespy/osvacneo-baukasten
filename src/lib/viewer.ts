@@ -107,6 +107,8 @@ export class PartViewer {
   private model = new THREE.Group();
   private bed: THREE.Mesh;
   private clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+  /** Druckbett vergrößert, wenn der Adapter nicht auf 170 mm passt */
+  private bedScale = 1;
   private ro: ResizeObserver;
   private disposed = false;
   private framed = false;
@@ -217,9 +219,15 @@ export class PartViewer {
         for (let i = 0; i < pos.length; i += 3) rMax = Math.max(rMax, Math.hypot(pos[i], pos[i + 1]));
       }
     }
-    // auf das Druckbett stellen
-    this.model.position.z = -box.min.z;
+    // auf das Druckbett stellen und in x/y mittig darauf (große Freiform-Adapter ragten sonst über den Rand)
+    const c = box.getCenter(new THREE.Vector3());
+    const snap = (v: number) => (Math.abs(v) < 0.01 ? 0 : -v);
+    this.model.position.set(snap(c.x), snap(c.y), -box.min.z);
+    // Druckbett mitwachsen lassen, wenn der Adapter größer ist (12 mm Rand)
     const size = partBox.getSize(new THREE.Vector3());
+    const all = box.getSize(new THREE.Vector3());
+    this.bedScale = Math.max(1, (Math.max(all.x, all.y) + 24) / BED);
+    this.bed.scale.set(this.bedScale, this.bedScale, 1);
     if (!this.framed) this.frame(box);
     this.needsRender = true;
     return { height: size.z, diameter: 2 * rMax, width: Math.max(size.x, size.y) };
@@ -228,8 +236,9 @@ export class PartViewer {
   /** Kamera so setzen, dass Bauteil und Druckbett vollständig und mittig im Bild sind. */
   private frame(box: THREE.Box3) {
     const all = box.clone();
-    all.translate(new THREE.Vector3(0, 0, -box.min.z)); // Modell steht auf dem Bett
-    all.union(new THREE.Box3(new THREE.Vector3(-BED / 2, -BED / 2, -3), new THREE.Vector3(BED / 2, BED / 2, 0)));
+    all.translate(this.model.position); // Modell steht mittig auf dem Bett
+    const half = (BED * this.bedScale) / 2;
+    all.union(new THREE.Box3(new THREE.Vector3(-half, -half, -3), new THREE.Vector3(half, half, 0)));
     const sphere = all.getBoundingSphere(new THREE.Sphere());
     const target = sphere.center.clone();
     const dir = new THREE.Vector3(0.52, -0.66, 0.62).normalize();
@@ -267,7 +276,7 @@ export class PartViewer {
   resetView() {
     this.framed = false;
     const box = new THREE.Box3().setFromObject(this.model);
-    box.translate(new THREE.Vector3(0, 0, -this.model.position.z));
+    box.translate(this.model.position.clone().negate()); // zurück in Modellkoordinaten, frame() verschiebt wieder
     this.frame(box);
     this.needsRender = true;
   }

@@ -9,7 +9,7 @@
   import { build, partNames } from './lib/cad';
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
-  import { overhangArea } from './lib/overhang';
+  import { overhangArea, belowBedEnd } from './lib/overhang';
   import { freeSummary } from './lib/osvac/freeform';
   import { app, fmt } from './lib/app.svelte';
   import FreeformEditor from './components/FreeformEditor.svelte';
@@ -51,6 +51,7 @@
     app.measures = null; // Filamentangabe gehört zur alten Konfiguration
     app.progress = null;
     app.buildNotes = [];
+    app.layoutError = '';
     try {
       app.status = 'preview';
       if (shownKind && shownKind !== kindId) {
@@ -86,6 +87,11 @@
       app.dims = v.setBodies(full.bodies);
       app.overhang = app.kind.freeform ? overhangArea(full.bodies) : 0;
       app.buildNotes = full.notes;
+      const below = app.kind.freeform ? belowBedEnd(full.bodies, app.free.bed) : 0;
+      app.layoutError =
+        below > 0.3
+          ? `Ein Teil des Adapters liegt ${fmt(below, 0)} mm tiefer als ${app.free.bed === 'B' ? 'Ende B' : 'Anschluss A'}. So liegt das Ende nicht auf dem Druckbett und der Adapter lässt sich nicht drucken. Bitte das andere Ende nach unten legen oder einen Bogen in eine andere Richtung zeigen lassen.`
+          : '';
       app.measures = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
       app.progress = null;
       app.status = 'ready';
@@ -130,7 +136,8 @@
   });
 
   /** Hinweis zum Drucken schon im Aufbau (erst sicher, wenn die Berechnung fertig ist) */
-  const printNote = $derived.by((): { text: string; level: 'ok' | 'warn' } | null => {
+  const printNote = $derived.by((): { text: string; level: 'ok' | 'warn' | 'error' } | null => {
+    if (app.layoutError) return { level: 'error', text: app.layoutError };
     if (app.status !== 'ready') return null;
     if (app.needsSupportMaterial)
       return { level: 'warn', text: 'Ein Teil hängt beim Drucken schräg in der Luft. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Manchmal reicht es auch, das andere Ende nach unten zu legen.' };
@@ -189,9 +196,10 @@
         {/if}
         <div><dt>PETG ca.</dt><dd>{app.gramsText}<span>g</span></dd></div>
       </dl>
-      <p class="status" data-s={app.status} role="status">
+      <p class="status" data-s={app.layoutError ? 'error' : app.status} role="status">
         {#if app.status === 'start'}CAD-Kern wird geladen…
         {:else if app.status === 'preview' || app.status === 'detail'}{busyText}
+        {:else if app.status === 'ready' && app.layoutError}So nicht druckbar, Hinweis rechts
         {:else if app.status === 'ready'}Bereit zum Download
         {:else}Fehler beim Berechnen, Hinweis rechts{/if}
       </p>

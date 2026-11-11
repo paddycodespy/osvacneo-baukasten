@@ -22,7 +22,7 @@ async function ready(pg: Page) {
   const status = pg.locator('.stage-foot .status');
   for (let i = 0; i < 600; i++) {
     const t = await status.innerText();
-    if (t.includes('Bereit')) return;
+    if (t.includes('Bereit') || t.includes('nicht druckbar')) return;
     if (t.includes('Fehler')) throw new Error('Berechnung fehlgeschlagen: ' + (await pg.locator('.error').allInnerTexts()).join(' '));
     await pg.waitForTimeout(250);
   }
@@ -97,6 +97,25 @@ await withPreview(4180, async (url, browser) => {
     await fill(pg, 'Breite der Aussparung', '20');
     expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download nach Korrektur weiter gesperrt');
     await pg.getByLabel('Aussparung am Rand').uncheck();
+  });
+
+  await test('Teil unter dem Druckbett sperrt den Download', pg, async () => {
+    // U-Bogen: Anschluss A ragt tiefer als Ende B auf dem Bett
+    await pg.locator('.card-head', { hasText: 'Gerade' }).first().click();
+    await fill(pg, 'Länge der Geraden', '5');
+    await pg.locator('.add-btn', { hasText: 'Bogen' }).click();
+    await fill(pg, 'Winkel des Bogens', '180');
+    await fill(pg, 'Radius des Bogens', '40');
+    await pg.locator('.card-head', { hasText: 'Ende B' }).click();
+    await fill(pg, 'Steckweg', '10');
+    await ready(pg);
+    expect((await pg.locator('.print-note.error').innerText()).includes('tiefer als Ende B'), 'kein Hinweis auf das Teil unter dem Bett');
+    expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'Download trotz nicht druckbarem Adapter wählbar');
+    // Rückweg: Bogen entfernen, dann wieder frei
+    await pg.getByRole('button', { name: /^Bogen entfernen/ }).first().click();
+    await fill(pg, 'Steckweg', '25');
+    await ready(pg);
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download nach Korrektur weiter gesperrt');
   });
 
   await test('Stand nach dem Neuladen', pg, async () => {
