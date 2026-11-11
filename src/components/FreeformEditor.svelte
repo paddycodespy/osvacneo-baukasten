@@ -501,9 +501,12 @@
   .add-btn:hover { border-color: var(--sky); }
 
   .extras { display: flex; flex-direction: column; gap: 12px; }
+  /* Beschreibung und Felder beginnen dort, wo der Text neben dem Kästchen beginnt (18 px Kästchen + 10 px Abstand) */
+  .x-item { --x-indent: 28px; }
   .x-item :global(.inline-check) { margin: 0; }
-  .x-item > .hint { margin: 2px 0 0 26px; }
-  .x-item :global(.grid2), .x-item :global(.field) { margin-left: 26px; }
+  .x-item :global(.inline-check input) { margin: 0; flex: none; }
+  .x-item > .hint { margin: 2px 0 0 var(--x-indent); }
+  .x-item > :global(.grid2), .x-item > :global(.field) { margin-left: var(--x-indent); }
   .fi-opt { margin-top: 22px; }
   .fi-issues { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
   .fi-issues li { padding: 8px 12px; border-radius: 4px; border-left: 4px solid var(--signal); background: #fdf6dc; }
