@@ -340,16 +340,7 @@
     }
   }
 
-  // --- Zurücksetzen je Schritt: nur die Werte, die im jeweiligen Schritt zu sehen sind ---
-  const MACHINE_KEYS = ['dOpen', 'dDepth', 'length', 'wall', 'allowance', 'holes', 'transition'] as const;
-  /** Größen: Durchmesser des gewählten Typs und beim Stutzen dessen Maße (die Befestigungsart bleibt) */
-  const sizesDefault = $derived(
-    kind.diameters.every((k) => input[k] === START_INPUT[k]) && (!kind.machine || MACHINE_KEYS.every((k) => machine[k] === machineDefault(k))),
-  );
-  function resetSizes() {
-    for (const k of kind.diameters) input[k] = START_INPUT[k];
-    if (kind.machine) for (const k of MACHINE_KEYS) (machine[k] as number | boolean) = machineDefault(k) as number | boolean;
-  }
+  // --- Zurücksetzen: nur in „Passung“, wo man mit den Schiebern ausprobiert ---
   /** Passung: Spaltmaße, Materialstärke, Beschriftung, Druckhilfe */
   const fitDefault = $derived(
     input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
@@ -379,37 +370,12 @@
   {#if helpOpen[id]}<p class="help-text">{helpTexts[id]}</p>{/if}
 {/snippet}
 
-{#snippet resetBtn(isDefault: boolean, def: number, label: string, apply: () => void, small = false)}
-  <button
-    type="button"
-    class="reset"
-    class:sm={small}
-    class:hidden={isDefault}
-    aria-label="{label} auf den Standardwert {fmt(def, 2)} mm zurücksetzen"
-    onclick={apply}
-  >
-    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg><span>{fmt(def, 2)}</span>
-  </button>
-{/snippet}
-
-{#snippet reset(key: 'maleFemaleGapSize' | 'slipRingGapSize' | DiameterKey, label: string)}
-  {@render resetBtn(input[key] === START_INPUT[key], START_INPUT[key], label, () => (input[key] = START_INPUT[key]))}
-{/snippet}
-
 {#snippet resetStepBtn(isDefault: boolean, label: string, apply: () => void)}
   {#if !isDefault}
     <button type="button" class="reset-all" onclick={apply}>
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 1 1.6 3.9" /><path d="M4 5v4.5h4.5" /></svg>{label}
     </button>
   {/if}
-{/snippet}
-
-{#snippet resetSm(key: DiameterKey, label: string)}
-  {@render resetBtn(input[key] === START_INPUT[key], START_INPUT[key], label, () => (input[key] = START_INPUT[key]), true)}
-{/snippet}
-
-{#snippet machineReset(key: 'dOpen' | 'dDepth' | 'length' | 'wall' | 'allowance' | 'transition', label: string)}
-  {@render resetBtn(machine[key] === machineDefault(key), machineDefault(key) as number, label, () => ((machine[key] as number) = machineDefault(key) as number), true)}
 {/snippet}
 
 <header class="topbar">
@@ -486,11 +452,13 @@
                 <strong>{k.title}</strong>
                 <small>{k.available ? k.description : 'Folgt in der nächsten Version.'}</small>
               </span>
+              {#if !k.freeform}
               <span class="kind-code" aria-label={k.code}>
                 {#each codeParts(k.code) as part}
-                  {#if part.key}<b class="ck ck-{part.t}">{part.t}</b>{:else}<span class="cx">{part.t}</span>{/if}
+                  {#if part.key}<b class="ck">{part.t}</b>{:else}<span class="cx">{part.t}</span>{/if}
                 {/each}
               </span>
+              {/if}
             </button>
           {/each}
         </div>
@@ -502,7 +470,7 @@
         <p class="lead">Die Zahl ist der Innendurchmesser in Millimetern. Die meisten Geräte und Schläuche nutzen 32.</p>
         {#each kind.diameters as k}
           <fieldset class="dia dia-{LABELS[k].letter}">
-            <legend>{LABELS[k].word} (<b class="ck-{LABELS[k].letter}">{LABELS[k].letter}</b>)</legend>
+            <legend>{LABELS[k].word} ({LABELS[k].letter})</legend>
             <div class="dia-row">
               <div class="chips">
                 {#each LABELS[k].presets as v}
@@ -510,10 +478,9 @@
                 {/each}
               </div>
               <!-- Zahlenfeld und Zurücksetzen bleiben zusammen, auch wenn die Zeile umbricht -->
-              <span class="num-reset">
+
                 <NumberField value={input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => setDia(k, v)} />
-                {@render resetSm(k, LABELS[k].name)}
-              </span>
+
             </div>
           </fieldset>
         {/each}
@@ -530,9 +497,9 @@
               : 'Mit dem Messschieber innen messen: einmal vorne an der Kante und einmal dort, wo der Adapter enden soll.'}
           </p>
           <div class="grid2">
-            <Field label="Ø vorne"><span class="num-reset"><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" />{@render machineReset('dOpen', 'Ø vorne')}</span></Field>
-            <Field label="Ø in der Tiefe" help="Stutzen und Öffnungen sind oft leicht konisch. Sind beide Maße gleich, einfach denselben Wert eintragen."><span class="num-reset"><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" />{@render machineReset('dDepth', 'Ø in der Tiefe')}</span></Field>
-            <Field label="Tiefe" help={`Wie weit der Adapter ${machine.mode === 'over' ? 'über den Stutzen geht' : 'in die Öffnung reicht'}. 20 bis 30 mm halten gut.`}><span class="num-reset"><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" />{@render machineReset('length', 'Tiefe (Steckweg)')}</span></Field>
+            <Field label="Ø vorne"><NumberField bind:value={machine.dOpen} step={0.1} min={8} max={120} label="Ø vorne" /></Field>
+            <Field label="Ø in der Tiefe" help="Stutzen und Öffnungen sind oft leicht konisch. Sind beide Maße gleich, einfach denselben Wert eintragen."><NumberField bind:value={machine.dDepth} step={0.1} min={8} max={120} label="Ø in der Tiefe" /></Field>
+            <Field label="Tiefe" help={`Wie weit der Adapter ${machine.mode === 'over' ? 'über den Stutzen geht' : 'in die Öffnung reicht'}. 20 bis 30 mm halten gut.`}><NumberField bind:value={machine.length} step={1} min={5} max={100} label="Tiefe (Steckweg)" /></Field>
           </div>
           {#if machineWarnings.length}
             <ul class="warn">
@@ -543,9 +510,9 @@
             <summary>Feineinstellungen <small>meist nicht nötig</small></summary>
             <div class="more-body">
               <div class="grid2">
-                <Field label="Luft (Zugabe)" help={`Etwas Spiel, damit der Adapter passt. Geht er nicht ${machine.mode === 'over' ? 'drauf' : 'hinein'}: Wert erhöhen. Sitzt er zu locker: verringern, bis 0.`}><span class="num-reset"><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" />{@render machineReset('allowance', 'Zugabe für den Sitz')}</span></Field>
-                <Field label="Wandstärke" help="Dicke der Wand am Rohrteil. 3 mm sind stabil."><span class="num-reset"><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" />{@render machineReset('wall', 'Wandstärke')}</span></Field>
-                <Field label="Übergangslänge" help={`Länge des schrägen Stücks zwischen ${kind.id === 'MACHINE_M' ? 'Stecker' : 'Kupplung'} und Rohrteil. Länger ist flacher und lässt sich besser drucken, der Adapter wird dafür länger. Standard: 8 mm.`}><span class="num-reset"><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" />{@render machineReset('transition', 'Übergangslänge')}</span></Field>
+                <Field label="Luft (Zugabe)" help={`Etwas Spiel, damit der Adapter passt. Geht er nicht ${machine.mode === 'over' ? 'drauf' : 'hinein'}: Wert erhöhen. Sitzt er zu locker: verringern, bis 0.`}><NumberField bind:value={machine.allowance} step={0.05} min={0} max={2} label="Zugabe für den Sitz" /></Field>
+                <Field label="Wandstärke" help="Dicke der Wand am Rohrteil. 3 mm sind stabil."><NumberField bind:value={machine.wall} step={0.5} min={2} max={8} label="Wandstärke" /></Field>
+                <Field label="Übergangslänge" help={`Länge des schrägen Stücks zwischen ${kind.id === 'MACHINE_M' ? 'Stecker' : 'Kupplung'} und Rohrteil. Länger ist flacher und lässt sich besser drucken, der Adapter wird dafür länger. Standard: 8 mm.`}><NumberField bind:value={machine.transition} step={1} min={2} max={40} label="Übergangslänge" /></Field>
               </div>
               <label class="inline-check"><input type="checkbox" bind:checked={machine.holes} /> 3 Löcher für Schrauben (Ø 4 mm)</label>
               <p class="hint">Mit kleinen Senkkopfschrauben hält der Adapter zusätzlich am Stutzen.</p>
@@ -564,7 +531,6 @@
             </div>
           </details>
         {/if}
-        {@render resetStepBtn(sizesDefault, 'Größen auf Standard zurücksetzen', resetSizes)}
       {:else if step === 2}
         <h2>Passung</h2>
         <p class="lead">Die Standardwerte passen meistens. Ändern lohnt sich erst, wenn ein Testdruck nicht gut sitzt.</p>
@@ -574,7 +540,6 @@
           <div class="slider">
             <input type="range" min="0.1" max="0.5" step="0.05" bind:value={input.maleFemaleGapSize} aria-describedby="gap-hint" />
             <output>{fmt(input.maleFemaleGapSize, 2)} mm</output>
-            {@render reset('maleFemaleGapSize', 'Spaltmaß Stecker / Kupplung')}
           </div>
           {@render helpText('gap')}
           <p class="hint" id="gap-hint">Sitzt der Stecker zu stramm: größer. Wackelt er: kleiner. Standard: 0,2 mm.</p>
@@ -586,7 +551,6 @@
             <div class="slider">
               <input type="range" min="0.2" max={swivelMax} step="0.05" bind:value={input.slipRingGapSize} aria-describedby="swivel-hint" />
               <output>{fmt(input.slipRingGapSize, 2)} mm</output>
-              {@render reset('slipRingGapSize', 'Spaltmaß Drehring')}
             </div>
             {@render helpText('swivel')}
             <p class="hint" id="swivel-hint">Lässt sich der Ring nach dem Druck nicht drehen: größer (bei PETG oft 0,35–0,5 mm). Standard: 0,3 mm.</p>
@@ -649,9 +613,6 @@
             </button>
           {/each}
         </div>
-        {#if hasSupport}
-          <label class="inline-check"><input type="checkbox" bind:checked={supports} /> Druckhilfe mit exportieren</label>
-        {/if}
 
         <details class="box" open>
           <summary>Druckhinweise</summary>

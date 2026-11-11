@@ -293,17 +293,8 @@ h2 {
 .kind-text strong { font-weight: 600; font-size: 15px; white-space: nowrap; }
 .kind-text small { font-size: 13.5px; color: var(--slate-2); line-height: 1.35; }
 .kind-code { flex: none; font-family: var(--cond); font-size: 13px; color: var(--grey); white-space: nowrap; }
-.kind-code .ck { font-size: 15px; font-weight: 700; }
+.kind-code .ck { font-size: 15px; font-weight: 700; color: var(--graphite); }
 /* Kennfarben: M blau, F rot, H graphit (Wizard-Kürzel, Größenauswahl) */
-:root { --c-M: var(--sky-d); --c-F: #e5352b; --c-H: var(--graphite); }
-.kind-code .ck-M, legend .ck-M { color: var(--c-M); }
-.kind-code .ck-F, legend .ck-F { color: var(--c-F); }
-.kind-code .ck-H, legend .ck-H { color: var(--c-H); }
-.dia-M { --c: var(--c-M); }
-.dia-F { --c: var(--c-F); }
-.dia-H { --c: var(--c-H); }
-.dia .chip.sel { background: var(--c); border-color: var(--c); color: #fff; }
-.dia .num-in:focus-within { outline-color: var(--c); }
 .kind-code .cx { font-weight: 500; }
 .kind:disabled .ck { color: inherit; }
 
@@ -311,9 +302,6 @@ h2 {
 fieldset { border: 0; margin: 0 0 22px; padding: 0; }
 legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
 legend.field-label { width: 100%; }
-.num-reset { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-.field .num-reset { display: flex; }
-.field .num-reset .num-in { flex: 1; min-width: 0; }
 .dia-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
@@ -366,21 +354,10 @@ legend.field-label { width: 100%; }
 .slider input { flex: 1; accent-color: var(--cobalt); }
 .slider output { font-family: var(--cond); font-weight: 600; font-size: 20px; min-width: 70px; text-align: right; }
 /* Zurücksetzen auf den Standardwert (Pfeil + Standardwert, kein Tooltip); unsichtbar (Platz bleibt), solange der Standard eingestellt ist */
-.reset {
-  display: inline-flex; align-items: center; gap: 4px; flex: none;
-  height: 28px; padding: 0 10px 0 8px; margin-left: -4px;
-  border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--slate-2);
-  font-family: var(--cond); font-size: 13px; font-weight: 600; white-space: nowrap;
-}
-.reset svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.reset.hidden { visibility: hidden; }
 .reset-all { display: inline-flex; align-items: center; gap: 6px; margin: 18px 0 4px; padding: 0; border: 0; background: none; color: var(--grey); font: inherit; font-size: 14px; cursor: pointer; }
 .reset-all svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .reset-all:hover { color: var(--sky-d); }
-.reset:hover { border-color: var(--sky); }
 /* kleine Ausführung in der Beschriftungszeile der Stutzen-Felder */
-.reset.sm { height: 22px; padding: 0 8px 0 6px; margin: 0; font-size: 12px; }
-.reset.sm svg { width: 12px; height: 12px; }
 .field-label { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 24px; }
 .hint { margin: 6px 0 0; font-size: 14px; color: var(--slate-2); }
 .hint strong { color: var(--slate); font-weight: 600; }
