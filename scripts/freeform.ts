@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import { deriveParams } from '../src/lib/osvac/params';
 import { initFont } from '../src/lib/osvac/text';
 import { partsFree } from '../src/lib/osvac/assemblies';
-import { TEMPLATES, newBlock, sec, planFree, testHooks, type FreeSpec, type SectionShape } from '../src/lib/osvac/freeform';
+import { TEMPLATES, newBlock, sec, planFree, testHooks, flangeGeom, flangeMinRim, flangeDefaults, type FreeSpec, type SectionShape } from '../src/lib/osvac/freeform';
 import { partNotes } from '../src/lib/errors';
 import { belowBedEnd } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
@@ -89,6 +89,24 @@ for (const [id, shape] of [['schlitze-kreis', 'circle'], ['schlitze-rechteck', '
   cases.push(['u-bogen-stecker-unten', s]);
 }
 
+// Flansch am Gerät: alle Formen mit automatischem Lochbild (abwechselnd mit Dichtung und gedreht), Lochbild nach Maß rechteckig und rund
+for (const [i, shape] of shapes.entries()) {
+  const s = TEMPLATES[3].make();
+  const seal = i % 2 === 1;
+  s.b.transition = 18;
+  s.b.device = { ...s.b.device, mode: 'flange', section: sec(shape, { w: 56, h: 34, d: 44, r: 5, r2: 3, w2: 36 }), rot: i === 3 ? 20 : 0, seal, flangeRim: seal ? 18 : 15 };
+  cases.push([`flansch-${shape}${seal ? '-dichtung' : ''}`, s]);
+}
+{
+  const s = TEMPLATES[1].make();
+  s.b.device = { ...s.b.device, mode: 'flange', section: sec('rect', { w: 62, h: 38, r: 6, r2: 3 }), flangeLayout: 'rect', plateW: 120, plateH: 90, holeX: 100, holeY: 70, holeD: 5, seal: true };
+  cases.push(['flansch-lochbild-rechteckig', s]);
+  const r = TEMPLATES[3].make();
+  r.b.transition = 18;
+  r.b.device = { ...r.b.device, mode: 'flange', section: sec('circle', { d: 50 }), flangeLayout: 'round', plateD: 100, holeCircle: 82, holeN: 6, flangeT: 6 };
+  cases.push(['flansch-lochkreis', r]);
+}
+
 let fail = 0;
 const p = deriveParams({});
 for (const [id, spec] of cases) {
@@ -135,6 +153,36 @@ for (const [id, spec] of cases) {
     console.log(`FEHLER ${id.padEnd(26)} ${(e as Error).message}`);
   }
 }
+// Flansch: unpassende Eingaben werden verständlich abgefangen (ohne Berechnung)
+if (!only || only === 'flansch-pruefungen') {
+  const base = { ...TEMPLATES[3].make().b.device, mode: 'flange' as const, section: sec('circle', { d: 50 }) };
+  const expect: [string, Partial<typeof base>, string][] = [
+    ['Rand zu schmal', { flangeRim: 8 }, 'Rand muss'],
+    ['Dichtung braucht Rand', { seal: true, flangeRim: 15 }, 'Dichtung'],
+    ['Löcher in der Öffnung', { flangeLayout: 'round', plateD: 100, holeCircle: 50, holeN: 4 }, 'nah an der Öffnung'],
+    ['Löcher am Rand', { flangeLayout: 'round', plateD: 70, holeCircle: 68, holeN: 4 }, 'Rand der Platte'],
+    ['Platte zu klein', { flangeLayout: 'rect', plateW: 40, plateH: 40, holeX: 30, holeY: 30 }, 'zu klein'],
+    ['Löcher zu dicht', { flangeLayout: 'rect', plateW: 140, plateH: 140, holeX: 9, holeY: 100 }, 'zu dicht'],
+    ['Platte zu dünn', { flangeT: 2 }, 'dick sein'],
+  ];
+  const wrong = expect.filter(([, v, t]) => !flangeGeom({ ...base, ...v }, 3).errors.some((e) => e.includes(t))).map(([n]) => n);
+  // Vorbelegung „nach Maß“ passt bei allen Formen und Größen ohne Fehler
+  for (const shape of shapes)
+    for (const d of [20, 32, 50, 90])
+      for (const seal of [false, true])
+        for (const lay of ['rect', 'round'] as const) {
+          const dv = { ...base, section: sec(shape, { d, w: d * 1.6, h: d, r: 5, r2: 3, w2: d }), seal, flangeRim: flangeMinRim(3, seal) };
+          const e = flangeGeom({ ...dv, ...flangeDefaults(dv, 3), flangeLayout: lay }, 3).errors;
+          if (e.length) wrong.push(`Vorbelegung ${shape} ${d} ${seal ? 'mit Dichtung ' : ''}${lay}: ${e[0]}`);
+        }
+  const okRim = flangeGeom({ ...base, seal: true, flangeRim: flangeMinRim(3, true) }, 3).errors;
+  if (okRim.length) wrong.push('kleinster Rand mit Dichtung: ' + okRim.join(' '));
+  const bedA = planFree({ ...TEMPLATES[3].make(), bed: 'A', b: { ...TEMPLATES[3].make().b, device: base } }).issues.some((x) => x.level === 'error' && x.text.includes('Ende B'));
+  if (!bedA) wrong.push('Flansch mit A unten nicht abgefangen');
+  if (wrong.length) fail++;
+  console.log(`${wrong.length ? 'FEHLER' : 'ok    '} flansch-pruefungen         ${wrong.length ? wrong.join(', ') : `${expect.length + 2} Prüfungen`}`);
+}
+
 // Stutzen-Typen mit Klemmrippen und Schlitzen (aufgesteckt/eingesteckt, gerade/konisch, mit/ohne Löcher und Text)
 for (const [id, kind, pipe, text] of [
   ['stutzen-F-auf-konisch', 'MACHINE_F', { d1Inner: 32.2, d2Inner: 33.2, mode: 'over', screwHoles: true, slots: true, ribs: true }, true],
