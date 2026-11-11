@@ -95,6 +95,14 @@ export class PartViewer {
     this.controls.maxPolarAngle = Math.PI * 0.96;
     this.controls.addEventListener('change', () => {
       this.needsRender = true;
+      // Sichtbereich an den Abstand anpassen: beim Heranzoomen sonst zu wenig Tiefengenauigkeit (Flackern) bzw. abgeschnittene Teile
+      const d = this.camera.position.distanceTo(this.controls.target);
+      const near = d / 50, far = d * 20;
+      if (Math.abs(near - this.camera.near) > near * 0.05) {
+        this.camera.near = near;
+        this.camera.far = far;
+        this.camera.updateProjectionMatrix();
+      }
       // Schnitt je Körper: abgeschnittene Seite folgt der Kamera
       if (this.section && this.planes) for (const c of this.model.children) this.clipFor(c as THREE.Mesh);
     });
@@ -110,12 +118,14 @@ export class PartViewer {
     const plate = new THREE.ShapeGeometry(roundedPlate(BED, 12), 8);
     this.bed = new THREE.Mesh(
       plate,
-      new THREE.MeshStandardMaterial({ map: peiTexture(), roughness: 0.85, metalness: 0.2, color: 0xffffff }),
+      // etwas nach hinten versetzt: die Unterseite des Modells liegt genau auf dem Bett (z = 0); ohne Versatz
+      // flackern beide Flächen gegeneinander (im Schnitt als schwarze Striche an der Unterkante sichtbar)
+      new THREE.MeshStandardMaterial({ map: peiTexture(), roughness: 0.85, metalness: 0.2, color: 0xffffff, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 64 }),
     );
     // Plattenkante
     const edge = new THREE.Mesh(
       new THREE.ExtrudeGeometry(roundedPlate(BED, 12), { depth: 3, bevelEnabled: false }),
-      new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 0.6, metalness: 0.4 }),
+      new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 0.6, metalness: 0.4, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 128 }),
     );
     edge.position.z = -3.05;
     this.bed.add(edge);
@@ -171,6 +181,11 @@ export class PartViewer {
         transparent: b.helper,
         opacity: b.helper ? 0.85 : 1,
         clippingPlanes: [],
+        // Stoßflächen zwischen zwei Körpern liegen genau aufeinander und flackern im Schnitt: je Körper ein winziger,
+        // fester Tiefenversatz, damit immer dieselbe Fläche vorne liegt
+        polygonOffset: true,
+        polygonOffsetFactor: 0,
+        polygonOffsetUnits: Math.min(this.model.children.length, 48),
       });
       const mesh = new THREE.Mesh(g, mat);
       mesh.name = b.name;
