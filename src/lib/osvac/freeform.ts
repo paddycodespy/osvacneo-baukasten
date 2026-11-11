@@ -166,16 +166,74 @@ export const DEFAULT_DEVICE: DeviceEnd = {
 /** Lage der Schraubenlöcher als Anteil am Umfang (ab +u, wie beim Rohrkonus 90/210/330°) */
 const HOLE_AT = [0.25, 7 / 12, 11 / 12];
 
+/** Formen, an denen eine Schlauchschelle rundum drückt (bei eckigen Formen nur an den Ecken): nur dort gibt es Schlitze */
+export const SLOT_SHAPES: ReadonlySet<string> = new Set(['circle', 'ellipse', 'dshape']);
+
+/** Gerade Abschnitte der Kontur: Mitte (Anteil am Umfang, ab +u wie samplePoints) und Länge */
+function flatRuns(s: Section, rotDeg: number) {
+  const M = 720;
+  const pts = samplePoints(s, M, rotDeg);
+  const P = perimeter(s);
+  const dir = pts.map((p, i) => {
+    const q = pts[(i + 1) % M];
+    return Math.atan2(q[1] - p[1], q[0] - p[0]);
+  });
+  const flat = dir.map((d, i) => {
+    let t = d - dir[(i + M - 1) % M];
+    t = Math.atan2(Math.sin(t), Math.cos(t));
+    return Math.abs(t) < 1e-3;
+  });
+  if (flat.every(Boolean) || !flat.some(Boolean)) return [];
+  const start = flat.findIndex((f, i) => f && !flat[(i + M - 1) % M]);
+  const runs: { mid: number; len: number }[] = [];
+  for (let k = 0, i = start; k < M; ) {
+    if (!flat[i]) {
+      i = (i + 1) % M;
+      k++;
+      continue;
+    }
+    let n = 0;
+    while (flat[(i + n) % M] && n < M) n++;
+    // n Kanten ab Punkt i: Mitte bei i + n/2
+    runs.push({ mid: (((i + n / 2) / M) % 1 + 1) % 1, len: (n * P) / M });
+    i = (i + n) % M;
+    k += n;
+  }
+  return runs;
+}
+
+/**
+ * Lage der Schraubenlöcher: runde Formen 3 Stück gleichmäßig (wie beim Rohrkonus),
+ * Formen mit geraden Seiten je eins mittig auf jeder Seite ab 14 mm, sonst 3 gleichmäßig ab der Mitte der geraden Seite.
+ */
+function holeLayout(s: Section, rotDeg: number) {
+  if (s.shape === 'circle' || s.shape === 'ellipse') return HOLE_AT;
+  const runs = flatRuns(s, rotDeg).filter((r) => r.len >= 14);
+  if (runs.length >= 2) return runs.map((r) => r.mid);
+  const f0 = runs[0]?.mid ?? 0.25;
+  return [f0, f0 + 1 / 3, f0 + 2 / 3].map((f) => f % 1);
+}
+
 /**
  * Schlitze für die Schlauchschelle, fest nach Größe des Adapters:
  * 80 % der Tiefe lang (damit die Zungen federn), Breite Umfang/40 (2,5–4 mm, auf 0,5 mm gerundet),
  * mit Schraubenlöchern 3 Stück genau zwischen den Löchern, sonst 3 / 4 / 6 je nach Umfang (unter 100 / bis 200 / darüber).
  */
-function slotLayout(P: number, L: number, withHoles: boolean) {
+function slotLayout(P: number, L: number, holeAt: number[] | null) {
   const len = Math.max(6, Math.min(Math.round(L * 0.8), L - 3));
   const width = Math.min(4, Math.max(2.5, Math.round((P / 40) * 2) / 2));
-  const n = withHoles ? 3 : P < 100 ? 3 : P <= 200 ? 4 : 6;
-  const at = withHoles ? [1 / 12, 5 / 12, 9 / 12] : Array.from({ length: n }, (_, k) => (k + 0.5) / n);
+  let at: number[];
+  if (holeAt && holeAt.length) {
+    // je ein Schlitz in der Mitte zwischen zwei Löchern
+    const h = [...holeAt].sort((x, y) => x - y);
+    at = h.map((f, i) => {
+      const g = i + 1 < h.length ? h[i + 1] : h[0] + 1;
+      return ((f + g) / 2) % 1;
+    });
+  } else {
+    const n = P < 100 ? 3 : P <= 200 ? 4 : 6;
+    at = Array.from({ length: n }, (_, k) => (k + 0.5) / n);
+  }
   return { len, width, at };
 }
 /** Klemmrippen: so weit ragen sie über die Gerätefläche hinaus (werden beim Aufstecken zusammengedrückt) */
@@ -972,7 +1030,7 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
     issues.push({ level: 'warn', text: 'Gerät: Für die Schraubenlöcher braucht es mindestens 12 mm Tiefe. Ohne Löcher gebaut.' });
     holes = false;
   }
-  const slots = over && dv.slots;
+  const slots = over && dv.slots && SLOT_SHAPES.has(front.shape);
   let notch = over && dv.notch;
   if (notch) {
     if (!(dv.notchW >= 3)) issues.push({ level: 'error', text: 'Gerät: Die Aussparung muss mindestens 3 mm breit sein.' });
@@ -988,8 +1046,8 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
   /** liegt ein Punkt der Kontur im Bereich der Aussparung? (dort entfallen Löcher, Schlitze und Rippen) */
   const inNotch = (q: P2, margin: number) => notch && Math.abs(q[0] * perp[0] + q[1] * perp[1]) < dv.notchW / 2 + margin && q[0] * ray[0] + q[1] * ray[1] > 0;
   const mid0 = grow(front, a + w / 2);
-  const holeAt = HOLE_AT.filter((g) => !inNotch(contourAt(mid0, rot1, [g])[0].p, 6));
-  const SL = slotLayout(P, L, holes);
+  const holeAt = holeLayout(front, rot1).filter((g) => !inNotch(contourAt(mid0, rot1, [g])[0].p, 6));
+  const SL = slotLayout(P, L, holes ? holeAt : null);
   const slotLen = SL.len, slotW = SL.width;
   const slotAt = SL.at.filter((g) => !inNotch(contourAt(mid0, rot1, [g])[0].p, slotW / 2 + 2));
   if (holes && !holeAt.length) holes = false;
