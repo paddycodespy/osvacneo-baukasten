@@ -99,13 +99,19 @@ export interface DeviceEnd {
   plateH: number;
   holeX: number;
   holeY: number;
+  /** rechteckiges Lochbild: Löcher je Seite (2–6, gleichmäßig auf dem Lochabstand) */
+  holeNX: number;
+  holeNY: number;
   plateD: number;
   holeCircle: number;
   holeN: number;
   /** Loch-Ø beim Lochbild nach Maß (automatisch immer 4,5 für M4) */
   holeD: number;
-  /** Extra: Nut für Moosgummi-Dichtband auf der Anlagefläche */
+  /** Extra: Nut für Moosgummi-Dichtband auf der Anlagefläche, Breite passend zum Band (6, 9 oder 10 mm) */
   seal: boolean;
+  sealW: number;
+  /** nur für die schnelle Vorschau: Flansch ohne Löcher und Nut (die Schnitte kommen in der vollen Berechnung) */
+  preview?: boolean;
 }
 
 export interface FreeSpec {
@@ -186,11 +192,14 @@ export const DEFAULT_DEVICE: DeviceEnd = {
   plateH: 90,
   holeX: 100,
   holeY: 70,
+  holeNX: 2,
+  holeNY: 2,
   plateD: 100,
   holeCircle: 82,
   holeN: 4,
   holeD: 4.5,
   seal: false,
+  sealW: 6,
 };
 
 /** Lage der Schraubenlöcher als Anteil am Umfang (ab +u, wie beim Rohrkonus 90/210/330°) */
@@ -332,6 +341,18 @@ export const TEMPLATES: { id: string; title: string; hint: string; make: () => F
       wall: 3,
       blocks: [newBlock('straight', { length: 10 })],
       b: { type: 'device', d: 32, device: { ...DEFAULT_DEVICE, section: sec('circle', { d: 32 }), dDepth: 33 }, transition: 10 },
+      bed: 'B',
+    }),
+  },
+  {
+    id: 'flange',
+    title: 'Flansch am Gehäuse',
+    hint: 'Zum Anschrauben',
+    make: () => ({
+      a: { type: 'female', d: 32 },
+      wall: 3,
+      blocks: [newBlock('straight', { length: 10 })],
+      b: { type: 'device', d: 32, device: { ...DEFAULT_DEVICE, mode: 'flange', section: sec('circle', { d: 63 }) }, transition: 25 },
       bed: 'B',
     }),
   },
@@ -1042,8 +1063,9 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
 
 // ---------------------------------------------------------------- Flansch
 
-/** Nut für Dichtband: 2 mm Steg an der Öffnung, 6 mm breit, 1,5 mm tief */
-export const SEAL = { lip: 2, width: 6, depth: 1.5 };
+/** Nut für Dichtband: 2 mm Steg an der Öffnung, 1,5 mm tief; Breite wie das Band */
+export const SEAL = { lip: 2, depth: 1.5, widths: [6, 9, 10] };
+const sealWidth = (dv: Pick<DeviceEnd, 'sealW'>) => (SEAL.widths.includes(dv.sealW) ? dv.sealW : 6);
 /** Loch für M4-Senkkopfschrauben */
 export const AUTO_HOLE_D = 4.5;
 /** Größter Abstand zweier Löcher beim automatischen Lochbild */
@@ -1112,9 +1134,9 @@ function autoHoles(c: Section, rotDeg: number, minGap: number): P2[] {
 }
 
 /** Kleinster Rand beim automatischen Lochbild (Platz für Senkung, Wand und ggf. Dichtung) */
-export function flangeMinRim(wall: number, seal: boolean) {
+export function flangeMinRim(wall: number, seal: boolean, sealW = 6) {
   const hr = AUTO_HOLE_D / 2, sr = sinkR(AUTO_HOLE_D);
-  const toOpen = Math.max(wall + sr + 0.5, (seal ? SEAL.lip + SEAL.width : 0) + hr + 1.5);
+  const toOpen = Math.max(wall + sr + 0.5, (seal ? SEAL.lip + sealWidth({ sealW }) : 0) + hr + 1.5);
   return Math.ceil(toOpen + sr + 1);
 }
 
@@ -1134,7 +1156,8 @@ export function flangeGeom(dv: DeviceEnd, wall: number): FlangeGeom {
   const auto = dv.flangeLayout === 'auto';
   const holeD = auto ? AUTO_HOLE_D : dv.holeD;
   const hr = holeD / 2, sr = sinkR(holeD);
-  const toOpen = Math.max(wall + sr + 0.5, (dv.seal ? SEAL.lip + SEAL.width : 0) + hr + 1.5);
+  const sw = sealWidth(dv);
+  const toOpen = Math.max(wall + sr + 0.5, (dv.seal ? SEAL.lip + sw : 0) + hr + 1.5);
   const toEdge = sr + 1;
   let plate: Section;
   let holes: P2[] = [];
@@ -1146,7 +1169,7 @@ export function flangeGeom(dv: DeviceEnd, wall: number): FlangeGeom {
   else if (dv.flangeT < sr - hr + 1.5) errors.push(`Für Senkkopfschrauben muss die Platte mindestens ${Math.ceil(sr - hr + 1.5)} mm dick sein.`);
   if (!auto && !(holeD >= 2 && holeD <= 10)) errors.push('Der Loch-Ø muss zwischen 2 und 10 mm liegen.');
   if (auto) {
-    const minRim = flangeMinRim(wall, dv.seal);
+    const minRim = flangeMinRim(wall, dv.seal, sw);
     if (!(dv.flangeRim >= minRim)) errors.push(`Der Rand muss hier mindestens ${minRim} mm breit sein, damit Schrauben${dv.seal ? ' und Dichtung' : ''} Platz haben.`);
     if (dv.flangeRim > 80) errors.push('Der Rand darf höchstens 80 mm breit sein.');
     plate = grow(o, Math.max(dv.flangeRim, 1));
@@ -1165,9 +1188,13 @@ export function flangeGeom(dv: DeviceEnd, wall: number): FlangeGeom {
     plate = sec('rect', { w: dv.plateW, h: dv.plateH, r: 6, r2: 6 });
     if (!(dv.plateW >= 20 && dv.plateH >= 20)) errors.push('Die Platte muss mindestens 20 × 20 mm groß sein.');
     if (!(dv.holeX >= 0 && dv.holeY >= 0) || (dv.holeX < 2 * sr && dv.holeY < 2 * sr)) errors.push('Bitte einen Lochabstand eingeben.');
-    const xs = dv.holeX >= 2 * sr ? [-dv.holeX / 2, dv.holeX / 2] : [0];
-    const ys = dv.holeY >= 2 * sr ? [-dv.holeY / 2, dv.holeY / 2] : [0];
-    holes = xs.flatMap((x) => ys.map((y) => rotP([x, y])));
+    const nx = Math.round(dv.holeNX), ny = Math.round(dv.holeNY);
+    if (!(nx >= 2 && nx <= 6 && ny >= 2 && ny <= 6)) errors.push('Bitte je Seite 2 bis 6 Löcher wählen.');
+    // Löcher gleichmäßig auf dem Rand des Lochbilds (Ecken und dazwischen), nicht in der Mitte
+    const line = (L: number, n: number) => (L >= 2 * sr ? Array.from({ length: n }, (_, k) => -L / 2 + (L * k) / (n - 1)) : [0]);
+    const xs = line(dv.holeX, nx), ys = line(dv.holeY, ny);
+    const border = (x: number, y: number) => x === xs[0] || x === xs[xs.length - 1] || y === ys[0] || y === ys[ys.length - 1];
+    holes = xs.flatMap((x) => ys.filter((y) => border(x, y)).map((y) => rotP([x, y])));
   } else {
     plate = sec('circle', { d: dv.plateD });
     const n = Math.round(dv.holeN);
@@ -1179,7 +1206,7 @@ export function flangeGeom(dv: DeviceEnd, wall: number): FlangeGeom {
   if (errors.length) return { plate, holes: [], holeD, errors };
   // Platte muss die Wand (und die Dichtung) rundum tragen
   const platePoly = samplePoints(plate, 360, rot);
-  const need = grow(o, dv.seal ? SEAL.lip + SEAL.width + 1.5 : wall + 1);
+  const need = grow(o, dv.seal ? SEAL.lip + sw + 1.5 : wall + 1);
   if (!samplePoints(need, 180, rot).every((q) => inPoly(q, platePoly)))
     errors.push(`Die Platte ist zu klein für diese Öffnung${dv.seal ? ' und die Dichtung' : ''}. Bitte größer machen.`);
   const openPoly = samplePoints(o, 360, rot);
@@ -1195,9 +1222,18 @@ export function flangeGeom(dv: DeviceEnd, wall: number): FlangeGeom {
   return { plate, holes, holeD, errors };
 }
 
+/** Ab dieser Plattengröße (mm) empfehlen wir einen Brim: große flache Platten ziehen sich an den Ecken gern hoch */
+export const BRIM_FROM = 100;
+/** Größte Ausdehnung der Flanschplatte (Breite oder Höhe) */
+export function flangeExtent(dv: DeviceEnd, wall: number): number {
+  const pts = samplePoints(flangeGeom(dv, wall).plate, 180, dv.rot);
+  const span = (k: 0 | 1) => Math.max(...pts.map((q) => q[k])) - Math.min(...pts.map((q) => q[k]));
+  return Math.max(span(0), span(1));
+}
+
 /** Werte für das Lochbild nach Maß, ausgehend vom automatischen Flansch (beim Umschalten vorbelegt) */
 export function flangeDefaults(dv: DeviceEnd, wall: number): Partial<DeviceEnd> {
-  const rim = Math.max(dv.flangeRim, flangeMinRim(wall, dv.seal));
+  const rim = Math.max(dv.flangeRim, flangeMinRim(wall, dv.seal, dv.sealW));
   const G = flangeGeom({ ...dv, flangeLayout: 'auto', flangeRim: rim, rot: 0 }, wall);
   const pts = samplePoints(grow(dv.section, rim), 180, 0);
   const up = (v: number, k = 1) => Math.ceil(v / k - 1e-9) * k;
@@ -1205,13 +1241,25 @@ export function flangeDefaults(dv: DeviceEnd, wall: number): Partial<DeviceEnd> 
   const hx = up(2 * Math.max(0, ...G.holes.map((q) => Math.abs(q[0]))), 0.5);
   const hy = up(2 * Math.max(0, ...G.holes.map((q) => Math.abs(q[1]))), 0.5);
   // Lochkreis: alle Löcher gleich weit außen, also mindestens so weit, dass auch zwischen den automatischen Löchern Platz zur Öffnung bleibt
-  const toOpen = Math.max(wall + sinkR(AUTO_HOLE_D) + 0.5, (dv.seal ? SEAL.lip + SEAL.width : 0) + AUTO_HOLE_D / 2 + 1.5);
+  const toOpen = Math.max(wall + sinkR(AUTO_HOLE_D) + 0.5, (dv.seal ? SEAL.lip + sealWidth(dv) : 0) + AUTO_HOLE_D / 2 + 1.5);
   const reach = Math.max(...samplePoints(dv.section, 180, 0).map((q) => Math.hypot(q[0], q[1])));
   const hc = up(2 * Math.max(reach + toOpen, ...G.holes.map((q) => Math.hypot(q[0], q[1]))), 0.5);
   const pw = up(Math.max(2 * Math.max(...pts.map((q) => Math.abs(q[0]))), hx + 2 * edge));
   const ph = up(Math.max(2 * Math.max(...pts.map((q) => Math.abs(q[1]))), hy + 2 * edge));
   const pd = up(Math.max(2 * Math.max(...pts.map((q) => Math.hypot(q[0], q[1]))), hc + 2 * edge));
-  return { plateW: pw, plateH: ph, holeX: hx, holeY: hy, plateD: pd, holeCircle: hc, holeD: AUTO_HOLE_D };
+  // Löcher je Seite wie beim automatischen Lochbild: höchstens HOLE_PITCH Abstand
+  const per = (L: number) => Math.min(6, Math.max(2, Math.ceil(L / HOLE_PITCH - 1e-9) + 1));
+  const round = { plateD: pd, holeCircle: hc, holeD: AUTO_HOLE_D };
+  // Löcher in der Seitenmitte liegen bei runden Formen näher an der Öffnung als die Ecken: dann das Lochbild so weit
+  // nach außen, dass es die Öffnung mit Abstand umschließt, notfalls nur die 4 Ecken
+  const op = samplePoints(dv.section, 180, 0);
+  const bx = 2 * (Math.max(...op.map((q) => Math.abs(q[0]))) + toOpen), by = 2 * (Math.max(...op.map((q) => Math.abs(q[1]))) + toOpen);
+  const tries: Partial<DeviceEnd>[] = [
+    { holeX: hx, holeY: hy, holeNX: per(hx), holeNY: per(hy), plateW: pw, plateH: ph },
+    { holeX: up(Math.max(hx, bx), 0.5), holeY: up(Math.max(hy, by), 0.5), holeNX: per(Math.max(hx, bx)), holeNY: per(Math.max(hy, by)), plateW: up(Math.max(pw, Math.max(hx, bx) + 2 * edge)), plateH: up(Math.max(ph, Math.max(hy, by) + 2 * edge)) },
+  ];
+  for (const t of tries) if (!flangeGeom({ ...dv, ...round, ...t, flangeLayout: 'rect', rot: 0 }, wall).errors.length) return { ...round, ...t };
+  return { ...round, holeX: hx, holeY: hy, holeNX: 2, holeNY: 2, plateW: pw, plateH: ph };
 }
 
 function planFlange(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: number }, bodies: FreeBody[], issues: Issue[], path: V3[]): Frame {
@@ -1251,10 +1299,11 @@ function planFlange(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
   const ring = (x: number, q: P2, r: number) => assembleWire([makeCircle(r, at3(x, q), fb.t as Point)]);
   bodies.push({
     name: 'Geräteanschluss · Flansch',
-    cost: 0.6 + 0.05 * G.holes.length,
-    dep: { kind: 'free', t: 'device', part: 'flange', f: frameKey(fb), o: secKey(o), p: secKey(G.plate), rot: r6(rot1), T: r6(T), h: G.holes.map((q) => q.map(r6)), d: r6(G.holeD), seal: dv.seal },
+    cost: dv.preview ? 0.3 : 0.6 + 0.05 * G.holes.length,
+    dep: { kind: 'free', t: 'device', part: 'flange', f: frameKey(fb), o: secKey(o), p: secKey(G.plate), rot: r6(rot1), T: r6(T), h: dv.preview ? 0 : G.holes.map((q) => q.map(r6)), d: r6(G.holeD), seal: dv.seal && !dv.preview ? sealWidth(dv) : 0 },
     make: () => {
       let body = extrudeRing(fb, o, G.plate, rot1, T);
+      if (dv.preview) return body;
       for (const q of G.holes) {
         // Bohrung durch die Platte, Senkung oben (Seite zum Adapter, dort sitzt der Schraubenkopf)
         const bore = makeCylinder(hr, T + 2, at3(-1, q), fb.t as Point) as unknown as Shape3D;
@@ -1268,7 +1317,7 @@ function planFlange(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
       }
       if (dv.seal) {
         const before = measureVolume(body);
-        const tool = extrudeRing(advance(fb, T - SEAL.depth), grow(o, SEAL.lip), grow(o, SEAL.lip + SEAL.width), rot1, SEAL.depth + 1);
+        const tool = extrudeRing(advance(fb, T - SEAL.depth), grow(o, SEAL.lip), grow(o, SEAL.lip + sealWidth(dv)), rot1, SEAL.depth + 1);
         const next = body.cut(tool);
         if (!(measureVolume(next) < before - 1e-3)) throw new UserError('Gerät: Die Nut für die Dichtung ließ sich an dieser Form nicht schneiden. Bitte die Dichtung abwählen.');
         body = next;
