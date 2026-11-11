@@ -340,7 +340,7 @@
               {#if over}
                 <div class="x-item">
                   <label class="inline-check"><input type="checkbox" bind:checked={dv.slots} /> Schlitze für eine Schlauchschelle</label>
-                  <p class="hint">Drei Schlitze vom offenen Rand her. Eine Schelle außen drückt den Adapter dann fest auf den Stutzen.</p>
+                  <p class="hint">Schlitze vom offenen Rand her, Anzahl und Größe passend zum Adapter. Eine Schelle außen drückt den Adapter dann fest auf den Stutzen.</p>
                 </div>
               {/if}
               <div class="x-item">
