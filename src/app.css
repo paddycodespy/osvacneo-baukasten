@@ -51,10 +51,14 @@ html, body { margin: 0; height: 100%; }
   padding: 0 36px;
   background: var(--graphite);
 }
-.wordmark { margin: 0; font-weight: 700; font-size: 22px; letter-spacing: -0.01em; color: #fff; }
+/* Wortmarke: Symbol (Bausteine mit Luftweg) + zweizeilig „osVAC neo“ / „BAUKASTEN“ */
+.wordmark { margin: 0; display: flex; align-items: center; gap: 12px; color: #fff; white-space: nowrap; }
+.wordmark .wm-logo { display: block; width: 34px; height: 34px; }
+.wordmark .wm-text { display: flex; flex-direction: column; line-height: 1; }
+.wordmark .wm-os { font-weight: 700; font-size: 13px; letter-spacing: -0.01em; }
 .wordmark .os, .wordmark .neo { color: #ef453b; }
 .wordmark .vac { color: var(--sky); }
-.wordmark .wm-sub { color: #fff; font-weight: 500; font-size: 17px; margin-left: 6px; }
+.wordmark .wm-sub { font-weight: 600; font-size: 19px; letter-spacing: 0.09em; margin-top: 3px; }
 /* Verweis auf die Projekt-Website rechts in der Kopfzeile */
 .site-link { margin-left: auto; color: #fff; font-weight: 600; font-size: 15px; }
 .site-link:hover, .site-link:active { color: var(--red); }

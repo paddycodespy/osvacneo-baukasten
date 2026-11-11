@@ -75,7 +75,7 @@ export function build3MF(parts: MeshPart[], title: string, groupNames?: string[]
 <model unit="millimeter" xml:lang="de-DE" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
 <metadata name="Title">${esc(title)}</metadata>
 <metadata name="Designer">Ludo Kerz (osVAC neo)</metadata>
-<metadata name="Description">${esc(CREDIT)} ${esc(CHANGES)} Erzeugt mit dem osVAC neo Konfigurator.</metadata>
+<metadata name="Description">${esc(CREDIT)} ${esc(CHANGES)} Erzeugt mit dem osVAC neo Baukasten.</metadata>
 <metadata name="LicenseTerms">${LICENSE_NAME} ${LICENSE_URL}</metadata>
 <resources>${objects}</resources>
 <build>${items}</build>

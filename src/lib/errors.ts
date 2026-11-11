@@ -21,7 +21,7 @@ export const GENERIC_ERROR =
 /** Text für die Oberfläche: eigene Meldungen unverändert, technische Fehler als allgemeiner Hinweis. */
 export function userMessage(e: unknown): string {
   if (e instanceof UserError) return e.message;
-  console.error('[osVAC neo Konfigurator]', e);
+  console.error('[osVAC neo Baukasten]', e);
   return GENERIC_ERROR;
 }
 

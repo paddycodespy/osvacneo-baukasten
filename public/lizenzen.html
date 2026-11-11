@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lizenzen – osVAC neo Konfigurator</title><link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<title>Lizenzen – osVAC neo Baukasten</title><link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <style>
 @font-face{font-family:Poppins;font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/poppins-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:Poppins;font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/poppins-latin-ext-400-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
@@ -14,9 +14,11 @@
 @font-face{font-family:Poppins;font-style:italic;font-weight:700;font-display:swap;src:url(./fonts/poppins-latin-ext-700-italic.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 body{margin:0;font-family:Poppins,system-ui,sans-serif;color:#333;background:#f5f7f8;line-height:1.5}
 header{height:64px;display:flex;align-items:center;padding:0 36px;background:#333}
-.wordmark{margin:0;font-weight:700;font-size:22px;letter-spacing:-0.01em;color:#fff}
+.wordmark{margin:0;display:flex;align-items:center;gap:12px;color:#fff;white-space:nowrap}
+.wm-logo{display:block;width:34px;height:34px} .wm-text{display:flex;flex-direction:column;line-height:1}
+.wm-os{font-weight:700;font-size:13px;letter-spacing:-0.01em}
 .wordmark .os,.wordmark .neo{color:#ef453b} .wordmark .vac{color:#28a3e5}
-.wordmark .wm-sub{color:#fff;font-weight:500;font-size:17px;margin-left:6px}
+.wm-sub{font-weight:600;font-size:19px;letter-spacing:0.09em;margin-top:3px}
 main{max-width:880px;margin:0 auto;padding:24px 28px 60px}
 h1{font-style:italic;font-size:26px;margin:0 0 8px} h2{font-size:18px;margin:0 0 4px}
 .lead{color:#555;margin:0 0 18px} a{color:#1d86c2;text-decoration:none;font-weight:600} a:hover{color:#ff4136}
@@ -26,8 +28,8 @@ section{background:#fff;border:1px solid #e1e5e8;border-radius:10px;padding:16px
 .meta{color:#7a7a7a;font-size:13px;margin:0 0 10px}
 pre{white-space:pre-wrap;word-wrap:break-word;font:12.5px/1.45 ui-monospace,Consolas,monospace;background:#f5f7f8;border-radius:6px;padding:12px;margin:0;max-height:420px;overflow:auto}
 </style></head><body>
-<header><p class="wordmark"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span> <span class="wm-sub">Konfigurator · Lizenzen</span></p></header>
-<main><h1>Lizenzen</h1><p class="lead">Der osVAC neo Konfigurator basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart, und steht wie dieses unter CC BY-NC-SA 4.0 (siehe LICENSE.txt). Für diesen Konfigurator nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar. Die folgenden Bausteine Dritter sind eingebunden und stehen unter ihren eigenen Lizenzen. <a href="./LICENSE.txt">Lizenztext CC BY-NC-SA 4.0</a></p>
+<header><p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p></header>
+<main><h1>Lizenzen</h1><p class="lead">Der osVAC neo Baukasten basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart, und steht wie dieses unter CC BY-NC-SA 4.0 (siehe LICENSE.txt). Für den Baukasten nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar. Die folgenden Bausteine Dritter sind eingebunden und stehen unter ihren eigenen Lizenzen. <a href="./LICENSE.txt">Lizenztext CC BY-NC-SA 4.0</a></p>
 <ul><li><a href="#l0">OpenCascade Technology</a> <span>LGPL-2.1-only</span></li><li><a href="#l1">replicad</a> <span>MIT</span></li><li><a href="#l2">three.js</a> <span>MIT</span></li><li><a href="#l3">Svelte</a> <span>MIT</span></li><li><a href="#l4">fflate</a> <span>MIT</span></li><li><a href="#l5">Poppins</a> <span>OFL-1.1</span></li><li><a href="#l6">Liberation Sans Regular</a> <span>OFL-1.1</span></li></ul><section id="l0"><h2>OpenCascade Technology</h2><p class="meta">Paket: replicad-opencascadejs 1.1.0 · Lizenz: LGPL-2.1-only<br>CAD-Kern, als WebAssembly über replicad-opencascadejs. Unverändert als eigene Datei eingebunden und austauschbar. Quellcode: https://github.com/Open-Cascade-SAS/OCCT und https://github.com/sgenoud/replicad</p><pre>                  GNU LESSER GENERAL PUBLIC LICENSE
                        Version 2.1, February 1999
 

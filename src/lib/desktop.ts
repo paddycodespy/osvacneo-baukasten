@@ -19,7 +19,7 @@ export function initDesktopLinks() {
         const label = 'seite-' + url.pathname.replace(/[^a-z0-9]/gi, '-');
         const open = await WebviewWindow.getByLabel(label);
         if (open) await open.setFocus();
-        else new WebviewWindow(label, { url: url.pathname + url.hash, title: a.textContent?.trim() || 'osVAC neo Konfigurator', width: 900, height: 760 });
+        else new WebviewWindow(label, { url: url.pathname + url.hash, title: a.textContent?.trim() || 'osVAC neo Baukasten', width: 900, height: 760 });
         return;
       }
       e.preventDefault();

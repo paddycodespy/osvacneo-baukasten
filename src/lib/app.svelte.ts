@@ -42,6 +42,7 @@ export type FileEntry = { fileName: string; url: string; size: number; key: stri
 export const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
+// alter Name bleibt, damit gespeicherte Stände nach Umbenennungen erhalten bleiben
 const STORE_KEY = 'osvacneo-konfigurator:stand:v1';
 
 class AppState {

@@ -91,6 +91,6 @@
     Lizenz: <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.de" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a><br />
     Weitergabe mit Namensnennung, nicht kommerziell, unter gleichen Bedingungen. Das gilt auch für die erzeugten Dateien.
   </p>
-  <p class="version">Konfigurator-Version {__APP_VERSION__}</p>
+  <p class="version">Baukasten-Version {__APP_VERSION__}</p>
   <p class="lic"><a class="lic-link" href="./lizenzen.html" target="_blank" rel="noopener">Verwendete Bausteine und ihre Lizenzen<svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg></a></p>
 </div>

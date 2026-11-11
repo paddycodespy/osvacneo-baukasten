@@ -35,12 +35,12 @@ items.append(('Liberation Sans Regular', 'public/fonts/LiberationSans-Regular.tt
               'Schrift der Beschriftung auf den Adaptern. https://github.com/liberationfonts',
               (root / 'public/fonts/LICENSE-LiberationSans.txt').read_text(encoding='utf-8').strip()))
 
-intro = ('Der osVAC neo Konfigurator basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart, '
-         'und steht wie dieses unter CC BY-NC-SA 4.0 (siehe LICENSE.txt). Für diesen Konfigurator nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar. Die folgenden Bausteine Dritter sind eingebunden '
+intro = ('Der osVAC neo Baukasten basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart, '
+         'und steht wie dieses unter CC BY-NC-SA 4.0 (siehe LICENSE.txt). Für den Baukasten nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar. Die folgenden Bausteine Dritter sind eingebunden '
          'und stehen unter ihren eigenen Lizenzen.')
 
 # Textfassung
-out = ['Bausteine Dritter im osVAC neo Konfigurator und ihre Lizenzen', '=' * 62, '', intro, '']
+out = ['Bausteine Dritter im osVAC neo Baukasten und ihre Lizenzen', '=' * 58, '', intro, '']
 for title, p, spdx, note, text in items:
     out += ['-' * 62, title, f'Paket: {p}', f'Lizenz: {spdx}', note, '-' * 62, '', text, '', '']
 (root / 'public/THIRD_PARTY_LICENSES.txt').write_text('\ufeff' + '\n'.join(out).rstrip() + '\n', encoding='utf-8')
@@ -62,13 +62,15 @@ secs = ''.join(
     for i, (t, p, s, n, x) in enumerate(items))
 page = f'''<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lizenzen – osVAC neo Konfigurator</title><link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<title>Lizenzen – osVAC neo Baukasten</title><link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <style>
 {faces}body{{margin:0;font-family:Poppins,system-ui,sans-serif;color:#333;background:#f5f7f8;line-height:1.5}}
 header{{height:64px;display:flex;align-items:center;padding:0 36px;background:#333}}
-.wordmark{{margin:0;font-weight:700;font-size:22px;letter-spacing:-0.01em;color:#fff}}
+.wordmark{{margin:0;display:flex;align-items:center;gap:12px;color:#fff;white-space:nowrap}}
+.wm-logo{{display:block;width:34px;height:34px}} .wm-text{{display:flex;flex-direction:column;line-height:1}}
+.wm-os{{font-weight:700;font-size:13px;letter-spacing:-0.01em}}
 .wordmark .os,.wordmark .neo{{color:#ef453b}} .wordmark .vac{{color:#28a3e5}}
-.wordmark .wm-sub{{color:#fff;font-weight:500;font-size:17px;margin-left:6px}}
+.wm-sub{{font-weight:600;font-size:19px;letter-spacing:0.09em;margin-top:3px}}
 main{{max-width:880px;margin:0 auto;padding:24px 28px 60px}}
 h1{{font-style:italic;font-size:26px;margin:0 0 8px}} h2{{font-size:18px;margin:0 0 4px}}
 .lead{{color:#555;margin:0 0 18px}} a{{color:#1d86c2;text-decoration:none;font-weight:600}} a:hover{{color:#ff4136}}
@@ -78,7 +80,7 @@ section{{background:#fff;border:1px solid #e1e5e8;border-radius:10px;padding:16p
 .meta{{color:#7a7a7a;font-size:13px;margin:0 0 10px}}
 pre{{white-space:pre-wrap;word-wrap:break-word;font:12.5px/1.45 ui-monospace,Consolas,monospace;background:#f5f7f8;border-radius:6px;padding:12px;margin:0;max-height:420px;overflow:auto}}
 </style></head><body>
-<header><p class="wordmark"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span> <span class="wm-sub">Konfigurator · Lizenzen</span></p></header>
+<header><p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p></header>
 <main><h1>Lizenzen</h1><p class="lead">{e(intro)} <a href="./LICENSE.txt">Lizenztext CC BY-NC-SA 4.0</a></p>
 <ul>{toc}</ul>{secs}</main></body></html>
 '''
