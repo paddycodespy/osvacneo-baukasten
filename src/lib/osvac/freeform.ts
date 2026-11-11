@@ -11,6 +11,7 @@
  * erst make() der einzelnen Körper ruft replicad auf.
  */
 import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, type Shape3D, type Point } from 'replicad';
+import { UserError, partLabel } from '../errors';
 
 // ---------------------------------------------------------------- Datenmodell
 
@@ -549,7 +550,7 @@ function wire3(f: Frame, pts: P2[]) {
   const h = new oc.NCollection_HArray1_gp_Pnt(arr);
   const ip = new oc.GeomAPI_Interpolate(h, true, 1e-7);
   ip.Perform();
-  if (!ip.IsDone()) throw new Error('Querschnitt ließ sich nicht als Kurve darstellen.');
+  if (!ip.IsDone()) throw new UserError('Eine Form ließ sich nicht berechnen. Bitte ein Maß etwas ändern.');
   const mk = new oc.BRepBuilderAPI_MakeEdge(ip.Curve());
   const e = new Edge(mk.Edge());
   for (const x of [mk, ip, h, arr]) x.delete();
@@ -563,7 +564,7 @@ function wire3(f: Frame, pts: P2[]) {
 function hollowLoft(frames: Frame[], inner: P2[][], outer: P2[][], ruled: boolean, name: string): Shape3D {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const oc = getOC() as any;
-  const fail = () => new Error(`„${name}“ ließ sich mit diesen Maßen nicht berechnen. Bitte Länge, Versatz oder Knick etwas ändern.`);
+  const fail = () => new UserError(`${partLabel(name)} ließ sich mit diesen Maßen nicht berechnen. Bitte Länge, Versatz oder Knick etwas ändern.`);
   const n = frames.length - 1;
   const wo = frames.map((f, i) => wire3(f, outer[i]));
   const wi = frames.map((f, i) => wire3(f, inner[i]));
@@ -848,7 +849,7 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
       if (!tapered) return extrudeRing(fb, F.inn, F.out, rot1, Lm);
       const e = at(Lm);
       const N = nFor(F.out, e.out);
-      return hollowLoft([fb, advance(fb, Lm)], [samplePoints(F.inn, N), samplePoints(e.inn, N)], [samplePoints(F.out, N), samplePoints(e.out, N)], true, label);
+      return hollowLoft([fb, advance(fb, Lm)], [samplePoints(F.inn, N), samplePoints(e.inn, N)], [samplePoints(F.out, N), samplePoints(e.out, N)], true, `Geräteanschluss · ${label}`);
     },
   });
   if (c > 0) {
@@ -861,7 +862,7 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
       name: 'Geräteanschluss · Einführfase',
       cost: 0.5,
       dep: { ...base, part: 'chamfer', L, c, mode: dv.mode },
-      make: () => hollowLoft([fc, advance(fc, c)], [samplePoints(e0.inn, N, rot1), samplePoints(inn1, N, rot1)], [samplePoints(e0.out, N, rot1), samplePoints(out1, N, rot1)], true, 'Einführfase'),
+      make: () => hollowLoft([fc, advance(fc, c)], [samplePoints(e0.inn, N, rot1), samplePoints(inn1, N, rot1)], [samplePoints(e0.out, N, rot1), samplePoints(out1, N, rot1)], true, 'Geräteanschluss · Einführfase'),
     });
   }
   f = advance(fb, L);

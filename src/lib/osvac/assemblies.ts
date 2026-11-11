@@ -12,6 +12,7 @@ import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, h
 import { pipeCone, pipeTransition, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
+import { UserError } from '../errors';
 
 export interface Body {
   name: string;
@@ -249,7 +250,7 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
   const spec = o.free ?? DEFAULT_FREE;
   const plan = planFree(spec);
   const err = plan.issues.find((x) => x.level === 'error');
-  if (err) throw new Error(err.text);
+  if (err) throw new UserError(err.text.replace(/^[^:]*\(Baustein (\d+)\): /, 'Baustein $1: '));
   const G = bedPlacement(spec, plan);
   const w = spec.wall;
   const pipeFor = (d: number): PipeSpec => ({ d1Inner: d, d2Inner: d, length: 0, wall: w, transition: OSVAC_TRANSITION, screwHoles: false });

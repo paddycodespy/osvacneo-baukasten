@@ -14,6 +14,7 @@ import type { OsvacParams } from './params';
 import { revolveProfile, L, A, rad } from './geom';
 import { textOnCylinder, engrave } from './text';
 import { TEXT } from './grip';
+import { UserError } from '../errors';
 
 const HOLE_ANGLES = [90, 210, 330];
 
@@ -116,7 +117,7 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
     const toolVol = tools.reduce((sum, t) => sum + measureVolume(t), 0);
     body = body.cut(makeCompound(tools) as unknown as Shape3D);
     const removed = before - measureVolume(body);
-    if (!(removed > 0 && removed < toolVol * 1.02)) throw new Error('Die Schraubenlöcher ließen sich mit diesen Maßen nicht berechnen. Bitte die Maße leicht ändern oder die Schraubenlöcher abwählen.');
+    if (!(removed > 0 && removed < toolVol * 1.02)) throw new UserError('Die Schraubenlöcher ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern oder die Löcher in den Feineinstellungen abwählen.');
   }
 
   if (opt.text !== false) {

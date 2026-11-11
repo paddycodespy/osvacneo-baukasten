@@ -14,6 +14,7 @@
   import { estimateFilament } from './lib/filament';
   import { CHANGES } from './lib/credits';
   import FreeformEditor from './components/FreeformEditor.svelte';
+  import { userMessage } from './lib/errors';
   import { TEMPLATES, planFree, freeSummary, type FreeSpec } from './lib/osvac/freeform';
   import { freeMaleOnBed } from './lib/osvac/assemblies';
 
@@ -76,6 +77,12 @@
   /** Prüfung des Freiform-Aufbaus (reine Rechnung, ohne CAD-Kern) */
   const freePlan = $derived(kind.freeform ? planFree($state.snapshot(free)) : null);
   const freeIssues = $derived(freePlan?.issues ?? []);
+  /** Download gesperrt, solange der Adapter einen Fehler hat (Berechnung gescheitert oder Aufbau fehlerhaft) */
+  const blocked = $derived(status === 'error' || freeIssues.some((x) => x.level === 'error'));
+  const lastStep = $derived(STEPS.length - 1);
+  $effect(() => {
+    if (blocked && step === lastStep) step = lastStep - 1;
+  });
   const params = $derived(deriveParams(input));
   /** PETG-Bedarf; Druckhilfe zählt mit, wenn sie gedruckt wird */
   const filament = $derived.by(() => {
@@ -236,7 +243,7 @@
     } catch (e) {
       if (token !== buildToken) return;
       status = 'error';
-      errorMsg = e instanceof Error ? e.message : String(e);
+      errorMsg = userMessage(e);
     }
   }
 
@@ -293,7 +300,7 @@
       for (const old of files.filter((x) => x.fileName === r.fileName)) URL.revokeObjectURL(old.url);
       files = [{ ...r, key }, ...files.filter((x) => x.fileName !== r.fileName)];
     } catch (e) {
-      errorMsg = e instanceof Error ? e.message : String(e);
+      errorMsg = userMessage(e);
     } finally {
       exporting = null;
     }
@@ -334,7 +341,7 @@
       const r = await exportPlate(plate.map(({ req, includeHelpers, label }) => ({ req, includeHelpers, label })), f, `osVAC neo Druckbett ${plate.length} Adapter`);
       files = [{ ...r, key: 'plate' + f }, ...files.filter((x) => x.fileName !== r.fileName)];
     } catch (e) {
-      errorMsg = e instanceof Error ? e.message : String(e);
+      errorMsg = userMessage(e);
     } finally {
       plateBusy = null;
     }
@@ -430,7 +437,15 @@
     <ol class="steps">
       {#each STEPS as s, i}
         <li>
-          <button class="step-tab" class:current={step === i} class:done={i < step} aria-current={step === i ? 'step' : undefined} onclick={() => (step = i)}>
+          <button
+            class="step-tab"
+            class:current={step === i}
+            class:done={i < step}
+            aria-current={step === i ? 'step' : undefined}
+            disabled={i === lastStep && blocked}
+            title={i === lastStep && blocked ? 'Erst die rot markierten Punkte beheben' : undefined}
+            onclick={() => (step = i)}
+          >
             <span class="num">{i + 1}</span><span class="label">{s}</span>
           </button>
         </li>
@@ -673,13 +688,16 @@
 
     </div>
 
+    {#if blocked && step === lastStep - 1}
+      <p class="nav-hint" role="status">Bitte zuerst die rot markierten Punkte beheben. Danach geht es zum Download.</p>
+    {/if}
     <nav class="step-nav">
       <!-- Beschriftung = Ziel-Schritt mit Pfeil; im ersten Schritt bleibt der Platz des Zurück-Knopfs frei -->
       <button class="ghost" class:hidden={step === 0} disabled={step === 0} aria-label={step > 0 ? `Zurück zu ${STEPS[step - 1]}` : undefined} onclick={() => (step = Math.max(0, step - 1))}>
         <svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5" /></svg>{step > 0 ? STEPS[step - 1] : ''}
       </button>
       {#if step < STEPS.length - 1}
-        <button class="next" aria-label="Weiter zu {STEPS[step + 1]}" onclick={() => (step = step + 1)}>
+        <button class="next" aria-label="Weiter zu {STEPS[step + 1]}" disabled={step + 1 === lastStep && blocked} onclick={() => (step = step + 1)}>
           {STEPS[step + 1]}<svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
         </button>
       {/if}

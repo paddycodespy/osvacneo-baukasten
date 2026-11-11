@@ -430,7 +430,12 @@ legend.field-label { width: 100%; }
 .ghost:hover:not(:disabled) { border-color: var(--sky); }
 .ghost:disabled { opacity: 0.4; }
 .next { border: 0; background: var(--red); color: #fff; margin-left: auto; }
-.next:hover { background: var(--red-d); }
+.next:hover:not(:disabled) { background: var(--red-d); }
+.next:disabled { background: #c9d1d5; color: #fff; cursor: not-allowed; }
+.step-tab:disabled { cursor: not-allowed; opacity: 0.45; }
+.step-tab:disabled:hover .num { border-color: var(--line); }
+.nav-hint { margin: 0; padding: 10px 24px 0; border-top: 1px solid var(--line); font-size: 13.5px; color: #b02a20; }
+.nav-hint + .step-nav { border-top: 0; padding-top: 8px; }
 
 /* ---------- Mobil ---------- */
 .status-m { display: none; }
