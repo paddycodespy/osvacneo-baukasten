@@ -129,7 +129,9 @@ Auf GitHub laufen alle bei jedem Push (Actions → Tests).
 - In Skizzen berührt keine Beschriftung eine Form, Linie oder andere Beschriftung; Eckradien sind mit Hinweislinien außerhalb der Form beschriftet.
 - Der Stand (Typ, Größen, Passung, Freiform-Aufbau, Schritt) wird im Browser gespeichert (localStorage) und beim nächsten Öffnen wiederhergestellt; beschädigte oder unbekannte Werte fallen auf den Standard zurück.
 - Freiform: Ist der Aufbau gegenüber der Vorlage verändert, fragt ein Klick auf eine Vorlage vorher nach. Nach der Berechnung steht schon im Aufbau, ob Stützen nötig sind. Die Zugabe am Gerät ist bei runden Formen 0,2 mm, bei eckigen 0,4 mm (wechselt mit, solange der Standard drinsteht).
-- Während der Berechnung zeigt die Vorschau den Fortschritt („3 von 9 Teilen“). Scheitert sie, bleibt das letzte Modell blass stehen; gab es noch keins, erscheint ein Hinweis statt einer leeren Vorschau.
+- „Neu anfangen“ unten in Schritt 1 (nur sichtbar, wenn etwas geändert wurde, mit Rückfrage) setzt alle Eingaben auf den Anfang; Druckbett und fertige Dateien bleiben.
+- Freiform: Dateiname und Druckbett-Liste nennen die Extras („… Schrauben Aussparung“). Die Lage der Aussparung zeigt eine kleine Skizze des Querschnitts, ein Klick darauf setzt sie. Die schnelle Vorschau rechnet ohne Extras.
+- Während der Berechnung zeigt die Vorschau den Fortschritt („3 von 9 Teilen“, ab dem ersten fertigen Teil). Scheitert sie, bleibt das letzte Modell blass stehen; gab es noch keins, erscheint ein Hinweis statt einer leeren Vorschau.
 - Im Download-Schritt lassen sich mehrere Adapter auf ein Druckbett legen und zusammen als 3MF, STL oder STEP herunterladen.
 - Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Drehring 0,4“).
 
@@ -172,8 +174,8 @@ Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fens
 
 **Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
 Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
-`osVAC neo Konfigurator_0.1.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
-`git tag v0.1.0 && git push --tags`.
+`osVAC neo Konfigurator_0.2.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
+`git tag v0.2.0 && git push --tags`.
 
 **Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
 (Startmenü, Deinstallation über „Apps“). Da die Datei nicht signiert ist, meldet Windows beim ersten Start

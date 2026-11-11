@@ -1109,12 +1109,13 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
     if (slots || notch) {
       // einzeln schneiden und prüfen, dass jedes Werkzeug wirklich etwas wegnimmt (alle reichen bis über das offene Ende)
       const start = measureVolume(body);
+      let before = start;
       for (const tool of cutTools()) {
-        const before = measureVolume(body);
         body = body.cut(tool);
         const after = measureVolume(body);
         if (!(after < before - 1e-3) || !(after > start * 0.3))
           throw new UserError('Schlitze oder Aussparung am Gerät ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern.');
+        before = after;
       }
     }
     return body;
@@ -1128,8 +1129,14 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
     else {
       const n = Math.max(6, Math.min(24, Math.round(P / 10)));
       const arc = (f1: number, f2: number) => Math.min(Math.abs(f1 - f2), 1 - Math.abs(f1 - f2)) * P;
+      // in engen Ecken (Richtung ändert sich über ±1 mm um mehr als 25°) säße die Rippe schief: dort keine
+      const corner = (f: number) => {
+        const d = 1 / P;
+        const [a1, b1] = contourAt(front, rot1, [f - d, f + d]);
+        return Math.acos(Math.max(-1, Math.min(1, a1.t[0] * b1.t[0] + a1.t[1] * b1.t[1]))) > rad(25);
+      };
       const fr = Array.from({ length: n }, (_, k) => (k + 0.5) / n).filter(
-        (f) => !(holes && holeAt.some((g) => arc(f, g) < 5)) && !(slots && slotAt.some((g) => arc(f, g) < slotW / 2 + 2)),
+        (f) => !(holes && holeAt.some((g) => arc(f, g) < 5)) && !(slots && slotAt.some((g) => arc(f, g) < slotW / 2 + 2)) && !corner(f),
       );
       const ribPts = (x: number) => {
         const base = grow(devAt(x), over ? a + 0.4 : -(a + 0.4));
@@ -1149,6 +1156,12 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
           const A = ribPts(x0), B = ribPts(x1);
           const tri = (x: number, q: P2[]) => assembleWire([makeLine(at3(x, q[0]), at3(x, q[1])), makeLine(at3(x, q[1]), at3(x, q[2])), makeLine(at3(x, q[2]), at3(x, q[0]))]);
           const solids = A.flatMap((q, i) => (keep[i] ? [loft([tri(x0, q), tri(x1, B[i])], { ruled: true }) as unknown as Shape3D] : []));
+          // Gegenprobe: jede Rippe hat ungefähr das Volumen Dreieck × Länge
+          const expect = 0.5 * 1.6 * (a + 0.4 + RIB_CRUSH) * (x1 - x0);
+          for (const r of solids) {
+            const v = measureVolume(r);
+            if (!(v > expect * 0.7 && v < expect * 1.3)) throw new UserError('Die Klemmrippen ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern oder die Rippen abwählen.');
+          }
           return makeCompound(solids) as unknown as Shape3D;
         };
     }
@@ -1250,6 +1263,19 @@ export function bedPlacement(spec: FreeSpec, plan: FreePlan): Placement {
   return { R, tr };
 }
 
+/** Gewählte Extras am Gerät, die auch wirklich gebaut werden (für Dateiname und Druckbett-Liste) */
+export function extrasText(spec: FreeSpec): string[] {
+  const dv = spec.b.device;
+  if (spec.b.type !== 'device') return [];
+  const over = dv.mode === 'over';
+  return [
+    dv.ribs && 'Rippen',
+    over && dv.slots && SLOT_SHAPES.has(dv.section.shape) && 'Schlitze',
+    dv.holes && dv.length >= 12 && 'Schrauben',
+    over && dv.notch && 'Aussparung',
+  ].filter((t): t is string => !!t);
+}
+
 /**
  * Kurztexte der Kette: Kennung für die Kopfzeile („M25 → 62 × 38“), Untertitel („Bogen 30°, Gerät aufgesteckt“),
  * Text für den Download-Schritt und Dateiname („M25 Freiform Bogen30 Geraet 62x38“).
@@ -1266,11 +1292,12 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   const sub = ['Freiform', blocks, isDev ? devText : ''].filter(Boolean).join(' · ');
   const fileB = isDev ? `Geraet ${dev.replace(/ × /g, 'x').replace('Ø ', 'D')}` : B;
   const fileMid = spec.blocks.filter((b) => b.type === 'bend').map((b) => `Bogen${f(b.angle)}`).join(' ');
+  const x = extrasText(spec);
   return {
     code: `${A} → ${B}`,
     sub,
     long: `${A} → ${isDev ? `${devText} ${dev}` : B}`,
-    file: [A, 'Freiform', fileMid, fileB].filter(Boolean).join(' '),
+    file: [A, 'Freiform', fileMid, fileB, ...x].filter(Boolean).join(' '),
     blocks,
   };
 }

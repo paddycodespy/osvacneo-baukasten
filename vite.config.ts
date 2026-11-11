@@ -15,7 +15,7 @@ function geomVersion() {
 // base './' → der Build läuft aus jedem Unterordner (lokaler Webserver, Windows-Programm)
 export default defineConfig({
   base: './',
-  define: { __GEOM_VERSION__: JSON.stringify(geomVersion()) },
+  define: { __GEOM_VERSION__: JSON.stringify(geomVersion()), __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync('package.json', 'utf8')).version) },
   plugins: [svelte()],
   worker: { format: 'es' },
   // fester Port für „npm run desktop:dev“ (Tauri erwartet http://localhost:5173)
