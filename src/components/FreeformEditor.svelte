@@ -9,10 +9,11 @@
   import SectionEditor from './SectionEditor.svelte';
   import BlockFigure from './BlockFigure.svelte';
   import MeasureFigure from './MeasureFigure.svelte';
+  import FlangeFigure from './FlangeFigure.svelte';
   import ResetLink from './ResetLink.svelte';
   import NotchFigure from './NotchFigure.svelte';
   import { reveal } from '../lib/reveal';
-  import { TEMPLATES, SLOT_SHAPES, BLOCK_LABELS, SEAL, AUTO_HOLE_D, newBlock, sec, sectionText, specKey, flangeGeom, flangeDefaults, flangeMinRim, type FreeSpec, type Block, type BlockType, type Issue, type Section, type FlangeLayout } from '../lib/osvac/freeform';
+  import { TEMPLATES, SLOT_SHAPES, BLOCK_LABELS, SEAL, AUTO_HOLE_D, newBlock, sec, sectionText, specKey, flangeGeom, flangeDefaults, flangeMinRim, flangeExtent, BRIM_FROM, type FreeSpec, type Block, type BlockType, type Issue, type Section, type FlangeLayout } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | null;
   let {
@@ -128,17 +129,41 @@
     spec.b.device.mode = m;
     if (m === 'flange') spec.bed = 'B';
   }
+  /** Werte des Lochbilds nach Maß (für den Vergleich mit der Vorbelegung) */
+  const CUSTOM = ['plateW', 'plateH', 'holeX', 'holeY', 'holeNX', 'holeNY', 'plateD', 'holeCircle', 'holeD'] as const;
+  const customKey = (o: Partial<FreeSpec['b']['device']>) => JSON.stringify(CUSTOM.map((k) => o[k]));
+  /** zuletzt vorbelegte Werte: solange nichts von Hand geändert wurde, laufen sie mit der Öffnung mit */
+  let prefilled: string | null = null;
+  const freshDefaults = $derived(isFlange && spec.b.device.flangeLayout !== 'auto' ? flangeDefaults(spec.b.device, spec.wall) : null);
+  function refill() {
+    if (!freshDefaults) return;
+    Object.assign(spec.b.device, freshDefaults);
+    prefilled = customKey(freshDefaults);
+  }
+  $effect(() => {
+    const d = freshDefaults;
+    if (!d || prefilled === null) return;
+    const cur = customKey(spec.b.device);
+    if (cur === prefilled && customKey(d) !== cur) refill();
+  });
+  /** Lochbild nach Maß passt nicht mehr zur Öffnung (von Hand geändert): Link zum neu Vorbelegen */
+  const stale = $derived(!!freshDefaults && customKey(spec.b.device) !== customKey(freshDefaults));
   /** Lochbild wechseln: Werte nach Maß aus dem automatischen Flansch vorbelegen */
   function setLayout(l: FlangeLayout) {
     const dv = spec.b.device;
-    if (l !== 'auto' && dv.flangeLayout === 'auto') Object.assign(dv, flangeDefaults(dv, spec.wall));
+    if (l !== 'auto' && dv.flangeLayout === 'auto') {
+      const d = flangeDefaults(dv, spec.wall);
+      Object.assign(dv, d);
+      prefilled = customKey(d);
+    }
     dv.flangeLayout = l;
   }
-  /** Dichtung braucht etwas mehr Rand: beim Anhaken passend vergrößern */
-  function toggleSeal(on: boolean) {
+  /** Dichtung braucht etwas mehr Rand: beim Anhaken bzw. breiteren Band passend vergrößern */
+  function setSeal(on: boolean, w = spec.b.device.sealW) {
     const dv = spec.b.device;
     dv.seal = on;
-    if (on && dv.flangeLayout === 'auto') dv.flangeRim = Math.max(dv.flangeRim, flangeMinRim(spec.wall, true));
+    dv.sealW = w;
+    if (on && dv.flangeLayout === 'auto') dv.flangeRim = Math.max(dv.flangeRim, flangeMinRim(spec.wall, true, w));
   }
   const flange = $derived(isFlange ? flangeGeom(spec.b.device, spec.wall) : null);
   $effect(() => {
@@ -347,6 +372,7 @@
           </div>
           {#if spec.b.device.mode === 'flange'}
           {@const dv = spec.b.device}
+          <FlangeFigure seal={dv.seal} />
           <SectionEditor bind:section={dv.section} label="Form der Öffnung" measure="into" />
           <div class="grid2">
             {#if dv.flangeLayout === 'auto'}
@@ -359,15 +385,24 @@
             </Field>
           </div>
           <p class="hint">
-            {flange?.holes.length ? `${flange.holes.length} Löcher` : 'Löcher'} Ø {fmt(dv.flangeLayout === 'auto' ? AUTO_HOLE_D : dv.holeD)} mm mit Senkung für Senkkopfschrauben{dv.flangeLayout === 'auto' ? ' M4, automatisch verteilt' : ''}. Der Flansch liegt beim Drucken unten auf dem Bett, so geht es ohne Stützen.
+            {flange?.holes.length ? `${flange.holes.length} Löcher` : 'Löcher'} Ø {fmt(dv.flangeLayout === 'auto' ? AUTO_HOLE_D : dv.holeD)} mm mit Senkung für Senkkopfschrauben{dv.flangeLayout === 'auto' ? ' M4, automatisch verteilt' : ''}. Der Flansch liegt beim Drucken unten auf dem Bett, so geht es ohne Stützen.{#if flange && !flange.errors.length && flangeExtent(dv, spec.wall) >= BRIM_FROM} Bei dieser Plattengröße im Slicer einen Brim einschalten, damit die Ecken flach bleiben.{/if}
           </p>
           {@render issueList(bIssues)}
           <details class="more" bind:open={extrasOpen}>
             <summary>Extras <small>Dichtung</small></summary>
             <div class="more-body extras">
               <div class="x-item">
-                <label class="inline-check"><input type="checkbox" checked={dv.seal} onchange={(e) => toggleSeal(e.currentTarget.checked)} /> Nut für ein Dichtband</label>
-                <p class="hint">Eine flache Nut rund um die Öffnung auf der Seite zum Gerät, {SEAL.width} mm breit und {fmt(SEAL.depth)} mm tief. Passt für selbstklebendes Moosgummi-Dichtband {SEAL.width} mm breit, etwa 3 mm dick. So zieht der Flansch keine Nebenluft.</p>
+                <label class="inline-check"><input type="checkbox" checked={dv.seal} onchange={(e) => setSeal(e.currentTarget.checked)} /> Nut für ein Dichtband</label>
+                <p class="hint">Eine flache Nut rund um die Öffnung auf der Seite zum Gerät, {fmt(SEAL.depth)} mm tief, für selbstklebendes Moosgummi-Dichtband (etwa 3 mm dick). So zieht der Flansch keine Nebenluft.</p>
+                {#if dv.seal}
+                  <Field label="Breite des Dichtbands">
+                    <div class="seg wide" role="radiogroup" aria-label="Breite des Dichtbands">
+                      {#each SEAL.widths as w}
+                        <button type="button" role="radio" aria-checked={dv.sealW === w} class:sel={dv.sealW === w} onclick={() => setSeal(true, w)}>{w} mm</button>
+                      {/each}
+                    </div>
+                  </Field>
+                {/if}
               </div>
             </div>
           </details>
@@ -387,9 +422,11 @@
                   <Field label="Höhe der Platte"><NumberField bind:value={dv.plateH} min={20} max={300} step={1} label="Höhe der Platte" /></Field>
                   <Field label="Lochabstand waagerecht" help="Abstand der Lochmitten, an der Breite gemessen."><NumberField bind:value={dv.holeX} min={0} max={290} step={0.5} label="Lochabstand waagerecht" /></Field>
                   <Field label="Lochabstand senkrecht" help="Abstand der Lochmitten, an der Höhe gemessen."><NumberField bind:value={dv.holeY} min={0} max={290} step={0.5} label="Lochabstand senkrecht" /></Field>
+                  <Field label="Löcher waagerecht" help="Wie viele Löcher entlang der Breite sitzen, die Ecken mitgezählt."><NumberField bind:value={dv.holeNX} min={2} max={6} step={1} unit="" label="Löcher waagerecht" /></Field>
+                  <Field label="Löcher senkrecht" help="Wie viele Löcher entlang der Höhe sitzen, die Ecken mitgezählt."><NumberField bind:value={dv.holeNY} min={2} max={6} step={1} unit="" label="Löcher senkrecht" /></Field>
                   <Field label="Loch-Ø" help="4,5 mm für M4, 5,5 mm für M5, 3,4 mm für M3. Die Senkung passt sich an."><NumberField bind:value={dv.holeD} min={2} max={10} step={0.1} label="Loch-Durchmesser" /></Field>
                 </div>
-                <p class="hint">4 Löcher an den Ecken des Lochabstands.</p>
+                <p class="hint">{flange?.holes.length ?? 4} Löcher, gleichmäßig auf dem Rand des Lochbilds verteilt.</p>
               {:else if dv.flangeLayout === 'round'}
                 <div class="grid2">
                   <Field label="Platten-Ø"><NumberField bind:value={dv.plateD} min={20} max={300} step={1} label="Durchmesser der Platte" /></Field>
@@ -397,6 +434,9 @@
                   <Field label="Anzahl Löcher"><NumberField bind:value={dv.holeN} min={2} max={16} step={1} unit="" label="Anzahl der Löcher" /></Field>
                   <Field label="Loch-Ø" help="4,5 mm für M4, 5,5 mm für M5, 3,4 mm für M3. Die Senkung passt sich an."><NumberField bind:value={dv.holeD} min={2} max={10} step={0.1} label="Loch-Durchmesser" /></Field>
                 </div>
+              {/if}
+              {#if dv.flangeLayout !== 'auto'}
+                <ResetLink show={stale} label="Platte und Löcher neu aus der Öffnung vorbelegen" onclick={refill} />
               {/if}
               <div class="grid2">
                 <Field label="Übergangslänge" help="Strecke, auf der die Form der Bausteine in die Form der Öffnung übergeht. Länger ist flacher und lässt sich besser drucken.">

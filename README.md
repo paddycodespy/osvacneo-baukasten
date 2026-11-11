@@ -26,7 +26,7 @@ Für Geräte ohne runden Stutzen oder für Winkel und Versätze. Der Adapter wir
 - **Anschluss A** am Anfang der Kette: Kupplung oder Stecker von osVAC neo in den Standardgrößen oder frei (15–60 mm), mit 8-mm-Übergangskonus auf die Wandstärke der Bausteine.
 - **Bausteine** in beliebiger Reihenfolge: **Gerade** (Länge), **Bogen** (Winkel, Radius der Mittellinie, Richtung), **Übergang** (neuer Querschnitt, Länge, Versatz, Knick, Verdrehung), **Absatz** (neuer Querschnitt mit 45°-Schräge, Länge automatisch).
 - **Ende B**: ein Geräteanschluss (aufgesteckt als Muffe/Haube oder eingesteckt als Zapfen, mit Steckweg, Zugabe, Drehung, Einführfase und beim Zapfen optional einem Anschlagring) oder wieder eine Kupplung bzw. ein Stecker. Ein automatischer Übergang führt vom letzten Baustein auf den Querschnitt des Endes.
-- **Flansch** („Mit Flansch“): Ende B wird eine flache Platte zum Anschrauben, die beim Drucken unten auf dem Bett liegt. Angegeben wird die Öffnung im Gerät. Standard: Rand 15 mm rund um die Öffnung (Form folgt der Öffnung), Dicke 5 mm, Löcher Ø 4,5 mm mit 90°-Senkung für M4, automatisch verteilt (eins in jeder Ecke, an langen Rundungen an deren Enden, dazwischen höchstens 70 mm Abstand; runde Formen mindestens 4). In den Feineinstellungen „Lochbild nach Maß“: rechteckige Platte mit Lochabstand oder runde Platte mit Lochkreis, Loch-Ø frei (Senkung passt sich an); vorbelegt aus dem automatischen Flansch. Extra: Nut für Moosgummi-Dichtband auf der Anlagefläche (2 mm Steg an der Öffnung, 6 mm breit, 1,5 mm tief; braucht mindestens 18 mm Rand). Zu schmaler Rand, Löcher zu nah an Öffnung, Dichtung oder Plattenrand und zu dichte Löcher werden mit verständlicher Meldung abgefangen.
+- **Flansch** („Mit Flansch“, Vorlage „Flansch am Gehäuse“): Ende B wird eine flache Platte zum Anschrauben, die beim Drucken unten auf dem Bett liegt (Skizze im Aufbau). Angegeben wird die Öffnung im Gerät. Standard: Rand 15 mm rund um die Öffnung (Form folgt der Öffnung), Dicke 5 mm, Löcher Ø 4,5 mm mit 90°-Senkung für M4, automatisch verteilt (eins in jeder Ecke, an langen Rundungen an deren Enden, dazwischen höchstens 70 mm Abstand; runde Formen mindestens 4). In den Feineinstellungen „Lochbild nach Maß“: rechteckige Platte mit Lochabstand und Löchern je Seite (2–6, gleichmäßig auf dem Rand des Lochbilds) oder runde Platte mit Lochkreis; Loch-Ø frei (Senkung passt sich an). Die Werte werden aus dem automatischen Flansch vorbelegt und laufen mit der Öffnung mit, bis man sie von Hand ändert; danach stellt ein Link sie wieder neu ein. Extra: Nut für Moosgummi-Dichtband auf der Anlagefläche (2 mm Steg an der Öffnung, 6, 9 oder 10 mm breit, 1,5 mm tief; der Rand wächst passend mit). Ab 100 mm Plattengröße empfehlen die Druckhinweise einen Brim. Die schnelle Vorschau zeigt den Flansch ohne Löcher und Nut, die kommen in der vollen Berechnung. Zu schmaler Rand, Löcher zu nah an Öffnung, Dichtung oder Plattenrand und zu dichte Löcher werden mit verständlicher Meldung abgefangen.
 - **Extras am Geräteanschluss** (eingeklappt unter „Extras“): Klemmrippen für einen Presssitz (dreieckig, 1,6 mm breit, ragen 0,3 mm über die Gerätefläche), Längsschlitze für eine Schlauchschelle (nur aufgesteckt und nur bei Kreis, Ellipse und D-Form, denn an eckigen Formen drückt eine Schelle nur auf die Ecken; fest nach Größe: 80 % der Tiefe, Breite Umfang/40 = 2,5–4 mm, mit Schraubenlöchern je einer mittig zwischen zwei Löchern, sonst 3/4/6 je nach Umfang < 100 / ≤ 200 / > 200 mm; runder Schlitzgrund), Schraubenlöcher (Kreis und Ellipse 3 gleichmäßig, Formen mit geraden Seiten je eins mittig auf jeder Seite ab 14 mm, D-Form auf der Abflachung und 2 weitere; aufgesteckt Ø 4 mit Senkung wie beim Rohrkonus, eingesteckt Ø 3,2 zum Eindrehen; 8 mm vom Rand) und eine Aussparung am offenen Rand (nur aufgesteckt; Breite, Tiefe, Lage). Löcher, Schlitze und Rippen liegen versetzt zueinander und entfallen im Bereich der Aussparung.
 - Querschnitte: Kreis, Ellipse, Langloch, Rechteck (Eckradien oben und unten getrennt), D-Form (Kreis mit Abflachung), Trapez. Maße der Bausteine sind die lichte Weite, die Wandstärke (1,6–8 mm) kommt außen dazu; am Gerät wird das gemessene Maß eingegeben.
 - Vorlagen nach Beispielen von Thingiverse: Winkel 90° (stefanegg), rechteckige Haube (esbenrug, Bosch PSM 18 LI), Versatz mit Knick (dynamic-cube, Einhell TC-BJ 900), Gerade auf Stutzen.
@@ -169,7 +169,7 @@ Drehring bei 9 mm mit anderem Spaltmaß, Schraubenlöcher an sich verjüngenden 
 
 Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation Sans Regular ist maßgleich zu Arial, Abweichung ≤ 0,15 mm). Die Lizenzzeile „CC BY-NC-SA 4.0“ steht wie im Original auf dem Band (Kupplung, Schlauchteil) und oben am Stecker; zusätzlich wird die Lizenz beim Download verlinkt.
 
-Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“.
+Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“ (einen eigenen Flansch zum Anschrauben gibt es in der Freiform).
 
 ## Windows-Programm (Installer)
 
@@ -179,13 +179,18 @@ Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fens
 
 **Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
 Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
-`osVAC neo Baukasten_0.2.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
-`git tag v0.2.0 && git push --tags`.
+`osVAC neo Baukasten_0.3.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
+`git tag v0.3.0 && git push --tags`.
 
 **Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
 (Startmenü, Deinstallation über „Apps“). Da die Datei nicht signiert ist, meldet Windows beim ersten Start
 „Der Computer wurde durch Windows geschützt“: **Weitere Informationen → Trotzdem ausführen**.
 Fehlt WebView2 (nur sehr alte Windows-10-Installationen), lädt der Installer es nach.
+
+**Umstieg vom „osVAC neo Konfigurator“ (bis 0.2.0):** Das Programm hat seit 0.3.0 einen neuen Namen und eine
+neue App-Kennung. Es wird deshalb neben dem alten installiert, das alte Programm bitte über „Apps“ deinstallieren.
+Der zuletzt bearbeitete Adapter wird nicht übernommen, das Programm startet einmal mit dem Standard.
+Wer ihn behalten will, lädt ihn vorher im alten Programm herunter oder notiert die Maße.
 
 **Selbst bauen** (Windows mit Rust und Visual Studio Build Tools): `npm ci`, dann `npm run desktop:build`.
 Zum Entwickeln im Programmfenster: `npm run desktop:dev`.

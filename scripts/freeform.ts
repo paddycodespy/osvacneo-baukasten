@@ -94,12 +94,13 @@ for (const [i, shape] of shapes.entries()) {
   const s = TEMPLATES[3].make();
   const seal = i % 2 === 1;
   s.b.transition = 18;
-  s.b.device = { ...s.b.device, mode: 'flange', section: sec(shape, { w: 56, h: 34, d: 44, r: 5, r2: 3, w2: 36 }), rot: i === 3 ? 20 : 0, seal, flangeRim: seal ? 18 : 15 };
-  cases.push([`flansch-${shape}${seal ? '-dichtung' : ''}`, s]);
+  const sealW = [6, 9, 10][i % 3];
+  s.b.device = { ...s.b.device, mode: 'flange', section: sec(shape, { w: 56, h: 34, d: 44, r: 5, r2: 3, w2: 36 }), rot: i === 3 ? 20 : 0, seal, sealW, flangeRim: seal ? flangeMinRim(3, true, sealW) : 15 };
+  cases.push([`flansch-${shape}${seal ? `-dichtung${sealW}` : ''}`, s]);
 }
 {
   const s = TEMPLATES[1].make();
-  s.b.device = { ...s.b.device, mode: 'flange', section: sec('rect', { w: 62, h: 38, r: 6, r2: 3 }), flangeLayout: 'rect', plateW: 120, plateH: 90, holeX: 100, holeY: 70, holeD: 5, seal: true };
+  s.b.device = { ...s.b.device, mode: 'flange', section: sec('rect', { w: 62, h: 38, r: 6, r2: 3 }), flangeLayout: 'rect', plateW: 150, plateH: 90, holeX: 130, holeY: 70, holeNX: 3, holeNY: 2, holeD: 5, seal: true, sealW: 10 };
   cases.push(['flansch-lochbild-rechteckig', s]);
   const r = TEMPLATES[3].make();
   r.b.transition = 18;
@@ -166,12 +167,28 @@ if (!only || only === 'flansch-pruefungen') {
     ['Platte zu dünn', { flangeT: 2 }, 'dick sein'],
   ];
   const wrong = expect.filter(([, v, t]) => !flangeGeom({ ...base, ...v }, 3).errors.some((e) => e.includes(t))).map(([n]) => n);
+  // Löcher je Seite: 3 × 2 → 6 auf dem Rand, 4 × 3 → 10 (nicht in der Mitte)
+  for (const [nx, ny, n] of [[3, 2, 6], [4, 3, 10], [2, 2, 4]] as const) {
+    const g = flangeGeom({ ...base, section: sec('rect', { w: 60, h: 40, r: 5, r2: 5 }), flangeLayout: 'rect', plateW: 170, plateH: 120, holeX: 150, holeY: 100, holeNX: nx, holeNY: ny }, 3);
+    if (g.errors.length || g.holes.length !== n) wrong.push(`Löcher je Seite ${nx} × ${ny}: ${g.holes.length} statt ${n} ${g.errors.join(' ')}`);
+  }
+  // breiteres Dichtband braucht mehr Rand
+  if (!(flangeMinRim(3, true, 10) > flangeMinRim(3, true, 6))) wrong.push('Rand wächst nicht mit dem Dichtband');
+  // Vorschau ohne Schnitte: gleiche Prüfung, aber Körper ohne Löcher (schneller)
+  {
+    const t = TEMPLATES.find((x) => x.id === 'flange')!.make();
+    const full = partsFree(p, { text: false, knurl: false, supports: true, free: t }).find((q) => q.name === 'Geräteanschluss · Flansch')!;
+    const quick = partsFree(p, { text: false, knurl: false, supports: true, free: { ...t, b: { ...t.b, device: { ...t.b.device, preview: true } } } }).find((q) => q.name === 'Geräteanschluss · Flansch')!;
+    const vf = measureVolume(full.make()), vq = measureVolume(quick.make());
+    if (!(vq > vf) || full.key === quick.key) wrong.push('Vorschau-Flansch nicht ohne Löcher bzw. gleicher Schlüssel');
+  }
   // Vorbelegung „nach Maß“ passt bei allen Formen und Größen ohne Fehler
   for (const shape of shapes)
     for (const d of [20, 32, 50, 90])
       for (const seal of [false, true])
         for (const lay of ['rect', 'round'] as const) {
-          const dv = { ...base, section: sec(shape, { d, w: d * 1.6, h: d, r: 5, r2: 3, w2: d }), seal, flangeRim: flangeMinRim(3, seal) };
+          const sealW = [6, 9, 10][d % 3];
+          const dv = { ...base, section: sec(shape, { d, w: d * 1.6, h: d, r: 5, r2: 3, w2: d }), seal, sealW, flangeRim: flangeMinRim(3, seal, sealW) };
           const e = flangeGeom({ ...dv, ...flangeDefaults(dv, 3), flangeLayout: lay }, 3).errors;
           if (e.length) wrong.push(`Vorbelegung ${shape} ${d} ${seal ? 'mit Dichtung ' : ''}${lay}: ${e[0]}`);
         }
@@ -180,7 +197,7 @@ if (!only || only === 'flansch-pruefungen') {
   const bedA = planFree({ ...TEMPLATES[3].make(), bed: 'A', b: { ...TEMPLATES[3].make().b, device: base } }).issues.some((x) => x.level === 'error' && x.text.includes('Ende B'));
   if (!bedA) wrong.push('Flansch mit A unten nicht abgefangen');
   if (wrong.length) fail++;
-  console.log(`${wrong.length ? 'FEHLER' : 'ok    '} flansch-pruefungen         ${wrong.length ? wrong.join(', ') : `${expect.length + 2} Prüfungen`}`);
+  console.log(`${wrong.length ? 'FEHLER' : 'ok    '} flansch-pruefungen         ${wrong.length ? wrong.join(', ') : `${expect.length + 7} Prüfungen`}`);
 }
 
 // Stutzen-Typen mit Klemmrippen und Schlitzen (aufgesteckt/eingesteckt, gerade/konisch, mit/ohne Löcher und Text)

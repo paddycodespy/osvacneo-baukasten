@@ -12,7 +12,7 @@ import type { Dimensions } from './viewer';
 import { slipRingGapMax } from './osvac/hose';
 import { estimateFilament } from './filament';
 import { userMessage } from './errors';
-import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, type FreeSpec } from './osvac/freeform';
+import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
@@ -209,6 +209,14 @@ class AppState {
     if (this.hasSwivel)
       t.push(`Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Klemmt er, beim nächsten Mal in „Passung“ das Spiel am Drehring erhöhen.`);
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
+    const dv = this.free.b.device;
+    if (this.kind.freeform && this.free.b.type === 'device' && dv.mode === 'flange') {
+      const d = (dv.flangeLayout === 'auto' ? AUTO_HOLE_D : dv.holeD).toLocaleString('de-DE');
+      t.push(`Der Flansch hat Löcher Ø ${d} mm mit Senkung für Senkkopfschrauben. Die Senkung liegt oben, auf der Seite zum Adapter.`);
+      if (flangeExtent(dv, this.free.wall) >= BRIM_FROM)
+        t.push('Große Flanschplatte: Im Slicer einen Brim (Rand, etwa 5 mm) einschalten, damit sich die Ecken beim Drucken nicht vom Bett lösen.');
+      if (dv.seal) t.push(`Nach dem Druck selbstklebendes Moosgummi-Dichtband ${dv.sealW} mm breit in die Nut auf der Unterseite kleben.`);
+    }
     return t;
   });
 
@@ -260,7 +268,7 @@ class AppState {
   quickSpec() {
     const opts = $state.snapshot(this.buildOpts) as { free?: FreeSpec };
     // Freiform: Extras am Gerät erst in der vollen Berechnung (jeder Schnitt kostet Zeit)
-    if (opts.free) opts.free.b.device = { ...opts.free.b.device, ribs: false, slots: false, holes: false, notch: false };
+    if (opts.free) opts.free.b.device = { ...opts.free.b.device, ribs: false, slots: false, holes: false, notch: false, preview: true };
     return makeBuild(this.kindId, $state.snapshot(this.input), { text: false, knurl: false, supports: true, ...opts });
   }
   /** alles, was eine neue Berechnung auslöst */

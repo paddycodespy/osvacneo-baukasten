@@ -95,6 +95,12 @@ async function main() {
         await chk(`Gerät ${mode} ${sh}`);
       }
     }
+    // Flansch mit Dichtband
+    await pg.getByRole('radio', { name: 'Mit Flansch' }).click();
+    await chk('Flansch');
+    await pg.locator('.card.open summary', { hasText: 'Extras' }).click();
+    await pg.getByLabel('Nut für ein Dichtband').check();
+    await chk('Flansch mit Dichtung');
   });
   for (const [r, st] of found) console.log(`[${st}] ${r}`);
   console.log(found.size ? `${found.size} Überschneidungen` : 'Skizzen: keine Überschneidungen');

@@ -162,6 +162,27 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
     expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Lochkreis aus der Vorbelegung passt nicht');
     expect((await pg.locator('.stage-head').innerText()).includes('Flansch'), 'Untertitel ohne Flansch');
+    // breiteres Dichtband: Rand wächst mit (im automatischen Lochbild)
+    await pg.getByRole('radio', { name: 'Automatisch' }).click();
+    await pg.getByRole('radio', { name: '10 mm' }).click();
+    expect((await pg.getByLabel('Rand des Flanschs', { exact: true }).inputValue()) === '22', 'Rand wächst nicht mit dem Dichtband');
+    // Lochbild nach Maß läuft mit der Öffnung mit, bis es von Hand geändert wird
+    await pg.getByRole('radio', { name: 'Rund', exact: true }).click();
+    const plateD = () => pg.getByLabel('Durchmesser der Platte', { exact: true }).inputValue();
+    const d0 = await plateD();
+    await fill(pg, 'Form der Öffnung: Durchmesser', '50');
+    const d1 = await plateD();
+    expect(d1 !== d0, 'Platten-Ø läuft nicht mit der Öffnung mit');
+    await fill(pg, 'Durchmesser der Platte', '140');
+    await fill(pg, 'Form der Öffnung: Durchmesser', '40');
+    expect((await plateD()) === '140', 'von Hand geänderter Wert wurde überschrieben');
+    await pg.getByRole('button', { name: 'Platte und Löcher neu aus der Öffnung vorbelegen' }).click();
+    expect((await plateD()) !== '140', 'Link stellt die Werte nicht neu ein');
+    await ready(pg);
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'neu vorbelegter Flansch passt nicht');
+    await step(pg, 'Download');
+    expect((await pg.locator('.tips').innerText()).includes('Dichtband 10 mm'), 'Druckhinweis zur Dichtung fehlt');
+    await step(pg, 'Aufbau');
     await pg.getByRole('radio', { name: 'Über den Stutzen' }).click();
     await ready(pg);
   });
