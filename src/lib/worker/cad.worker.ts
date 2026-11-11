@@ -14,7 +14,7 @@ import { initFont } from '../osvac/text';
 import { kindById } from '../osvac/catalog';
 import type { Part } from '../osvac/assemblies';
 import type { PartRef, WorkerRequest, WorkerReply } from './protocol';
-import { UserError, GENERIC_ERROR, partLabel } from '../errors';
+import { UserError, GENERIC_ERROR, partLabel, partNotes } from '../errors';
 
 let ready: Promise<void> | null = null;
 
@@ -66,7 +66,7 @@ function init(baseUrl: string, module?: WebAssembly.Module) {
 
 // --- Zwischenspeicher: Körper nach Schlüssel (LRU) ---
 const MAX_CACHE = 40;
-type Entry = { shape: Shape3D; volume: number; area: number; zMin: number };
+type Entry = { shape: Shape3D; volume: number; area: number; zMin: number; notes: string[] };
 const cache = new Map<string, Entry>();
 
 // --- Dauerhafter Zwischenspeicher im Browser (IndexedDB): teure Körper überleben ein Neuladen der Seite ---
@@ -89,7 +89,7 @@ function db() {
   return dbp;
 }
 const reqP = <T>(r: IDBRequest<T>) => new Promise<T>((res, rej) => ((r.onsuccess = () => res(r.result)), (r.onerror = () => rej(r.error))));
-type Stored = { brep: string; volume: number; area: number; zMin: number; used: number };
+type Stored = { brep: string; volume: number; area: number; zMin: number; used: number; notes?: string[] };
 async function loadStored(key: string): Promise<Stored | undefined> {
   if (!persist) return undefined;
   try {
@@ -108,7 +108,7 @@ async function saveStored(key: string, e: Entry) {
     const d = await db();
     if (!d) return;
     const st = d.transaction(STORE, 'readwrite').objectStore(STORE);
-    st.put({ brep: e.shape.serialize(), volume: e.volume, area: e.area, zMin: e.zMin, used: Date.now() } satisfies Stored, __GEOM_VERSION__ + key);
+    st.put({ brep: e.shape.serialize(), volume: e.volume, area: e.area, zMin: e.zMin, notes: e.notes, used: Date.now() } satisfies Stored, __GEOM_VERSION__ + key);
     // aufräumen: fremde Versionen und die am längsten unbenutzten Einträge entfernen
     const keys = (await reqP(d.transaction(STORE, 'readonly').objectStore(STORE).getAllKeys())) as string[];
     const stale = keys.filter((k) => !k.startsWith(__GEOM_VERSION__));
@@ -160,7 +160,7 @@ async function getPart(r: PartRef) {
     const st = await loadStored(q.key);
     if (st) {
       try {
-        const entry: Entry = { shape: deserializeShape(st.brep) as Shape3D, volume: st.volume, area: st.area, zMin: st.zMin };
+        const entry: Entry = { shape: deserializeShape(st.brep) as Shape3D, volume: st.volume, area: st.area, zMin: st.zMin, notes: st.notes ?? [] };
         remember(q.key, entry);
         return { q, ...entry };
       } catch {
@@ -171,6 +171,7 @@ async function getPart(r: PartRef) {
   // Meldung, falls dieser Körper nicht entsteht: bei Bausteinen mit Namen, sonst allgemein
   const failed = () => new UserError(`${partLabel(q.name)} ließ sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern.`);
   let shape: Shape3D;
+  partNotes.length = 0;
   try {
     shape = q.make();
   } catch (e) {
@@ -193,7 +194,7 @@ async function getPart(r: PartRef) {
   if (q.name === 'Gewinde') volume *= threadNetVolumeFactor(deriveParams(r.input));
   if (q.volumeOffset) volume -= q.volumeOffset;
   const area = measureArea(shape) - (q.areaOffset ?? 0);
-  const entry: Entry = { shape, volume, area, zMin: shape.boundingBox.bounds[0][2] };
+  const entry: Entry = { shape, volume, area, zMin: shape.boundingBox.bounds[0][2], notes: [...partNotes] };
   remember(q.key, entry);
   if (q.cost >= 0.5) void saveStored(q.key, entry);
   return { q, ...entry };
@@ -212,7 +213,7 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
     await ready;
     if (msg.type === 'part') {
       const t0 = performance.now();
-      const { q, shape, volume, area, zMin } = await getPart(msg);
+      const { q, shape, volume, area, zMin, notes } = await getPart(msg);
       const m = shape.mesh({ tolerance: msg.options.text ? 0.03 : 0.05, angularTolerance: 0.25 });
       const body = {
         name: q.name,
@@ -221,7 +222,7 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
         normals: new Float32Array(m.normals),
         indices: new Uint32Array(m.triangles),
       };
-      post({ type: 'part', id: msg.id, body, volume, area, zMin, ms: performance.now() - t0 }, [body.positions.buffer, body.normals.buffer, body.indices.buffer]);
+      post({ type: 'part', id: msg.id, body, volume, area, zMin, notes, ms: performance.now() - t0 }, [body.positions.buffer, body.normals.buffer, body.indices.buffer]);
       return;
     }
     if (msg.type === 'partMesh') {

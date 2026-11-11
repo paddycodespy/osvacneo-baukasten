@@ -177,6 +177,8 @@ export interface BuildResult {
   helperVolume: number;
   helperArea: number;
   zMin: number;
+  /** Hinweise der Körper (z. B. weggelassene Klemmrippen), ohne Wiederholungen */
+  notes: string[];
 }
 
 /**
@@ -205,6 +207,7 @@ export async function build(req: BuildRequest, onPart?: (index: number, body: Me
     helperVolume: sum((x) => x.r.volume, true),
     helperArea: sum((x) => x.r.area, true),
     zMin: Math.min(...res.map((x) => x.r.zMin)),
+    notes: [...new Set(res.flatMap((x) => x.r.notes ?? []))],
   };
 }
 

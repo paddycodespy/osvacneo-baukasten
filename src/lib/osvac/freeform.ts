@@ -11,7 +11,7 @@
  * erst make() der einzelnen Körper ruft replicad auf.
  */
 import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, measureVolume, type Shape3D, type Point } from 'replicad';
-import { UserError, partLabel } from '../errors';
+import { UserError, partLabel, partNotes } from '../errors';
 
 // ---------------------------------------------------------------- Datenmodell
 
@@ -1053,8 +1053,8 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
   if (holes && !holeAt.length) holes = false;
 
   /** Schnitte, die Muffe/Zapfen und Fase gemeinsam haben */
-  const cutTools = (): Shape3D[] => {
-    const t: Shape3D[] = [];
+  const cutTools = (): { tool: Shape3D; kind: 'slot' | 'notch' }[] => {
+    const t: { tool: Shape3D; kind: 'slot' | 'notch' }[] = [];
     if (slots) {
       const mid = grow(devAt(L - slotLen), a + w / 2);
       for (const { p, n, t: tg } of contourAt(mid, rot1, slotAt)) {
@@ -1070,14 +1070,14 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
           makeLine(P3(x0, sw), P3(x1, sw)),
           makeLine(P3(x1, sw), P3(x1, -sw)),
         ]);
-        t.push(basicFaceExtrusion(makeFace(wire), new Vector(mul(dir3(n), 2 * h) as Point)) as unknown as Shape3D);
+        t.push({ tool: basicFaceExtrusion(makeFace(wire), new Vector(mul(dir3(n), 2 * h) as Point)) as unknown as Shape3D, kind: 'slot' });
       }
     }
     if (notch) {
       const x0 = L - dv.notchH, W = dv.notchW / 2;
       const q = (r: number, s1: number): P2 => [ray[0] * r + perp[0] * s1, ray[1] * r + perp[1] * s1];
       const face = makePolygon([at3(x0, q(0, -W)), at3(x0, q(reach, -W)), at3(x0, q(reach, W)), at3(x0, q(0, W))]);
-      t.push(basicFaceExtrusion(face, new Vector(mul(fb.t, dv.notchH + 1) as Point)) as unknown as Shape3D);
+      t.push({ tool: basicFaceExtrusion(face, new Vector(mul(fb.t, dv.notchH + 1) as Point)) as unknown as Shape3D, kind: 'notch' });
     }
     return t;
   };
@@ -1104,17 +1104,21 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
       body = body.cut(makeCompound(tools) as unknown as Shape3D);
       const removed = before - measureVolume(body);
       if (!(removed > 0 && removed < toolVol * 1.02))
-        throw new UserError('Die Schraubenlöcher am Gerät ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern oder die Löcher abwählen.');
+        throw new UserError('Gerät: Die Schraubenlöcher passen so nicht an diese Form. Bitte die Tiefe etwas ändern oder die Löcher abwählen.');
     }
     if (slots || notch) {
       // einzeln schneiden und prüfen, dass jedes Werkzeug wirklich etwas wegnimmt (alle reichen bis über das offene Ende)
       const start = measureVolume(body);
       let before = start;
-      for (const tool of cutTools()) {
+      for (const { tool, kind } of cutTools()) {
         body = body.cut(tool);
         const after = measureVolume(body);
         if (!(after < before - 1e-3) || !(after > start * 0.3))
-          throw new UserError('Schlitze oder Aussparung am Gerät ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern.');
+          throw new UserError(
+            kind === 'notch'
+              ? 'Gerät: Die Aussparung passt so nicht an diese Form. Bitte schmaler machen oder die Lage ändern.'
+              : 'Gerät: Ein Schlitz ließ sich an dieser Form nicht schneiden. Bitte die Tiefe etwas ändern oder die Schlitze abwählen.',
+          );
         before = after;
       }
     }
@@ -1153,15 +1157,36 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
       const keep = ribPts(x0).map((tri) => !inNotch(tri[1], 1.5));
       if (keep.some(Boolean))
         ribs = () => {
-          const A = ribPts(x0), B = ribPts(x1);
+          const tapered = front.shape === 'circle' && Math.abs(back.d - front.d) > 1e-6;
+          const A = ribPts(x0), B = ribPts(x1), M = ribPts((x0 + x1) / 2);
           const tri = (x: number, q: P2[]) => assembleWire([makeLine(at3(x, q[0]), at3(x, q[1])), makeLine(at3(x, q[1]), at3(x, q[2])), makeLine(at3(x, q[2]), at3(x, q[0]))]);
-          const solids = A.flatMap((q, i) => (keep[i] ? [loft([tri(x0, q), tri(x1, B[i])], { ruled: true }) as unknown as Shape3D] : []));
-          // Gegenprobe: jede Rippe hat ungefähr das Volumen Dreieck × Länge
+          // gerade Rippe: Dreieck entlang der Achse gezogen (sehr robust); konisch: Loft, notfalls gerade in mittlerer Lage
+          const straight = (q: P2[]) => basicFaceExtrusion(makeFace(tri(x0, q)), new Vector(mul(fb.t, x1 - x0) as Point)) as unknown as Shape3D;
           const expect = 0.5 * 1.6 * (a + 0.4 + RIB_CRUSH) * (x1 - x0);
-          for (const r of solids) {
+          const ok = (r: Shape3D) => {
             const v = measureVolume(r);
-            if (!(v > expect * 0.7 && v < expect * 1.3)) throw new UserError('Die Klemmrippen ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern oder die Rippen abwählen.');
-          }
+            return v > expect * 0.7 && v < expect * 1.3;
+          };
+          const solids: Shape3D[] = [];
+          let lost = 0;
+          A.forEach((q, i) => {
+            if (!keep[i]) return;
+            const tries = tapered ? [() => loft([tri(x0, q), tri(x1, B[i])], { ruled: true }) as unknown as Shape3D, () => straight(M[i])] : [() => straight(q)];
+            for (const t of tries) {
+              try {
+                const r = t();
+                if (ok(r)) return void solids.push(r);
+                r.delete?.();
+              } catch {
+                /* nächster Versuch */
+              }
+            }
+            lost++;
+          });
+          // eine fehlerhafte Rippe fällt still weg (beim Klemmen kommt es auf eine nicht an); fehlen viele, ein Hinweis
+          const total = solids.length + lost;
+          if (!solids.length) throw new UserError('Gerät: Die Klemmrippen ließen sich bei dieser Form nicht berechnen. Bitte die Rippen abwählen.');
+          if (lost > total / 4) partNotes.push(`Gerät: ${lost} von ${total} Klemmrippen ließen sich bei dieser Form nicht sauber berechnen und wurden weggelassen. Der Adapter klemmt dadurch etwas schwächer.`);
           return makeCompound(solids) as unknown as Shape3D;
         };
     }

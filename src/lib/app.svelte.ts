@@ -68,6 +68,8 @@ class AppState {
   progress = $state<{ done: number; total: number } | null>(null);
   /** Freiform: Fläche, die beim Druck frei nach unten hängt (mm², aus dem Vorschaunetz) */
   overhang = $state(0);
+  /** Hinweise aus der vollen Berechnung (z. B. weggelassene Klemmrippen) */
+  buildNotes = $state<string[]>([]);
 
   // ---------------------------------------------------------------- Export
   activeFormat = $state<ExportFormat>('3mf');
@@ -150,7 +152,7 @@ class AppState {
       else if (!LABELS[k].presets.includes(v)) w.push(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
     }
     w.push(...this.machineWarnings);
-    if (this.kind.freeform) w.push(...this.freeIssues.map((x) => x.text));
+    if (this.kind.freeform) w.push(...this.freeIssues.map((x) => x.text), ...this.buildNotes);
     if (this.input.maleFemaleGapSize < 0.1 || this.input.maleFemaleGapSize > 0.5) w.push('Das Spiel liegt außerhalb von 0,1 bis 0,5 mm. Stecker und Kupplung passen dann kaum zusammen.');
     return w;
   });

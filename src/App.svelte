@@ -44,6 +44,7 @@
     app.errorMsg = '';
     app.measures = null; // Filamentangabe gehört zur alten Konfiguration
     app.progress = null;
+    app.buildNotes = [];
     try {
       app.status = 'preview';
       if (shownKind && shownKind !== kindId) {
@@ -78,6 +79,7 @@
       if (token !== buildToken) return;
       app.dims = v.setBodies(full.bodies);
       app.overhang = app.kind.freeform ? overhangArea(full.bodies) : 0;
+      app.buildNotes = full.notes;
       app.measures = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
       app.progress = null;
       app.status = 'ready';
@@ -217,7 +219,7 @@
         <StepKind />
       {:else if app.step === 1 && app.kind.freeform}
         <h2>Aufbau</h2>
-        <FreeformEditor bind:spec={app.free} bind:open={app.freeOpen} bind:template={app.freeTemplate} issues={app.freeIssues} {printNote} />
+        <FreeformEditor bind:spec={app.free} bind:open={app.freeOpen} bind:template={app.freeTemplate} issues={[...app.freeIssues, ...app.buildNotes.map((text) => ({ level: 'warn' as const, text }))]} {printNote} />
       {:else if app.step === 1}
         <StepSizes />
       {:else if app.step === 2}
