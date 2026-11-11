@@ -127,6 +127,8 @@ export class PartViewer {
   private logo!: THREE.Mesh;
   private logoTimer: ReturnType<typeof setTimeout> | undefined;
   private ray = new THREE.Raycaster();
+  /** Schnitt je Körper (Freiform: Ebene durch die Mittellinie des Bausteins), sonst die gemeinsame Ebene */
+  private planes: ((name: string) => { p: [number, number, number]; n: [number, number, number] } | null) | null = null;
   section = false;
   showHelpers = true;
 
@@ -147,6 +149,8 @@ export class PartViewer {
     this.controls.maxPolarAngle = Math.PI * 0.96;
     this.controls.addEventListener('change', () => {
       this.needsRender = true;
+      // Schnitt je Körper: abgeschnittene Seite folgt der Kamera
+      if (this.section && this.planes) for (const c of this.model.children) this.clipFor(c as THREE.Mesh);
       this.placeLogoSoon();
     });
 
@@ -223,9 +227,10 @@ export class PartViewer {
         side: THREE.DoubleSide,
         transparent: b.helper,
         opacity: b.helper ? 0.85 : 1,
-        clippingPlanes: this.section ? [this.clip] : [],
+        clippingPlanes: [],
       });
       const mesh = new THREE.Mesh(g, mat);
+      mesh.name = b.name;
       mesh.userData.helper = b.helper;
       mesh.visible = !b.helper || this.showHelpers;
       this.model.add(mesh);
@@ -247,6 +252,7 @@ export class PartViewer {
     this.bedScale = Math.max(1, (Math.max(all.x, all.y) + 24) / BED);
     this.bed.scale.set(this.bedScale, this.bedScale, 1);
     if (!this.framed) this.frame(box);
+    if (this.section) this.setSection(true);
     this.placeLogoSoon();
     this.needsRender = true;
     return { height: size.z, diameter: 2 * rMax, width: Math.max(size.x, size.y) };
@@ -340,11 +346,30 @@ export class PartViewer {
     this.needsRender = true;
   }
 
+  /** Freiform: Schnittebene je Körper (Modellkoordinaten); null = eine gemeinsame Ebene durch die Mitte */
+  setSectionPlanes(fn: ((name: string) => { p: [number, number, number]; n: [number, number, number] } | null) | null) {
+    this.planes = fn;
+    if (this.section) this.setSection(true);
+  }
+
+  /** Schnittebene eines Körpers in Weltkoordinaten; abgeschnitten wird die Seite zur Kamera (wie bei der gemeinsamen Ebene) */
+  private clipFor(m: THREE.Mesh): THREE.Plane {
+    const d = this.planes?.(m.name);
+    if (!d) return this.clip;
+    const plane = (m.userData.clip as THREE.Plane | undefined) ?? new THREE.Plane();
+    m.userData.clip = plane;
+    const p = new THREE.Vector3(...d.p).add(this.model.position);
+    plane.setFromNormalAndCoplanarPoint(new THREE.Vector3(...d.n).normalize(), p);
+    const want = Math.sign(this.clip.distanceToPoint(this.camera.position)) || 1;
+    if (Math.sign(plane.distanceToPoint(this.camera.position)) !== want) plane.negate();
+    return plane;
+  }
+
   setSection(on: boolean) {
     this.section = on;
     for (const c of this.model.children) {
       const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      m.clippingPlanes = on ? [this.clip] : [];
+      m.clippingPlanes = on ? [this.clipFor(c as THREE.Mesh)] : [];
       m.needsUpdate = true;
     }
     this.needsRender = true;

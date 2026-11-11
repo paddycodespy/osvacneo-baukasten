@@ -643,6 +643,10 @@ export interface FreePlan {
   end: Frame;
   /** Punkte entlang der Mittellinie (für Lage und Ausrichtung auf dem Druckbett) */
   path: V3[];
+  /** je Baustein: Anfangsrahmen und Ebene der Biegung (Bogen; Übergang mit Versatz/Knick), für den Schnitt in der Vorschau */
+  cuts: { start: Frame; n: V3 | null }[];
+  /** Anfangsrahmen der Kette (Ende von Anschluss A) */
+  startFrame: Frame;
 }
 
 /** Länge des Übergangskonus zwischen Anschluss von osVAC neo und Formstück (TransitionConeLength) */
@@ -734,10 +738,13 @@ export function planFree(spec: FreeSpec): FreePlan {
   const path: V3[] = [[0, 0, 0], f.o];
   const f1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
 
+  const cuts: FreePlan['cuts'] = [];
+  const startFrame = f;
   spec.blocks.forEach((b, idx) => {
     const name = `Formstück ${idx + 1} · ${BLOCK_LABELS[b.type]}`;
     const what = `${BLOCK_LABELS[b.type]} (Baustein ${idx + 1})`;
     const start = f, s0 = s, rot0 = rotS;
+    cuts[idx] = { start, n: null };
     const inner0 = s0, outer0 = grow(s0, w);
     const base = { kind: 'free', f: frameKey(start), s: secKey(s0), rot: r6(rot0), w };
     if (b.type === 'straight') {
@@ -750,6 +757,7 @@ export function planFree(spec: FreeSpec): FreePlan {
       path.push(f.o);
     } else if (b.type === 'bend') {
       const D = inPlane(f, b.dir);
+      cuts[idx].n = unit(cross(f.t, D));
       const need = extent(outer0, rot0, b.dir) + 0.5;
       if (!(b.angle > 0 && b.angle <= 180)) {
         issues.push({ level: 'error', text: `${what}: Der Winkel muss zwischen 1° und 180° liegen.` });
@@ -811,6 +819,7 @@ export function planFree(spec: FreeSpec): FreePlan {
       const D = inPlane(start, b.dir);
       const curved = Math.abs(offset) > 1e-6 || Math.abs(tilt) > 1e-6;
       const axis = unit(cross(start.t, D));
+      if (curved) cuts[idx].n = axis;
       const t1 = curved ? rot(start.t, axis, rad(tilt)) : start.t;
       const P0 = start.o, P3 = add(add(start.o, mul(start.t, L)), mul(D, offset));
       const P1 = add(P0, mul(start.t, L / 3)), P2 = sub(P3, mul(t1, L / 3));
@@ -876,7 +885,7 @@ export function planFree(spec: FreeSpec): FreePlan {
     chainEnd.section = target;
     chainEnd.rot = 0;
   }
-  return { bodies, issues, chainEnd, end, path };
+  return { bodies, issues, chainEnd, end, path, cuts, startFrame };
 }
 
 /** Gerader Loft zwischen zwei Querschnitten (für automatische Übergänge). */
@@ -1290,6 +1299,42 @@ export function bedPlacement(spec: FreeSpec, plan: FreePlan): Placement {
   const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
   const tr: V3 = [Math.abs(cx) < 1e-6 ? 0 : -cx, Math.abs(cy) < 1e-6 ? 0 : -cy, 0];
   return { R, tr };
+}
+
+/**
+ * Schnittebene je Körper für die Vorschau (in den Koordinaten nach dem Legen aufs Druckbett): eine Ebene durch die
+ * Mittellinie des jeweiligen Bausteins. Ein Bogen wird in seiner Biegeebene geschnitten, gerade Stücke in der Ebene
+ * des nächsten Bogens, damit der Schnitt der Kette folgt. Liefert eine Funktion Name → Ebene (Punkt, Normale).
+ */
+export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) => { p: V3; n: V3 } | null {
+  const { R, tr } = bedPlacement(spec, plan);
+  const place = (p: V3): V3 => add(mulMV(R, p), tr);
+  const n0: V3 = [0, 1, 0];
+  const perp = (n: V3, t: V3): V3 | null => {
+    const q = sub(n, mul(t, dot(n, t)));
+    const l = Math.hypot(...q);
+    return l > 1e-6 ? mul(q, 1 / l) : null;
+  };
+  // Normale je Baustein: eigene Biegeebene, sonst die des nächsten Bausteins mit Biegung, sonst senkrecht zur Laufrichtung
+  const k = plan.cuts.length;
+  const ref = (i: number): V3 | null => {
+    for (let d = 0; d < k; d++)
+      for (const j of [i - d, i + d]) if (j >= 0 && j < k && plan.cuts[j]?.n) return plan.cuts[j].n;
+    return null;
+  };
+  const planeAt = (f: Frame, n: V3 | null) => {
+    const m = (n && perp(n, f.t)) ?? perp(n0, f.t) ?? f.u;
+    return { p: place(f.o), n: mulMV(R, m) };
+  };
+  const blocks = plan.cuts.map((c, i) => (c ? planeAt(c.start, c.n ?? ref(i)) : null));
+  const a = planeAt(plan.startFrame, ref(0));
+  const b = planeAt(plan.chainEnd.frame, ref(k - 1));
+  return (name: string) => {
+    const m = /^Formstück (\d+)/.exec(name);
+    if (m) return blocks[Number(m[1]) - 1] ?? null;
+    if (/^(Geräteanschluss|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(name) || / B( \d+)?$/.test(name)) return b;
+    return a;
+  };
 }
 
 /** Gewählte Extras am Gerät, die auch wirklich gebaut werden (für Dateiname und Druckbett-Liste) */
