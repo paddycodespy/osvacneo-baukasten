@@ -616,13 +616,20 @@ function wire3(f: Frame, pts: P2[]) {
  * Hohler Loft durch mehrere Querschnitte: Außenhaut, Innenhaut und die beiden Ringflächen werden direkt
  * zu einem Körper vernäht (ohne Boolesche Operation – die war bei Freiformflächen langsam und unzuverlässig).
  */
-function hollowLoft(frames: Frame[], inner: P2[][], outer: P2[][], ruled: boolean, name: string): Shape3D {
+/** Geschlossener Linienzug durch die Punkte (für Körper, die anschließend geschnitten werden: ebene Flächen schneidet OpenCascade zuverlässig) */
+function polyWire3(f: Frame, pts: P2[]) {
+  const q = pts.map(([x, y]) => add(add(f.o, mul(f.u, x)), mul(f.v, y)) as Point);
+  return assembleWire(q.map((p, i) => makeLine(p, q[(i + 1) % q.length])));
+}
+
+function hollowLoft(frames: Frame[], inner: P2[][], outer: P2[][], ruled: boolean, name: string, poly = false): Shape3D {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const oc = getOC() as any;
   const fail = () => new UserError(`${partLabel(name)} ließ sich mit diesen Maßen nicht berechnen. Bitte Länge, Versatz oder Knick etwas ändern.`);
   const n = frames.length - 1;
-  const wo = frames.map((f, i) => wire3(f, outer[i]));
-  const wi = frames.map((f, i) => wire3(f, inner[i]));
+  const w3 = poly ? polyWire3 : wire3;
+  const wo = frames.map((f, i) => w3(f, outer[i]));
+  const wi = frames.map((f, i) => w3(f, inner[i]));
   const so = loft(wo, { ruled }, true);
   const si = loft(wi, { ruled }, true);
   const caps = [makeFace(wo[0], [wi[0]]), makeFace(wo[n], [wi[n]])];
@@ -922,7 +929,8 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
       name: 'Geräteanschluss · Einführfase',
       cost: 0.5,
       dep: { ...base, part: 'chamfer', L, c, mode: dv.mode, x: X.cutKey },
-      make: () => X.apply(hollowLoft([fc, advance(fc, c)], [samplePoints(e0.inn, N, rot1), samplePoints(inn1, N, rot1)], [samplePoints(e0.out, N, rot1), samplePoints(out1, N, rot1)], true, 'Geräteanschluss · Einführfase'), false),
+      // mit Schlitzen/Aussparung als Vieleck (die Fase ist nur wenige Millimeter lang, die Kanten sieht man nicht): Schnitte in Freiformflächen scheitern sonst bei eckigen Formen
+      make: () => X.apply(hollowLoft([fc, advance(fc, c)], [samplePoints(e0.inn, N, rot1), samplePoints(inn1, N, rot1)], [samplePoints(e0.out, N, rot1), samplePoints(out1, N, rot1)], true, 'Geräteanschluss · Einführfase', X.cuts), false),
     });
   }
   if (X.ribs) bodies.push({ name: 'Geräteanschluss · Klemmrippen', cost: 0.5, dep: { ...base, part: 'ribs', L, mode: dv.mode, x: X.key }, make: X.ribs });
@@ -994,12 +1002,17 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
       for (const { p, n, t: tg } of contourAt(mid, rot1, slotAt)) {
         const q = (s1: number, s2: number): P2 => [p[0] + tg[0] * s1 + n[0] * s2, p[1] + tg[1] * s1 + n[1] * s2];
         const h = w + 4;
-        const x0 = L - slotLen;
         const sw = slotW / 2;
-        const face = makePolygon([at3(x0, q(-sw, -h)), at3(x0, q(sw, -h)), at3(x0, q(sw, h)), at3(x0, q(-sw, h))]);
-        t.push(basicFaceExtrusion(face, new Vector(mul(fb.t, slotLen + 1) as Point)) as unknown as Shape3D);
-        // runder Schlitzgrund gegen Einreißen
-        t.push(makeCylinder(sw, 2 * h, at3(x0, q(0, -h)), dir3(n) as Point) as unknown as Shape3D);
+        // Schlitz als ein Körper: U-Form in der Ebene (Längsrichtung, Umfang), runder Grund gegen Einreißen, quer durch die Wand gezogen
+        const x0 = L - slotLen + sw, x1 = L + 1;
+        const P3 = (x: number, s1: number) => at3(x, q(s1, -h));
+        const wire = assembleWire([
+          makeLine(P3(x1, -sw), P3(x0, -sw)),
+          makeThreePointArc(P3(x0, -sw), P3(x0 - sw, 0), P3(x0, sw)),
+          makeLine(P3(x0, sw), P3(x1, sw)),
+          makeLine(P3(x1, sw), P3(x1, -sw)),
+        ]);
+        t.push(basicFaceExtrusion(makeFace(wire), new Vector(mul(dir3(n), 2 * h) as Point)) as unknown as Shape3D);
       }
     }
     if (notch) {
@@ -1036,9 +1049,15 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
         throw new UserError('Die Schraubenlöcher am Gerät ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern oder die Löcher abwählen.');
     }
     if (slots || notch) {
-      const before = measureVolume(body);
-      body = body.cut(makeCompound(cutTools()) as unknown as Shape3D);
-      if (!(measureVolume(body) > before * 0.3)) throw new UserError('Schlitze oder Aussparung am Gerät ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern.');
+      // einzeln schneiden und prüfen, dass jedes Werkzeug wirklich etwas wegnimmt (alle reichen bis über das offene Ende)
+      const start = measureVolume(body);
+      for (const tool of cutTools()) {
+        const before = measureVolume(body);
+        body = body.cut(tool);
+        const after = measureVolume(body);
+        if (!(after < before - 1e-3) || !(after > start * 0.3))
+          throw new UserError('Schlitze oder Aussparung am Gerät ließen sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern.');
+      }
     }
     return body;
   };
@@ -1077,7 +1096,7 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
     }
   }
   const cutKey = [slots ? [slotLen, slotW, ...slotAt] : 0, notch ? [dv.notchW, dv.notchH, dv.notchDir].map(r6) : 0];
-  return { apply, ribs, any: holes || slots || notch, cutKey, key: [holes ? holeAt : 0, ...cutKey, dv.ribs ? 1 : 0] };
+  return { apply, ribs, cuts: slots || notch, any: holes || slots || notch, cutKey, key: [holes ? holeAt : 0, ...cutKey, dv.ribs ? 1 : 0] };
 }
 
 // ---------------------------------------------------------------- Lage im Raum
