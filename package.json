@@ -14,6 +14,7 @@
     "test:keys": "tsx scripts/check-keys.ts",
     "test:freeform": "tsx scripts/freeform.ts",
     "test:sketches": "tsx scripts/sketch-overlap.ts",
+    "test:ui": "tsx scripts/ui-flows.ts",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build"

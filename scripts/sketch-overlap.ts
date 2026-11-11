@@ -9,9 +9,8 @@
  *
  * Chrome: CHROME_PATH oder /usr/bin/google-chrome. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
  */
-import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { chromium, type Page } from 'playwright-core';
+import type { Page } from 'playwright-core';
+import { withPreview } from './lib/preview';
 
 const SHAPES = ['Kreis', 'Ellipse', 'Langloch', 'Rechteck', 'D-Form', 'Trapez'];
 
@@ -54,33 +53,9 @@ const OVERLAP = `(() => {
   return out;
 })()`;
 
-async function waitForServer(url: string, ms = 30000) {
-  const end = Date.now() + ms;
-  while (Date.now() < end) {
-    try {
-      if ((await fetch(url)).ok) return;
-    } catch {
-      /* noch nicht da */
-    }
-    await new Promise((r) => setTimeout(r, 300));
-  }
-  throw new Error(`Server unter ${url} antwortet nicht`);
-}
-
 async function main() {
-  let server: ChildProcess | null = null;
-  let url = process.env.BASE_URL;
-  if (!url) {
-    if (!existsSync('dist/index.html')) throw new Error('Kein Build gefunden: zuerst „npm run build“ ausführen.');
-    const port = 4179;
-    server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--port', String(port), '--strictPort'], { stdio: 'ignore' });
-    url = `http://localhost:${port}/`;
-  }
-  const chrome = process.env.CHROME_PATH || '/usr/bin/google-chrome';
-  const browser = await chromium.launch({ executablePath: chrome, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const found = new Map<string, string>();
-  try {
-    await waitForServer(url);
+  await withPreview(4179, async (url, browser) => {
     const pg: Page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await pg.goto(url);
     const chk = async (state: string) => {
@@ -120,10 +95,7 @@ async function main() {
         await chk(`Gerät ${mode} ${sh}`);
       }
     }
-  } finally {
-    await browser.close();
-    server?.kill();
-  }
+  });
   for (const [r, st] of found) console.log(`[${st}] ${r}`);
   console.log(found.size ? `${found.size} Überschneidungen` : 'Skizzen: keine Überschneidungen');
   process.exit(found.size ? 1 : 0);

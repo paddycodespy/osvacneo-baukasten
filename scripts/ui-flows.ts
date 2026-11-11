@@ -1,0 +1,149 @@
+/**
+ * Prüft die wichtigsten Bedienabläufe im Browser (npm run build && npm run test:ui):
+ * „Neu anfangen“, Rückfrage vor dem Laden einer Vorlage, Bereich „Versetzen, knicken, drehen“ bleibt offen,
+ * Download gesperrt bei Fehlern, gespeicherter Stand nach dem Neuladen, Extras im Namen auf dem Druckbett.
+ *
+ * Chrome: CHROME_PATH oder /usr/bin/google-chrome. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
+ */
+import type { Page } from 'playwright-core';
+import { mkdirSync } from 'node:fs';
+import { withPreview } from './lib/preview';
+
+mkdirSync('out', { recursive: true });
+
+const results: { name: string; ok: boolean; msg?: string }[] = [];
+function expect(cond: unknown, msg: string) {
+  if (!cond) throw new Error(msg);
+}
+
+async function ready(pg: Page) {
+  // erst warten, bis eine Berechnung begonnen hat, dann bis sie fertig ist
+  await pg.waitForTimeout(400);
+  const status = pg.locator('.stage-foot .status');
+  for (let i = 0; i < 600; i++) {
+    const t = await status.innerText();
+    if (t.includes('Bereit')) return;
+    if (t.includes('Fehler')) throw new Error('Berechnung fehlgeschlagen: ' + (await pg.locator('.error').allInnerTexts()).join(' '));
+    await pg.waitForTimeout(250);
+  }
+  throw new Error('Berechnung nicht fertig geworden');
+}
+async function fill(pg: Page, label: string, value: string) {
+  const el = pg.getByLabel(label, { exact: true }).first();
+  await el.fill(value);
+  await el.press('Tab');
+  await pg.waitForTimeout(150);
+}
+const step = (pg: Page, name: string) => pg.locator('.step-tab', { hasText: name }).click();
+
+async function test(name: string, pg: Page, run: () => Promise<void>) {
+  try {
+    await run();
+    results.push({ name, ok: true });
+  } catch (e) {
+    results.push({ name, ok: false, msg: (e as Error).message.split('\n')[0] });
+    await pg.screenshot({ path: `out/ui-${name.replace(/\W+/g, '-')}.png` }).catch(() => {});
+  }
+}
+
+await withPreview(4180, async (url, browser) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const pg = await ctx.newPage();
+  const errors: string[] = [];
+  pg.on('pageerror', (e) => errors.push(String(e)));
+  pg.setDefaultTimeout(20000);
+  await pg.goto(url);
+  await ready(pg);
+
+  await test('Neu anfangen erst nach einer Änderung', pg, async () => {
+    expect((await pg.locator('.reset-all').count()) === 0, 'Link ist schon beim ersten Öffnen da');
+    await pg.getByRole('radio', { name: 'Freiform' }).click();
+    expect((await pg.locator('.reset-all').count()) === 1, 'Link fehlt nach Wahl von Freiform');
+  });
+
+  await test('Rückfrage vor dem Laden einer Vorlage', pg, async () => {
+    await step(pg, 'Aufbau');
+    await pg.locator('.card-head', { hasText: 'Bogen' }).first().click();
+    await fill(pg, 'Radius des Bogens', '45');
+    await pg.getByRole('radio', { name: 'Gerade auf Stutzen' }).click();
+    expect(await pg.locator('.confirm').isVisible(), 'keine Rückfrage trotz geändertem Aufbau');
+    await pg.getByRole('button', { name: 'Behalten' }).click();
+    expect((await pg.locator('.card-title small').nth(1).innerText()).includes('45'), 'Änderung nach „Behalten“ verloren');
+    await pg.getByRole('radio', { name: 'Gerade auf Stutzen' }).click();
+    await pg.getByRole('button', { name: 'Vorlage laden' }).click();
+    expect(await pg.getByRole('radio', { name: 'Gerade auf Stutzen' }).getAttribute('aria-checked') === 'true', 'Vorlage nicht geladen');
+    expect((await pg.locator('.confirm').count()) === 0, 'Rückfrage bleibt stehen');
+  });
+
+  await test('Versetzen, knicken, drehen bleibt offen', pg, async () => {
+    await pg.getByRole('radio', { name: 'Versatz mit Knick' }).click();
+    await pg.locator('.card-head', { hasText: 'Übergang' }).first().click();
+    const d = pg.locator('.card.open details.more', { hasText: 'Versetzen' });
+    expect(await d.evaluate((e) => (e as HTMLDetailsElement).open), 'anfangs zu, obwohl Werte gesetzt');
+    for (const l of ['Versatz des Endes', 'Knick des Endes', 'Verdrehung des Querschnitts']) await fill(pg, l, '0');
+    expect(await d.evaluate((e) => (e as HTMLDetailsElement).open), 'zugeklappt, nachdem alle Werte 0 sind');
+  });
+
+  await test('Download gesperrt bei Fehler', pg, async () => {
+    // Aussparung breiter als der halbe Umfang: Fehler am Ende B
+    await pg.getByRole('radio', { name: 'Gerade auf Stutzen' }).click();
+    const load = pg.getByRole('button', { name: 'Vorlage laden' });
+    if (await load.count()) await load.click();
+    await pg.locator('.card-head', { hasText: 'Ende B' }).click();
+    await pg.locator('.card.open summary', { hasText: 'Extras' }).click();
+    await pg.getByLabel('Aussparung am Rand').check();
+    await fill(pg, 'Breite der Aussparung', '150');
+    expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'Download trotz Fehler wählbar');
+    await fill(pg, 'Breite der Aussparung', '20');
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download nach Korrektur weiter gesperrt');
+    await pg.getByLabel('Aussparung am Rand').uncheck();
+  });
+
+  await test('Stand nach dem Neuladen', pg, async () => {
+    await pg.waitForTimeout(800); // Speichern ist leicht verzögert
+    await pg.reload();
+    await ready(pg);
+    expect((await pg.locator('.step-tab.current').innerText()).includes('Aufbau'), 'Schritt nicht wiederhergestellt');
+    expect((await pg.locator('.stage-head .code').innerText()).includes('Ø 32'), 'Freiform-Aufbau nicht wiederhergestellt');
+  });
+
+  await test('Extras im Namen auf dem Druckbett', pg, async () => {
+    // Aufbau „Gerade auf Stutzen“ aus dem vorigen Ablauf, Ende B ist noch offen
+    if (!(await pg.getByLabel('Löcher für Schrauben').isVisible())) {
+      await pg.locator('.card-head', { hasText: 'Ende B' }).click();
+      await pg.locator('.card.open summary', { hasText: 'Extras' }).click();
+    }
+    await pg.getByLabel('Löcher für Schrauben').check();
+    await ready(pg);
+    await step(pg, 'Download');
+    await pg.locator('summary', { hasText: 'Mehrere Adapter' }).click();
+    await pg.getByRole('button', { name: 'Aktuellen Adapter hinzufügen' }).click();
+    const label = (await pg.locator('.plate li').first().innerText()).trim();
+    expect(label.includes('Schrauben'), `Name ohne Extras: ${label}`);
+  });
+
+  await test('Neu anfangen setzt alles zurück, Druckbett bleibt', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.locator('.reset-all').click();
+    await pg.getByRole('button', { name: 'Behalten' }).click();
+    expect((await pg.locator('.kind.sel strong').innerText()).includes('Freiform'), '„Behalten“ hat trotzdem zurückgesetzt');
+    await pg.locator('.reset-all').click();
+    await pg.getByRole('button', { name: 'Neu anfangen', exact: true }).click();
+    expect(!(await pg.locator('.kind.sel strong').innerText()).includes('Freiform'), 'Typ nicht zurückgesetzt');
+    expect((await pg.locator('.reset-all').count()) === 0, 'Link nach dem Zurücksetzen noch da');
+    await step(pg, 'Download');
+    expect((await pg.locator('.plate li').count()) === 1, 'Druckbett wurde geleert');
+    await pg.waitForTimeout(800);
+    await pg.reload();
+    await ready(pg);
+    expect((await pg.locator('.reset-all').count()) === 0, 'nach dem Neuladen wieder der alte Stand');
+  });
+
+  if (errors.length) results.push({ name: 'keine Skriptfehler im Browser', ok: false, msg: errors.join(' | ') });
+  await ctx.close();
+});
+
+for (const r of results) console.log(`${r.ok ? 'ok    ' : 'FEHLER'} ${r.name}${r.msg ? ': ' + r.msg : ''}`);
+const bad = results.filter((r) => !r.ok).length;
+console.log(bad ? `${bad} Abläufe fehlerhaft` : 'Alle Abläufe in Ordnung');
+process.exit(bad ? 1 : 0);

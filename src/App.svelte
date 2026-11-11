@@ -22,6 +22,12 @@
   app.load();
 
   let host: HTMLDivElement;
+  let stepBody: HTMLDivElement | undefined = $state();
+  // neuer Schritt beginnt oben (sonst bliebe die Bildlaufposition des vorigen Schritts stehen)
+  $effect(() => {
+    void app.step;
+    if (stepBody) stepBody.scrollTop = 0;
+  });
   let viewer: PartViewer | null = null;
   let section = $state(false);
   /** Wurde schon einmal ein Modell angezeigt? (sonst bei Fehlern statt der Vorschau ein Hinweis) */
@@ -211,7 +217,7 @@
       {/each}
     </ol>
 
-    <div class="step-body">
+    <div class="step-body" bind:this={stepBody}>
       {#if app.errorMsg}
         <p class="error" role="alert">{app.errorMsg}</p>
       {/if}

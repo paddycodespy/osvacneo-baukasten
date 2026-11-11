@@ -9,7 +9,7 @@ import { femaleRing, femaleFields, femaleFieldsOverlap, femaleKnurl, femaleKnurl
 import { maleTube, maleSupport } from './male';
 import { revolveProfile, L } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
-import { pipeCone, pipeTransition, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
+import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
 import { UserError } from '../errors';
@@ -142,7 +142,14 @@ export function partsMachineF(p: OsvacParams, o: BuildOptions = {}): Part[] {
     part('Dichtnut-Füllung', 0.2, dF(p), () => femaleBeadFill(p)),
     part('Übergang', 0.1, { ...dAll(p, o), pipe: s, kind: 'pipeF' }, () => pipeTransition(rFi, rFi + p.generalMaterialWidth, s).translate([0, 0, zT])),
     part('Rohr', 12, { pipe: s, text: o.text, z: zT - s.transition }, () => pipeCone(s, o).translate([0, 0, zT - s.transition])),
+    ...pipeRibPart(s, o, zT - s.transition),
   ];
+}
+
+/** Klemmrippen am Rohr, falls gewählt (eigener Körper) */
+function pipeRibPart(s: PipeSpec, o: BuildOptions, z: number): Part[] {
+  if (!s.ribs || s.length < 8) return [];
+  return [part('Klemmrippen', 0.5, { pipe: s, text: o.text, z, kind: 'pipeRibs' }, () => pipeRibs(s, o).translate([0, 0, z]))];
 }
 
 /** Maschinenadapter mit Stecker: Male (Spitze oben), Übergang, Rohrkonus. */
@@ -153,6 +160,7 @@ export function partsMachineM(p: OsvacParams, o: BuildOptions = {}): Part[] {
     part('Male', 9, { ...dM(p, o), rot: 'flip' }, () => flippedMale(p, o)),
     part('Übergang', 0.1, { ...dAll(p, o), pipe: s, kind: 'pipeM' }, () => pipeTransition(p.maleDiameterInner / 2, p.maleDiameterOuter / 2, s).translate([0, 0, zT])),
     part('Rohr', 12, { pipe: s, text: o.text, z: zT - s.transition }, () => pipeCone(s, o).translate([0, 0, zT - s.transition])),
+    ...pipeRibPart(s, o, zT - s.transition),
   ];
 }
 

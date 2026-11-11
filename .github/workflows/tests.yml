@@ -1,4 +1,4 @@
-# Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen und die Geometrie aller Adapter.
+# Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen, Bedienabläufe und die Geometrie aller Adapter.
 # Läuft bei jedem Push und jedem Pull Request; Ergebnis unter „Actions“ → „Tests“.
 name: Tests
 
@@ -39,6 +39,20 @@ jobs:
         run: npm run test:sketches
         env:
           CHROME_PATH: /usr/bin/google-chrome
+
+      - name: Bedienabläufe im Browser
+        run: npm run test:ui
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      # Bildschirmfotos fehlgeschlagener Abläufe zum Herunterladen
+      - name: Bildschirmfotos bei Fehlern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-bildschirmfotos
+          path: out/ui-*.png
+          if-no-files-found: ignore
 
       # dauert am längsten: alle Adaptertypen und Größen mit dem CAD-Kern
       - name: Geometrie aller Adapter
