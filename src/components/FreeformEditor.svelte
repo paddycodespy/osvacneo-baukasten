@@ -9,23 +9,40 @@
   import SectionEditor from './SectionEditor.svelte';
   import BlockFigure from './BlockFigure.svelte';
   import MeasureFigure from './MeasureFigure.svelte';
-  import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, type FreeSpec, type Block, type BlockType, type Issue, type Section } from '../lib/osvac/freeform';
+  import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, type FreeSpec, type Block, type BlockType, type Issue, type Section } from '../lib/osvac/freeform';
 
-  let { spec = $bindable(), issues = [] }: { spec: FreeSpec; issues?: Issue[] } = $props();
+  type Open = number | 'A' | 'B' | null;
+  let {
+    spec = $bindable(),
+    issues = [],
+    open = $bindable(null),
+    template = $bindable('elbow'),
+    printNote = null,
+  }: { spec: FreeSpec; issues?: Issue[]; open?: Open; template?: string; printNote?: { text: string; level: 'ok' | 'warn' } | null } = $props();
 
   const SIZES = [25, 32, 36, 40, 50];
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
 
-  /** aufgeklappter Bereich: Baustein-ID, 'A', 'B' oder nichts */
-  let open = $state<number | 'A' | 'B' | null>(null);
-  let template = $state('elbow');
-
+  /** Vorlage, die nach Rückfrage geladen werden soll (der eigene Aufbau ginge sonst verloren) */
+  let pending = $state<string | null>(null);
+  /** Aufbau gegenüber der gewählten Vorlage verändert? */
+  const modified = $derived.by(() => {
+    const t = TEMPLATES.find((x) => x.id === template);
+    return !t || specKey(spec) !== specKey(t.make());
+  });
+  function pickTemplate(id: string) {
+    if (id === template && !modified) return;
+    if (modified) pending = id;
+    else loadTemplate(id);
+  }
   function loadTemplate(id: string) {
     const t = TEMPLATES.find((x) => x.id === id)!;
     spec = t.make();
     lastFront = spec.b.device.section.d;
+    lastShape = spec.b.device.section.shape;
     template = id;
     open = null;
+    pending = null;
   }
 
   /** Querschnitt vor Baustein i (für neue Bausteine und Kurztexte) */
@@ -93,6 +110,16 @@
     if (Math.abs(spec.b.device.dDepth - lastFront) < 1e-9) spec.b.device.dDepth = d;
     lastFront = d;
   });
+  /** Zugabe am Gerät: rund 0,2 mm, eckig 0,4 mm (eckige Formen schrumpfen in den Ecken stärker). Nur, solange der Standard drinsteht. */
+  let lastShape = spec.b.device.section.shape;
+  $effect(() => {
+    const shape = spec.b.device.section.shape;
+    if (shape === lastShape) return;
+    const dv = spec.b.device;
+    const want = (s: string) => (s === 'circle' ? 0.2 : 0.4);
+    if (Math.abs(dv.allowance - want(lastShape)) < 1e-9) dv.allowance = want(shape);
+    lastShape = shape;
+  });
 </script>
 
 {#snippet issueList(list: Issue[])}
@@ -118,11 +145,23 @@
 <div class="tpl-label">Vorlage als Startpunkt</div>
 <div class="tpl" role="radiogroup" aria-label="Vorlage">
   {#each TEMPLATES as t}
-    <button type="button" class="tpl-btn" class:sel={template === t.id} role="radio" aria-checked={template === t.id} onclick={() => loadTemplate(t.id)}>
+    <button type="button" class="tpl-btn" class:sel={template === t.id} role="radio" aria-checked={template === t.id} onclick={() => pickTemplate(t.id)}>
       <strong>{t.title}</strong><small>{t.hint}</small>
     </button>
   {/each}
 </div>
+{#if pending}
+  {@const t = TEMPLATES.find((x) => x.id === pending)}
+  <div class="confirm" role="alertdialog" aria-label="Vorlage laden">
+    <p>Deine Änderungen am Aufbau gehen verloren, wenn du {pending === template ? 'die Vorlage neu lädst' : `„${t?.title}“ lädst`}.</p>
+    <div class="confirm-btns">
+      <button type="button" class="ghost sm" onclick={() => (pending = null)}>Behalten</button>
+      <button type="button" class="next sm" onclick={() => loadTemplate(pending!)}>Vorlage laden</button>
+    </div>
+  </div>
+{:else if modified}
+  <p class="tpl-note">Aufbau geändert. Ein Klick auf eine Vorlage fragt vorher nach.</p>
+{/if}
 
 <ol class="chain">
   <!-- Anschluss A -->
@@ -185,7 +224,7 @@
                 <NumberField bind:value={b.radius} min={5} max={500} step={1} label="Radius des Bogens" />
               </Field>
             </div>
-            <Field label="Richtung" help="In welche Richtung der Bogen abbiegt. Einfach ausprobieren und in der Vorschau ansehen.">
+            <Field label="Richtung" help="In welche Richtung der Bogen abbiegt. Der blaue Pfeil in der Vorschau zeigt die Richtung an.">
               <div class="row">
                 {@render chipsWithField([0, 90, 180, 270], () => b.dir, (v) => (b.dir = v))}
                 <span class="num-sm"><NumberField bind:value={b.dir} min={0} max={359} step={5} unit="°" label="Richtung des Bogens" /></span>
@@ -214,7 +253,7 @@
                   </Field>
                 </div>
                 {#if b.offset || b.tilt}
-                  <Field label="Richtung" help="In welche Richtung Versatz und Knick zeigen. Einfach ausprobieren.">
+                  <Field label="Richtung" help="In welche Richtung Versatz und Knick zeigen. Der blaue Pfeil in der Vorschau zeigt die Richtung an.">
                     <div class="row">
                       {@render chipsWithField([0, 90, 180, 270], () => b.dir, (v) => (b.dir = v))}
                       <span class="num-sm"><NumberField bind:value={b.dir} min={0} max={359} step={5} unit="°" label="Richtung von Versatz und Knick" /></span>
@@ -331,6 +370,7 @@
     <button type="button" role="radio" aria-checked={spec.bed === 'A'} class:sel={spec.bed === 'A'} onclick={() => (spec.bed = 'A')}>Anschluss A ({spec.a.type === 'female' ? 'Kupplung' : 'Stecker'})</button>
   </div>
   <p class="hint">Dieses Ende liegt flach auf dem Druckbett.</p>
+  {#if printNote}<p class="print-note {printNote.level}" role="status">{printNote.text}</p>{/if}
 </fieldset>
 
 {@render issueList(otherIssues)}
@@ -354,6 +394,12 @@
   .tpl-btn small { font-size: 12.5px; color: var(--slate-2); }
   .tpl-btn.sel { border-color: var(--sky); background: var(--sky-l); }
   .tpl-btn:not(.sel):hover { border-color: var(--sky); }
+  .tpl-note { margin: -14px 0 22px; font-size: 13px; color: var(--slate-2); }
+  .confirm { margin: -12px 0 22px; padding: 10px 12px; border-radius: 8px; border-left: 4px solid var(--signal); background: #fdf6dc; font-size: 14px; }
+  .confirm p { margin: 0 0 8px; }
+  .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .print-note { margin: 10px 0 0; padding: 8px 12px; border-radius: 4px; font-size: 14px; border-left: 4px solid var(--sky); background: var(--sky-l); }
+  .print-note.warn { border-left-color: var(--signal); background: #fdf6dc; }
 
   .chain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; position: relative; }
   /* Verbindungslinie zwischen den Karten: zeigt die Reihenfolge von oben nach unten */

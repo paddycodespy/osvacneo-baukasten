@@ -105,6 +105,8 @@ export class PartViewer {
   private camera: THREE.PerspectiveCamera;
   private controls: OrbitControls;
   private model = new THREE.Group();
+  /** Hinweise in Modellkoordinaten (z. B. Richtungspfeil), stehen wie das Modell auf dem Bett */
+  private hint = new THREE.Group();
   private bed: THREE.Mesh;
   private clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
   private ro: ResizeObserver;
@@ -154,6 +156,7 @@ export class PartViewer {
     this.bed.add(bedLogo(() => (this.needsRender = true)));
     this.scene.add(this.bed);
     this.scene.add(this.model);
+    this.scene.add(this.hint);
 
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(host);
@@ -219,6 +222,7 @@ export class PartViewer {
     }
     // auf das Druckbett stellen
     this.model.position.z = -box.min.z;
+    this.hint.position.z = this.model.position.z;
     const size = partBox.getSize(new THREE.Vector3());
     if (!this.framed) this.frame(box);
     this.needsRender = true;
@@ -301,6 +305,37 @@ export class PartViewer {
         m.depthWrite = true;
       }
       m.needsUpdate = true;
+    }
+    this.needsRender = true;
+  }
+
+  /**
+   * Richtungspfeil zeigen (Anfang und Richtung in Modellkoordinaten) oder mit null entfernen.
+   * Er wird immer über dem Bauteil gezeichnet, damit er auch im Inneren eines Rohrs sichtbar ist.
+   */
+  setArrow(a: { origin: [number, number, number]; dir: [number, number, number]; length?: number } | null) {
+    for (const c of [...this.hint.children]) {
+      c.traverse((o) => {
+        const m = o as THREE.Mesh;
+        m.geometry?.dispose();
+        (m.material as THREE.Material | undefined)?.dispose?.();
+      });
+      this.hint.remove(c);
+    }
+    if (a) {
+      const L = a.length ?? 46, head = 13;
+      const mat = new THREE.MeshBasicMaterial({ color: 0x1d8fd8, depthTest: false, transparent: true, opacity: 0.95 });
+      const g = new THREE.Group();
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, L - head, 16), mat);
+      shaft.position.y = (L - head) / 2;
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(5.5, head, 24), mat);
+      tip.position.y = L - head / 2;
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(3.2, 16, 12), mat);
+      g.add(shaft, tip, dot);
+      for (const m of [shaft, tip, dot]) m.renderOrder = 10;
+      g.position.set(...a.origin);
+      g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...a.dir).normalize());
+      this.hint.add(g);
     }
     this.needsRender = true;
   }

@@ -13,6 +13,7 @@
     "part": "tsx scripts/build-ref.ts",
     "test:keys": "tsx scripts/check-keys.ts",
     "test:freeform": "tsx scripts/freeform.ts",
+    "test:sketches": "tsx scripts/sketch-overlap.ts",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build"
@@ -23,6 +24,7 @@
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.19.2",
     "@types/three": "^0.187.0",
+    "playwright-core": "^1.65.0",
     "svelte": "^5.57.2",
     "svelte-check": "^4.7.7",
     "tsx": "^4.23.15",
