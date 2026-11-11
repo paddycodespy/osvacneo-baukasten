@@ -13,6 +13,7 @@ import { deriveParams } from './osvac/params';
 import type { BuildOptions, Part } from './osvac/assemblies';
 import { kindById } from './osvac/catalog';
 import { build3MF } from './worker/threemf';
+import { UserError } from './errors';
 
 const hc = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 2 : 2;
 /** Anzahl Worker: Kerne − 1, höchstens 4 (jeder Worker lädt OpenCascade, ~100 MB) */
@@ -57,7 +58,7 @@ function startWorker(slot: Slot) {
     if (!p) return;
     pending.delete(m.id);
     slot.busy = false;
-    if (m.type === 'error') p.reject(new Error(m.message));
+    if (m.type === 'error') p.reject(new UserError(m.message));
     else p.resolve(m);
     pump();
   };
@@ -66,7 +67,7 @@ function startWorker(slot: Slot) {
     for (const [id, p] of pending) {
       if (p.slot !== slot) continue;
       pending.delete(id);
-      p.reject(new Error('Der CAD-Kern ist abgestürzt. Bitte die Berechnung neu starten (Wert ändern oder Seite neu laden).'));
+      p.reject(new UserError('Die Berechnung ist abgebrochen. Bitte einen Wert ändern oder die Seite neu laden.'));
     }
     w.terminate();
     startWorker(slot);
@@ -154,7 +155,7 @@ function dropStale() {
 
 function partsOf(req: BuildRequest): Part[] {
   const kind = kindById(req.kind);
-  if (!kind.parts) throw new Error(`Adaptertyp ${kind.code} ist noch nicht verfügbar.`);
+  if (!kind.parts) throw new UserError(`Adaptertyp ${kind.code} ist noch nicht verfügbar.`);
   return kind.parts(deriveParams(req.input), req.options);
 }
 

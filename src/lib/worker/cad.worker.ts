@@ -14,6 +14,7 @@ import { initFont } from '../osvac/text';
 import { kindById } from '../osvac/catalog';
 import type { Part } from '../osvac/assemblies';
 import type { PartRef, WorkerRequest, WorkerReply } from './protocol';
+import { UserError, GENERIC_ERROR, partLabel } from '../errors';
 
 let ready: Promise<void> | null = null;
 
@@ -130,7 +131,7 @@ async function saveStored(key: string, e: Entry) {
 
 function partSpec(r: PartRef): Part {
   const kind = kindById(r.kind);
-  if (!kind.parts) throw new Error(`Adaptertyp ${kind.code} ist noch nicht verfügbar.`);
+  if (!kind.parts) throw new UserError(`Adaptertyp ${kind.code} ist noch nicht verfügbar.`);
   const parts = kind.parts(deriveParams(r.input), r.options);
   const q = parts[r.index];
   if (!q) throw new Error('Unbekannter Körper');
@@ -167,7 +168,17 @@ async function getPart(r: PartRef) {
       }
     }
   }
-  const shape = q.make();
+  // Meldung, falls dieser Körper nicht entsteht: bei Bausteinen mit Namen, sonst allgemein
+  const failed = () => new UserError(`${partLabel(q.name)} ließ sich mit diesen Maßen nicht berechnen. Bitte ein Maß etwas ändern.`);
+  let shape: Shape3D;
+  try {
+    shape = q.make();
+  } catch (e) {
+    if (e instanceof UserError) throw e;
+    // z. B. WebAssembly.Exception aus OpenCascade: Ursache in die Konsole, in der Oberfläche der betroffene Teil
+    console.error('[CAD-Worker]', q.name, e);
+    throw failed();
+  }
   let volume = measureVolume(shape);
   // Plausibilität: OpenCascade liefert bei gescheiterten Booleschen Operationen mitunter kaputte Körper
   const oc = getOC();
@@ -176,7 +187,7 @@ async function getPart(r: PartRef) {
   check.delete();
   if (!valid || !(volume > 0)) {
     shape.delete?.();
-    throw new Error(`„${q.name}“ ließ sich mit diesen Maßen nicht sauber berechnen. Bitte die Maße prüfen oder einen Wert leicht ändern.`);
+    throw failed();
   }
   // Gewinde: die 0,5-mm-Überlappung mit der Wand nicht als Filament zählen
   if (q.name === 'Gewinde') volume *= threadNetVolumeFactor(deriveParams(r.input));
@@ -241,6 +252,8 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
     }
   } catch (e) {
     const id = 'id' in msg ? msg.id : -1;
-    post({ type: 'error', id, message: e instanceof Error ? e.message : String(e) });
+    // technische Fehler (z. B. WebAssembly-Ausnahmen) nur in der Konsole, in der Oberfläche ein verständlicher Satz
+    if (!(e instanceof UserError)) console.error('[CAD-Worker]', e);
+    post({ type: 'error', id, message: e instanceof UserError ? e.message : GENERIC_ERROR, user: e instanceof UserError });
   }
 };

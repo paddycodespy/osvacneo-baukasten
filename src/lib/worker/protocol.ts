@@ -53,4 +53,4 @@ export type WorkerReply =
   | { type: 'partMesh'; id: number; vertices: Float32Array; triangles: Uint32Array }
   | { type: 'partBrep'; id: number; data: string }
   | { type: 'file'; id: number; blob: Blob }
-  | { type: 'error'; id: number; message: string };
+  | { type: 'error'; id: number; message: string; user?: boolean };
