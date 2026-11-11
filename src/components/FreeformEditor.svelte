@@ -9,6 +9,7 @@
   import SectionEditor from './SectionEditor.svelte';
   import BlockFigure from './BlockFigure.svelte';
   import MeasureFigure from './MeasureFigure.svelte';
+  import ResetLink from './ResetLink.svelte';
   import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, type FreeSpec, type Block, type BlockType, type Issue, type Section } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | null;
@@ -25,6 +26,8 @@
 
   /** Vorlage, die nach Rückfrage geladen werden soll (der eigene Aufbau ginge sonst verloren) */
   let pending = $state<string | null>(null);
+  /** Rückfrage oben bei den Vorlagen oder unten beim Zurücksetzen anzeigen (dort, wo geklickt wurde) */
+  let pendingAt = $state<'top' | 'bottom'>('top');
   /** Aufbau gegenüber der gewählten Vorlage verändert? */
   const modified = $derived.by(() => {
     const t = TEMPLATES.find((x) => x.id === template);
@@ -32,7 +35,10 @@
   });
   function pickTemplate(id: string) {
     if (id === template && !modified) return;
-    if (modified) pending = id;
+    if (modified) {
+      pending = id;
+      pendingAt = 'top';
+    }
     else loadTemplate(id);
   }
   function loadTemplate(id: string) {
@@ -122,6 +128,17 @@
   });
 </script>
 
+{#snippet confirmBox()}
+  {@const t = TEMPLATES.find((x) => x.id === pending)}
+  <div class="confirm" class:bottom={pendingAt === 'bottom'} role="alertdialog" aria-label="Vorlage laden">
+    <p>Deine Änderungen am Aufbau gehen verloren, wenn du {pending === template ? `auf „${t?.title}“ zurücksetzt` : `„${t?.title}“ lädst`}.</p>
+    <div class="confirm-btns">
+      <button type="button" class="ghost sm" onclick={() => (pending = null)}>Behalten</button>
+      <button type="button" class="next sm" onclick={() => loadTemplate(pending!)}>{pending === template ? 'Zurücksetzen' : 'Vorlage laden'}</button>
+    </div>
+  </div>
+{/snippet}
+
 {#snippet issueList(list: Issue[])}
   {#if list.length}
     <ul class="fi-issues">
@@ -150,18 +167,7 @@
     </button>
   {/each}
 </div>
-{#if pending}
-  {@const t = TEMPLATES.find((x) => x.id === pending)}
-  <div class="confirm" role="alertdialog" aria-label="Vorlage laden">
-    <p>Deine Änderungen am Aufbau gehen verloren, wenn du {pending === template ? 'die Vorlage neu lädst' : `„${t?.title}“ lädst`}.</p>
-    <div class="confirm-btns">
-      <button type="button" class="ghost sm" onclick={() => (pending = null)}>Behalten</button>
-      <button type="button" class="next sm" onclick={() => loadTemplate(pending!)}>Vorlage laden</button>
-    </div>
-  </div>
-{:else if modified}
-  <p class="tpl-note">Aufbau geändert. Ein Klick auf eine Vorlage fragt vorher nach.</p>
-{/if}
+{#if pending && pendingAt === 'top'}{@render confirmBox()}{/if}
 
 <ol class="chain">
   <!-- Anschluss A -->
@@ -386,6 +392,19 @@
   </div>
 </details>
 
+{#if pending && pendingAt === 'bottom'}
+  {@render confirmBox()}
+{:else}
+  <ResetLink
+    show={modified}
+    label={`Aufbau auf Vorlage „${TEMPLATES.find((x) => x.id === template)?.title ?? TEMPLATES[0].title}“ zurücksetzen`}
+    onclick={() => {
+      pending = TEMPLATES.some((x) => x.id === template) ? template : TEMPLATES[0].id;
+      pendingAt = 'bottom';
+    }}
+  />
+{/if}
+
 <style>
   .tpl-label { font-weight: 600; font-size: 14px; margin: 0 0 8px; }
   .tpl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 22px; }
@@ -394,7 +413,7 @@
   .tpl-btn small { font-size: 12.5px; color: var(--slate-2); }
   .tpl-btn.sel { border-color: var(--sky); background: var(--sky-l); }
   .tpl-btn:not(.sel):hover { border-color: var(--sky); }
-  .tpl-note { margin: -14px 0 22px; font-size: 13px; color: var(--slate-2); }
+  .confirm.bottom { margin: 18px 0 4px; }
   .confirm { margin: -12px 0 22px; padding: 10px 12px; border-radius: 8px; border-left: 4px solid var(--signal); background: #fdf6dc; font-size: 14px; }
   .confirm p { margin: 0 0 8px; }
   .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
