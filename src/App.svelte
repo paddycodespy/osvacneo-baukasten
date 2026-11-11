@@ -340,7 +340,13 @@
     }
   }
 
-  // --- Zurücksetzen: nur in „Passung“, wo man mit den Schiebern ausprobiert ---
+  // --- Zurücksetzen: nur beim Stutzen (gemessene Werte, teils eingeklappt) und in „Passung“ (Schieber) ---
+  const MACHINE_KEYS = ['dOpen', 'dDepth', 'length', 'wall', 'allowance', 'holes', 'transition'] as const;
+  /** Stutzen-Maße inkl. Feineinstellungen; die Befestigungsart bleibt */
+  const machineIsDefault = $derived(MACHINE_KEYS.every((k) => machine[k] === machineDefault(k)));
+  function resetMachine() {
+    for (const k of MACHINE_KEYS) (machine[k] as number | boolean) = machineDefault(k) as number | boolean;
+  }
   /** Passung: Spaltmaße, Materialstärke, Beschriftung, Druckhilfe */
   const fitDefault = $derived(
     input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
@@ -530,6 +536,7 @@
               </div>
             </div>
           </details>
+          {@render resetStepBtn(machineIsDefault, 'Stutzen-Maße auf Standard zurücksetzen', resetMachine)}
         {/if}
       {:else if step === 2}
         <h2>Passung</h2>

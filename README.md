@@ -107,7 +107,7 @@ scripts/
 
 - Ruhige Oberfläche für Laien: Jedes Feld hat eine kurze Beschriftung; die Erklärung steht hinter dem „?“ daneben (src/components/Field.svelte). Werte, die selten geändert werden (Luft/Zugabe, Wandstärke, Übergangslänge, Schraubenlöcher, Drehung, Fase), liegen in eingeklappten „Feineinstellungen“.
 - Texte in einfacher Sprache, Fachbegriffe vermieden (z. B. „Spiel“ statt „Spaltmaß“ in den Überschriften, „Tiefe“ statt „Steckweg“).
-- Schlicht: Zurücksetzen gibt es nur noch im Schritt „Passung“ (alle Werte dort auf Standard); F, M und H haben keine eigenen Kennfarben mehr, Auswahlen sind überall gleich himmelblau markiert.
+- Schlicht: Zurücksetzen gibt es nur beim Stutzen (alle Stutzen-Maße inkl. Feineinstellungen, die Befestigungsart bleibt) und im Schritt „Passung“, jeweils nur sichtbar, wenn etwas geändert wurde; F, M und H haben keine eigenen Kennfarben mehr, Auswahlen sind überall gleich himmelblau markiert.
 - In Skizzen berührt keine Beschriftung eine Form, Linie oder andere Beschriftung; Eckradien sind mit Hinweislinien außerhalb der Form beschriftet.
 - Im Download-Schritt lassen sich mehrere Adapter auf ein Druckbett legen und zusammen als 3MF, STL oder STEP herunterladen.
 - Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Drehring 0,4“).
