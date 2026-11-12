@@ -572,6 +572,8 @@ legend.field-label { width: 100%; }
 .confirm p { margin: 0 0 8px; }
 .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
 .license .version { margin-top: 10px; font-size: 12px; }
+.license .gh { display: inline-flex; align-items: center; gap: 5px; }
+.license .gh svg { width: 14px; height: 14px; fill: currentColor; }
 .license .news { margin: 4px 0 0; font-size: 13px; }
 .license .news summary { cursor: pointer; color: var(--grey); font-size: 12px; }
 .license .news summary:hover { color: var(--sky-d); }
