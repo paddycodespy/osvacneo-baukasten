@@ -326,7 +326,7 @@ function slotLayout(P: number, L: number, holeAt: number[] | null) {
   return { len, width, at };
 }
 /** Nur für die Prüfläufe: einzelne Klemmrippen künstlich scheitern lassen (Weg des Hinweises testen) */
-export const testHooks: { ribFail: ((i: number) => boolean) | null } = { ribFail: null };
+export const testHooks: { ribFail: ((i: number) => boolean) | null; noFoldCheck?: boolean } = { ribFail: null };
 
 /** Klemmrippen: so weit ragen sie über die Gerätefläche hinaus (werden beim Aufstecken zusammengedrückt) */
 const RIB_CRUSH = 0.3;
@@ -1183,6 +1183,45 @@ export function planFree(spec: FreeSpec): FreePlan {
         const m = 1 - tt;
         return add(add(mul(sub(P1, P0), 3 * m * m), mul(sub(P2, P1), 6 * m * tt)), mul(sub(P3, P2), 3 * tt * tt));
       };
+      if (curved) {
+        // Innen am Bogen der Mittellinie darf die Wand sich nicht überschneiden: der Krümmungsradius muss überall
+        // größer sein als die Ausdehnung der Außenkontur zur Krümmungsmitte hin (sonst faltet sich die Fläche)
+        const folds = (Lx: number) => {
+          const Q3 = add(add(start.o, mul(start.t, Lx)), mul(D, offset));
+          const Q1 = add(P0, mul(start.t, Lx / 3)), Q2 = sub(Q3, mul(t1, Lx / 3));
+          const at = (tt: number) => {
+            const m = 1 - tt;
+            const o = add(add(mul(P0, m * m * m), mul(Q1, 3 * m * m * tt)), add(mul(Q2, 3 * m * tt * tt), mul(Q3, tt * tt * tt)));
+            const T = unit(add(add(mul(sub(Q1, P0), 3 * m * m), mul(sub(Q2, Q1), 6 * m * tt)), mul(sub(Q3, Q2), 3 * tt * tt)));
+            const phi = Math.atan2(dot(cross(start.t, T), axis), dot(start.t, T));
+            const sm = tt * tt * (3 - 2 * tt);
+            return { o, T, u: rot(start.u, axis, phi), v: rot(start.v, axis, phi), m: sm };
+          };
+          // je zwei benachbarte Schnitte (wie im Loft): jeder Punkt der Außenkontur muss vom einen zum nächsten Schnitt
+          // vorwärts laufen. Läuft er rückwärts, ist die Bahn innen kürzer als null: die Wand faltet sich dort
+          const S = Array.from({ length: 9 }, (_, k) => at(k / 8));
+          const pt = (X: ReturnType<typeof at>, i: number): V3 => {
+            const q = rot2([po0[i][0] + (po1[i][0] - po0[i][0]) * X.m, po0[i][1] + (po1[i][1] - po0[i][1]) * X.m], twist * X.m);
+            return add(X.o, add(mul(X.u, q[0]), mul(X.v, q[1])));
+          };
+          for (let k = 0; k < 8; k++) {
+            const a = S[k], c = S[k + 1], T = unit(add(a.T, c.T));
+            const step = len(sub(c.o, a.o));
+            for (let i = 0; i < N; i += 2) if (dot(sub(pt(c, i), pt(a, i)), T) < 0.05 * step) return true;
+          }
+          return false;
+        };
+        if (!testHooks.noFoldCheck && folds(L)) {
+          let need = Math.ceil(L);
+          while (need < 600 && folds(need)) need += 1;
+          issues.push({
+            level: 'error',
+            text: `${what}: Der Übergang ist zu stark gebogen, innen würde sich die Wand überschneiden. Den Übergang länger machen${need < 600 ? ` (mindestens ${f1(need)} mm)` : ''} oder Versatz bzw. Knick verringern.`,
+            fixes: need < 600 ? [fixTo('Länge', 'Länge des Übergangs', need, (sp, x) => void (blk(sp).length = x))] : undefined,
+          });
+          return;
+        }
+      }
       const K = curved ? 9 : Math.abs(twist) > 1e-6 ? 2 + Math.ceil(Math.abs(twist) / 20) : 2;
       const frames: Frame[] = [], inner: P2[][] = [], outer: P2[][] = [];
       const lerp = (a: P2[], c: P2[], m: number, rr: number) => a.map((p, i) => rot2([p[0] + (c[i][0] - p[0]) * m, p[1] + (c[i][1] - p[1]) * m], rr));

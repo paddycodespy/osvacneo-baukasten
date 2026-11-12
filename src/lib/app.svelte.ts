@@ -7,7 +7,7 @@ import { exportFile, exportPlate, makeBuild, type PlateItem } from './cad';
 import { kindById, type DiameterKey } from './osvac/catalog';
 import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './osvac/params';
 import type { ExportFormat } from './worker/protocol';
-import type { PipeSpec } from './osvac/machine';
+import { pipeWall, type PipeSpec } from './osvac/machine';
 import type { Dimensions } from './viewer';
 import { slipRingGapMax } from './osvac/hose';
 import { estimateFilament } from './filament';
@@ -162,6 +162,21 @@ class AppState {
     return this.baseName.replace('osVAC neo ', '');
   });
 
+  /**
+   * Stutzen: wie weit das schräge Stück zwischen Anschluss und Rohrteil oben breiter ist als unten (mm, außen bzw. innen).
+   * Gedruckt wird mit dem Rohrteil unten; ist das Stück steiler als 45°, hängt es in der Luft. Liefert die nötige
+   * Übergangslänge (ganze mm) oder 0, wenn es passt.
+   */
+  machineSteep = $derived.by(() => {
+    if (!this.kind.machine) return 0;
+    const p = this.params, s = this.pipe;
+    const rIn = this.kind.id === 'MACHINE_M' ? p.maleDiameterInner / 2 : p.femaleDiameterInner / 2;
+    const rOut = this.kind.id === 'MACHINE_M' ? p.maleDiameterOuter / 2 : rIn + p.generalMaterialWidth;
+    const r1i = s.d1Inner / 2, r1o = r1i + pipeWall(s);
+    const wider = Math.max(rOut - r1o, rIn - r1i);
+    return wider > s.transition + 0.05 ? Math.ceil(wider - 1e-9) : 0;
+  });
+
   /** Plausibilität der Stutzen-Maße (wird schon im Schritt Größen angezeigt) */
   /** Hinweise zum Stutzen, mit Vorschlag „… auf … setzen“ (fields: Beschriftung der Zahlenfelder, die markiert werden) */
   machineWarnings = $derived.by(() => {
@@ -182,6 +197,13 @@ class AppState {
       w.push({ text: 'Innen bleiben weniger als 8 mm frei. Maße oder Wandstärke prüfen.', fixes: fix });
     } else if (Math.min(pipe.d1Inner, pipe.d2Inner) < 0.5 * (this.kind.ends.top === 'female' ? this.input.femaleDiameterInner : this.input.maleDiameterInner))
       w.push({ text: 'Das Rohrteil ist innen weniger als halb so weit wie der Anschluss. Das bremst die Absaugung stark.' });
+    if (this.machineSteep) {
+      const L = this.machineSteep, part = this.kind.id === 'MACHINE_M' ? 'Stecker' : 'Kupplung';
+      w.push({
+        text: `${part} und Rohrteil sind sehr verschieden weit: Das schräge Stück dazwischen ist steiler als 45° und hängt beim Drucken in der Luft. ${L <= 40 ? `Mit ${L} mm Übergangslänge (Feineinstellungen) geht es ohne Stützen.` : 'Selbst mit 40 mm Übergangslänge bleibt es zu steil; dann im Slicer Stützen einschalten.'}`,
+        fixes: L <= 40 ? [{ label: `Übergangslänge auf ${L} mm setzen`, fields: ['Übergangslänge'], set: () => void (this.machine.transition = L) }] : undefined,
+      });
+    }
     if (m.length < 10) w.push({ text: `Unter 10 mm Tiefe hält der Adapter kaum ${m.mode === 'over' ? 'auf dem Stutzen' : 'in der Öffnung'}. Ab 10 mm hält er besser.`, fixes: [depth(10)] });
     if (m.holes && m.length < 12)
       w.push({
@@ -277,7 +299,9 @@ class AppState {
     const t: string[] = ['Die Dateien liegen schon richtig herum, genau wie in der Vorschau. Im Slicer nicht drehen.'];
     if (this.hasSupport)
       t.push('Der Stecker steht mit der Spitze auf einer Druckhilfe (in der Vorschau weiß). Nach dem Druck die Druckhilfe mit einer Zange abbrechen.');
-    if (this.needsSupportMaterial)
+    if (this.machineSteep)
+      t.push('Stützen nötig: Das schräge Stück zwischen Anschluss und Rohrteil ist steiler als 45°. Im Slicer „Stützen nur auf dem Druckbett“ einschalten, oder in „Größen“ die Übergangslänge erhöhen.');
+    else if (this.needsSupportMaterial)
       t.push('Stützen nötig: Ein Teil des Adapters hängt schräg in der Luft, meist unter einem Bogen oder Übergang. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Ein längerer Übergang oder ein anderes Ende auf dem Druckbett kann das vermeiden.');
     else t.push('Stützen werden nicht gebraucht, im Slicer ausschalten.');
     if (this.hasSwivel)
