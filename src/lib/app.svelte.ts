@@ -68,7 +68,7 @@ class AppState {
   /** Freiform: Aufbau, zuletzt gewählte Vorlage, aufgeklappte Karte */
   free = $state<FreeSpec>(TEMPLATES[0].make());
   freeTemplate = $state(TEMPLATES[0].id);
-  freeOpen = $state<number | 'A' | 'B' | null>(null);
+  freeOpen = $state<number | 'A' | 'B' | 'C' | null>(null);
   /** aufgeklappte Erklärungen (Passung, Download) */
   helpOpen = $state<Record<string, boolean>>({});
 
