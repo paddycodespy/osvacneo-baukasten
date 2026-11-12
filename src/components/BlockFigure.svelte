@@ -7,7 +7,7 @@
   let { type }: { type: BlockType } = $props();
 </script>
 
-<svg class="bfig" viewBox="0 0 280 104" role="img" aria-label="Skizze: {type === 'straight' ? 'Länge der Geraden' : type === 'bend' ? 'Winkel und Radius des Bogens' : type === 'transition' ? 'Länge, Versatz und Knick des Übergangs' : type === 'branch' ? 'Winkel, Durchmesser und Länge des Abzweigs' : 'Absatz mit 45°-Schräge'}">
+<svg class="bfig" viewBox="0 0 280 104" role="img" aria-label="Skizze: {type === 'straight' ? 'Länge der Geraden' : type === 'bend' ? 'Winkel und Radius des Bogens' : type === 'transition' ? 'Länge, Versatz und Knick des Übergangs' : type === 'branch' ? 'Winkel, Durchmesser und Länge des Abzweigs' : type === 'gate' ? 'Länge des Schiebers und Schieberplatte' : 'Absatz mit 45°-Schräge'}">
   {#if type === 'straight'}
     <rect x="24" y="30" width="140" height="34" class="part" />
     <line x1="12" y1="47" x2="176" y2="47" class="axis" />
@@ -79,6 +79,22 @@
     <text x="174" y="66" class="mute">Rohrlänge</text>
     <text x="158" y="84" class="key">C</text>
     <text x="174" y="84" class="mute">Ende C</text>
+  {:else if type === 'gate'}
+    <!-- Rohr waagerecht, Rahmen in der Mitte mit 45°-Schrägen, Platte steht oben heraus (gezogen = auf) -->
+    <path d="M16 34 H58 L68 24 H82 L92 34 H136 V70 H92 L82 80 H68 L58 70 H16 Z" class="part" />
+    <rect x="73" y="6" width="4" height="40" class="plate" />
+    <line x1="8" y1="52" x2="144" y2="52" class="axis" />
+    <line x1="16" y1="90" x2="136" y2="90" class="dim" />
+    <line x1="16" y1="85" x2="16" y2="95" class="dim" />
+    <line x1="136" y1="85" x2="136" y2="95" class="dim" />
+    <text x="40" y="102" class="lt">L</text>
+    <polyline points="79,10 96,10" class="lead" />
+    <text x="99" y="14" class="lt">P</text>
+    <text x="158" y="30" class="key">L</text>
+    <text x="174" y="30" class="mute">Länge</text>
+    <text x="158" y="50" class="key">P</text>
+    <text x="174" y="50" class="mute">Platte, als</text>
+    <text x="174" y="64" class="mute">eigenes Teil</text>
   {:else}
     <path d="M16 30 H70 L88 48 H160 V56 H88 L70 74 H16 Z" class="part" />
     <line x1="8" y1="52" x2="170" y2="52" class="axis" />
@@ -95,6 +111,7 @@
   .axis.thin { opacity: 0.35; }
   .dim { stroke: var(--sky-d); stroke-width: 1.4; }
   .pt { fill: var(--sky-d); }
+  .plate { fill: #d6e6f5; stroke: var(--sky-d); stroke-width: 1.2; }
   .lead { fill: none; stroke: var(--sky-d); stroke-width: 0.9; }
   .lt, .key { font-family: var(--body); font-size: 12px; font-weight: 700; fill: var(--sky-d); }
   .mute { font-family: var(--body); font-size: 12px; font-weight: 500; fill: var(--slate); }

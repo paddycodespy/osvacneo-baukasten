@@ -300,7 +300,18 @@ export async function exportPlate(items: PlateItem[], format: ExportFormat, file
   const totalH = -cy + rowH;
   const ox = boxes.length > 1 ? -maxW / 2 : 0, oy = boxes.length > 1 ? totalH / 2 : 0;
   if (boxes.length === 1) place[0] = { dx: 0, dy: 0 };
-  const jobs = groups.flatMap((g, gi) => g.map((x) => ({ ...x, gi, dx: place[gi].dx + ox, dy: place[gi].dy + oy, dz: boxes[gi].dz })));
+  // eigene Objekte (z. B. Schieberplatte) liegen für sich flach auf dem Bett, unabhängig von einer Druckhilfe darunter
+  const jobs = groups.flatMap((g, gi) => g.map((x, k) => ({ ...x, gi, dx: place[gi].dx + ox, dy: place[gi].dy + oy, dz: x.q.object ? -infos[gi][k].zMin : boxes[gi].dz })));
+  // je Adapter ein Objekt im 3MF, dazu eigene Objekte für Teile, die getrennt gedruckt werden
+  const objKey = (x: (typeof jobs)[number]) => `${x.gi}${x.q.object ? `\u0000${x.q.object}` : ''}`;
+  const objectIds = new Map<string, number>();
+  const objectNames: string[] = [];
+  for (const x of jobs) {
+    const k = objKey(x);
+    if (objectIds.has(k)) continue;
+    objectIds.set(k, objectNames.length);
+    objectNames.push(x.q.object ? `${x.item.label} · ${x.q.object}` : x.item.label);
+  }
   let blob: Blob;
   if (format === 'step') {
     const breps = await Promise.all(jobs.map((x) => enqueue<Extract<WorkerReply, { type: 'partBrep' }>>({ type: 'partBrep', id: nextId++, dx: x.dx, dy: x.dy, dz: x.dz, ...ref(x.item.req, x.i) }, x.q.cost, x.q.key, Infinity)));
@@ -312,9 +323,9 @@ export async function exportPlate(items: PlateItem[], format: ExportFormat, file
       format === 'stl'
         ? stlBlob(meshes)
         : build3MF(
-            meshes.map((m, k) => ({ name: jobs[k].q.name, group: jobs[k].gi, vertices: m.vertices, triangles: m.triangles })),
+            meshes.map((m, k) => ({ name: jobs[k].q.name, group: objectIds.get(objKey(jobs[k]))!, vertices: m.vertices, triangles: m.triangles })),
             fileName,
-            items.map((it) => it.label),
+            objectNames,
           );
   }
   return saveBlob(blob, `${fileName}.${format}`);

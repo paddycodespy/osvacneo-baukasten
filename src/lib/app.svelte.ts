@@ -14,6 +14,7 @@ import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
+import { DEFAULT_GATE, MOUNT_LABELS, gateLayout, gateName, type GateSpec, type GateMount } from './osvac/gate';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
   { id: '3mf', label: '3MF', hint: 'Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura' },
@@ -69,6 +70,8 @@ class AppState {
   free = $state<FreeSpec>(TEMPLATES[0].make());
   freeTemplate = $state(TEMPLATES[0].id);
   freeOpen = $state<number | 'A' | 'B' | 'C' | null>(null);
+  /** Schieber einzeln */
+  gate = $state<GateSpec>({ ...DEFAULT_GATE });
   /** aufgeklappte Erklärungen (Passung, Download) */
   helpOpen = $state<Record<string, boolean>>({});
 
@@ -130,13 +133,20 @@ class AppState {
     { label: 'innen Ø', a: this.pipe.d1Inner, b: this.pipe.d2Inner },
     { label: 'außen Ø', a: this.pipe.d1Inner + 2 * this.pipe.wall, b: this.pipe.d2Inner + 2 * this.pipe.wall },
   ]);
-  buildOpts = $derived(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : {});
+  buildOpts = $derived(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : {});
+  /** Schieber einzeln: abgeleitete Maße (kleinster Wandabstand, Lochabstand, …) */
+  gateLay = $derived(gateLayout(this.gate));
 
   /** Dateiname mit allen Abweichungen von den Standardeinstellungen, damit Testdrucke unterscheidbar bleiben */
   baseName = $derived(this.kind.fileName(this.params, this.buildOpts));
   fileName = $derived.by(() => {
     const i = this.input;
     const extra: string[] = [];
+    if (this.kind.gate) {
+      if (this.gate.pipeGap !== DEFAULT_GATE.pipeGap) extra.push(`Spiel ${fmt(this.gate.pipeGap, 2)}`);
+      if (this.gate.plateGap !== DEFAULT_GATE.plateGap) extra.push(`Platte ${fmt(this.gate.plateGap, 2)}`);
+      return [this.baseName, ...extra].join(' ');
+    }
     if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
     if (this.hasSwivel && i.slipRingGapSize !== START_INPUT.slipRingGapSize) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
     if (i.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${i.generalMaterialWidth} mm`);
@@ -147,6 +157,7 @@ class AppState {
   code = $derived.by(() => {
     const k = this.kind;
     if (k.freeform) return freeSummary(this.free).code;
+    if (k.gate) return gateName(this.gate).code;
     if (k.machine) return `${k.ends.top === 'female' ? 'F' : 'M'}${fmt(k.ends.top === 'female' ? this.input.femaleDiameterInner : this.input.maleDiameterInner)}/${fmt(this.machine.dOpen)}`;
     return this.baseName.replace('osVAC neo ', '');
   });
@@ -197,6 +208,10 @@ class AppState {
     // übliche Druckbetten: 220–256 mm Kantenlänge, Bauhöhe ab 250 mm
     if (this.dims && (this.dims.width > 220 || this.dims.height > 250))
       sizes(`Der Adapter ist ${fmt(this.dims.width, 0)} mm breit und ${fmt(this.dims.height, 0)} mm hoch. Das passt nicht auf jeden Drucker (viele haben 220 bis 256 mm). Bitte mit deinem Druckbett vergleichen.`);
+    if (this.kind.gate) {
+      if (!(this.gate.d >= 15 && this.gate.d <= 60)) sizes(`Rohr: ${fmt(this.gate.d)} mm liegt außerhalb von 15 bis 60 mm.`);
+      return w;
+    }
     if (this.input.maleFemaleGapSize < 0.1 || this.input.maleFemaleGapSize > 0.5) w.push({ text: 'Das Spiel liegt außerhalb von 0,1 bis 0,5 mm. Stecker und Kupplung passen dann kaum zusammen.', step: 2 });
     return w;
   });
@@ -219,7 +234,26 @@ class AppState {
     gap: 'Der Wert gilt für Stecker und Kupplung zusammen. Steckt ein neues Teil in einem älteren mit 0,2 mm, wirkt nur die Hälfte: eingestellte 0,4 mm wirken dann wie 0,3 mm.',
     swivel: `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(this.swivelMax, 2)} mm${this.kind.id === 'FH' ? ` bei ${this.input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
+    pipeGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als das Rohr außen. Sitzt das Rohr zu stramm: größer. Rutscht es heraus: kleiner, oder das Rohr mit etwas Klebeband umwickeln.',
+    plateGap: 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
+    wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg.`,
     filament: 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
+  });
+
+  /** Druckhinweise zum Schieber einzeln */
+  gateTips = $derived.by(() => {
+    const s = this.gate, L = this.gateLay;
+    const t = [
+      `Das Gehäuse steht mit einer Muffe auf dem Druckbett. Über dem Schlitz druckt der Drucker eine Brücke, das geht ohne Stützen.`,
+      'Die Platte liegt flach daneben. Nach dem Druck von der Seite in den Schlitz schieben, egal von welcher Seite und wie herum. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein.',
+      `Das Rohr (außen Ø ${fmt(s.d)} mm) auf beiden Seiten bis zum Anschlag einstecken.`,
+    ];
+    const at = `Die Rohrmitte liegt ${fmt(L.A)} mm vor der Wand.`;
+    if (s.mount === 'plate') t.push(`Zwei Senklöcher für Senkkopfschrauben Ø 4 mm, ${fmt(L.pitch)} mm Abstand. ${at}`);
+    if (s.mount === 'keyhole')
+      t.push(`Zwei Schlüssellöcher, ${fmt(L.pitch)} mm Abstand: zwei Schrauben (Ø 4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit dem oberen Ende (wie gedruckt) nach oben einhängen; das Rohr läuft dann senkrecht. ${at}`);
+    if (s.mount === 'clip') t.push(`Der Wandhalter ist ein eigenes Teil für das Rohr neben dem Schieber. Mit zwei Senkkopfschrauben Ø 4 mm (${fmt(L.pitch)} mm Abstand) an die Wand schrauben und das Rohr hineindrücken. ${at}`);
+    return t;
   });
 
   /** Freiform: Stützen nötig? (nur nach fertiger Berechnung bekannt) */
@@ -236,6 +270,9 @@ class AppState {
     if (this.hasSwivel)
       t.push(`Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Klemmt er, beim nächsten Mal in „Passung“ das Spiel am Drehring erhöhen.`);
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
+    if (this.kind.gate) t.push(...this.gateTips);
+    if (this.kind.freeform && this.free.blocks.some((x) => x.type === 'gate'))
+      t.push('Die Schieberplatte liegt flach neben dem Adapter. Nach dem Druck von der Seite in den Schlitz schieben, egal von welcher Seite und wie herum. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein.');
     const c = this.free.c;
     if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
       t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);
@@ -272,12 +309,19 @@ class AppState {
   }
   /** Passung: Spaltmaße, Materialstärke, Beschriftung, Druckhilfe */
   fitDefault = $derived(
-    this.input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
+    this.kind.gate
+      ? this.gate.pipeGap === DEFAULT_GATE.pipeGap && this.gate.plateGap === DEFAULT_GATE.plateGap
+      : this.input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
       (!this.hasSwivel || this.input.slipRingGapSize === START_INPUT.slipRingGapSize) &&
       this.input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
       (!this.hasSupport || this.supports),
   );
   resetFit() {
+    if (this.kind.gate) {
+      this.gate.pipeGap = DEFAULT_GATE.pipeGap;
+      this.gate.plateGap = DEFAULT_GATE.plateGap;
+      return;
+    }
     this.input.maleFemaleGapSize = START_INPUT.maleFemaleGapSize;
     if (this.hasSwivel) this.input.slipRingGapSize = START_INPUT.slipRingGapSize;
     this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
@@ -285,6 +329,15 @@ class AppState {
   }
   setDia(k: DiameterKey, v: number) {
     this.input[k] = Math.round(v * 10) / 10;
+  }
+  /** Schieber einzeln: Maße und Befestigung auf Standard (Passung bleibt) */
+  gateIsDefault = $derived((['d', 'depth', 'mount', 'wallDist'] as const).every((k) => this.gate[k] === DEFAULT_GATE[k]));
+  resetGate() {
+    for (const k of ['d', 'depth', 'mount', 'wallDist'] as const) (this.gate[k] as number | GateMount) = DEFAULT_GATE[k];
+  }
+  /** Wandabstand eingeben: bis zum kleinsten Wert heißt „direkt an der Wand“ (wächst dann mit dem Rohr mit) */
+  setWallDist(v: number) {
+    this.gate.wallDist = v <= this.gateLay.minA + 0.05 ? 0 : Math.round(v * 10) / 10;
   }
 
   // ---------------------------------------------------------------- Bauaufträge
@@ -301,7 +354,7 @@ class AppState {
   }
   /** alles, was eine neue Berechnung auslöst */
   buildKey = $derived(
-    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null]),
+    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null]),
   );
 
   // ---------------------------------------------------------------- Export und Druckbett
@@ -326,7 +379,7 @@ class AppState {
     this.files = [];
   }
   plateKey() {
-    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null]);
+    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null, this.kind.gate ? $state.snapshot(this.gate) : null]);
   }
   onPlate = $derived(this.plate.some((p) => p.key === this.plateKey()));
   addToPlate() {
@@ -359,6 +412,7 @@ class AppState {
       machine: this.machine,
       free: this.free,
       freeTemplate: this.freeTemplate,
+      gate: this.gate,
     }),
   );
   /** Stand beim ersten Start (zum Vergleich für „Neu anfangen“; ohne Schritt, Freiform ohne IDs) */
@@ -379,6 +433,7 @@ class AppState {
     this.machine = { ...MACHINE_DEFAULT };
     this.free = TEMPLATES[0].make();
     this.freeTemplate = TEMPLATES[0].id;
+    this.gate = { ...DEFAULT_GATE };
     this.freeOpen = null;
     this.helpOpen = {};
     this.errorMsg = '';
@@ -436,6 +491,10 @@ class AppState {
         this.free = withFreshIds({ ...fresh, ...s.free, a: { ...fresh.a, ...s.free.a }, b: { ...fresh.b, ...s.free.b, device: { ...fresh.b.device, ...s.free.b.device } } });
         // Flansch liegt immer mit Ende B auf dem Bett
         if (this.free.b.type === 'device' && this.free.b.device.mode === 'flange') this.free.bed = 'B';
+      }
+      if (s.gate && typeof s.gate === 'object') {
+        for (const k of ['d', 'depth', 'wallDist', 'pipeGap', 'plateGap'] as const) if (num(s.gate[k])) this.gate[k] = s.gate[k];
+        if (typeof s.gate.mount === 'string' && s.gate.mount in MOUNT_LABELS) this.gate.mount = s.gate.mount;
       }
       if (typeof s.freeTemplate === 'string' && TEMPLATES.some((t) => t.id === s.freeTemplate)) this.freeTemplate = s.freeTemplate;
       if (num(s.step)) this.step = Math.max(0, Math.min(3, Math.round(s.step)));

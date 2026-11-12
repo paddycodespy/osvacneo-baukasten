@@ -4,7 +4,7 @@
  *
  * Nicht mitgezählt werden
  * - Stoßflächen zwischen zwei Körpern (die Unterseite eines Formstücks liegt auf der Oberseite des nächsten),
- * - waagerechte Flächen am Geräteanschluss: das sind Brücken über Aussparung, Schlitz oder Loch.
+ * - waagerechte Flächen am Geräteanschluss und am Schieber: das sind Brücken über Aussparung, Schlitz oder Loch.
  */
 export interface OverhangMesh {
   name: string;
@@ -74,7 +74,7 @@ export function overhangArea(bodies: OverhangMesh[]): number {
   let area = 0;
   bodies.forEach((b, bi) => {
     if (b.helper || !COUNTED.test(b.name)) return;
-    const bridges = b.name.startsWith('Geräteanschluss');
+    const bridges = b.name.startsWith('Geräteanschluss') || b.name.endsWith('· Schieber');
     const nr = b.normals, ix = b.indices;
     for (let t = 0; t < ix.length; t += 3) {
       const nz = (nr[ix[t] * 3 + 2] + nr[ix[t + 1] * 3 + 2] + nr[ix[t + 2] * 3 + 2]) / 3;
@@ -97,7 +97,7 @@ export function belowBedEnd(bodies: OverhangMesh[], bed: 'A' | 'B'): number {
   // Ende C (am Abzweig) liegt nie auf dem Bett und zählt wie die Kette
   const isC = (n: string) => n.startsWith('Geräteanschluss C') || / C( \d+)?$/.test(n) || n === 'Übergang zu Ende C';
   const isB = (n: string) => !isC(n) && (n.startsWith('Geräteanschluss') || / B( \d+)?$/.test(n));
-  const isChain = (n: string) => isC(n) || /^(Formstück|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(n);
+  const isChain = (n: string) => isC(n) || /^(Formstück|Übergang zum Gerät|Übergang zu Ende B|Anschlagring|Schieberplatte)/.test(n);
   const isEnd = (n: string) => (bed === 'B' ? isB(n) : !isB(n) && !isChain(n));
   let zAll = Infinity, zEnd = Infinity;
   for (const b of bodies) {

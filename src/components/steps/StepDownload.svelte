@@ -3,6 +3,7 @@
   /** Schritt 4: Material, Download, Druckhinweise, mehrere Adapter auf ein Druckbett, Lizenz */
   import { app, FORMATS, LABELS, fmt } from '../../lib/app.svelte';
   import { freeSummary } from '../../lib/osvac/freeform';
+  import { gateName } from '../../lib/osvac/gate';
   import { CHANGES } from '../../lib/credits';
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
@@ -13,6 +14,7 @@
       const s = freeSummary(app.free);
       return `Freiform: ${s.long}${app.free.blocks.length ? `, dazwischen ${s.blocks}` : ''}.`;
     }
+    if (k.gate) return `Schieber einzeln: ${gateName(app.gate).long}.`;
     const sizes = k.diameters.map((d) => `${LABELS[d].name} ${fmt(app.input[d])} mm`).join(', ');
     const stutzen = k.machine ? `, Stutzen Ø ${fmt(app.machine.dOpen)} / ${fmt(app.machine.dDepth)} mm, ${app.machine.length} mm tief` : '';
     return `${k.title}, ${sizes}${stutzen}.`;

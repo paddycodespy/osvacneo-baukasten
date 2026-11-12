@@ -15,6 +15,7 @@ import { TEMPLATES, newBlock, sec, planFree, testHooks, flangeGeom, flangeMinRim
 import { partNotes } from '../src/lib/errors';
 import { belowBedEnd } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
+import { gateLayout, gateHousing, gatePlate, gateClip, plateInSlot, DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -142,6 +143,26 @@ for (const [i, shape] of shapes.entries()) {
   }
 }
 
+// Schieber in der Kette: liegend nach einem Bogen, mit A unten, mit Übergang davor, vor einem Gerät, gedreht
+{
+  const g = TEMPLATES.find((t) => t.id === 'gate')!;
+  const a = g.make();
+  a.bed = 'A';
+  a.b = { ...a.b, type: 'female' };
+  cases.push(['schieber-A-unten', a]);
+  const l = TEMPLATES[3].make();
+  l.blocks = [newBlock('bend', { angle: 90, radius: 40 }), newBlock('gate', { length: 40, dir: 90 }), newBlock('straight', { length: 10 })];
+  cases.push(['schieber-liegend', l]);
+  const t = TEMPLATES[3].make();
+  t.a.d = 25;
+  t.blocks = [newBlock('transition', { length: 30, section: sec('circle', { d: 50 }) }), newBlock('gate', { length: 50, dir: 45 })];
+  t.b.device = { ...t.b.device, section: sec('circle', { d: 50 }), dDepth: 51 };
+  cases.push(['schieber-50-geraet', t]);
+  const two = g.make();
+  two.blocks = [newBlock('gate', { length: 40 }), newBlock('straight', { length: 10 }), newBlock('gate', { length: 40, dir: 90 })];
+  cases.push(['schieber-zwei', two]);
+}
+
 let fail = 0;
 const p = deriveParams({});
 for (const [id, spec] of cases) {
@@ -170,6 +191,17 @@ for (const [id, spec] of cases) {
       if (!valid(sh) || !(v > 0)) bad.push(q.name);
       built.push(sh);
       low.push({ name: q.name, helper: !!q.helper, positions: [0, 0, sh.boundingBox.bounds[0][2]], normals: [], indices: [] });
+    }
+    // Schieberplatten: liegen flach auf dem Bett (wie das Ende unten) und berühren den Adapter nicht
+    {
+      const fixed = parts.map((q, i) => ({ q, b: built[i].boundingBox.bounds })).filter((x) => !x.q.helper);
+      const zBed = Math.min(...fixed.filter((x) => !x.q.object).map((x) => x.b[0][2]));
+      for (const x of fixed.filter((y) => y.q.object)) {
+        if (Math.abs(x.b[0][2] - zBed) > 0.01) bad.push(`${x.q.name} liegt nicht auf dem Bett`);
+        for (const y of fixed)
+          if (y !== x && x.b[0][0] < y.b[1][0] && y.b[0][0] < x.b[1][0] && x.b[0][1] < y.b[1][1] && y.b[0][1] < x.b[1][1]) bad.push(`${x.q.name} überlappt ${y.q.name}`);
+      }
+      if (spec.blocks.filter((b) => b.type === 'gate').length !== fixed.filter((x) => x.q.name.startsWith('Schieberplatte')).length) bad.push('Schieberplatte fehlt');
     }
     // Abzweig: Einmündung innen ausgerundet (sonst steht ein Hinweis in partNotes)
     if (id.startsWith('abzweig') && partNotes.some((t) => t.includes('ausrunden'))) bad.push('Einmündung nicht ausgerundet');
@@ -283,6 +315,9 @@ if (!only || only === 'vorschlaege') {
     broken.push(['Abzweig zu weit', y({ branchD: 40 })]);
     broken.push(['Abzweig Rohr zu kurz', y({ length: 30 })]);
     broken.push(['Abzweig zu kurz', y({ branchLen: 1 })]);
+    const g = TEMPLATES.find((t) => t.id === 'gate')!.make();
+    g.blocks[0].length = 15;
+    broken.push(['Schieber zu kurz', g]);
     broken.push(['Ende C Tiefe', y({}, { type: 'device', device: { ...DEFAULT_DEVICE, length: 3 } })]);
     broken.push(['Ende C Flansch Rand', y({}, { type: 'device', device: { ...DEFAULT_DEVICE, mode: 'flange', section: sec('circle', { d: 40 }), flangeRim: 8 } })]);
   }
@@ -313,6 +348,9 @@ if (!only || only === 'vorschlaege') {
     const t = TEMPLATES.find((x) => x.id === 'y')!.make();
     t.blocks = [t.blocks[0], newBlock('branch', { length: 70 })];
     if (!planFree(t).issues.some((x) => x.level === 'error' && x.text.includes('nur ein Abzweig'))) wrong.push('zweiter Abzweig nicht abgefangen');
+    const q = TEMPLATES.find((x) => x.id === 'gate')!.make();
+    q.blocks = [newBlock('transition', { section: sec('rect', { w: 40, h: 30 }) }), q.blocks[0]];
+    if (!planFree(q).issues.some((x) => x.level === 'error' && x.text.includes('Schieber muss das Rohr rund'))) wrong.push('eckiges Rohr vor dem Schieber nicht abgefangen');
     const c = TEMPLATES.find((x) => x.id === 'y')!.make();
     c.c = { ...c.c!, type: 'device', device: { ...DEFAULT_DEVICE, length: 3 } };
     if (!planFree(c).issues.some((x) => x.text.startsWith('Ende C:'))) wrong.push('Meldung von Ende C nicht als „Ende C“ benannt');
@@ -349,6 +387,57 @@ for (const [id, kind, pipe, text] of [
   } catch (e) {
     fail++;
     console.log(`FEHLER ${id.padEnd(26)} ${(e as Error).message}`);
+  }
+}
+
+// Schieber einzeln: alle Befestigungen und Größen. Platte passt in beiden Stellungen (zu, auf) ohne Berührung in den
+// Schlitz, rastet dazwischen (Noppe drückt aufs Gehäuse); Teile liegen auf dem Bett und überlappen sich nicht.
+{
+  const variants: [string, Partial<GateSpec>][] = [
+    ['schieber-50-wandplatte', {}],
+    ['schieber-15-wandplatte', { d: 15 }],
+    ['schieber-32-schluessel', { d: 32, mount: 'keyhole', wallDist: 45 }],
+    ['schieber-25-wandhalter', { d: 25, mount: 'clip', wallDist: 30 }],
+    ['schieber-60-ohne', { d: 60, mount: 'none', depth: 10 }],
+    ['schieber-40-spiel', { d: 40, pipeGap: 0.8, plateGap: 0.45, wallDist: 80 }],
+  ];
+  for (const [id, v] of variants) {
+    if (only && id !== only) continue;
+    const t0 = Date.now();
+    const s = { ...DEFAULT_GATE, ...v };
+    const bad: string[] = [];
+    try {
+      const lay = gateLayout(s);
+      const h = gateHousing(s), pl = gatePlate(lay.g);
+      for (const x of [h, pl]) if (!valid(x) || !(measureVolume(x) > 0)) bad.push('ungültig');
+      const touch = (dx: number) => measureVolume(h.clone().intersect(pl.clone().translate(plateInSlot(lay.g, lay.zc, false).map((c, i) => (i ? c : c + dx)) as [number, number, number])) as Shape3D);
+      if (touch(0) > 0.01) bad.push(`berührt zu ${touch(0).toFixed(2)}`);
+      if (touch(lay.g.P) > 0.01) bad.push(`berührt auf ${touch(lay.g.P).toFixed(2)}`);
+      if (!(touch(3) > 0.01)) bad.push('rastet nicht');
+      // Rohr passt in die Muffe, Anschlag hält es
+      if (!(lay.Rs > s.d / 2 && lay.Rm < s.d / 2)) bad.push('Muffe/Anschlag');
+      if (s.mount === 'clip') {
+        const c = gateClip(s);
+        if (!valid(c) || !(measureVolume(c) > 0)) bad.push('Wandhalter ungültig');
+        c.delete();
+      }
+      const parts = kindById('GATE').parts!(p, { gate: s });
+      const bbs = parts.map((q) => { const sh = q.make(); const b = sh.boundingBox.bounds; sh.delete(); return { n: q.name, b }; });
+      for (const x of bbs) if (Math.abs(x.b[0][2]) > 0.01) bad.push(`${x.n} nicht auf dem Bett`);
+      for (const [i, x] of bbs.entries())
+        for (const y of bbs.slice(i + 1)) if (x.b[0][0] < y.b[1][0] && y.b[0][0] < x.b[1][0] && x.b[0][1] < y.b[1][1] && y.b[0][1] < x.b[1][1]) bad.push(`${x.n} überlappt ${y.n}`);
+      // Wand: Rückseite der Wandplatte genau im eingestellten Abstand hinter der Rohrmitte
+      if (s.mount === 'plate' || s.mount === 'keyhole') {
+        const y0 = bbs[0].b[0][1];
+        if (Math.abs(-y0 - lay.A) > 0.01) bad.push(`Wandabstand ${(-y0).toFixed(1)} statt ${lay.A}`);
+      }
+      h.delete();
+      pl.delete();
+    } catch (e) {
+      bad.push((e as Error).message);
+    }
+    if (bad.length) fail++;
+    console.log(`${bad.length ? 'FEHLER' : 'ok    '} ${id.padEnd(26)} ${String(Date.now() - t0).padStart(6)} ms${bad.length ? '  ' + bad.join(', ') : ''}`);
   }
 }
 

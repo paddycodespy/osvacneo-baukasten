@@ -6,13 +6,59 @@
   import MeasureFigure from '../MeasureFigure.svelte';
   import ResetLink from '../ResetLink.svelte';
   import { setContext } from 'svelte';
+  import { MOUNT_LABELS, type GateMount } from '../../lib/osvac/gate';
 
   // Felder markieren, die ein Hinweis zum Stutzen betrifft
   setContext('fieldFlag', (label: string) => (app.machineWarnings.some((w) => w.fixes?.some((fx) => fx.fields.includes(label))) ? 'warn' : null));
 </script>
 
 <h2>Größen</h2>
+{#if app.kind.gate}
+  {@const g = app.gate}
+  <p class="lead">Das Rohr wird auf beiden Seiten in eine Muffe gesteckt. Die Zahl ist der Außendurchmesser des Rohrs in Millimetern.</p>
+  <fieldset class="dia">
+    <legend>Rohr (außen)</legend>
+    <div class="dia-row">
+      <div class="chips">
+        {#each [32, 40, 50] as v}
+          <button class="chip" class:sel={g.d === v} onclick={() => (app.gate.d = v)}>{v}</button>
+        {/each}
+      </div>
+      <NumberField bind:value={app.gate.d} min={15} max={60} step={0.1} label="Außendurchmesser des Rohrs" />
+    </div>
+  </fieldset>
+  <div class="grid2">
+    <Field label="Tiefe der Muffen" help="So weit steckt das Rohr auf jeder Seite im Schieber. 20 mm halten gut, kürzer spart Material.">
+      <NumberField bind:value={app.gate.depth} min={10} max={50} step={1} label="Tiefe der Muffen" />
+    </Field>
+  </div>
+  <h3 class="sub">Befestigung</h3>
+  <div class="seg wide" role="radiogroup" aria-label="Befestigung">
+    {#each Object.entries(MOUNT_LABELS) as [m, label]}
+      <button role="radio" aria-checked={g.mount === m} class:sel={g.mount === m} onclick={() => (app.gate.mount = m as GateMount)}>{label}</button>
+    {/each}
+  </div>
+  <p class="hint">
+    {g.mount === 'none'
+      ? 'Der Schieber hängt nur am Rohr.'
+      : g.mount === 'plate'
+      ? 'Platte hinten am Schieber mit zwei Löchern für Senkkopfschrauben (Ø 4 mm). Hält am festesten.'
+      : g.mount === 'keyhole'
+      ? 'Zwei Schlüssellöcher: Schrauben in die Wand drehen, Schieber einhängen. Schnell wieder abzunehmen.'
+      : 'Eigenes kleines Teil, das an die Wand geschraubt wird. Das Rohr neben dem Schieber wird hineingedrückt.'}
+  </p>
+  {#if g.mount !== 'none'}
+    <div class="grid2">
+      <Field label="Wand bis Rohrmitte" help={app.helpTexts.wallDist}>
+        <NumberField value={app.gateLay.A} min={Math.ceil(app.gateLay.minA * 10) / 10} max={200} step={0.5} label="Abstand Wand bis Rohrmitte" oncommit={(v) => app.setWallDist(v)} />
+      </Field>
+    </div>
+    <p class="hint">Die Rohrmitte liegt {fmt(app.gateLay.A)} mm vor der Wand{g.wallDist ? '' : `, ${g.mount === 'clip' ? 'der Wandhalter sitzt' : 'der Schieber sitzt'} direkt an der Wand`}. Lochabstand der Schrauben: {fmt(app.gateLay.pitch)} mm.</p>
+  {/if}
+  <ResetLink show={!app.gateIsDefault} label="Schieber auf Standard zurücksetzen" onclick={() => app.resetGate()} />
+{:else}
 <p class="lead">Die Zahl ist der Innendurchmesser in Millimetern. Die meisten Geräte und Schläuche nutzen 32.</p>
+{/if}
 {#each app.kind.diameters as k}
   <fieldset class="dia">
     <legend>{LABELS[k].word} ({LABELS[k].letter})</legend>

@@ -89,6 +89,8 @@ async function main() {
     // Abzweig mit Ende C
     await pg.locator('.add-btn', { hasText: 'Abzweig' }).click();
     await chk('Abzweig');
+    await pg.locator('.add-btn', { hasText: 'Schieber' }).click();
+    await chk('Schieber');
     await pg.locator('.card-head', { hasText: 'Ende C ·' }).click();
     await chk('Ende C');
     await pg.locator('.card-head', { hasText: 'Ende B' }).click();

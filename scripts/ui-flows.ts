@@ -257,6 +257,46 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
   });
 
+  await test('Schieber einzeln und in der Freiform', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: /Schieber einzeln/ }).click();
+    await step(pg, 'Größen');
+    await fill(pg, 'Außendurchmesser des Rohrs', '40');
+    await pg.getByRole('radio', { name: 'Schlüssellöcher' }).click();
+    const wall = async () => Number((await pg.getByLabel('Abstand Wand bis Rohrmitte', { exact: true }).inputValue()).replace(',', '.'));
+    const minA = await wall();
+    expect(minA > 20 && minA < 35, `kleinster Wandabstand unplausibel: ${minA}`);
+    expect((await pg.locator('.step-body').innerText()).includes('direkt an der Wand'), 'Hinweis „direkt an der Wand“ fehlt');
+    await fill(pg, 'Abstand Wand bis Rohrmitte', '60');
+    expect((await pg.locator('.step-body').innerText()).includes('60 mm vor der Wand'), 'Wandabstand nicht übernommen');
+    // kleiner als möglich: springt auf den kleinsten Wert
+    await fill(pg, 'Abstand Wand bis Rohrmitte', '5');
+    expect((await wall()) === minA, 'Wandabstand unter dem kleinsten Wert');
+    await ready(pg);
+    expect((await pg.locator('.stage-head .code').innerText()).includes('Schieber Ø40'), 'Kopfzeile ohne Schieber');
+    await step(pg, 'Passung');
+    expect(await pg.getByText('Spiel der Platte').isVisible(), 'Spiel der Platte fehlt in der Passung');
+    await step(pg, 'Download');
+    expect((await pg.locator('.tips').innerText()).includes('Schlüssellöcher'), 'Druckhinweis zu den Schlüssellöchern fehlt');
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download gesperrt');
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: 'Freiform' }).click();
+    await step(pg, 'Aufbau');
+    await pg.getByRole('radio', { name: 'Absperrschieber' }).click();
+    const load = pg.getByRole('button', { name: 'Vorlage laden' });
+    if (await load.count()) await load.click();
+    await ready(pg);
+    expect((await pg.locator('.print-note').innerText()).includes('ohne Stützen'), 'Schieber in der Freiform braucht Stützen');
+    await pg.locator('.card-head', { hasText: 'Schieber' }).first().click();
+    await fill(pg, 'Länge des Schiebers', '15');
+    expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'zu kurzer Schieber nicht gesperrt');
+    await pg.locator('.card.open .fix', { hasText: 'Länge auf' }).click();
+    await ready(pg);
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Vorschlag behebt die Länge nicht');
+    await step(pg, 'Download');
+    expect((await pg.locator('.tips').innerText()).includes('Schieberplatte'), 'Druckhinweis zur Schieberplatte fehlt');
+  });
+
   await test('Druckhilfe gilt je Verbindung', pg, async () => {
     const tool = pg.locator('button.tool', { hasText: 'Druckhilfe' });
     const on = async () => (await tool.getAttribute('aria-pressed')) === 'true';
