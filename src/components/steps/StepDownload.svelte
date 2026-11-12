@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { NEWS } from '../../lib/news';
   /** Schritt 4: Material, Download, Druckhinweise, mehrere Adapter auf ein Druckbett, Lizenz */
   import { app, FORMATS, LABELS, fmt } from '../../lib/app.svelte';
   import { freeSummary } from '../../lib/osvac/freeform';
@@ -33,7 +34,14 @@
 
 {#if app.warnings.length}
   <ul class="warn">
-    {#each app.warnings as w}<li>{w}</li>{/each}
+    {#each app.warnings as w}
+      <li>
+        {w.text}
+        {#if w.step !== undefined}
+          <span class="fixes"><button type="button" class="fix" onclick={() => (app.step = w.step!)}>{w.step === 2 ? 'Zur Passung' : app.kind.freeform ? 'Zum Aufbau' : 'Zu den Größen'}</button></span>
+        {/if}
+      </li>
+    {/each}
   </ul>
 {/if}
 
@@ -92,5 +100,11 @@
     Weitergabe mit Namensnennung, nicht kommerziell, unter gleichen Bedingungen. Das gilt auch für die erzeugten Dateien.
   </p>
   <p class="version">Baukasten-Version {__APP_VERSION__}</p>
+  {#if NEWS[0]?.version === __APP_VERSION__}
+    <details class="news">
+      <summary>Was ist neu in {NEWS[0].version}?</summary>
+      <ul>{#each NEWS[0].items as t}<li>{t}</li>{/each}</ul>
+    </details>
+  {/if}
   <p class="lic"><a class="lic-link" href="./lizenzen.html" target="_blank" rel="noopener">Verwendete Bausteine und ihre Lizenzen<svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg></a></p>
 </div>

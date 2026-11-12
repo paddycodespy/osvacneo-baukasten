@@ -2,6 +2,8 @@
 
 Der **osVAC neo Baukasten** gestaltet Absaugadapter für das System osVAC neo und läuft komplett im Browser. Ein Wizard führt durch Verbindung, Größen, Passung und Download. Am Ende gibt es das Teil als **3MF**, **STL** oder **STEP**.
 
+Was sich von Version zu Version geändert hat, steht in [CHANGELOG.md](CHANGELOG.md) und in der App im Schritt „Download“.
+
 Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Originalteil von osVAC neo: Profile, Bajonett, Toleranzen und Formeln stammen aus dem Fusion-360-Master **osVAC neo v366 (beta)** und wurden gegen Fusion-Exporte in mehreren Größen geprüft.
 
 ## Adaptertypen
@@ -111,10 +113,10 @@ scripts/
 | `npm run test:keys` | gleiche Cache-Schlüssel ergeben gleiche Körper | ca. 1 min |
 | `npm run test:freeform` | alle Freiform-Vorlagen, Querschnitte, Extras, Flansch (alle Formen, mit Dichtung, Lochbild nach Maß, Prüfungen) und längere Ketten, Stutzen-Typen mit Klemmrippen/Schlitzen, Weg des Hinweises bei weggelassenen Rippen, Rahmen nicht gespiegelt | ca. 4 min |
 | `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen (braucht `npm run build` und Chrome, Pfad über `CHROME_PATH`) | < 1 min |
-| `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern und bei Teilen unter dem Druckbett, Stand nach dem Neuladen, Extras im Namen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 1 min |
+| `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern und bei Teilen unter dem Druckbett, Stand und Druckbett nach dem Neuladen, Extras im Namen, Flansch, Druckhilfe je Verbindung, Link aus den Download-Hinweisen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 1 min |
 | `npm run test:geometry` | alle Adaptertypen mit Grenzwerten | ca. 10–15 min |
 
-Auf GitHub laufen alle bei jedem Push (Actions → Tests).
+Auf GitHub laufen alle bei jedem Push (Actions → Tests), in drei gleichzeitigen Gruppen (Oberfläche, Freiform, Geometrie), zusammen etwa 10 Minuten. Kommt ein neuer Push, während ein Lauf noch wartet, ersetzt der neue den wartenden.
 
 ### Rechenzeit
 
