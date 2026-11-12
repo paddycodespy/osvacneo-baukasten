@@ -28,6 +28,15 @@ async function ready(pg: Page) {
   }
   throw new Error('Berechnung nicht fertig geworden');
 }
+/** Warten, bis die Bedingung gilt (höchstens 15 s): z. B. bis nach einer Korrektur neu gerechnet ist */
+async function until(pg: Page, cond: () => Promise<boolean>, msg: string) {
+  for (let i = 0; i < 150; i++) {
+    if (await cond()) return;
+    await pg.waitForTimeout(100);
+  }
+  throw new Error(msg);
+}
+const downloadOpen = (pg: Page) => async () => !(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled());
 async function fill(pg: Page, label: string, value: string) {
   const el = pg.getByLabel(label, { exact: true }).first();
   await el.fill(value);
@@ -64,6 +73,8 @@ async function test(name: string, pg: Page, run: () => Promise<void>) {
 await withPreview(4180, async (url, browser) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const pg = await ctx.newPage();
+  // THROTTLE=4: Rechner künstlich langsamer machen (Fehler, die nur auf GitHub auftreten, nachstellen)
+  if (process.env.THROTTLE) await (await ctx.newCDPSession(pg)).send('Emulation.setCPUThrottlingRate', { rate: Number(process.env.THROTTLE) });
   const errors: string[] = [];
   pg.on('pageerror', (e) => errors.push(String(e)));
   pg.setDefaultTimeout(20000);
@@ -109,13 +120,18 @@ await withPreview(4180, async (url, browser) => {
     expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'Download trotz Fehler wählbar');
     // Meldung nennt Feld und Wert, das Feld ist markiert, der Knopf übernimmt den Wert
     expect((await pg.locator('.num-in.flag-error input[aria-label="Breite der Aussparung"]').count()) === 1, 'Feld nicht markiert');
-    await pg.locator('.fix', { hasText: 'Breite der Aussparung auf' }).click();
-    await pg.waitForTimeout(200);
-    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Vorschlag behebt den Fehler nicht');
-    expect((await pg.locator('.num-in.flag-error').count()) === 0, 'Markierung bleibt nach dem Beheben');
-    await fill(pg, 'Breite der Aussparung', '20');
-    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download nach Korrektur weiter gesperrt');
-    await pg.getByLabel('Aussparung am Rand').uncheck();
+    try {
+      await pg.locator('.fix', { hasText: 'Breite der Aussparung auf' }).click();
+      // Meldung und Markierung verschwinden sofort; freigegeben ist der Download erst, wenn die fehlgeschlagene
+      // Berechnung mit der zu breiten Aussparung durch eine neue ersetzt ist (auf langsamen Rechnern dauert das)
+      expect((await pg.locator('.num-in.flag-error').count()) === 0, 'Markierung bleibt nach dem Beheben');
+      await until(pg, downloadOpen(pg), 'Vorschlag behebt den Fehler nicht');
+      await fill(pg, 'Breite der Aussparung', '20');
+      await until(pg, downloadOpen(pg), 'Download nach Korrektur weiter gesperrt');
+    } finally {
+      // Aussparung wieder aus, auch wenn etwas schiefging (sonst scheitern die folgenden Abläufe mit)
+      await pg.getByLabel('Aussparung am Rand').uncheck();
+    }
   });
 
   await test('Teil unter dem Druckbett sperrt den Download', pg, async () => {
