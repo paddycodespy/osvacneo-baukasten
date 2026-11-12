@@ -11,6 +11,7 @@
   import { userMessage } from './lib/errors';
   import { overhangArea, belowBedEnd } from './lib/overhang';
   import { freeSummary, sectionPlanes, endMarkers } from './lib/osvac/freeform';
+  import { gateBed } from './lib/osvac/gate';
   import { app, fmt } from './lib/app.svelte';
   import FreeformEditor from './components/FreeformEditor.svelte';
   import StepKind from './components/steps/StepKind.svelte';
@@ -117,7 +118,13 @@
   $effect(() => {
     void viewerOn;
     const plan = app.freePlan;
-    const fn = app.kind.freeform && plan ? sectionPlanes($state.snapshot(app.free), plan) : null;
+    // Schieber einzeln: Gehäuse und Wandhalter durch die Achse, Platte längs durch ihre Mitte (die gemeinsame Ebene läge
+    // sonst in der Mitte aller Teile und schnitte nur die Platte weg)
+    const bed = app.kind.gate ? gateBed($state.snapshot(app.gate)) : null;
+    const gateFn = bed
+      ? (name: string) => ({ p: (name === 'Schieberplatte' ? bed.plate : name === 'Wandhalter' ? bed.clip : [0, 0, 0]) as [number, number, number], n: [0, 1, 0] as [number, number, number] })
+      : null;
+    const fn = app.kind.freeform && plan ? sectionPlanes($state.snapshot(app.free), plan) : gateFn;
     viewer?.setSectionPlanes(fn);
   });
 

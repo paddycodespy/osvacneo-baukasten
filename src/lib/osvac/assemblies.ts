@@ -11,7 +11,7 @@ import { revolveProfile, L } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
-import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, footprint, IDENTITY, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
+import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
 import { DEFAULT_GATE, gateLayout, gateHousing, gatePlate, gateClip, gateBed, type GateSpec } from './gate';
 import { UserError } from '../errors';
 
@@ -316,15 +316,8 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
   }
   const placed = out.map((q) => placedPart(q, G));
   // Schieberplatten flach hinter den Adapter legen (in +x), untereinander in y
-  if (plan.loose.length) {
-    const fp = footprint(spec, plan);
-    let y = fp.y0;
-    for (const q of plan.loose) {
-      const pl: Placement = { R: IDENTITY, tr: [fp.x1 + 10 - q.x0, y + q.hw, fp.z0] };
-      placed.push(placedPart(part(q.name, q.cost, q.dep as object, q.make, { object: q.name }), pl));
-      y += 2 * q.hw + 8;
-    }
-  }
+  const lp = plan.loose.length ? loosePlacements(spec, plan) : [];
+  plan.loose.forEach((q, i) => placed.push(placedPart(part(q.name, q.cost, q.dep as object, q.make, { object: q.name }), lp[i])));
   return placed;
 }
 
