@@ -29,6 +29,8 @@ export function userMessage(e: unknown): string {
 export function partLabel(name: string): string {
   const m = /^Formstück (\d+) · (.+)$/.exec(name);
   if (m) return `Baustein ${m[1]} (${m[2]})`;
+  if (name.startsWith('Geräteanschluss C') || name === 'Übergang zum Gerät C' || name === 'Anschlagring C') return 'Der Geräteanschluss an Ende C';
+  if (name.startsWith('Übergang zu Ende C')) return 'Der Übergang zu Ende C';
   if (name.startsWith('Geräteanschluss') || name.startsWith('Übergang zum Gerät') || name === 'Anschlagring') return 'Der Geräteanschluss';
   if (name.startsWith('Übergang zu Ende B')) return 'Der Übergang zu Ende B';
   return 'Ein Teil des Adapters';

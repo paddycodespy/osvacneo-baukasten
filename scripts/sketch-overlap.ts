@@ -86,6 +86,11 @@ async function main() {
         await chk(`${t} ${sh}`);
       }
     }
+    // Abzweig mit Ende C
+    await pg.locator('.add-btn', { hasText: 'Abzweig' }).click();
+    await chk('Abzweig');
+    await pg.locator('.card-head', { hasText: 'Ende C ·' }).click();
+    await chk('Ende C');
     await pg.locator('.card-head', { hasText: 'Ende B' }).click();
     await pg.locator('.seg button', { hasText: 'Gerät' }).first().click();
     for (const mode of ['Über den Stutzen', 'In die Öffnung']) {

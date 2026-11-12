@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import { deriveParams } from '../src/lib/osvac/params';
 import { initFont } from '../src/lib/osvac/text';
 import { partsFree } from '../src/lib/osvac/assemblies';
-import { TEMPLATES, newBlock, sec, planFree, testHooks, flangeGeom, flangeMinRim, flangeDefaults, type FreeSpec, type SectionShape } from '../src/lib/osvac/freeform';
+import { TEMPLATES, newBlock, sec, planFree, testHooks, flangeGeom, flangeMinRim, flangeDefaults, branchGeom, DEFAULT_DEVICE, type FreeSpec, type SectionShape, type Block, type EndSpec } from '../src/lib/osvac/freeform';
 import { partNotes } from '../src/lib/errors';
 import { belowBedEnd } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
@@ -108,6 +108,29 @@ for (const [i, shape] of shapes.entries()) {
   cases.push(['flansch-lochkreis', r]);
 }
 
+// Abzweig (Y/T): Winkel 30–90°, Richtungen, kleinerer Abzweig, Ende C als Kupplung, Stecker, Gerät in allen Befestigungen,
+// Bausteine vor und nach dem Abzweig, A oder B auf dem Bett
+{
+  const mk = (id: string, v: Partial<Block>, c: Partial<EndSpec>, opts: { bed?: 'A' | 'B'; before?: Block[]; after?: Block[]; b?: Partial<EndSpec> } = {}) => {
+    const s = TEMPLATES.find((t) => t.id === 'y')!.make();
+    const d = v.branchD ?? 32;
+    const g = branchGeom(32, d, s.wall, v.angle ?? 45);
+    s.blocks = [...(opts.before ?? []), newBlock('branch', { length: Math.ceil(g.minLen), branchD: d, ...v }), ...(opts.after ?? [])];
+    s.c = { ...s.c!, ...c, device: { ...s.c!.device, ...(c.device ?? {}) } };
+    if (opts.b) s.b = { ...s.b, ...opts.b };
+    if (opts.bed) s.bed = opts.bed;
+    cases.push([`abzweig-${id}`, s]);
+  };
+  mk('y45', { angle: 45 }, {});
+  mk('t90-stecker', { angle: 90, dir: 90 }, { type: 'male', d: 32 });
+  mk('30-klein', { angle: 30, branchD: 20, branchLen: 25 }, { type: 'female', d: 25, transition: 12 });
+  mk('60-geraet-auf', { angle: 60, dir: 180, branchD: 25 }, { type: 'device', device: { ...DEFAULT_DEVICE, mode: 'over', section: sec('circle', { d: 30 }), dDepth: 30 } });
+  mk('geraet-ein-rechteck', { angle: 45, branchD: 28 }, { type: 'device', transition: 20, device: { ...DEFAULT_DEVICE, mode: 'into', section: sec('rect', { w: 40, h: 26, r: 4, r2: 4 }), allowance: 0.4 } });
+  mk('flansch-c', { angle: 90 }, { type: 'device', transition: 20, device: { ...DEFAULT_DEVICE, mode: 'flange', section: sec('circle', { d: 40 }) } });
+  mk('kette', { angle: 45, dir: 270 }, {}, { before: [newBlock('straight', { length: 15 })], after: [newBlock('bend', { angle: 30, radius: 50 }), newBlock('straight', { length: 10 })] });
+  mk('b-unten', { angle: 90 }, {}, { bed: 'B', b: { type: 'device', device: { ...DEFAULT_DEVICE } } });
+}
+
 let fail = 0;
 const p = deriveParams({});
 for (const [id, spec] of cases) {
@@ -118,7 +141,7 @@ for (const [id, spec] of cases) {
     const errs = plan.issues.filter((x) => x.level === 'error');
     if (errs.length) throw new Error(errs.map((x) => x.text).join(' / '));
     // Rahmen rechtshändig (u × v = t): sonst wäre die Skizze der Aussparung gegenüber dem Modell gespiegelt
-    for (const f of [plan.chainEnd.frame, plan.end]) {
+    for (const f of [plan.chainEnd.frame, plan.end, ...(plan.cChainEnd ? [plan.cChainEnd.frame, plan.cEnd!] : [])]) {
       const [u, v, t] = [f.u, f.v, f.t];
       const det = (u[1] * v[2] - u[2] * v[1]) * t[0] + (u[2] * v[0] - u[0] * v[2]) * t[1] + (u[0] * v[1] - u[1] * v[0]) * t[2];
       if (Math.abs(det - 1) > 1e-6) throw new Error(`Rahmen gespiegelt (det ${det.toFixed(3)})`);
@@ -234,6 +257,20 @@ if (!only || only === 'vorschlaege') {
     w.wall = 9;
     broken.push(['Wand zu dick', w]);
   }
+  {
+    const y = (v: Partial<Block>, c?: Partial<EndSpec>) => {
+      const s = TEMPLATES.find((t) => t.id === 'y')!.make();
+      Object.assign(s.blocks[0], v);
+      if (c) s.c = { ...s.c!, ...c, device: { ...s.c!.device, ...(c.device ?? {}) } };
+      return s;
+    };
+    broken.push(['Abzweig Winkel', y({ angle: 120 })]);
+    broken.push(['Abzweig zu weit', y({ branchD: 40 })]);
+    broken.push(['Abzweig Rohr zu kurz', y({ length: 30 })]);
+    broken.push(['Abzweig zu kurz', y({ branchLen: 1 })]);
+    broken.push(['Ende C Tiefe', y({}, { type: 'device', device: { ...DEFAULT_DEVICE, length: 3 } })]);
+    broken.push(['Ende C Flansch Rand', y({}, { type: 'device', device: { ...DEFAULT_DEVICE, mode: 'flange', section: sec('circle', { d: 40 }), flangeRim: 8 } })]);
+  }
   broken.push(['Flansch Rand', flange({ flangeRim: 8 })]);
   broken.push(['Flansch Dicke', flange({ flangeT: 2 })]);
   broken.push(['Lochkreis zu klein', flange({ flangeLayout: 'round', plateD: 110, holeCircle: 64, holeN: 4 })]);
@@ -253,6 +290,17 @@ if (!only || only === 'vorschlaege') {
         fx.set(c);
         if (planFree(c).issues.some((y) => y.text === x.text)) wrong.push(`${name}: „${fx.label}“ behebt „${x.text}“ nicht`);
       }
+  }
+  {
+    const s = TEMPLATES.find((t) => t.id === 'y')!.make();
+    s.blocks = [newBlock('transition', { section: sec('rect', { w: 40, h: 30 }) }), s.blocks[0]];
+    if (!planFree(s).issues.some((x) => x.level === 'error' && x.text.includes('rund sein'))) wrong.push('eckiges Rohr vor dem Abzweig nicht abgefangen');
+    const t = TEMPLATES.find((x) => x.id === 'y')!.make();
+    t.blocks = [t.blocks[0], newBlock('branch', { length: 70 })];
+    if (!planFree(t).issues.some((x) => x.level === 'error' && x.text.includes('nur ein Abzweig'))) wrong.push('zweiter Abzweig nicht abgefangen');
+    const c = TEMPLATES.find((x) => x.id === 'y')!.make();
+    c.c = { ...c.c!, type: 'device', device: { ...DEFAULT_DEVICE, length: 3 } };
+    if (!planFree(c).issues.some((x) => x.text.startsWith('Ende C:'))) wrong.push('Meldung von Ende C nicht als „Ende C“ benannt');
   }
   if (wrong.length) fail++;
   console.log(`${wrong.length ? 'FEHLER' : 'ok    '} vorschlaege                ${wrong.length ? wrong.join(' | ') : `${n} Vorschläge in ${broken.length} Fällen`}`);

@@ -34,7 +34,7 @@ export interface Section {
   w2: number;
 }
 
-export type BlockType = 'straight' | 'bend' | 'transition' | 'step';
+export type BlockType = 'straight' | 'bend' | 'transition' | 'step' | 'branch';
 
 export interface Block {
   /** nur für die Oberfläche (Liste, aufgeklappter Baustein) */
@@ -56,6 +56,9 @@ export interface Block {
   twist: number;
   /** Übergang, Absatz: Querschnitt am Ende */
   section: Section;
+  /** Abzweig: Innen-Ø des Abzweigs und wie weit er über das Rohr hinausragt (bis Ende C); Winkel = angle, Richtung = dir, Länge des Rohrs = length */
+  branchD: number;
+  branchLen: number;
 }
 
 export type OsvacEnd = 'female' | 'male';
@@ -114,12 +117,22 @@ export interface DeviceEnd {
   preview?: boolean;
 }
 
+/** Ende B oder Ende C: Anschluss von osVAC neo oder Gerät, mit Übergangslänge vom letzten Baustein */
+export interface EndSpec {
+  type: 'device' | OsvacEnd;
+  d: number;
+  device: DeviceEnd;
+  transition: number;
+}
+
 export interface FreeSpec {
   a: { type: OsvacEnd; d: number };
   /** Wandstärke der Formstücke und des Geräteanschlusses */
   wall: number;
   blocks: Block[];
-  b: { type: 'device' | OsvacEnd; d: number; device: DeviceEnd; transition: number };
+  b: EndSpec;
+  /** Ende C am Abzweig (nur mit Baustein „Abzweig“) */
+  c?: EndSpec;
   /** welches Ende auf dem Druckbett liegt */
   bed: 'A' | 'B';
 }
@@ -148,6 +161,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   bend: 'Bogen',
   transition: 'Übergang',
   step: 'Absatz',
+  branch: 'Abzweig',
 };
 
 export const sec = (shape: SectionShape, v: Partial<Omit<Section, 'shape'>> = {}): Section => ({ shape, d: 32, w: 50, h: 30, r: 4, r2: 4, w2: 36, ...v });
@@ -165,9 +179,28 @@ export function newBlock(type: BlockType, v: Partial<Omit<Block, 'id' | 'type'>>
     tilt: 0,
     twist: 0,
     section: current ? { ...current } : sec('circle'),
+    branchD: current?.shape === 'circle' ? current.d : 32,
+    branchLen: 15,
+    ...(type === 'branch' ? { angle: 45 } : {}),
     ...v,
   };
 }
+
+/**
+ * Lage des Abzweigs auf dem Rohr (in der Ebene von Rohr und Abzweig, Laufrichtung t, ab dem Schnittpunkt der Achsen):
+ * tMin/tMax = Bereich, den der Abzweig auf dem Rohr belegt; minLen = kürzeste Rohrlänge (2 mm Rand an beiden Enden);
+ * out = ab dieser Länge entlang des Abzweigs liegt er ganz außerhalb des Rohrs.
+ */
+export function branchGeom(d: number, bd: number, wall: number, angleDeg: number) {
+  const a = rad(Math.min(90, Math.max(1, angleDeg)));
+  const Ro = d / 2 + wall, rbo = bd / 2 + wall;
+  const tMin = Math.min(-rbo * Math.sin(a), Ro / Math.tan(a) - rbo / Math.sin(a));
+  const tMax = Ro / Math.tan(a) + rbo / Math.sin(a);
+  return { tMin, tMax, minLen: tMax - tMin + 4, out: (Ro + rbo * Math.abs(Math.cos(a))) / Math.sin(a) };
+}
+
+/** Ende C, wenn noch keins angelegt ist: Kupplung in der Größe des Abzweigs */
+export const defaultC = (d = 32): EndSpec => ({ type: 'female', d, device: { ...DEFAULT_DEVICE, section: { ...DEFAULT_DEVICE.section } }, transition: 10 });
 
 export const DEFAULT_DEVICE: DeviceEnd = {
   mode: 'over',
@@ -356,13 +389,26 @@ export const TEMPLATES: { id: string; title: string; hint: string; make: () => F
       bed: 'B',
     }),
   },
+  {
+    id: 'y',
+    title: 'Y-Abzweig 45°',
+    hint: 'Zwei Abgänge an einem Anschluss',
+    make: () => ({
+      a: { type: 'male', d: 32 },
+      wall: 3,
+      blocks: [newBlock('branch', { length: 64, angle: 45, branchD: 32, branchLen: 15 })],
+      b: { type: 'female', d: 32, device: { ...DEFAULT_DEVICE }, transition: 10 },
+      c: defaultC(32),
+      bed: 'A',
+    }),
+  },
 ];
 
 export const DEFAULT_FREE: FreeSpec = TEMPLATES[0].make();
 
 /** Gespeicherten Aufbau übernehmen: neue IDs, fehlende Felder mit Standardwerten. */
 export function withFreshIds(s: FreeSpec): FreeSpec {
-  const types: BlockType[] = ['straight', 'bend', 'transition', 'step'];
+  const types: BlockType[] = ['straight', 'bend', 'transition', 'step', 'branch'];
   return {
     ...s,
     blocks: s.blocks
@@ -373,6 +419,7 @@ export function withFreshIds(s: FreeSpec): FreeSpec {
         return newBlock(b.type, { ...rest, section: { ...sec('circle'), ...b.section } });
       }),
     b: { ...s.b, device: { ...s.b.device, section: { ...sec('circle'), ...s.b.device.section } } },
+    ...(s.c ? { c: { ...defaultC(), ...s.c, device: { ...DEFAULT_DEVICE, ...s.c.device, section: { ...sec('circle'), ...s.c.device?.section } } } } : {}),
   };
 }
 
@@ -731,6 +778,11 @@ export interface FreePlan {
   cuts: { start: Frame; n: V3 | null }[];
   /** Anfangsrahmen der Kette (Ende von Anschluss A) */
   startFrame: Frame;
+  /** Abzweig: Ende des Abzweigs bzw. Anfang von Ende C (wie chainEnd) und Außenfläche von Ende C */
+  cChainEnd?: { frame: Frame; section: Section; rot: number };
+  cEnd?: Frame;
+  /** Schnittebene für Ende C (Ebene von Rohr und Abzweig) */
+  cCut?: V3;
 }
 
 /** Länge des Übergangskonus zwischen Anschluss von osVAC neo und Formstück (TransitionConeLength) */
@@ -825,6 +877,9 @@ export function planFree(spec: FreeSpec): FreePlan {
 
   const cuts: FreePlan['cuts'] = [];
   const startFrame = f;
+  /** Abzweig: Anfang von Ende C */
+  type BranchStart = { frame: Frame; section: Section; rot: number; n: V3 };
+  let branch = null as BranchStart | null;
   spec.blocks.forEach((b, idx) => {
     const name = `Formstück ${idx + 1} · ${BLOCK_LABELS[b.type]}`;
     const what = `${BLOCK_LABELS[b.type]} (Baustein ${idx + 1})`;
@@ -867,6 +922,67 @@ export function planFree(spec: FreeSpec): FreePlan {
       });
       for (let k = 1; k <= 6; k++) path.push(rotFrame(start, c, axis, (th * k) / 6).o);
       f = rotFrame(f, c, axis, th);
+    } else if (b.type === 'branch') {
+      if (branch) {
+        issues.push({ level: 'error', text: `${what}: Es geht nur ein Abzweig je Adapter. Bitte einen der beiden entfernen.` });
+        return;
+      }
+      if (s0.shape !== 'circle') {
+        issues.push({ level: 'error', text: `${what}: Vor dem Abzweig muss das Rohr rund sein. Bitte davor einen Übergang auf „Kreis“ einfügen.` });
+        return;
+      }
+      if (!(b.angle >= 30 && b.angle <= 90)) {
+        issues.push({ level: 'error', text: `${what}: Der Winkel muss zwischen 30° und 90° liegen.`, fixes: [fixTo('Winkel', 'Winkel des Abzweigs', b.angle > 90 ? 90 : 30, (sp, x) => void (blk(sp).angle = x), '°')] });
+        return;
+      }
+      const bd = b.branchD;
+      const bdFix = (v: number) => [fixTo('Ø des Abzweigs', 'Innendurchmesser des Abzweigs', v, (sp, x) => void (blk(sp).branchD = x))];
+      if (!(bd >= 10)) {
+        issues.push({ level: 'error', text: `${what}: Der Abzweig muss innen mindestens 10 mm weit sein.`, fixes: bdFix(10) });
+        return;
+      }
+      if (bd > s0.d + 1e-9) {
+        issues.push({ level: 'error', text: `${what}: Der Abzweig darf innen höchstens so weit sein wie das Rohr (${f1(s0.d)} mm).`, fixes: bdFix(s0.d) });
+        return;
+      }
+      const g = branchGeom(s0.d, bd, w, b.angle);
+      const L = b.length;
+      if (!(L >= g.minLen - 1e-9)) {
+        issues.push({ level: 'error', text: `${what}: Das Rohr muss mindestens ${f1(upHalf(g.minLen))} mm lang sein, damit der Abzweig ganz darauf sitzt.`, fixes: [fixTo('Länge', 'Länge am Abzweig', upHalf(g.minLen), (sp, x) => void (blk(sp).length = x))] });
+        return;
+      }
+      if (!(b.branchLen >= 3)) {
+        issues.push({ level: 'error', text: `${what}: Der Abzweig muss mindestens 3 mm über das Rohr hinausragen.`, fixes: [fixTo('Länge des Abzweigs', 'Länge des Abzweigs', 3, (sp, x) => void (blk(sp).branchLen = x))] });
+        return;
+      }
+      const D = inPlane(f, b.dir);
+      const axis = unit(cross(f.t, D));
+      cuts[idx].n = axis;
+      const th = rad(b.angle);
+      const e = rot(start.t, axis, th);
+      // Schnittpunkt der Achsen so, dass der Abzweig mittig auf dem Rohr sitzt
+      const xb = (L - (g.tMax - g.tMin)) / 2 - g.tMin;
+      const P = add(start.o, mul(start.t, xb));
+      const Lb = g.out + b.branchLen;
+      const Ro = s0.d / 2 + w, Ri = s0.d / 2, rbo = bd / 2 + w, rbi = bd / 2;
+      bodies.push({
+        name,
+        cost: 1.5,
+        dep: { ...base, t: 'branch', L: r6(L), a: r6(b.angle), dir: r6(b.dir), bd: r6(bd), bl: r6(b.branchLen) },
+        make: () => {
+          // Rohr und Abzweig außen vereinigen, dann beide Bohrungen herausschneiden (jeweils mit Gegenprobe)
+          const vMain = Math.PI * (Ro * Ro - Ri * Ri) * L;
+          let body = (makeCylinder(Ro, L, start.o as Point, start.t as Point) as unknown as Shape3D).fuse(makeCylinder(rbo, Lb, P as Point, e as Point) as unknown as Shape3D);
+          body = body.cut(makeCylinder(Ri, L + 2, add(start.o, mul(start.t, -1)) as Point, start.t as Point) as unknown as Shape3D);
+          body = body.cut(makeCylinder(rbi, Lb + 1, P as Point, e as Point) as unknown as Shape3D);
+          const v = measureVolume(body);
+          if (!(v > vMain * 0.98 && v < vMain + Math.PI * (rbo * rbo - rbi * rbi) * Lb)) throw new UserError(`${partLabel(name)} ließ sich mit diesen Maßen nicht berechnen. Bitte Winkel oder Länge etwas ändern.`);
+          return body;
+        },
+      });
+      branch = { frame: { o: add(P, mul(e, Lb)), t: e, u: rot(start.u, axis, th), v: rot(start.v, axis, th) }, section: sec('circle', { d: bd }), rot: 0, n: axis };
+      f = advance(start, L);
+      path.push(f.o);
     } else {
       const s1 = b.section;
       checkSection(s1, what, issues, { label: b.type === 'step' ? 'Form nach dem Absatz' : 'Form am Ende', get: (sp) => blk(sp).section });
@@ -953,13 +1069,44 @@ export function planFree(spec: FreeSpec): FreePlan {
   const bedEnd = spec.bed === 'A' ? spec.a.type : spec.b.type;
   if (bedEnd === 'female')
     issues.push({ level: 'warn', text: 'Die Kupplung liegt mit der Öffnung nach unten. So bräuchte sie innen Stützen. Besser das andere Ende nach unten legen.' });
-  const chainEnd = { frame: f, section: s, rot: rotS };
-  let end: Frame = f;
+  const { chainEnd, end } = planEnd(spec, { frame: f, section: s, rot: rotS }, bodies, issues, path);
+  const plan: FreePlan = { bodies, issues, chainEnd, end, path, cuts, startFrame };
+  const br = branch as BranchStart | null;
+  if (br) {
+    // Ende C wie Ende B planen (gleicher Code mit spec.c an der Stelle von spec.b), Meldungen und Körper umbenennen
+    const C = spec.c ?? defaultC(br.section.d);
+    const iss: Issue[] = [], bod: FreeBody[] = [];
+    const rc = planEnd({ ...spec, b: C, bed: 'B' }, br, bod, iss, path);
+    const toC = (t: string) => t.replace(/^(Gerät|Ende B):/, 'Ende C:').replace(/Ende B/g, 'Ende C');
+    for (const x of iss)
+      issues.push({
+        ...x,
+        text: toC(x.text),
+        fixes: x.fixes?.map((fx) => ({ label: toC(fx.label), fields: fx.fields.map(toC), set: (sp) => fx.set({ ...sp, b: (sp.c ??= defaultC(br.section.d)), bed: 'B' }) })),
+      });
+    for (const x of bod) bodies.push({ ...x, name: cName(x.name) });
+    plan.cChainEnd = rc.chainEnd;
+    plan.cEnd = rc.end;
+    plan.cCut = br.n;
+  }
+  return plan;
+}
+
+/** Körper von Ende C: wie bei Ende B, aber eindeutig benannt */
+const cName = (n: string) =>
+  n === 'Übergang zu Ende B' ? 'Übergang zu Ende C' : n.startsWith('Geräteanschluss') ? n.replace(/^Geräteanschluss/, 'Geräteanschluss C') : `${n} C`;
+
+/** Ende B (bzw. C mit spec.b = Ende C): Gerät oder Anschluss von osVAC neo hinter dem letzten Baustein */
+function planEnd(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: number }, bodies: FreeBody[], issues: Issue[], path: V3[]) {
+  const w = spec.wall;
+  const chainEnd = { ...ce };
+  let end: Frame = ce.frame;
   if (spec.b.type === 'device') end = planDevice(spec, chainEnd, bodies, issues, path);
   else {
-    // Ende B osVAC neo: Querschnitt auf den Kreis des Anschlusses bringen, danach Übergangskonus und Anschluss
+    // osVAC neo: Querschnitt auf den Kreis des Anschlusses bringen, danach Übergangskonus und Anschluss
     const target = sec('circle', { d: spec.b.d });
-    let fe = f;
+    const s = ce.section, rotS = ce.rot;
+    let fe = ce.frame;
     if (!sameSection(s, target) || Math.abs(rotS % 360) > 1e-9 && s.shape !== 'circle') {
       const L = spec.b.transition;
       if (!(L >= 2)) issues.push({ level: 'error', text: 'Ende B: Die Übergangslänge muss mindestens 2 mm betragen.', fixes: [fixTo('Übergangslänge', 'Übergangslänge zu Ende B', 2, (sp, x) => void (sp.b.transition = x))] });
@@ -975,7 +1122,7 @@ export function planFree(spec: FreeSpec): FreePlan {
     chainEnd.section = target;
     chainEnd.rot = 0;
   }
-  return { bodies, issues, chainEnd, end, path, cuts, startFrame };
+  return { chainEnd, end };
 }
 
 /** Gerader Loft zwischen zwei Querschnitten (für automatische Übergänge). */
@@ -1835,9 +1982,11 @@ export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) =>
   const blocks = plan.cuts.map((c, i) => (c ? planeAt(c.start, c.n ?? ref(i)) : null));
   const a = planeAt(plan.startFrame, ref(0));
   const b = planeAt(plan.chainEnd.frame, ref(k - 1));
+  const c = plan.cChainEnd ? planeAt(plan.cChainEnd.frame, plan.cCut ?? null) : null;
   return (name: string) => {
     const m = /^Formstück (\d+)/.exec(name);
     if (m) return blocks[Number(m[1]) - 1] ?? null;
+    if (c && (/^(Geräteanschluss C|Übergang zu Ende C)/.test(name) || / C( \d+)?$/.test(name))) return c;
     if (/^(Geräteanschluss|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(name) || / B( \d+)?$/.test(name)) return b;
     return a;
   };
@@ -1868,17 +2017,21 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   const dev = sectionText(spec.b.device.section);
   const isDev = spec.b.type === 'device';
   const B = isDev ? dev : end(spec.b.type as OsvacEnd, spec.b.d);
-  const blocks = spec.blocks.map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : BLOCK_LABELS[b.type])).join(', ');
+  const blocks = spec.blocks.map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : b.type === 'branch' ? `Abzweig ${f(b.angle)}°` : BLOCK_LABELS[b.type])).join(', ');
   const devText = `Gerät ${{ over: 'aufgesteckt', into: 'eingesteckt', flange: 'mit Flansch' }[spec.b.device.mode]}`;
   const sub = ['Freiform', blocks, isDev ? devText : ''].filter(Boolean).join(' · ');
   const fileB = isDev ? `Geraet ${dev.replace(/ × /g, 'x').replace('Ø ', 'D')}` : B;
-  const fileMid = spec.blocks.filter((b) => b.type === 'bend').map((b) => `Bogen${f(b.angle)}`).join(' ');
+  const fileMid = spec.blocks.filter((b) => b.type === 'bend' || b.type === 'branch').map((b) => `${b.type === 'bend' ? 'Bogen' : 'Abzweig'}${f(b.angle)}`).join(' ');
+  // Ende C am Abzweig
+  const hasC = spec.blocks.some((b) => b.type === 'branch') && !!spec.c;
+  const C = hasC ? (spec.c!.type === 'device' ? sectionText(spec.c!.device.section) : end(spec.c!.type, spec.c!.d)) : '';
+  const fileC = hasC ? (spec.c!.type === 'device' ? `Geraet ${C.replace(/ × /g, 'x').replace('Ø ', 'D')}` : C) : '';
   const x = extrasText(spec);
   return {
-    code: `${A} → ${B}`,
+    code: `${A} → ${B}${hasC ? ` + ${C}` : ''}`,
     sub,
-    long: `${A} → ${isDev ? `${devText} ${dev}` : B}`,
-    file: [A, 'Freiform', fileMid, fileB, ...x].filter(Boolean).join(' '),
+    long: `${A} → ${isDev ? `${devText} ${dev}` : B}${hasC ? `, Abzweig → ${spec.c!.type === 'device' ? `Gerät ${C}` : C}` : ''}`,
+    file: [A, 'Freiform', fileMid, fileB, ...x, hasC ? `und ${fileC}` : ''].filter(Boolean).join(' '),
     blocks,
   };
 }
