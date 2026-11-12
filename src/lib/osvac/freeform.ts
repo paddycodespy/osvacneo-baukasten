@@ -59,6 +59,8 @@ export interface Block {
   /** Abzweig: Innen-Ø des Abzweigs und wie weit er über das Rohr hinausragt (bis Ende C); Winkel = angle, Richtung = dir, Länge des Rohrs = length */
   branchD: number;
   branchLen: number;
+  /** Abzweig ab 50°: gebogen (erst 45° schräg aus dem Rohr, dann im Bogen auf den Winkel), besser für die Strömung */
+  sweep: boolean;
 }
 
 export type OsvacEnd = 'female' | 'male';
@@ -181,6 +183,7 @@ export function newBlock(type: BlockType, v: Partial<Omit<Block, 'id' | 'type'>>
     section: current ? { ...current } : sec('circle'),
     branchD: current?.shape === 'circle' ? current.d : 32,
     branchLen: 15,
+    sweep: false,
     ...(type === 'branch' ? { angle: 45 } : {}),
     ...v,
   };
@@ -198,6 +201,11 @@ export function branchGeom(d: number, bd: number, wall: number, angleDeg: number
   const tMax = Ro / Math.tan(a) + rbo / Math.sin(a);
   return { tMin, tMax, minLen: tMax - tMin + 4, out: (Ro + rbo * Math.abs(Math.cos(a))) / Math.sin(a) };
 }
+
+/** Gebogener Abzweig: so schräg verlässt er das Rohr, bevor der Bogen auf den eingestellten Winkel führt */
+export const SWEEP_ENTRY = 45;
+/** Gebogen nur ab diesem Winkel (darunter ist der Abzweig ohnehin flach) */
+export const SWEEP_FROM = 50;
 
 /** Ende C, wenn noch keins angelegt ist: Kupplung in der Größe des Abzweigs */
 export const defaultC = (d = 32): EndSpec => ({ type: 'female', d, device: { ...DEFAULT_DEVICE, section: { ...DEFAULT_DEVICE.section } }, transition: 10 });
@@ -823,6 +831,16 @@ function polyWire3(f: Frame, pts: P2[]) {
   return assembleWire(q.map((p, i) => makeLine(p, q[(i + 1) % q.length])));
 }
 
+/** Gültiger Körper laut OpenCascade (BRepCheck), z. B. nach einer Ausrundung */
+function validShape(sh: Shape3D): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const oc = getOC() as any;
+  const c = new oc.BRepCheck_Analyzer((sh as unknown as { wrapped: unknown }).wrapped, true, false);
+  const ok = c.IsValid();
+  c.delete();
+  return ok;
+}
+
 function hollowLoft(frames: Frame[], inner: P2[][], outer: P2[][], ruled: boolean, name: string, poly = false): Shape3D {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const oc = getOC() as any;
@@ -945,7 +963,10 @@ export function planFree(spec: FreeSpec): FreePlan {
         issues.push({ level: 'error', text: `${what}: Der Abzweig darf innen höchstens so weit sein wie das Rohr (${f1(s0.d)} mm).`, fixes: bdFix(s0.d) });
         return;
       }
-      const g = branchGeom(s0.d, bd, w, b.angle);
+      const sweep = b.sweep && b.angle >= SWEEP_FROM;
+      // gebogen: erst unter 45° aus dem Rohr, dann im Bogen weiter; sonst gerade unter dem eingestellten Winkel
+      const a0 = sweep ? SWEEP_ENTRY : b.angle;
+      const g = branchGeom(s0.d, bd, w, a0);
       const L = b.length;
       if (!(L >= g.minLen - 1e-9)) {
         issues.push({ level: 'error', text: `${what}: Das Rohr muss mindestens ${f1(upHalf(g.minLen))} mm lang sein, damit der Abzweig ganz darauf sitzt.`, fixes: [fixTo('Länge', 'Länge am Abzweig', upHalf(g.minLen), (sp, x) => void (blk(sp).length = x))] });
@@ -955,32 +976,98 @@ export function planFree(spec: FreeSpec): FreePlan {
         issues.push({ level: 'error', text: `${what}: Der Abzweig muss mindestens 3 mm über das Rohr hinausragen.`, fixes: [fixTo('Länge des Abzweigs', 'Länge des Abzweigs', 3, (sp, x) => void (blk(sp).branchLen = x))] });
         return;
       }
+      // Strömung: steile gerade Abzweige bremsen die Luft (Hinweis mit Vorschlägen)
+      if (!sweep && b.angle >= 60)
+        issues.push({
+          level: 'warn',
+          text: `${what}: Bei ${f1(b.angle)}° prallt die Luft aus dem Abzweig quer auf den Hauptstrom und wird stark gebremst. Ein flacherer Winkel oder ein gebogener Abzweig saugt besser.`,
+          fixes: [fixTo('Winkel', 'Winkel des Abzweigs', 45, (sp, x) => void (blk(sp).angle = x), '°'), { label: 'Gebogenen Abzweig einschalten', fields: [], set: (sp) => void (blk(sp).sweep = true) }],
+        });
       const D = inPlane(f, b.dir);
       const axis = unit(cross(f.t, D));
       cuts[idx].n = axis;
-      const th = rad(b.angle);
-      const e = rot(start.t, axis, th);
+      const th0 = rad(a0);
+      const e = rot(start.t, axis, th0);
       // Schnittpunkt der Achsen so, dass der Abzweig mittig auf dem Rohr sitzt
       const xb = (L - (g.tMax - g.tMin)) / 2 - g.tMin;
       const P = add(start.o, mul(start.t, xb));
-      const Lb = g.out + b.branchLen;
+      // gerades Stück ab der Achse: gebogen nur bis knapp außerhalb des Rohrs, sonst mit der eingestellten Länge
+      const Lb = g.out + (sweep ? 2 : b.branchLen);
       const Ro = s0.d / 2 + w, Ri = s0.d / 2, rbo = bd / 2 + w, rbi = bd / 2;
+      const note = `${what}: Die Kante, an der der Abzweig ins Rohr mündet, ließ sich bei diesen Maßen nicht ausrunden und bleibt scharf. Der Adapter funktioniert trotzdem; ein etwas anderer Ø oder Winkel hilft.`;
       bodies.push({
         name,
         cost: 1.5,
-        dep: { ...base, t: 'branch', L: r6(L), a: r6(b.angle), dir: r6(b.dir), bd: r6(bd), bl: r6(b.branchLen) },
+        dep: { ...base, t: 'branch', L: r6(L), a: r6(a0), dir: r6(b.dir), bd: r6(bd), Lb: r6(Lb), fillet: 1 },
         make: () => {
           // Rohr und Abzweig außen vereinigen, dann beide Bohrungen herausschneiden (jeweils mit Gegenprobe)
           const vMain = Math.PI * (Ro * Ro - Ri * Ri) * L;
           let body = (makeCylinder(Ro, L, start.o as Point, start.t as Point) as unknown as Shape3D).fuse(makeCylinder(rbo, Lb, P as Point, e as Point) as unknown as Shape3D);
           body = body.cut(makeCylinder(Ri, L + 2, add(start.o, mul(start.t, -1)) as Point, start.t as Point) as unknown as Shape3D);
-          body = body.cut(makeCylinder(rbi, Lb + 1, P as Point, e as Point) as unknown as Shape3D);
+          // Gleich weite Bohrungen berühren sich in einem Punkt; dort scheitert die Ausrundung. Dann wird die Bohrung des
+          // Abzweigs zur Mündung hin um 0,3 mm im Radius enger (auf der ganzen Länge verteilt, also ohne Stufe).
+          const del = Math.max(0, rbi - (Ri - 0.3));
+          const ring = (x: number, r: number) => assembleWire([makeCircle(r, add(P, mul(e, x)) as Point, e as Point)]);
+          body = body.cut(del > 0 ? (loft([ring(0, rbi - del), ring(Lb + 1, rbi)], { ruled: true }) as unknown as Shape3D) : (makeCylinder(rbi, Lb + 1, P as Point, e as Point) as unknown as Shape3D));
           const v = measureVolume(body);
           if (!(v > vMain * 0.98 && v < vMain + Math.PI * (rbo * rbo - rbi * rbi) * Lb)) throw new UserError(`${partLabel(name)} ließ sich mit diesen Maßen nicht berechnen. Bitte Winkel oder Länge etwas ändern.`);
+          // Innenkante an der Einmündung ausrunden (weniger Ablösung der Strömung); gelingt es nicht, bleibt sie scharf
+          const onBoth = (q: V3) => {
+            const rMain = len(sub(sub(q, start.o), mul(start.t, dot(sub(q, start.o), start.t))));
+            const qb = sub(q, P);
+            const sB = dot(qb, e);
+            const rB = len(sub(qb, mul(e, sB)));
+            return Math.abs(rMain - Ri) < 0.05 && Math.abs(rB - (rbi - del * (1 - sB / (Lb + 1)))) < 0.05;
+          };
+          for (const R of [2, 1.5, 1].filter((r) => r <= Math.min(w, rbi / 3) + 1e-9)) {
+            try {
+              const fl = body.fillet((edge) => ([0.2, 0.5, 0.8].every((u) => { const q = edge.pointAt(u); return onBoth([q.x, q.y, q.z]); }) ? R : null));
+              const vf = measureVolume(fl);
+              if (validShape(fl) && vf < v && vf > v * 0.9) return fl;
+            } catch {
+              /* nächster, kleinerer Radius */
+            }
+          }
+          partNotes.push(note);
           return body;
         },
       });
-      branch = { frame: { o: add(P, mul(e, Lb)), t: e, u: rot(start.u, axis, th), v: rot(start.v, axis, th) }, section: sec('circle', { d: bd }), rot: 0, n: axis };
+      let fc: Frame = { o: add(P, mul(e, Lb)), t: e, u: rot(start.u, axis, th0), v: rot(start.v, axis, th0) };
+      const inner = sec('circle', { d: bd }), outer = sec('circle', { d: bd + 2 * w });
+      if (sweep) {
+        // Bogen in der Ebene von Rohr und Abzweig, weiter vom Rohr weg; Radius 1,5 × Ø (Mittellinie), danach gerades Stück
+        const th = rad(b.angle - a0);
+        const Rb = Math.max(1.5 * bd, rbo + 2);
+        const Dn = rot(D, axis, th0);
+        const c = add(fc.o, mul(Dn, Rb));
+        const f0 = fc;
+        bodies.push({
+          name: `${name} · Bogen`,
+          cost: 0.5,
+          dep: { kind: 'free', t: 'branchBend', f: frameKey(f0), d: r6(bd), w, a: r6(b.angle - a0), R: r6(Rb) },
+          make: () => revolution(ringFace(f0, inner, outer, 0), c as Point, axis as Point, b.angle - a0) as Shape3D,
+        });
+        fc = rotFrame(f0, c, axis, th);
+        const f2 = fc;
+        bodies.push({
+          name: `${name} · Gerade`,
+          cost: 0.3,
+          dep: { kind: 'free', t: 'branchStraight', f: frameKey(f2), d: r6(bd), w, L: r6(b.branchLen) },
+          make: () => extrudeRing(f2, inner, outer, 0, b.branchLen),
+        });
+        fc = advance(f2, b.branchLen);
+        // Bogen darf das Rohr nicht berühren
+        for (let k = 0; k <= 8; k++) {
+          const q = rotFrame(f0, c, axis, (th * k) / 8).o;
+          const r = len(sub(sub(q, start.o), mul(start.t, dot(sub(q, start.o), start.t))));
+          // nächster Punkt des schräg stehenden Querschnitts zur Rohrachse
+          if (r - rbo * Math.abs(Math.cos(th0 + (th * k) / 8)) < Ro + 0.3) {
+            issues.push({ level: 'error', text: `${what}: Der Bogen des Abzweigs stößt ans Rohr. Bitte einen kleineren Ø für den Abzweig wählen oder den gebogenen Abzweig ausschalten.` });
+            return;
+          }
+        }
+      }
+      branch = { frame: fc, section: inner, rot: 0, n: axis };
       f = advance(start, L);
       path.push(f.o);
     } else {
@@ -2017,7 +2104,7 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   const dev = sectionText(spec.b.device.section);
   const isDev = spec.b.type === 'device';
   const B = isDev ? dev : end(spec.b.type as OsvacEnd, spec.b.d);
-  const blocks = spec.blocks.map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : b.type === 'branch' ? `Abzweig ${f(b.angle)}°` : BLOCK_LABELS[b.type])).join(', ');
+  const blocks = spec.blocks.map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : b.type === 'branch' ? `Abzweig ${f(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}` : BLOCK_LABELS[b.type])).join(', ');
   const devText = `Gerät ${{ over: 'aufgesteckt', into: 'eingesteckt', flange: 'mit Flansch' }[spec.b.device.mode]}`;
   const sub = ['Freiform', blocks, isDev ? devText : ''].filter(Boolean).join(' · ');
   const fileB = isDev ? `Geraet ${dev.replace(/ × /g, 'x').replace('Ø ', 'D')}` : B;
