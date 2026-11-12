@@ -211,6 +211,30 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.reset-all').count()) === 0, 'nach dem Neuladen wieder der alte Stand');
   });
 
+  await test('Druckhilfe gilt je Verbindung', pg, async () => {
+    const tool = pg.locator('button.tool', { hasText: 'Druckhilfe' });
+    const on = async () => (await tool.getAttribute('aria-pressed')) === 'true';
+    const kind = async (re: RegExp) => {
+      await step(pg, 'Verbindung');
+      await pg.getByRole('radio', { name: re }).click();
+      await ready(pg);
+    };
+    await kind(/Stecker einzeln/);
+    expect(await on(), 'Druckhilfe beim Stecker nicht an');
+    await tool.click();
+    expect(!(await on()), 'Druckhilfe lässt sich nicht abschalten');
+    await kind(/Stecker ↔ Kupplung/);
+    expect(await on(), 'Abschalten beim Stecker wirkt auch auf Stecker ↔ Kupplung');
+    await pg.waitForTimeout(800);
+    await pg.reload();
+    await ready(pg);
+    expect(await on(), 'nach dem Neuladen bei Stecker ↔ Kupplung aus');
+    await kind(/Stecker einzeln/);
+    expect(!(await on()), 'nach dem Neuladen beim Stecker wieder an');
+    await tool.click();
+    await kind(/Freiform/);
+  });
+
   if (errors.length) results.push({ name: 'keine Skriptfehler im Browser', ok: false, msg: errors.join(' | ') });
   await ctx.close();
 });
