@@ -12,6 +12,7 @@ import { CREDIT, CHANGES, LICENSE_NAME, LICENSE_URL } from '../credits';
 import { deriveParams } from '../osvac/params';
 import { initFont } from '../osvac/text';
 import { kindById } from '../osvac/catalog';
+import { meshTolerance } from './threemf';
 import type { Part } from '../osvac/assemblies';
 import type { PartRef, WorkerRequest, WorkerReply } from './protocol';
 import { UserError, GENERIC_ERROR, partLabel, partNotes } from '../errors';
@@ -226,9 +227,9 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
       return;
     }
     if (msg.type === 'partMesh') {
-      const { shape } = await getPart(msg);
+      const { q, shape } = await getPart(msg);
       const placed = shape.clone().translate([msg.dx ?? 0, msg.dy ?? 0, msg.dz]) as Shape3D;
-      const m = placed.mesh({ tolerance: 0.01, angularTolerance: 0.1 });
+      const m = placed.mesh({ tolerance: meshTolerance(q.name), angularTolerance: 0.1 });
       placed.delete();
       const vertices = new Float32Array(m.vertices);
       const triangles = new Uint32Array(m.triangles);

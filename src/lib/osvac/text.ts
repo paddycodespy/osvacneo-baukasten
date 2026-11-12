@@ -3,6 +3,7 @@
  */
 import { drawText, loadFont, type Shape3D } from 'replicad';
 import { tangentPlane, deg } from './geom';
+export { tangentPlane };
 
 type OTFont = Awaited<ReturnType<typeof loadFont>>;
 let font: OTFont | null = null;
@@ -68,4 +69,21 @@ export function textWidth(text: string, size: number): number {
 export function engrave(body: Shape3D, tools: (Shape3D | null)[]): Shape3D {
   for (const t of tools) if (t) body = body.cut(t);
   return body;
+}
+
+/**
+ * Text auf einer ebenen, senkrechten Fläche, die im Abstand r von der Achse in Richtung thDeg nach außen zeigt
+ * (gelesen von außen). Mitte des Textes bei z (Mitte der Versalhöhe). Werkzeugkörper zum Gravieren (depth tief).
+ */
+export function textOnFlat(r: number, thDeg: number, zMid: number, text: string, size: number, depth: number): Shape3D | null {
+  if (!font) return null;
+  const total = font.getAdvanceWidth(text, size);
+  const over = 0.2;
+  let d;
+  try {
+    d = drawText(text, { startX: 0, startY: 0, fontSize: size, fontFamily: FONT_FAMILY }).translate(-total / 2, 0);
+  } catch {
+    return null;
+  }
+  return d.sketchOnPlane(tangentPlane(r + over, thDeg, zMid - 0.36 * size)).extrude(-(depth + over)) as Shape3D;
 }

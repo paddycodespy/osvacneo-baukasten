@@ -15,11 +15,19 @@ export interface OverhangMesh {
 }
 
 const COUNTED = /^(Formstück|Übergang zu|Geräteanschluss|Anschlagring)/;
+/** Stutzen-Adapter und Schieber einzeln: eigene Teile (die Teile von osVAC neo sind für den Druck ohne Stützen gebaut) */
+export const COUNTED_MACHINE = /^(Übergang|Rohr|Klemmrippen)$/;
+export const COUNTED_GATE = /^(Schieber-Gehäuse|Wandhalter)$/;
 const CELL = 3;
 
 type Tri = { a: number[]; b: number[]; c: number[]; n: number[] };
 
-export function overhangArea(bodies: OverhangMesh[]): number {
+/**
+ * counted: welche Körper zählen (Standard: die Formstücke der Freiform).
+ * minRegion: zusammenhängende Überhang-Stellen unter dieser Fläche (mm²) zählen nicht, z. B. die Decke kleiner
+ * waagerechter Schraubenlöcher oder eingravierte Buchstaben (die druckt jeder Drucker ohne Stützen).
+ */
+export function overhangArea(bodies: OverhangMesh[], counted: RegExp = COUNTED, minRegion = 0): number {
   let zMin = Infinity;
   for (const b of bodies) for (let i = 2; i < b.positions.length; i += 3) zMin = Math.min(zMin, b.positions[i]);
 
@@ -72,9 +80,26 @@ export function overhangArea(bodies: OverhangMesh[]): number {
   };
 
   let area = 0;
+  // Überhang-Dreiecke zu zusammenhängenden Stellen gruppieren (gemeinsame Ecken), nur für minRegion
+  const parent: number[] = [];
+  const regionArea: number[] = [];
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const corner = new Map<string, number>();
+  const join = (p: number[], id: number) => {
+    const k = p.map((x) => Math.round(x * 100)).join(',');
+    const o = corner.get(k);
+    if (o === undefined) corner.set(k, id);
+    else {
+      const ra = find(o), rb = find(id);
+      if (ra !== rb) {
+        parent[rb] = ra;
+        regionArea[ra] += regionArea[rb];
+      }
+    }
+  };
   bodies.forEach((b, bi) => {
-    if (b.helper || !COUNTED.test(b.name)) return;
-    const bridges = b.name.startsWith('Geräteanschluss') || b.name.endsWith('· Schieber');
+    if (b.helper || !counted.test(b.name)) return;
+    const bridges = b.name.startsWith('Geräteanschluss') || b.name.endsWith('· Schieber') || b.name === 'Schieber-Gehäuse';
     const nr = b.normals, ix = b.indices;
     for (let t = 0; t < ix.length; t += 3) {
       const nz = (nr[ix[t] * 3 + 2] + nr[ix[t + 1] * 3 + 2] + nr[ix[t + 2] * 3 + 2]) / 3;
@@ -83,9 +108,18 @@ export function overhangArea(bodies: OverhangMesh[]): number {
       if (Math.min(T.a[2], T.b[2], T.c[2]) < zMin + 0.4) continue;
       const cen = [0, 1, 2].map((k) => (T.a[k] + T.b[k] + T.c[k]) / 3);
       if (covered(bi, cen)) continue;
-      area += Math.hypot(T.n[0], T.n[1], T.n[2]) / 2;
+      const A = Math.hypot(T.n[0], T.n[1], T.n[2]) / 2;
+      if (!minRegion) {
+        area += A;
+        continue;
+      }
+      const id = parent.length;
+      parent.push(id);
+      regionArea.push(A);
+      for (const p of [T.a, T.b, T.c]) join(p, id);
     }
   });
+  if (minRegion) parent.forEach((p, i) => { if (find(i) === i && regionArea[i] >= minRegion) area += regionArea[i]; });
   return area;
 }
 

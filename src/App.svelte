@@ -9,7 +9,7 @@
   import { build, partNames } from './lib/cad';
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
-  import { overhangArea, belowBedEnd } from './lib/overhang';
+  import { overhangArea, belowBedEnd, COUNTED_MACHINE, COUNTED_GATE } from './lib/overhang';
   import { freeSummary, sectionPlanes, endMarkers } from './lib/osvac/freeform';
   import { gateBed } from './lib/osvac/gate';
   import { app, fmt } from './lib/app.svelte';
@@ -88,7 +88,14 @@
       cancelAnimationFrame(raf);
       if (token !== buildToken) return;
       app.dims = v.setBodies(full.bodies);
-      app.overhang = app.kind.freeform ? overhangArea(full.bodies) : 0;
+      // Überhang: Freiform alle Formstücke; Stutzen und Schieber nur die eigenen Teile, kleine Stellen (Lochdecken, Schrift) zählen nicht
+      app.overhang = app.kind.freeform
+        ? overhangArea(full.bodies)
+        : app.kind.machine
+        ? overhangArea(full.bodies, COUNTED_MACHINE, 25)
+        : app.kind.gate
+        ? overhangArea(full.bodies, COUNTED_GATE, 25)
+        : 0;
       app.buildNotes = full.notes;
       const below = app.kind.freeform ? belowBedEnd(full.bodies, app.free.bed) : 0;
       app.layoutError =
@@ -102,7 +109,8 @@
       if (token !== buildToken) return;
       app.progress = null;
       app.status = 'error';
-      app.errorMsg = userMessage(e);
+      // Fehler aus der Prüfung des Aufbaus stehen schon rot an ihrem Baustein bzw. Ende: nicht noch einmal oben zeigen
+      app.errorMsg = app.freeIssues.some((x) => x.level === 'error') ? '' : userMessage(e);
       // das zuletzt gezeigte Modell bleibt blass stehen: es gehört nicht mehr zu den Eingaben
       v.setDimmed(true);
     }

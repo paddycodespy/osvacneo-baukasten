@@ -71,6 +71,14 @@ async function main() {
     await pg.getByRole('radio', { name: 'Adapter kommt in die Öffnung' }).click();
     await chk('Stutzen eingesteckt');
 
+    // Schieber einzeln mit und ohne Befestigung
+    await step('Verbindung');
+    await pg.getByRole('radio', { name: /Schieber einzeln/ }).click();
+    await step('Größen');
+    await chk('Schieber einzeln');
+    await pg.getByRole('radio', { name: 'Ohne' }).click();
+    await chk('Schieber ohne Befestigung');
+
     // Freiform: alle Bausteine, alle Formen, Gerät in beiden Befestigungen
     await step('Verbindung');
     await pg.getByRole('radio', { name: 'Freiform' }).click();

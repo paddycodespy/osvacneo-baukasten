@@ -61,6 +61,18 @@
   <p class="hint">9 mm macht die Kupplung stabiler. Sie wird dann außen 4 mm dicker.</p>
 </fieldset>
 
+{#if app.freeHasGate}
+  <fieldset class="opt">
+    <legend class="field-label">Spiel der Schieberplatte <HelpToggle id="plateGap" /></legend>
+    <div class="slider">
+      <input type="range" min="0.15" max="0.5" step="0.05" value={app.free.gateGap ?? 0.3} oninput={(e) => (app.free.gateGap = Number(e.currentTarget.value))} aria-describedby="fplate-hint" />
+      <output>{fmt(app.free.gateGap ?? 0.3, 2)} mm</output>
+    </div>
+    <HelpText id="plateGap" />
+    <p class="hint" id="fplate-hint">Klemmt die Platte im Schlitz: größer. Wackelt sie: kleiner. Standard: 0,3 mm.</p>
+  </fieldset>
+{/if}
+
 <!-- Beschriftung ist immer dabei; ohne Stecker gibt es hier nichts zu wählen, dann auch keine Überschrift -->
 {#if app.hasSupport}
   <fieldset class="opt checks">

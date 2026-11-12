@@ -15,6 +15,14 @@ export interface MeshPart {
 }
 
 /**
+ * Feinheit der Netze für STL und 3MF (größte Abweichung von der Fläche in mm). Die eigenen Formstücke (Freiform,
+ * Übergänge, Schieberplatte, Wandhalter) kommen mit 0,02 mm aus: für den Druck kein Unterschied, die Dateien werden
+ * deutlich kleiner. Die Teile von osVAC neo (Bajonett, Rändelung, Schrift) und alles mit Schrift bleiben bei 0,01 mm,
+ * gröber ergäbe dort vereinzelt offene Kanten im Netz.
+ */
+export const meshTolerance = (name: string) => (/^(Formstück|Übergang|Geräteanschluss|Anschlagring|Schieberplatte|Wandhalter|Klemmrippen)/.test(name) ? 0.02 : 0.01);
+
+/**
  * OpenCascade liefert die Dreiecke flächenweise mit eigenen Eckpunkten. Für ein geschlossenes
  * (wasserdichtes) Netz werden Punkte an gleicher Position zusammengeführt und entartete Dreiecke entfernt.
  */

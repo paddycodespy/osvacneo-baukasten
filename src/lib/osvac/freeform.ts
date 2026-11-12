@@ -141,6 +141,8 @@ export interface FreeSpec {
   c?: EndSpec;
   /** welches Ende auf dem Druckbett liegt */
   bed: 'A' | 'B';
+  /** Schieber: Spiel der Platte im Schlitz (je Seite), Standard 0,3 */
+  gateGap?: number;
 }
 
 export const SECTION_LABELS: Record<SectionShape, string> = {
@@ -1116,7 +1118,8 @@ export function planFree(spec: FreeSpec): FreePlan {
         issues.push({ level: 'error', text: `${what}: Vor dem Schieber muss das Rohr rund sein. Bitte davor einen Übergang auf „Kreis“ einfügen.` });
         return;
       }
-      const g = gateDims(s0.d / 2, s0.d / 2 + w, GATE_GAP);
+      const gap = spec.gateGap ?? GATE_GAP;
+      const g = gateDims(s0.d / 2, s0.d / 2 + w, gap);
       const L = b.length;
       if (!(L >= g.minLen - 1e-9)) {
         issues.push({ level: 'error', text: `${what}: Der Schieber muss mindestens ${f1(upHalf(g.minLen))} mm lang sein, sonst passt der Rahmen um den Schlitz nicht aufs Rohr.`, fixes: [fixTo('Länge', 'Länge des Schiebers', upHalf(g.minLen), (sp, x) => void (blk(sp).length = x))] });
@@ -1124,9 +1127,9 @@ export function planFree(spec: FreeSpec): FreePlan {
       }
       // Gehäuse im eigenen System bauen (Achse +z, Platte gleitet entlang +x = Richtung) und an den Anfang des Bausteins legen
       const pl = localPlacement(start.o, inPlane(start, b.dir), start.t);
-      const dg = { ...base, t: 'gate', L: r6(L), dir: r6(b.dir), gap: GATE_GAP };
+      const dg = { ...base, t: 'gate', L: r6(L), dir: r6(b.dir), gap };
       bodies.push({ name, cost: 1.5, dep: dg, make: () => placeShape(gateTube(g, L), pl) });
-      loose.push({ name: `Schieberplatte ${idx + 1}`, cost: 0.3, dep: { kind: 'free', t: 'gatePlate', d: r6(s0.d), w, gap: GATE_GAP }, make: () => gatePlate(g), x0: g.x0, x1: g.x1, hw: g.hw });
+      loose.push({ name: `Schieberplatte ${idx + 1}`, cost: 0.3, dep: { kind: 'free', t: 'gatePlate', d: r6(s0.d), w, gap }, make: () => gatePlate(g), x0: g.x0, x1: g.x1, hw: g.hw });
       f = advance(start, L);
       path.push(f.o);
     } else {
@@ -2207,37 +2210,55 @@ export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) =>
 export function footprint(spec: FreeSpec, plan: FreePlan): { x0: number; x1: number; y0: number; y1: number; z0: number } {
   const { R, tr } = bedPlacement(spec, plan);
   const w = spec.wall;
-  const endR = (E: EndSpec) => {
-    // Stecker: mit Druckhilfe (Rand bis 20 mm über den Stecker hinaus)
-    if (E.type !== 'device') return E.d / 2 + (E.type === 'male' ? 27 : 12);
+  const P = (p: V3) => add(mulMV(R, p), tr);
+  // Außenradius der Enden: Kupplung mit Rändelung, Stecker (auf dem Bett mit dem Rand der Druckhilfe), Gerät bzw. Flansch
+  const endR = (E: EndSpec, onBed: boolean) => {
+    if (E.type === 'female') return E.d / 2 + 12;
+    if (E.type === 'male') return E.d / 2 + (onBed ? 27 : 6);
     const dv = E.device;
     const sh = dv.mode === 'flange' ? flangeGeom(dv, w, false).plate : grow(dv.section, w + dv.allowance + 1);
     return Math.max(...samplePoints(sh, 72, dv.rot).map((q) => Math.hypot(q[0], q[1]))) + 1;
   };
-  let r = Math.max(endR({ ...spec.b, type: spec.a.type, d: spec.a.d }), endR(spec.b), spec.c && spec.blocks.some((b) => b.type === 'branch') ? endR(spec.c) : 0);
+  // Bausteine: größte Ausdehnung quer zur Mittellinie
+  let rc = spec.a.d / 2 + w + 1;
   let cur = spec.a.d;
   for (const b of spec.blocks) {
     if (b.type === 'transition' || b.type === 'step') {
-      r = Math.max(r, Math.max(b.section.d, b.section.w, b.section.h, b.section.w2) / 2 + w + 1);
+      rc = Math.max(rc, Math.max(b.section.d, b.section.w, b.section.h, b.section.w2) / 2 + w + 1);
       cur = b.section.shape === 'circle' ? b.section.d : Math.max(b.section.w, b.section.h);
     }
-    if (b.type === 'gate') r = Math.max(r, gateDims(cur / 2, cur / 2 + w, GATE_GAP).Rc + 1);
-    if (b.type === 'branch') r = Math.max(r, b.branchD / 2 + w + 1);
+    if (b.type === 'gate') rc = Math.max(rc, gateDims(cur / 2, cur / 2 + w, spec.gateGap ?? GATE_GAP).Rc + 1);
+    if (b.type === 'branch') rc = Math.max(rc, b.branchD / 2 + w + 1);
   }
-  const pts = plan.path.map((p) => add(mulMV(R, p), tr));
-  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const box = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+  const take = (p: V3, r: number) => {
+    const q = P(p);
+    box.x0 = Math.min(box.x0, q[0] - r); box.x1 = Math.max(box.x1, q[0] + r);
+    box.y0 = Math.min(box.y0, q[1] - r); box.y1 = Math.max(box.y1, q[1] + r);
+  };
+  for (const p of plan.path) take(p, rc);
+  // Enden je mit eigenem Radius (die Druckhilfe macht nur das Ende auf dem Bett breit)
+  const rA = endR({ ...spec.b, type: spec.a.type, d: spec.a.d }, spec.bed === 'A');
+  for (const p of [[0, 0, 0] as V3, plan.startFrame.o]) take(p, rA);
+  const rB = endR(spec.b, spec.bed === 'B');
+  for (const p of [plan.chainEnd.frame.o, plan.end.o]) take(p, rB);
+  if (plan.cChainEnd && plan.cEnd && spec.c) for (const p of [plan.cChainEnd.frame.o, plan.cEnd.o]) take(p, endR(spec.c, false));
   // Höhe des Druckbetts: Endfläche des Endes, das unten liegt
-  const z0 = spec.bed === 'A' ? 0 : add(mulMV(R, plan.end.o), tr)[2];
-  return { x0: Math.min(...xs) - r, x1: Math.max(...xs) + r, y0: Math.min(...ys) - r, y1: Math.max(...ys) + r, z0 };
+  const z0 = spec.bed === 'A' ? 0 : P(plan.end.o)[2];
+  return { ...box, z0 };
 }
 
-/** Lage der Schieberplatten auf dem Bett: hinter dem Adapter (in +x), untereinander in y, flach auf der Höhe des Betts */
+/**
+ * Lage der Schieberplatten auf dem Bett: vor dem Adapter (in −y, 6 mm Abstand), mittig zu ihm, untereinander;
+ * flach auf der Höhe des Betts. So bleibt die Grundfläche fast quadratisch (die Platte ist lang und schmal).
+ */
 export function loosePlacements(spec: FreeSpec, plan: FreePlan): Placement[] {
   const fp = footprint(spec, plan);
-  let y = fp.y0;
+  const cx = (fp.x0 + fp.x1) / 2;
+  let y = fp.y0 - 6;
   return plan.loose.map((q) => {
-    const tr: V3 = [fp.x1 + 10 - q.x0, y + q.hw, fp.z0];
-    y += 2 * q.hw + 8;
+    const tr: V3 = [cx - (q.x0 + q.x1) / 2, y - q.hw, fp.z0];
+    y -= 2 * q.hw + 6;
     return { R: IDENTITY, tr };
   });
 }
