@@ -245,7 +245,7 @@ class AppState {
     const s = this.gate, L = this.gateLay;
     const t = [
       `Das Gehäuse steht mit einer Muffe auf dem Druckbett. Über dem Schlitz druckt der Drucker eine Brücke, das geht ohne Stützen.`,
-      'Die Platte liegt flach daneben. Nach dem Druck von der Seite in den Schlitz schieben, egal von welcher Seite und wie herum. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein.',
+      'Die Platte liegt flach daneben. Nach dem Druck mit dem schmalen Ende (der federnden Zunge) voran in den Schlitz schieben, von welcher Seite ist egal, bis die kleine Nase auf der anderen Seite herausspringt. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein, der dicke Griff und die Nase halten die Platte im Schieber. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.',
       `Das Rohr (außen Ø ${fmt(s.d)} mm) auf beiden Seiten bis zum Anschlag einstecken.`,
     ];
     const at = `Die Rohrmitte liegt ${fmt(L.A)} mm vor der Wand.`;
@@ -272,7 +272,7 @@ class AppState {
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
     if (this.kind.gate) t.push(...this.gateTips);
     if (this.kind.freeform && this.free.blocks.some((x) => x.type === 'gate'))
-      t.push('Die Schieberplatte liegt flach neben dem Adapter. Nach dem Druck von der Seite in den Schlitz schieben, egal von welcher Seite und wie herum. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein.');
+      t.push('Die Schieberplatte liegt flach neben dem Adapter. Nach dem Druck mit dem schmalen Ende (der federnden Zunge) voran in den Schlitz schieben, von welcher Seite ist egal, bis die kleine Nase auf der anderen Seite herausspringt. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein, der dicke Griff und die Nase halten die Platte im Schieber. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.');
     const c = this.free.c;
     if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
       t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);
