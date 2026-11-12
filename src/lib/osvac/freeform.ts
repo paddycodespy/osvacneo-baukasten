@@ -1308,7 +1308,7 @@ export function flangeGeom(dv: DeviceEnd, wall: number, withFixes = true): Flang
 function flangeFixes(kind: FlangeError['kind'], dv: DeviceEnd, wall: number, m: { minT: number; minRim: number }): Fix[] {
   const D = (sp: FreeSpec) => sp.b.device;
   const clear = (v: Partial<DeviceEnd>) => !flangeGeom({ ...dv, ...v }, wall, false).errors.some((e) => e.kind === kind);
-  const refill: Fix = { label: 'Platte und Löcher neu vorbelegen', fields: [], set: (sp) => void Object.assign(D(sp), flangeDefaults(D(sp), sp.wall)) };
+  const refill: Fix = { label: 'Platte und Löcher neu vorschlagen', fields: [], set: (sp) => void Object.assign(D(sp), flangeDefaults(D(sp), sp.wall)) };
   const pair = (name: string, fields: [string, string], keys: [keyof DeviceEnd, keyof DeviceEnd], a: number, b: number): Fix => ({
     label: `${name} auf ${fmtV(a)} × ${fmtV(b)} mm setzen`,
     fields,
@@ -1395,7 +1395,7 @@ function flangeFixes(kind: FlangeError['kind'], dv: DeviceEnd, wall: number, m: 
         const r = searchUp((v) => clear({ flangeRim: v }), dv.flangeRim, 80);
         if (r !== null) out.push(fixTo('Rand', 'Rand des Flanschs', Math.ceil(r), (sp, x) => void (D(sp).flangeRim = x)));
       }
-      // neu vorbelegen nur, wenn es sonst keinen Vorschlag gibt (der Link dazu steht ohnehin unter den Feldern)
+      // neu vorschlagen nur, wenn es sonst keinen Vorschlag gibt (der Link dazu steht ohnehin unter den Feldern)
       if (!auto(dv) && !out.length) out.push(refill);
       break;
     }
