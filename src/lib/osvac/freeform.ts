@@ -2113,9 +2113,14 @@ export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) =>
   const a = planeAt(plan.startFrame, ref(0));
   const b = planeAt(plan.chainEnd.frame, ref(k - 1));
   const c = plan.cChainEnd ? planeAt(plan.cChainEnd.frame, plan.cCut ?? null) : null;
+  const loose = plan.loose.length ? loosePlacements(spec, plan) : [];
   return (name: string) => {
-    // Schieberplatten liegen flach daneben: gemeinsame Schnittebene der Vorschau
-    if (name.startsWith('Schieberplatte')) return null;
+    // Schieberplatten liegen flach daneben: Schnitt längs durch die Mitte der Platte
+    const sp = /^Schieberplatte (\d+)/.exec(name);
+    if (sp) {
+      const i = plan.loose.findIndex((q) => q.name === `Schieberplatte ${sp[1]}`);
+      return i >= 0 ? { p: loose[i].tr, n: [0, 1, 0] } : null;
+    }
     const m = /^Formstück (\d+)/.exec(name);
     if (m) return blocks[Number(m[1]) - 1] ?? null;
     if (c && (/^(Geräteanschluss C|Übergang zu Ende C)/.test(name) || / C( \d+)?$/.test(name))) return c;
@@ -2153,6 +2158,17 @@ export function footprint(spec: FreeSpec, plan: FreePlan): { x0: number; x1: num
   // Höhe des Druckbetts: Endfläche des Endes, das unten liegt
   const z0 = spec.bed === 'A' ? 0 : add(mulMV(R, plan.end.o), tr)[2];
   return { x0: Math.min(...xs) - r, x1: Math.max(...xs) + r, y0: Math.min(...ys) - r, y1: Math.max(...ys) + r, z0 };
+}
+
+/** Lage der Schieberplatten auf dem Bett: hinter dem Adapter (in +x), untereinander in y, flach auf der Höhe des Betts */
+export function loosePlacements(spec: FreeSpec, plan: FreePlan): Placement[] {
+  const fp = footprint(spec, plan);
+  let y = fp.y0;
+  return plan.loose.map((q) => {
+    const tr: V3 = [fp.x1 + 10 - q.x0, y + q.hw, fp.z0];
+    y += 2 * q.hw + 8;
+    return { R: IDENTITY, tr };
+  });
 }
 
 /** Mitte der Endflächen A, B (und C) mit Richtung aus dem Adapter heraus, in den Koordinaten auf dem Druckbett (für die Plaketten) */
