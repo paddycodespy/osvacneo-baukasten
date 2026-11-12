@@ -131,7 +131,7 @@ export interface GateSpec {
   /** Tiefe der Muffen */
   depth: number;
   mount: GateMount;
-  /** Lage an der Wand (wichtig für die Schlüssellöcher, die nach oben zeigen müssen) */
+  /** Lage an der Wand: nur für die Schlüssellöcher (Schlitz muss nach oben zeigen); Wandplatte und Wandhalter passen in beiden Lagen */
   orient: GateOrient;
   /** Abstand Wand bis Rohrmitte; 0 = so nah wie möglich, höchstens 50 mm mehr */
   wallDist: number;
@@ -242,10 +242,10 @@ export function gateName(s: GateSpec): { code: string; file: string; long: strin
   const lay = gateLayout(s);
   const far = s.mount !== 'none' && lay.A > lay.minA + 0.05;
   const mountFile = { none: '', plate: 'Wandplatte', keyhole: 'Schluesselloecher', clip: 'Wandhalter' }[s.mount];
-  const turned = s.mount !== 'none' && s.orient === 'turned';
+  const turned = s.mount === 'keyhole' && s.orient === 'turned';
   return {
     code: `Schieber Ø${f(s.d)}`,
     file: ['Schieber', `Rohr${f(s.d)}`, mountFile, turned ? 'waagerecht' : '', far ? `Wand${f(lay.A)}` : ''].filter(Boolean).join(' '),
-    long: `Rohr Ø ${f(s.d)} mm außen, Muffen ${f(s.depth)} mm tief, ${s.mount === 'none' ? 'ohne Befestigung' : `${MOUNT_LABELS[s.mount]}, ${ORIENT_LABELS[s.orient]}, Rohrmitte ${f(lay.A)} mm vor der Wand`}`,
+    long: `Rohr Ø ${f(s.d)} mm außen, Muffen ${f(s.depth)} mm tief, ${s.mount === 'none' ? 'ohne Befestigung' : `${MOUNT_LABELS[s.mount]}${s.mount === 'keyhole' ? `, ${ORIENT_LABELS[s.orient]}` : ''}, Rohrmitte ${f(lay.A)} mm vor der Wand`}`,
   };
 }

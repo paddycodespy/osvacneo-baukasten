@@ -47,7 +47,7 @@
       ? 'Zwei Schlüssellöcher: Schrauben in die Wand drehen, Schieber einhängen. Schnell wieder abzunehmen.'
       : 'Eigenes kleines Teil, das an die Wand geschraubt wird. Das Rohr neben dem Schieber wird hineingedrückt.'}
   </p>
-  {#if g.mount !== 'none'}
+  {#if g.mount === 'keyhole'}
     <Field label="Lage an der Wand" help={app.helpTexts.orient}>
       <div class="seg wide" role="radiogroup" aria-label="Lage an der Wand">
         {#each Object.entries(ORIENT_LABELS) as [o, label]}
@@ -55,6 +55,11 @@
         {/each}
       </div>
     </Field>
+  {/if}
+  {#if g.mount === 'plate' || g.mount === 'clip'}
+    <p class="hint">Passt für senkrechtes und waagerechtes Rohr: einfach entsprechend gedreht anschrauben.</p>
+  {/if}
+  {#if g.mount !== 'none'}
     <div class="grid2">
       <Field label="Wand bis Rohrmitte" help={app.helpTexts.wallDist}>
         <NumberField value={app.gateLay.A} min={Math.ceil(app.gateLay.minA * 10) / 10} max={Math.floor(app.gateLay.maxA * 10) / 10} step={0.5} label="Abstand Wand bis Rohrmitte" oncommit={(v) => app.setWallDist(v)} />

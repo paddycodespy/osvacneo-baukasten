@@ -237,7 +237,7 @@ class AppState {
     pipeGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als das Rohr außen. Sitzt das Rohr zu stramm: größer. Rutscht es heraus: kleiner, oder das Rohr mit etwas Klebeband umwickeln.',
     plateGap: 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
     wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg, höchstens ${WALL_MORE} mm mehr (${fmt(this.gateLay.maxA)} mm), sonst wird die Halterung wacklig.`,
-    orient: 'Wie das Rohr an der Wand entlangläuft. Wandplatte und Wandhalter passen in beiden Lagen; die Schlüssellöcher zeigen je nach Lage zum oberen Ende oder zur Seite, damit der Schieber richtig herum hängt.',
+    orient: 'Wie das Rohr an der Wand entlangläuft. Der Schlitz der Schlüssellöcher muss nach oben zeigen: bei senkrechtem Rohr zum oberen Ende, bei waagerechtem zur Seite.',
     filament: 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
   });
 
@@ -258,17 +258,15 @@ class AppState {
           : `Zwei Schlüssellöcher, ${this.gatePitch}: zwei Schrauben (Ø 4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit dem oberen Ende (wie gedruckt) nach oben einhängen; das Rohr läuft dann senkrecht. ${at}`,
       );
     if (s.mount === 'clip') t.push(`Der Wandhalter ist ein eigenes Teil für das Rohr neben dem Schieber. Mit zwei Senkkopfschrauben Ø 4 mm (${this.gatePitch}) an die Wand schrauben und das Rohr hineindrücken. ${at}`);
-    if (s.mount !== 'none' && s.orient === 'turned') t.push('Bei waagerechtem Rohr gleitet die Platte senkrecht. Die Rastung hält sie in beiden Stellungen, auch gegen ihr Gewicht.');
+    if (s.mount === 'keyhole' && s.orient === 'turned') t.push('Bei waagerechtem Rohr gleitet die Platte senkrecht. Die Rastung hält sie in beiden Stellungen, auch gegen ihr Gewicht.');
     return t;
   });
 
   /** Abstände der Schrauben in Worten (zum Anzeichnen an der Wand) */
   gatePitch = $derived.by(() => {
     const [q, l] = this.gateLay.pitch;
-    const along = this.gate.orient === 'turned' ? 'waagerecht' : 'senkrecht';
-    const across = this.gate.orient === 'turned' ? 'senkrecht' : 'waagerecht';
-    if (q && l) return `Lochabstand ${fmt(q)} mm ${across} und ${fmt(l)} mm ${along}`;
-    return `Lochabstand ${fmt(q || l)} mm${this.gate.mount === 'clip' ? '' : ' waagerecht'}`;
+    if (q && l) return `Lochabstand ${fmt(q)} mm quer zum Rohr und ${fmt(l)} mm entlang dem Rohr`;
+    return `Lochabstand ${fmt(q || l)} mm${this.gate.mount === 'keyhole' ? ' waagerecht' : ''}`;
   });
 
   /** Freiform: Stützen nötig? (nur nach fertiger Berechnung bekannt) */
