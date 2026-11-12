@@ -189,8 +189,8 @@ Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fens
 
 **Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
 Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
-`osVAC neo Baukasten_0.3.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
-`git tag v0.3.0 && git push --tags`.
+`osVAC neo Baukasten_0.4.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
+`git tag v0.4.0 && git push --tags`.
 
 **Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
 (Startmenü, Deinstallation über „Apps“). Da die Datei nicht signiert ist, meldet Windows beim ersten Start

@@ -12,6 +12,7 @@
  */
 import { makeBox, makeCylinder, makeSphere, draw, type Shape3D } from 'replicad';
 import { revolveProfile, L } from './geom';
+import { textOnFlat } from './text';
 
 /** Dicke der Platte */
 export const GATE_T = 2.4;
@@ -189,8 +190,8 @@ function sinkHole(x: number, z: number, yFace: number, depth: number): Shape3D {
     .translate([x, yFace, z]) as Shape3D;
 }
 
-/** Gehäuse des Schiebers einzeln (stehend, Muffe unten auf dem Bett), mit Wandplatte oder Schlüssellöchern */
-export function gateHousing(s: GateSpec): Shape3D {
+/** Gehäuse des Schiebers einzeln (stehend, Muffe unten auf dem Bett), mit Wandplatte oder Schlüssellöchern; text: Rohr-Ø vorne eingraviert */
+export function gateHousing(s: GateSpec, text = true): Shape3D {
   const { g, Rs, Rm, Ro, H, zc, A, holeX, holeZ, keyTurned, keyZ, keyX } = gateLayout(s);
   let h = cylZ(Ro, 0, H).fuse(frame(g, zc, 0, H));
   if (s.mount === 'plate' || s.mount === 'keyhole') {
@@ -222,6 +223,13 @@ export function gateHousing(s: GateSpec): Shape3D {
         const x = sx * holeX, zh = zc - 4, ze = zc + 5;
         h = h.cut(thru(4.5, x, zh)).cut(slot(x - 2.2, x + 2.2, zh, ze)).cut(thru(2.2, x, ze));
       }
+  }
+  // Rohr-Ø vorne auf dem Rahmen (Seite gegenüber der Wand), 0,4 mm tief, zum Sortieren
+  if (text) {
+    const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
+    const size = Math.min(5, g.Hf - 2.4);
+    const tool = textOnFlat(g.half, 90, zc, `Ø${f(s.d)}`, size, 0.4);
+    if (tool) h = h.cut(tool);
   }
   return h;
 }

@@ -263,11 +263,13 @@ class AppState {
     filament: 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
   });
 
+  /** Freiform mit Schieber: Spiel der Platte einstellbar (in Passung) */
+  freeHasGate = $derived(!!this.kind.freeform && this.free.blocks.some((b) => b.type === 'gate'));
   /** Druckhinweise zum Schieber einzeln */
   gateTips = $derived.by(() => {
     const s = this.gate, L = this.gateLay;
     const t = [
-      `Das Gehäuse steht mit einer Muffe auf dem Druckbett. Über dem Schlitz druckt der Drucker eine Brücke, das geht ohne Stützen.`,
+      `Das Gehäuse steht mit einer Muffe auf dem Druckbett. Über dem Schlitz druckt der Drucker eine Brücke, das geht ohne Stützen. Bambu Studio meldet dazu eventuell „Fliegender Träger“: einfach wegklicken und keine Stützen einschalten, sie würden den Schlitz zusetzen.`,
       'Die Platte liegt flach daneben. Nach dem Druck mit dem schmalen Ende (der federnden Zunge) voran in den Schlitz schieben, von welcher Seite ist egal, bis die kleine Nase auf der anderen Seite herausspringt. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein, der dicke Griff und die Nase halten die Platte im Schieber. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.',
       `Das Rohr (außen Ø ${fmt(s.d)} mm) auf beiden Seiten bis zum Anschlag einstecken.`,
     ];
@@ -291,8 +293,8 @@ class AppState {
     return `Lochabstand ${fmt(q || l)} mm${this.gate.mount === 'keyhole' ? ' waagerecht' : ''}`;
   });
 
-  /** Freiform: Stützen nötig? (nur nach fertiger Berechnung bekannt) */
-  needsSupportMaterial = $derived(!!this.kind.freeform && this.overhang > 40);
+  /** Stützen nötig? (nur nach fertiger Berechnung bekannt; die Teile von osVAC neo sind ohne Stützen druckbar) */
+  needsSupportMaterial = $derived((!!this.kind.freeform || !!this.kind.machine || !!this.kind.gate) && this.overhang > 40);
 
   /** Druckhinweise je Adaptertyp (die Dateien sind schon so ausgerichtet wie in der Vorschau) */
   printTips = $derived.by(() => {
@@ -309,7 +311,7 @@ class AppState {
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
     if (this.kind.gate) t.push(...this.gateTips);
     if (this.kind.freeform && this.free.blocks.some((x) => x.type === 'gate'))
-      t.push('Die Schieberplatte liegt flach neben dem Adapter. Nach dem Druck mit dem schmalen Ende (der federnden Zunge) voran in den Schlitz schieben, von welcher Seite ist egal, bis die kleine Nase auf der anderen Seite herausspringt. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein, der dicke Griff und die Nase halten die Platte im Schieber. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.');
+      t.push('Über dem Schlitz des Schiebers druckt der Drucker eine Brücke. Bambu Studio meldet dazu eventuell „Fliegender Träger“; keine Stützen in den Schlitz drucken lassen. Die Schieberplatte liegt flach neben dem Adapter. Nach dem Druck mit dem schmalen Ende (der federnden Zunge) voran in den Schlitz schieben, von welcher Seite ist egal, bis die kleine Nase auf der anderen Seite herausspringt. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein, der dicke Griff und die Nase halten die Platte im Schieber. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.');
     const c = this.free.c;
     if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
       t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);
@@ -351,7 +353,8 @@ class AppState {
       : this.input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
       (!this.hasSwivel || this.input.slipRingGapSize === START_INPUT.slipRingGapSize) &&
       this.input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
-      (!this.hasSupport || this.supports),
+      (!this.hasSupport || this.supports) &&
+      (!this.freeHasGate || (this.free.gateGap ?? DEFAULT_GATE.plateGap) === DEFAULT_GATE.plateGap),
   );
   resetFit() {
     if (this.kind.gate) {
@@ -363,6 +366,7 @@ class AppState {
     if (this.hasSwivel) this.input.slipRingGapSize = START_INPUT.slipRingGapSize;
     this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
     if (this.hasSupport) this.supports = true;
+    if (this.freeHasGate) delete this.free.gateGap;
   }
   setDia(k: DiameterKey, v: number) {
     this.input[k] = Math.round(v * 10) / 10;

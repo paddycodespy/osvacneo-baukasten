@@ -13,7 +13,7 @@ import { initFont } from '../src/lib/osvac/text';
 import { partsFree } from '../src/lib/osvac/assemblies';
 import { TEMPLATES, newBlock, sec, planFree, testHooks, flangeGeom, flangeMinRim, flangeDefaults, branchGeom, DEFAULT_DEVICE, type FreeSpec, type SectionShape, type Block, type EndSpec } from '../src/lib/osvac/freeform';
 import { partNotes } from '../src/lib/errors';
-import { weld } from '../src/lib/worker/threemf';
+import { weld, meshTolerance } from '../src/lib/worker/threemf';
 import { belowBedEnd } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
 import { gateLayout, gateHousing, gatePlate, gateClip, plateInSlot, DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
@@ -30,8 +30,8 @@ const valid = (s: Shape3D) => {
   return v;
 };
 /** Kanten im Netz, die nicht genau zwei Dreiecke haben (Slicer melden sie als „non-manifold“); Netz genau wie beim 3MF-Export */
-const badEdges = (sh: Shape3D) => {
-  const m = sh.mesh({ tolerance: 0.01, angularTolerance: 0.1 });
+const badEdges = (sh: Shape3D, name = '') => {
+  const m = sh.mesh({ tolerance: meshTolerance(name), angularTolerance: 0.1 });
   const w = weld({ name: '', vertices: new Float32Array(m.vertices), triangles: new Uint32Array(m.triangles) });
   const t = w.triangles as ArrayLike<number>;
   const cnt = new Map<string, number>();
@@ -217,7 +217,7 @@ for (const [id, spec] of cases) {
       // Lofts (Übergang, Absatz, Fase) zerlegt OpenCascade bei starker Krümmung gelegentlich in winzige Splitter, die eine
       // Kante mit vier Dreiecken ergeben; Slicer reparieren das selbst. Dort nur Hinweis, sonst Fehler.
       if (/^(Formstück|Übergang zu|Übergang zum|Geräteanschluss|Anschlagring|Schieberplatte)/.test(q.name)) {
-        const n = badEdges(sh);
+        const n = badEdges(sh, q.name);
         if (n && /Übergang|Absatz|Fase|konisch/.test(q.name)) meshNotes.push(`${id}: ${q.name} ${n}`);
         else if (n) bad.push(`${q.name}: ${n} Kanten im Netz nicht geschlossen`);
       }
@@ -448,7 +448,7 @@ for (const [id, kind, pipe, text] of [
       const lay = gateLayout(s);
       const h = gateHousing(s), pl = gatePlate(lay.g);
       for (const x of [h, pl]) if (!valid(x) || !(measureVolume(x) > 0)) bad.push('ungültig');
-      for (const [n, x] of [['Gehäuse', h], ['Platte', pl]] as const) if (badEdges(x)) bad.push(`${n}: ${badEdges(x)} Kanten im Netz nicht geschlossen`);
+      for (const [n, x, nm] of [['Gehäuse', h, 'Schieber-Gehäuse'], ['Platte', pl, 'Schieberplatte']] as const) if (badEdges(x, nm)) bad.push(`${n}: ${badEdges(x, nm)} Kanten im Netz nicht geschlossen`);
       const touch = (dx: number) => measureVolume(h.clone().intersect(pl.clone().translate(plateInSlot(lay.g, lay.zc, false).map((c, i) => (i ? c : c + dx)) as [number, number, number])) as Shape3D);
       if (touch(0) > 0.01) bad.push(`berührt zu ${touch(0).toFixed(2)}`);
       if (touch(lay.g.P) > 0.01) bad.push(`berührt auf ${touch(lay.g.P).toFixed(2)}`);

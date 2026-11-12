@@ -4,6 +4,7 @@
   import NumberField from '../NumberField.svelte';
   import Field from '../Field.svelte';
   import MeasureFigure from '../MeasureFigure.svelte';
+  import GateFigure from '../GateFigure.svelte';
   import ResetLink from '../ResetLink.svelte';
   import { setContext } from 'svelte';
   import { MOUNT_LABELS, ORIENT_LABELS, type GateMount, type GateOrient } from '../../lib/osvac/gate';
@@ -16,6 +17,7 @@
 {#if app.kind.gate}
   {@const g = app.gate}
   <p class="lead">Das Rohr wird auf beiden Seiten in eine Muffe gesteckt. Die Zahl ist der Außendurchmesser des Rohrs in Millimetern.</p>
+  <GateFigure mount={g.mount !== 'none'} />
   <fieldset class="dia">
     <legend>Rohr (außen)</legend>
     <div class="dia-row">
