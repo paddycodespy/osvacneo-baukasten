@@ -13,6 +13,7 @@ import { initFont } from '../src/lib/osvac/text';
 import { partsFree } from '../src/lib/osvac/assemblies';
 import { TEMPLATES, newBlock, sec, planFree, testHooks, flangeGeom, flangeMinRim, flangeDefaults, branchGeom, DEFAULT_DEVICE, type FreeSpec, type SectionShape, type Block, type EndSpec } from '../src/lib/osvac/freeform';
 import { partNotes } from '../src/lib/errors';
+import { weld } from '../src/lib/worker/threemf';
 import { belowBedEnd } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
 import { gateLayout, gateHousing, gatePlate, gateClip, plateInSlot, DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
@@ -28,25 +29,18 @@ const valid = (s: Shape3D) => {
   c.delete();
   return v;
 };
-/** Kanten im Netz, die nicht genau zwei Dreiecke haben (Slicer melden sie als „non-manifold“), Ecken auf 1e-4 mm zusammengeführt */
+/** Kanten im Netz, die nicht genau zwei Dreiecke haben (Slicer melden sie als „non-manifold“); Netz genau wie beim 3MF-Export */
 const badEdges = (sh: Shape3D) => {
   const m = sh.mesh({ tolerance: 0.01, angularTolerance: 0.1 });
-  const id = new Map<string, number>();
-  const vi = (i: number) => {
-    const k = [0, 1, 2].map((j) => Math.round(m.vertices[i * 3 + j] * 1e4)).join(',');
-    if (!id.has(k)) id.set(k, id.size);
-    return id.get(k)!;
-  };
+  const w = weld({ name: '', vertices: new Float32Array(m.vertices), triangles: new Uint32Array(m.triangles) });
+  const t = w.triangles as ArrayLike<number>;
   const cnt = new Map<string, number>();
-  for (let t = 0; t < m.triangles.length; t += 3) {
-    const v = [vi(m.triangles[t]), vi(m.triangles[t + 1]), vi(m.triangles[t + 2])];
-    if (v[0] === v[1] || v[1] === v[2] || v[0] === v[2]) continue;
+  for (let i = 0; i < t.length; i += 3)
     for (let e = 0; e < 3; e++) {
-      const a = v[e], b = v[(e + 1) % 3];
+      const a = t[i + e], b = t[i + ((e + 1) % 3)];
       const k = a < b ? `${a}-${b}` : `${b}-${a}`;
       cnt.set(k, (cnt.get(k) ?? 0) + 1);
     }
-  }
   return [...cnt.values()].filter((c) => c !== 2).length;
 };
 const writeStl = process.argv.includes('--stl');
@@ -68,7 +62,7 @@ for (const shape of shapes)
     newBlock('bend', { angle: 45, radius: 50, dir: 90 }),
     newBlock('transition', { length: 35, section: sec('slot', { w: 60, h: 25 }), twist: 30 }),
     newBlock('bend', { angle: 60, radius: 60, dir: 0 }),
-    newBlock('transition', { length: 30, offset: 10, tilt: -20, dir: 45, section: sec('circle', { d: 30 }) }),
+    newBlock('transition', { length: 55, offset: 10, tilt: -20, dir: 45, section: sec('circle', { d: 30 }) }),
   ];
   s.b.type = 'female';
   s.b.d = 25;
@@ -193,6 +187,7 @@ for (const [i, shape] of shapes.entries()) {
 }
 
 let fail = 0;
+const meshNotes: string[] = [];
 const p = deriveParams({});
 for (const [id, spec] of cases) {
   if (only && id !== only) continue;
@@ -218,6 +213,14 @@ for (const [id, spec] of cases) {
       const v = measureVolume(sh);
       vol += v;
       if (!valid(sh) || !(v > 0)) bad.push(q.name);
+      // eigene Formstücke: Netz geschlossen (die Teile von osVAC neo sind nachgebaut und geprüft, das spart Zeit).
+      // Lofts (Übergang, Absatz, Fase) zerlegt OpenCascade bei starker Krümmung gelegentlich in winzige Splitter, die eine
+      // Kante mit vier Dreiecken ergeben; Slicer reparieren das selbst. Dort nur Hinweis, sonst Fehler.
+      if (/^(Formstück|Übergang zu|Übergang zum|Geräteanschluss|Anschlagring|Schieberplatte)/.test(q.name)) {
+        const n = badEdges(sh);
+        if (n && /Übergang|Absatz|Fase|konisch/.test(q.name)) meshNotes.push(`${id}: ${q.name} ${n}`);
+        else if (n) bad.push(`${q.name}: ${n} Kanten im Netz nicht geschlossen`);
+      }
       built.push(sh);
       low.push({ name: q.name, helper: !!q.helper, positions: [0, 0, sh.boundingBox.bounds[0][2]], normals: [], indices: [] });
     }
@@ -344,6 +347,9 @@ if (!only || only === 'vorschlaege') {
     broken.push(['Abzweig zu weit', y({ branchD: 40 })]);
     broken.push(['Abzweig Rohr zu kurz', y({ length: 30 })]);
     broken.push(['Abzweig zu kurz', y({ branchLen: 1 })]);
+    const fo = TEMPLATES[0].make();
+    fo.blocks = [newBlock('transition', { length: 35, section: sec('slot', { w: 60, h: 25 }), twist: 30 }), newBlock('transition', { length: 30, offset: 10, tilt: -20, dir: 45, section: sec('circle', { d: 30 }) })];
+    broken.push(['Übergang zu stark gebogen', fo]);
     const g = TEMPLATES.find((t) => t.id === 'gate')!.make();
     g.blocks[0].length = 15;
     broken.push(['Schieber zu kurz', g]);
@@ -516,5 +522,6 @@ if (!only || only === 'rippen-hinweis') {
     testHooks.ribFail = null;
   }
 }
+if (meshNotes.length) console.log(`Hinweis: offene Netzkanten in Lofts (Slicer repariert sie): ${meshNotes.join(', ')}`);
 console.log(fail ? `${fail} Fälle fehlerhaft` : 'Alle Fälle in Ordnung');
 process.exit(fail ? 1 : 0);

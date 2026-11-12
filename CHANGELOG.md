@@ -4,6 +4,7 @@ Die Liste steht auch in der App im Schritt „Download“ unter der Version (src
 
 ## 0.3.0
 
+- Freiform: Übergänge, die so stark gebogen sind, dass sich die Wand innen überschneiden würde, werden erkannt (Fehler mit Vorschlag „Länge auf … setzen“). Stutzen-Adapter: Hinweis mit Vorschlag, wenn das schräge Stück zwischen Anschluss und Rohrteil steiler als 45° ist.
 - Im Download-Schritt bei Lizenz und Version: „osVAC neo Baukasten von paddycodespy“ mit Link auf das GitHub-Profil.
 - Neu: Schieber einzeln (Absperrschieber, Blast Gate) für Rohre Ø 15–60 mm außen. Das Rohr wird beidseitig in eine Muffe mit Anschlag gesteckt. Befestigung: ohne, Wandplatte mit vier Senklöchern, Schlüssellöcher oder eigener Wandhalter, alle für Rohr senkrecht oder waagerecht (Schlüssellöcher mit eigener Wahl der Lage); Wandabstand bis Rohrmitte wählbar (bis 50 mm mehr als direkt an der Wand). Spiel am Rohr und der Platte in „Passung“.
 - Freiform: Schieber als neuer Baustein (rund, Richtung der Platte wählbar), Vorlage „Absperrschieber“. Die Platte ist ein eigenes Teil (eigenes Objekt im 3MF), wird flach daneben gedruckt und rastet bei „auf“ und „zu“ ein. Anschläge: dicker Griff (zu) und federnde Zunge mit Nase (auf), zum Herausnehmen die Nase eindrücken.

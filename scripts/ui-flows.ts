@@ -330,6 +330,20 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.tips').innerText()).includes('Schieberplatte'), 'Druckhinweis zur Schieberplatte fehlt');
   });
 
+  await test('Stutzen: steiler Übergang mit Vorschlag', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: /Kupplung → Stutzen/ }).click();
+    await step(pg, 'Größen');
+    await fill(pg, 'Innendurchmesser der Bajonett-Kupplung', '50');
+    expect((await pg.locator('.step-body').innerText()).includes('steiler als 45°'), 'kein Hinweis auf den steilen Übergang');
+    await pg.locator('.fix', { hasText: 'Übergangslänge auf' }).click();
+    expect(!(await pg.locator('.step-body').innerText()).includes('steiler als 45°'), 'Vorschlag behebt den steilen Übergang nicht');
+    await fill(pg, 'Innendurchmesser der Bajonett-Kupplung', '32');
+    await pg.locator('details.more summary', { hasText: 'Feineinstellungen' }).click();
+    await fill(pg, 'Übergangslänge', '8');
+    await ready(pg);
+  });
+
   await test('Druckhilfe gilt je Verbindung', pg, async () => {
     const tool = pg.locator('button.tool', { hasText: 'Druckhilfe' });
     const on = async () => (await tool.getAttribute('aria-pressed')) === 'true';
