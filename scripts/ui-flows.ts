@@ -35,6 +35,21 @@ async function fill(pg: Page, label: string, value: string) {
   await pg.waitForTimeout(150);
 }
 const step = (pg: Page, name: string) => pg.locator('.step-tab', { hasText: name }).click();
+/**
+ * Vorlage wählen und laden, auch wenn vorher die Rückfrage kommt. Wartet, bis die Vorlage wirklich aktiv ist
+ * (die Rückfrage erscheint nicht sofort; ohne Warten blieb auf langsamen Rechnern der alte Aufbau stehen).
+ */
+async function pickTemplate(pg: Page, name: string) {
+  const radio = pg.getByRole('radio', { name });
+  await radio.click();
+  const load = pg.getByRole('button', { name: 'Vorlage laden' });
+  for (let i = 0; i < 100; i++) {
+    if (await load.count()) await load.click();
+    else if ((await radio.getAttribute('aria-checked')) === 'true' && !(await pg.locator('.confirm').count())) return;
+    await pg.waitForTimeout(100);
+  }
+  throw new Error(`Vorlage „${name}“ nicht geladen`);
+}
 
 async function test(name: string, pg: Page, run: () => Promise<void>) {
   try {
@@ -76,7 +91,7 @@ await withPreview(4180, async (url, browser) => {
   });
 
   await test('Versetzen, knicken, drehen bleibt offen', pg, async () => {
-    await pg.getByRole('radio', { name: 'Versatz mit Knick' }).click();
+    await pickTemplate(pg, 'Versatz mit Knick');
     await pg.locator('.card-head', { hasText: 'Übergang' }).first().click();
     const d = pg.locator('.card.open details.more', { hasText: 'Versetzen' });
     expect(await d.evaluate((e) => (e as HTMLDetailsElement).open), 'anfangs zu, obwohl Werte gesetzt');
@@ -86,9 +101,7 @@ await withPreview(4180, async (url, browser) => {
 
   await test('Download gesperrt bei Fehler', pg, async () => {
     // Aussparung breiter als der halbe Umfang: Fehler am Ende B
-    await pg.getByRole('radio', { name: 'Gerade auf Stutzen' }).click();
-    const load = pg.getByRole('button', { name: 'Vorlage laden' });
-    if (await load.count()) await load.click();
+    await pickTemplate(pg, 'Gerade auf Stutzen');
     await pg.locator('.card-head', { hasText: 'Ende B' }).click();
     await pg.locator('.card.open summary', { hasText: 'Extras' }).click();
     await pg.getByLabel('Aussparung am Rand').check();
@@ -198,9 +211,7 @@ await withPreview(4180, async (url, browser) => {
 
   await test('Y-Abzweig mit Ende C', pg, async () => {
     await step(pg, 'Aufbau');
-    await pg.getByRole('radio', { name: 'Y-Abzweig 45°' }).click();
-    const load = pg.getByRole('button', { name: 'Vorlage laden' });
-    if (await load.count()) await load.click();
+    await pickTemplate(pg, 'Y-Abzweig 45°');
     await ready(pg);
     expect((await pg.locator('.stage-head .code').innerText()).includes('+'), 'Kopfzeile ohne Ende C');
     expect((await pg.locator('.print-note').innerText()).includes('Ende C'), 'Druckhinweis zur Kupplung am Abzweig fehlt');
@@ -286,9 +297,7 @@ await withPreview(4180, async (url, browser) => {
     await step(pg, 'Verbindung');
     await pg.getByRole('radio', { name: 'Freiform' }).click();
     await step(pg, 'Aufbau');
-    await pg.getByRole('radio', { name: 'Absperrschieber' }).click();
-    const load = pg.getByRole('button', { name: 'Vorlage laden' });
-    if (await load.count()) await load.click();
+    await pickTemplate(pg, 'Absperrschieber');
     await ready(pg);
     expect((await pg.locator('.print-note').innerText()).includes('ohne Stützen'), 'Schieber in der Freiform braucht Stützen');
     await pg.locator('.card-head', { hasText: 'Schieber' }).first().click();
