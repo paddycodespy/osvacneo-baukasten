@@ -337,7 +337,7 @@ export function partsGate(_p: OsvacParams, o: BuildOptions = {}): Part[] {
   const bed = gateBed(s);
   const dep = { kind: 'gate', d: s.d, gap: s.pipeGap, pg: s.plateGap };
   const out = [
-    part('Schieber-Gehäuse', 2, { ...dep, depth: s.depth, mount: s.mount === 'clip' ? 'none' : s.mount, A: s.mount === 'plate' || s.mount === 'keyhole' ? lay.A : 0 }, () => gateHousing(s)),
+    part('Schieber-Gehäuse', 2, { ...dep, depth: s.depth, mount: s.mount === 'clip' ? 'none' : s.mount, A: s.mount === 'plate' || s.mount === 'keyhole' ? lay.A : 0, holes: 4, ...(lay.keyTurned ? { orient: 'turned' } : {}) }, () => gateHousing(s)),
     part('Schieberplatte', 0.4, { kind: 'gatePlate', d: s.d, gap: s.pipeGap, pg: s.plateGap, at: bed.plate }, () => gatePlate(lay.g).translate(bed.plate) as Shape3D, { object: 'Schieberplatte' }),
   ];
   if (s.mount === 'clip') out.push(part('Wandhalter', 0.3, { kind: 'gateClip', d: s.d, A: lay.A, at: bed.clip }, () => gateClip(s).translate(bed.clip) as Shape3D, { object: 'Wandhalter' }));

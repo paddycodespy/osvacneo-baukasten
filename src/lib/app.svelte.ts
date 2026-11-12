@@ -14,7 +14,7 @@ import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
-import { DEFAULT_GATE, MOUNT_LABELS, gateLayout, gateName, type GateSpec, type GateMount } from './osvac/gate';
+import { DEFAULT_GATE, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
   { id: '3mf', label: '3MF', hint: 'Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura' },
@@ -236,7 +236,8 @@ class AppState {
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
     pipeGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als das Rohr außen. Sitzt das Rohr zu stramm: größer. Rutscht es heraus: kleiner, oder das Rohr mit etwas Klebeband umwickeln.',
     plateGap: 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
-    wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg.`,
+    wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg, höchstens ${WALL_MORE} mm mehr (${fmt(this.gateLay.maxA)} mm), sonst wird die Halterung wacklig.`,
+    orient: 'Wie das Rohr an der Wand entlangläuft. Wandplatte und Wandhalter passen in beiden Lagen; die Schlüssellöcher zeigen je nach Lage zum oberen Ende oder zur Seite, damit der Schieber richtig herum hängt.',
     filament: 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
   });
 
@@ -249,11 +250,25 @@ class AppState {
       `Das Rohr (außen Ø ${fmt(s.d)} mm) auf beiden Seiten bis zum Anschlag einstecken.`,
     ];
     const at = `Die Rohrmitte liegt ${fmt(L.A)} mm vor der Wand.`;
-    if (s.mount === 'plate') t.push(`Zwei Senklöcher für Senkkopfschrauben Ø 4 mm, ${fmt(L.pitch)} mm Abstand. ${at}`);
+    if (s.mount === 'plate') t.push(`Vier Senklöcher für Senkkopfschrauben Ø 4 mm, ${this.gatePitch}. ${at}`);
     if (s.mount === 'keyhole')
-      t.push(`Zwei Schlüssellöcher, ${fmt(L.pitch)} mm Abstand: zwei Schrauben (Ø 4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit dem oberen Ende (wie gedruckt) nach oben einhängen; das Rohr läuft dann senkrecht. ${at}`);
-    if (s.mount === 'clip') t.push(`Der Wandhalter ist ein eigenes Teil für das Rohr neben dem Schieber. Mit zwei Senkkopfschrauben Ø 4 mm (${fmt(L.pitch)} mm Abstand) an die Wand schrauben und das Rohr hineindrücken. ${at}`);
+      t.push(
+        L.keyTurned
+          ? `Zwei Schlüssellöcher, ${this.gatePitch}: zwei Schrauben (Ø 4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit der Seite der Schlüssellöcher nach oben einhängen; das Rohr läuft dann waagerecht, die Platte gleitet senkrecht. ${at}`
+          : `Zwei Schlüssellöcher, ${this.gatePitch}: zwei Schrauben (Ø 4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit dem oberen Ende (wie gedruckt) nach oben einhängen; das Rohr läuft dann senkrecht. ${at}`,
+      );
+    if (s.mount === 'clip') t.push(`Der Wandhalter ist ein eigenes Teil für das Rohr neben dem Schieber. Mit zwei Senkkopfschrauben Ø 4 mm (${this.gatePitch}) an die Wand schrauben und das Rohr hineindrücken. ${at}`);
+    if (s.mount !== 'none' && s.orient === 'turned') t.push('Bei waagerechtem Rohr gleitet die Platte senkrecht. Die Rastung hält sie in beiden Stellungen, auch gegen ihr Gewicht.');
     return t;
+  });
+
+  /** Abstände der Schrauben in Worten (zum Anzeichnen an der Wand) */
+  gatePitch = $derived.by(() => {
+    const [q, l] = this.gateLay.pitch;
+    const along = this.gate.orient === 'turned' ? 'waagerecht' : 'senkrecht';
+    const across = this.gate.orient === 'turned' ? 'senkrecht' : 'waagerecht';
+    if (q && l) return `Lochabstand ${fmt(q)} mm ${across} und ${fmt(l)} mm ${along}`;
+    return `Lochabstand ${fmt(q || l)} mm${this.gate.mount === 'clip' ? '' : ' waagerecht'}`;
   });
 
   /** Freiform: Stützen nötig? (nur nach fertiger Berechnung bekannt) */
@@ -331,13 +346,13 @@ class AppState {
     this.input[k] = Math.round(v * 10) / 10;
   }
   /** Schieber einzeln: Maße und Befestigung auf Standard (Passung bleibt) */
-  gateIsDefault = $derived((['d', 'depth', 'mount', 'wallDist'] as const).every((k) => this.gate[k] === DEFAULT_GATE[k]));
+  gateIsDefault = $derived((['d', 'depth', 'mount', 'orient', 'wallDist'] as const).every((k) => this.gate[k] === DEFAULT_GATE[k]));
   resetGate() {
-    for (const k of ['d', 'depth', 'mount', 'wallDist'] as const) (this.gate[k] as number | GateMount) = DEFAULT_GATE[k];
+    for (const k of ['d', 'depth', 'mount', 'orient', 'wallDist'] as const) (this.gate[k] as number | GateMount | GateOrient) = DEFAULT_GATE[k];
   }
   /** Wandabstand eingeben: bis zum kleinsten Wert heißt „direkt an der Wand“ (wächst dann mit dem Rohr mit) */
   setWallDist(v: number) {
-    this.gate.wallDist = v <= this.gateLay.minA + 0.05 ? 0 : Math.round(v * 10) / 10;
+    this.gate.wallDist = v <= this.gateLay.minA + 0.05 ? 0 : Math.round(Math.min(v, this.gateLay.maxA) * 10) / 10;
   }
 
   // ---------------------------------------------------------------- Bauaufträge
@@ -495,6 +510,7 @@ class AppState {
       if (s.gate && typeof s.gate === 'object') {
         for (const k of ['d', 'depth', 'wallDist', 'pipeGap', 'plateGap'] as const) if (num(s.gate[k])) this.gate[k] = s.gate[k];
         if (typeof s.gate.mount === 'string' && s.gate.mount in MOUNT_LABELS) this.gate.mount = s.gate.mount;
+        if (typeof s.gate.orient === 'string' && s.gate.orient in ORIENT_LABELS) this.gate.orient = s.gate.orient;
       }
       if (typeof s.freeTemplate === 'string' && TEMPLATES.some((t) => t.id === s.freeTemplate)) this.freeTemplate = s.freeTemplate;
       if (num(s.step)) this.step = Math.max(0, Math.min(3, Math.round(s.step)));

@@ -121,6 +121,9 @@ export const plateInSlot = (g: GateDims, zc: number, open: boolean): [number, nu
 
 export type GateMount = 'none' | 'plate' | 'keyhole' | 'clip';
 export const MOUNT_LABELS: Record<GateMount, string> = { none: 'Ohne', plate: 'Wandplatte', keyhole: 'Schlüssellöcher', clip: 'Wandhalter' };
+/** Lage an der Wand: Rohr senkrecht (Platte gleitet waagerecht) oder waagerecht (Platte gleitet senkrecht) */
+export type GateOrient = 'upright' | 'turned';
+export const ORIENT_LABELS: Record<GateOrient, string> = { upright: 'Rohr senkrecht', turned: 'Rohr waagerecht' };
 
 export interface GateSpec {
   /** Außendurchmesser des Rohrs */
@@ -128,14 +131,18 @@ export interface GateSpec {
   /** Tiefe der Muffen */
   depth: number;
   mount: GateMount;
-  /** Abstand Wand bis Rohrmitte; 0 = so nah wie möglich */
+  /** Lage an der Wand (wichtig für die Schlüssellöcher, die nach oben zeigen müssen) */
+  orient: GateOrient;
+  /** Abstand Wand bis Rohrmitte; 0 = so nah wie möglich, höchstens 50 mm mehr */
   wallDist: number;
   /** Spiel am Rohr (Durchmesser der Muffe = d + 2 × Spiel) und der Platte im Schlitz */
   pipeGap: number;
   plateGap: number;
 }
 
-export const DEFAULT_GATE: GateSpec = { d: 50, depth: 20, mount: 'plate', wallDist: 0, pipeGap: 0.4, plateGap: GATE_GAP };
+export const DEFAULT_GATE: GateSpec = { d: 50, depth: 20, mount: 'plate', orient: 'upright', wallDist: 0, pipeGap: 0.4, plateGap: GATE_GAP };
+/** so viel weiter als der kleinste Wandabstand geht es höchstens */
+export const WALL_MORE = 50;
 
 /** Wandplatte und Wandhalter: Dicke, Höhe des Halters, Lage der Schrauben */
 const WALL_T = 3, CLIP_H = 14, CLIP_W = 3.5;
@@ -147,10 +154,18 @@ export function gateLayout(s: GateSpec) {
   const r1 = s.d / 2 + 0.2, r2 = r1 + CLIP_W;
   /** kleinster Abstand Wand bis Rohrmitte (Teil direkt an der Wand) */
   const minA = s.mount === 'clip' ? r2 + WALL_T : g.half + WALL_T;
-  const A = Math.max(minA, s.wallDist);
-  /** Schrauben: Abstand der Mitten */
+  const maxA = minA + WALL_MORE;
+  const A = Math.min(maxA, Math.max(minA, s.wallDist));
+  /** Schrauben neben dem Gehäuse (x = ±holeX); Wandplatte: je Seite unten und oben (z = holeZ, H − holeZ) */
   const holeX = s.mount === 'clip' ? r2 + 6 : g.half + 6;
-  return { g, Rs, Rm, Ro, H, zc, r1, r2, minA, A, holeX, pitch: 2 * holeX };
+  const holeZ = 7;
+  /** Schlüssellöcher bei waagerechtem Rohr: beide auf der Seite +x (oben), unten und oben am Gehäuse, Schlitz nach +x */
+  const keyTurned = s.mount === 'keyhole' && s.orient === 'turned';
+  const keyZ = 7.5, keyX = g.half + 4.5;
+  /** Abstände der Schrauben (zum Anzeichnen): [quer zum Rohr, entlang dem Rohr] */
+  const pitch: [number, number] =
+    s.mount === 'plate' ? [2 * holeX, H - 2 * holeZ] : keyTurned ? [0, H - 2 * keyZ] : s.mount === 'keyhole' ? [2 * holeX, 0] : [2 * holeX, 0];
+  return { g, Rs, Rm, Ro, H, zc, r1, r2, minA, maxA, A, holeX, holeZ, keyTurned, keyZ, keyX, pitch };
 }
 
 /** Senkloch für Ø-4-Senkkopfschrauben, Achse +y, Senkung an der Fläche bei y = yFace (Kopf auf der Seite +y) */
@@ -163,13 +178,14 @@ function sinkHole(x: number, z: number, yFace: number, depth: number): Shape3D {
 
 /** Gehäuse des Schiebers einzeln (stehend, Muffe unten auf dem Bett), mit Wandplatte oder Schlüssellöchern */
 export function gateHousing(s: GateSpec): Shape3D {
-  const { g, Rs, Rm, Ro, H, zc, A, holeX } = gateLayout(s);
+  const { g, Rs, Rm, Ro, H, zc, A, holeX, holeZ, keyTurned, keyZ, keyX } = gateLayout(s);
   let h = cylZ(Ro, 0, H).fuse(frame(g, zc, 0, H));
   if (s.mount === 'plate' || s.mount === 'keyhole') {
-    // Wandplatte vom Druckbett bis etwas über den Schlitz (spart Material), zwei Stege zum Gehäuse (die Bohrung schneidet sie innen frei)
-    const X = g.half + 12, top = Math.min(H, zc + g.Hf / 2 + 8);
-    h = h.fuse(box(-X, X, -A, -A + WALL_T, 0, top));
-    for (const sx of [1, -1]) h = h.fuse(box(sx * (g.half - 3), sx * g.half, -A + WALL_T - 0.01, 0, 0, top));
+    // Wandplatte über die ganze Höhe, zwei Stege zum Gehäuse (die Bohrung schneidet sie innen frei);
+    // Schlüssellöcher bei waagerechtem Rohr: Platte auf der Seite +x länger
+    const X = g.half + 12, Xp = keyTurned ? keyX + 12.5 : X;
+    h = h.fuse(box(-X, Xp, -A, -A + WALL_T, 0, H));
+    for (const sx of [1, -1]) h = h.fuse(box(sx * (g.half - 3), sx * g.half, -A + WALL_T - 0.01, 0, 0, H));
   }
   // Muffen mit Anschlag; der untere Anschlag läuft unter 45° aus (hängt beim Druck nicht in der Luft)
   h = h.cut(cylZ(Rs, -1, s.depth));
@@ -177,14 +193,20 @@ export function gateHousing(s: GateSpec): Shape3D {
   h = h.cut(cylZ(Rs, H - s.depth, H + 1));
   h = h.cut(cylZ(Rm, -1, H + 1));
   h = cutSlot(h, g, zc);
-  if (s.mount === 'plate') for (const sx of [1, -1]) h = h.cut(sinkHole(sx * holeX, zc, -A + WALL_T, WALL_T));
-  if (s.mount === 'keyhole')
-    for (const sx of [1, -1]) {
-      // Schlüsselloch: großes Loch für den Schraubenkopf, Schlitz nach oben (zum oberen Ende, wie gedruckt)
-      const x = sx * holeX, zh = zc - 4, ze = zc + 5;
-      const thru = (r: number, z: number) => makeCylinder(r, WALL_T + 2, [x, -A - 1, z], [0, 1, 0]) as unknown as Shape3D;
-      h = h.cut(thru(4.5, zh)).cut(box(x - 2.2, x + 2.2, -A - 1, -A + WALL_T + 1, zh, ze)).cut(thru(2.2, ze));
-    }
+  if (s.mount === 'plate') for (const sx of [1, -1]) for (const z of [holeZ, H - holeZ]) h = h.cut(sinkHole(sx * holeX, z, -A + WALL_T, WALL_T));
+  if (s.mount === 'keyhole') {
+    // Schlüsselloch: großes Loch für den Schraubenkopf, Schlitz nach oben (Rohr senkrecht: zum oberen Ende wie gedruckt,
+    // Rohr waagerecht: zur Seite +x, beide Löcher dort, damit der Kopf neben dem Gehäuse Platz hat)
+    const thru = (r: number, x: number, z: number) => makeCylinder(r, WALL_T + 2, [x, -A - 1, z], [0, 1, 0]) as unknown as Shape3D;
+    const slot = (x0: number, x1: number, z0: number, z1: number) => box(x0, x1, -A - 1, -A + WALL_T + 1, z0, z1);
+    if (keyTurned)
+      for (const z of [keyZ, H - keyZ]) h = h.cut(thru(4.5, keyX, z)).cut(slot(keyX, keyX + 8, z - 2.2, z + 2.2)).cut(thru(2.2, keyX + 8, z));
+    else
+      for (const sx of [1, -1]) {
+        const x = sx * holeX, zh = zc - 4, ze = zc + 5;
+        h = h.cut(thru(4.5, x, zh)).cut(slot(x - 2.2, x + 2.2, zh, ze)).cut(thru(2.2, x, ze));
+      }
+  }
   return h;
 }
 
@@ -218,11 +240,12 @@ export function gateBed(s: GateSpec) {
 export function gateName(s: GateSpec): { code: string; file: string; long: string } {
   const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
   const lay = gateLayout(s);
-  const far = s.mount !== 'none' && s.wallDist > lay.minA + 0.05;
+  const far = s.mount !== 'none' && lay.A > lay.minA + 0.05;
   const mountFile = { none: '', plate: 'Wandplatte', keyhole: 'Schluesselloecher', clip: 'Wandhalter' }[s.mount];
+  const turned = s.mount !== 'none' && s.orient === 'turned';
   return {
     code: `Schieber Ø${f(s.d)}`,
-    file: ['Schieber', `Rohr${f(s.d)}`, mountFile, far ? `Wand${f(lay.A)}` : ''].filter(Boolean).join(' '),
-    long: `Rohr Ø ${f(s.d)} mm außen, Muffen ${f(s.depth)} mm tief, ${s.mount === 'none' ? 'ohne Befestigung' : `${MOUNT_LABELS[s.mount]}, Rohrmitte ${f(lay.A)} mm vor der Wand`}`,
+    file: ['Schieber', `Rohr${f(s.d)}`, mountFile, turned ? 'waagerecht' : '', far ? `Wand${f(lay.A)}` : ''].filter(Boolean).join(' '),
+    long: `Rohr Ø ${f(s.d)} mm außen, Muffen ${f(s.depth)} mm tief, ${s.mount === 'none' ? 'ohne Befestigung' : `${MOUNT_LABELS[s.mount]}, ${ORIENT_LABELS[s.orient]}, Rohrmitte ${f(lay.A)} mm vor der Wand`}`,
   };
 }
