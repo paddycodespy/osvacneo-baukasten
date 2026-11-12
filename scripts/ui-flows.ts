@@ -183,7 +183,9 @@ await withPreview(4180, async (url, browser) => {
     await fill(pg, 'Durchmesser der Platte', '140');
     await fill(pg, 'Form der Öffnung: Durchmesser', '40');
     expect((await plateD()) === '140', 'von Hand geänderter Wert wurde überschrieben');
-    await pg.getByRole('button', { name: 'Platte und Löcher neu aus der Öffnung vorbelegen' }).click();
+    await pg.locator('.refill-row .help-btn').click();
+    expect((await pg.locator('.card.open .help-text').innerText()).includes('Deine eigenen Eingaben'), 'Hilfetext zum Neu-Vorschlagen fehlt');
+    await pg.getByRole('button', { name: 'Platte und Löcher neu vorschlagen' }).click();
     expect((await plateD()) !== '140', 'Link stellt die Werte nicht neu ein');
     await ready(pg);
     expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'neu vorbelegter Flansch passt nicht');

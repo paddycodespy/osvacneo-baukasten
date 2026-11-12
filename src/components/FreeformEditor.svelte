@@ -11,6 +11,8 @@
   import BlockFigure from './BlockFigure.svelte';
   import MeasureFigure from './MeasureFigure.svelte';
   import FlangeFigure from './FlangeFigure.svelte';
+  import HelpToggle from './HelpToggle.svelte';
+  import HelpText from './HelpText.svelte';
   import ResetLink from './ResetLink.svelte';
   import NotchFigure from './NotchFigure.svelte';
   import { reveal } from '../lib/reveal';
@@ -452,8 +454,12 @@
                   <Field label="Loch-Ø" help="4,5 mm für M4, 5,5 mm für M5, 3,4 mm für M3. Die Senkung passt sich an."><NumberField bind:value={dv.holeD} min={2} max={10} step={0.1} label="Loch-Durchmesser" /></Field>
                 </div>
               {/if}
-              {#if dv.flangeLayout !== 'auto'}
-                <ResetLink show={stale} label="Platte und Löcher neu aus der Öffnung vorbelegen" onclick={refill} />
+              {#if dv.flangeLayout !== 'auto' && stale}
+                <div class="refill-row">
+                  <ResetLink show label="Platte und Löcher neu vorschlagen" onclick={refill} />
+                  <HelpToggle id="refill" />
+                </div>
+                <HelpText id="refill" />
               {/if}
               <div class="grid2">
                 <Field label="Übergangslänge" help="Strecke, auf der die Form der Bausteine in die Form der Öffnung übergeht. Länger ist flacher und lässt sich besser drucken.">
