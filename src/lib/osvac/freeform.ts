@@ -16,7 +16,8 @@ import { gateDims, gateTube, gatePlate, GATE_GAP } from './gate';
 
 // ---------------------------------------------------------------- Datenmodell
 
-export type SectionShape = 'circle' | 'ellipse' | 'slot' | 'rect' | 'dshape' | 'trapezoid';
+/** 'tri' nur intern für die dreieckige Flanschplatte (d = Lochkreis durch die Eckmitten, r = Eckradius) */
+export type SectionShape = 'circle' | 'ellipse' | 'slot' | 'rect' | 'dshape' | 'trapezoid' | 'tri';
 
 /** Querschnitt. Je nach Form werden nur einige Felder benutzt (siehe SECTION_FIELDS). */
 export interface Section {
@@ -66,7 +67,7 @@ export interface Block {
 
 export type OsvacEnd = 'female' | 'male';
 
-export type FlangeLayout = 'auto' | 'rect' | 'round';
+export type FlangeLayout = 'auto' | 'rect' | 'round' | 'tri';
 
 export interface DeviceEnd {
   /** aufgesteckt (Muffe/Haube über den Stutzen), eingesteckt (Zapfen in die Öffnung) oder angeschraubt (Flansch) */
@@ -111,6 +112,8 @@ export interface DeviceEnd {
   plateD: number;
   holeCircle: number;
   holeN: number;
+  /** dreieckige Platte: Lochkreis-Ø durch die drei Löcher (eins je Ecke) */
+  triCircle: number;
   /** Loch-Ø beim Lochbild nach Maß (automatisch immer 4,5 für M4) */
   holeD: number;
   /** Extra: Nut für Moosgummi-Dichtband auf der Anlagefläche, Breite passend zum Band (6, 9 oder 10 mm) */
@@ -147,6 +150,7 @@ export const SECTION_LABELS: Record<SectionShape, string> = {
   rect: 'Rechteck',
   dshape: 'D-Form',
   trapezoid: 'Trapez',
+  tri: 'Dreieck',
 };
 
 /** Welche Felder eine Form braucht (Reihenfolge = Reihenfolge in der Oberfläche). */
@@ -157,6 +161,7 @@ export const SECTION_FIELDS: Record<SectionShape, (keyof Omit<Section, 'shape'>)
   rect: ['w', 'h', 'r', 'r2'],
   dshape: ['d', 'h', 'r'],
   trapezoid: ['w', 'w2', 'h', 'r'],
+  tri: ['d', 'r'],
 };
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
@@ -241,6 +246,7 @@ export const DEFAULT_DEVICE: DeviceEnd = {
   plateD: 100,
   holeCircle: 82,
   holeN: 4,
+  triCircle: 90,
   holeD: 4.5,
   seal: false,
   sealW: 6,
@@ -504,6 +510,9 @@ export function grow(s: Section, delta: number): Section {
       const q = Math.sqrt(1 + k * k);
       return { ...s, w: s.w + 2 * delta * (q - k), w2: s.w2 + 2 * delta * (q + k), h: s.h + 2 * delta, r: rr(s.r) };
     }
+    case 'tri':
+      // gleiche Eckmitten, größerer Eckradius
+      return { ...s, r: rr(s.r) };
     default:
       return { ...s, d: s.d + 2 * delta, w: s.w + 2 * delta, h: s.h + 2 * delta, r: rr(s.r), r2: rr(s.r2) };
   }
@@ -568,6 +577,12 @@ function contour(s: Section): Prim[] {
     }
     case 'trapezoid':
       return roundedPoly([[s.w / 2, -s.h / 2], [s.w2 / 2, s.h / 2], [-s.w2 / 2, s.h / 2], [-s.w / 2, -s.h / 2]], [s.r, s.r, s.r, s.r]);
+    case 'tri': {
+      // gleichseitiges Dreieck, Ecke oben (+v); Eckbögen um die Punkte auf dem Kreis d/2 (Ecke liegt 2·r weiter außen)
+      const Rv = s.d / 2 + 2 * s.r;
+      const V = [90, 210, 330].map((a) => [Rv * Math.cos(rad(a)), Rv * Math.sin(rad(a))] as P2);
+      return roundedPoly(V, [s.r, s.r, s.r]);
+    }
     case 'dshape': {
       // Kreis R um die Mitte, unten abgeflacht; Mitte der Höhe h liegt im Ursprung, damit die Form zentriert ist
       const R = s.d / 2;
@@ -710,6 +725,7 @@ export function sectionText(s: Section): string {
   if (s.shape === 'circle') return `Ø ${f(s.d)}`;
   if (s.shape === 'dshape') return `D ${f(s.d)}/${f(s.h)}`;
   if (s.shape === 'trapezoid') return `${f(s.w)}/${f(s.w2)} × ${f(s.h)}`;
+  if (s.shape === 'tri') return `Dreieck ${f(s.d)}`;
   return `${f(s.w)} × ${f(s.h)}`;
 }
 
@@ -1384,6 +1400,9 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
 /** Nut für Dichtband: 2 mm Steg an der Öffnung, 1,5 mm tief; Breite wie das Band */
 export const SEAL = { lip: 2, depth: 1.5, widths: [6, 9, 10] };
 const sealWidth = (dv: Pick<DeviceEnd, 'sealW'>) => (SEAL.widths.includes(dv.sealW) ? dv.sealW : 6);
+/** dreieckige Platte: Eckradius um das Loch (Senkung + Rand) */
+const triEar = (holeD: number) => sinkR(holeD) + 4;
+
 /** Loch für M4-Senkkopfschrauben */
 export const AUTO_HOLE_D = 4.5;
 /** Größter Abstand zweier Löcher beim automatischen Lochbild */
@@ -1555,6 +1574,11 @@ export function flangeGeom(dv: DeviceEnd, wall: number, withFixes = true): Flang
     const xs = line(dv.holeX, nx), ys = line(dv.holeY, ny);
     const border = (x: number, y: number) => x === xs[0] || x === xs[xs.length - 1] || y === ys[0] || y === ys[ys.length - 1];
     holes = xs.flatMap((x) => ys.filter((y) => border(x, y)).map((y) => rotP([x, y])));
+  } else if (dv.flangeLayout === 'tri') {
+    // abgerundetes Dreieck mit einem Loch je Ecke (Ecke oben, mit der Drehung gedreht)
+    plate = sec('tri', { d: Math.max(dv.triCircle, 1), r: triEar(holeD) });
+    if (!(dv.triCircle > 0)) err('circle', 'Bitte einen Lochkreis eingeben.');
+    else holes = [90, 210, 330].map((a) => rotP([(dv.triCircle / 2) * Math.cos(rad(a)), (dv.triCircle / 2) * Math.sin(rad(a))]));
   } else {
     plate = sec('circle', { d: dv.plateD });
     const n = Math.round(dv.holeN);
@@ -1591,7 +1615,7 @@ function flangeFixes(kind: FlangeError['kind'], dv: DeviceEnd, wall: number, m: 
     fields,
     set: (sp) => void Object.assign(D(sp), { [keys[0]]: a, [keys[1]]: b }),
   });
-  const rect = dv.flangeLayout === 'rect', round = dv.flangeLayout === 'round';
+  const rect = dv.flangeLayout === 'rect', round = dv.flangeLayout === 'round', tri = dv.flangeLayout === 'tri';
   const out: (Fix | null)[] = [];
   switch (kind) {
     case 'thick':
@@ -1668,6 +1692,10 @@ function flangeFixes(kind: FlangeError['kind'], dv: DeviceEnd, wall: number, m: 
           }
           if (clear({ holeNX: nx, holeNY: ny })) out.push(pair('Löcher je Seite', ['Löcher waagerecht', 'Löcher senkrecht'], ['holeNX', 'holeNY'], nx, ny));
         }
+      } else if (tri) {
+        // Dreieck: Ecken und Löcher liegen auf dem Lochkreis, größer schafft Platz zur Öffnung und eine größere Platte
+        const v = searchUp((x) => clear({ triCircle: x }), dv.triCircle, 590);
+        if (v !== null) out.push(fixTo('Lochkreis-Ø', 'Lochkreis-Durchmesser', v, (sp, x) => void (D(sp).triCircle = x)));
       } else if (kind === 'open' || kind === 'edge' || kind === 'dense') {
         const r = searchUp((v) => clear({ flangeRim: v }), dv.flangeRim, 80);
         if (r !== null) out.push(fixTo('Rand', 'Rand des Flanschs', Math.ceil(r), (sp, x) => void (D(sp).flangeRim = x)));
@@ -1717,8 +1745,12 @@ export function flangeDefaults(dv: DeviceEnd, wall: number): Partial<DeviceEnd> 
     { holeX: hx, holeY: hy, holeNX: per(hx), holeNY: per(hy), plateW: pw, plateH: ph },
     { holeX: up(Math.max(hx, bx), 0.5), holeY: up(Math.max(hy, by), 0.5), holeNX: per(Math.max(hx, bx)), holeNY: per(Math.max(hy, by)), plateW: up(Math.max(pw, Math.max(hx, bx) + 2 * edge)), plateH: up(Math.max(ph, Math.max(hy, by) + 2 * edge)) },
   ];
-  for (const t of tries) if (!flangeGeom({ ...dv, ...round, ...t, flangeLayout: 'rect', rot: 0 }, wall, false).errors.length) return { ...round, ...t };
-  return { ...round, holeX: hx, holeY: hy, holeNX: 2, holeNY: 2, plateW: pw, plateH: ph };
+  // Dreieck: kleinster Lochkreis (auf 0,5 mm), mit dem Platte und Löcher zur Öffnung passen
+  const triFrom = up(2 * (reach + toOpen), 0.5);
+  const triOk = searchUp((x) => !flangeGeom({ ...dv, flangeLayout: 'tri', triCircle: x, holeD: AUTO_HOLE_D, rot: 0 }, wall, false).errors.length, triFrom, 600);
+  const tri = { triCircle: triOk === null ? triFrom : up(triOk, 0.5) };
+  for (const t of tries) if (!flangeGeom({ ...dv, ...round, ...t, flangeLayout: 'rect', rot: 0 }, wall, false).errors.length) return { ...round, ...tri, ...t };
+  return { ...round, ...tri, holeX: hx, holeY: hy, holeNX: 2, holeNY: 2, plateW: pw, plateH: ph };
 }
 
 function planFlange(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: number }, bodies: FreeBody[], issues: Issue[], path: V3[]): Frame {

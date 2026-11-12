@@ -107,6 +107,14 @@ for (const [i, shape] of shapes.entries()) {
   r.b.transition = 18;
   r.b.device = { ...r.b.device, mode: 'flange', section: sec('circle', { d: 50 }), flangeLayout: 'round', plateD: 100, holeCircle: 82, holeN: 6, flangeT: 6 };
   cases.push(['flansch-lochkreis', r]);
+  const t = TEMPLATES[3].make();
+  t.b.transition = 18;
+  t.b.device = { ...t.b.device, mode: 'flange', section: sec('circle', { d: 50 }), flangeLayout: 'tri', triCircle: 110, rot: 15, seal: true, sealW: 6 };
+  cases.push(['flansch-dreieck', t]);
+  const tr = TEMPLATES[3].make();
+  tr.b.transition = 18;
+  tr.b.device = { ...tr.b.device, mode: 'flange', section: sec('rect', { w: 50, h: 30, r: 5, r2: 5 }), flangeLayout: 'tri', triCircle: 100, holeD: 5.5 };
+  cases.push(['flansch-dreieck-rechteck', tr]);
 }
 
 // Abzweig (Y/T): Winkel 30–90°, Richtungen, kleinerer Abzweig, Ende C als Kupplung, Stecker, Gerät in allen Befestigungen,
@@ -255,7 +263,7 @@ if (!only || only === 'flansch-pruefungen') {
   for (const shape of shapes)
     for (const d of [20, 32, 50, 90])
       for (const seal of [false, true])
-        for (const lay of ['rect', 'round'] as const) {
+        for (const lay of ['rect', 'round', 'tri'] as const) {
           const sealW = [6, 9, 10][d % 3];
           const dv = { ...base, section: sec(shape, { d, w: d * 1.6, h: d, r: 5, r2: 3, w2: d }), seal, sealW, flangeRim: flangeMinRim(3, seal, sealW) };
           const e = flangeGeom({ ...dv, ...flangeDefaults(dv, 3), flangeLayout: lay }, 3).errors;
@@ -329,6 +337,7 @@ if (!only || only === 'vorschlaege') {
   broken.push(['Platte zu klein rechteckig', flange({ flangeLayout: 'rect', plateW: 60, plateH: 60, holeX: 40, holeY: 40 })]);
   broken.push(['Lochabstand zu klein', flange({ flangeLayout: 'rect', plateW: 140, plateH: 140, holeX: 40, holeY: 40 })]);
   broken.push(['Löcher am Plattenrand rechteckig', flange({ flangeLayout: 'rect', plateW: 110, plateH: 110, holeX: 106, holeY: 106 })]);
+  broken.push(['Dreieck zu klein', flange({ flangeLayout: 'tri', triCircle: 60 })]);
   broken.push(['Löcher zu dicht rechteckig', flange({ section: sec('circle', { d: 20 }), flangeLayout: 'rect', plateW: 80, plateH: 80, holeX: 40, holeY: 40, holeNX: 6, holeNY: 6 })]);
   for (const [name, s] of broken) {
     const issues = planFree(s).issues.filter((x) => x.fixes?.length);

@@ -37,6 +37,8 @@
     rect: { w: { name: 'Breite', letter: 'B' }, h: { name: 'Höhe', letter: 'H' }, r: { name: 'Ecken oben', letter: 'R', help: CORNER }, r2: { name: 'Ecken unten', letter: 'r', help: CORNER + ' Unten kann die Rundung anders sein als oben.' } },
     dshape: { d: { name: 'Durchmesser', letter: 'Ø', help: 'Durchmesser des runden Teils.' }, h: { name: 'Höhe', letter: 'H', help: 'Von der flachen Seite bis zur gegenüberliegenden Rundung messen. Kleiner als der Durchmesser.' }, r: { name: 'Ecken an der flachen Seite', letter: 'R', help: CORNER } },
     trapezoid: { w: { name: 'Breite unten', letter: 'B' }, w2: { name: 'Breite oben', letter: 'b' }, h: { name: 'Höhe', letter: 'H' }, r: { name: 'Ecken', letter: 'R', help: CORNER } },
+    // nur intern (Flanschplatte), nicht wählbar
+    tri: {},
   };
   const LIMITS: Record<Key, { min: number; max: number; step: number }> = {
     d: { min: 6, max: 200, step: 0.1 },
