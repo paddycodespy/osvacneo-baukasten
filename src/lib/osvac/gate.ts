@@ -73,14 +73,26 @@ function frame(g: GateDims, zc: number, z0: number, z1: number): Shape3D {
   return box(-g.half, g.half, -g.half, g.half, Math.max(a, z0), Math.min(b, z1)).intersect(rev) as Shape3D;
 }
 
+/** Achteck (Kanten an x = ±r, y = ±r und diagonal), Inkreis r, zwischen z0 und z1 */
+function octagon(r: number, z0: number, z1: number): Shape3D {
+  const a = r * Math.tan(Math.PI / 8);
+  const pts: [number, number][] = [[r, -a], [r, a], [a, r], [-a, r], [-r, a], [-r, -a], [-a, -r], [a, -r]];
+  let d = draw(pts[0]);
+  for (const q of pts.slice(1)) d = d.lineTo(q);
+  return (d.close().sketchOnPlane('XY', Math.min(z0, z1)).extrude(Math.abs(z1 - z0)) as unknown as Shape3D);
+}
+
 /** Schlitz, Brückenhilfe und Rastmulden aus dem Gehäuse schneiden */
 function cutSlot(h: Shape3D, g: GateDims, zc: number): Shape3D {
   h = h.cut(box(-g.half - 1, g.half + 1, -g.yS, g.yS, zc - g.slot / 2, zc + g.slot / 2));
   for (const s of [1, -1]) {
     const z = zc + (s * g.slot) / 2;
-    // Stufe 1: Streifen quer über den Schlitz (Brücke von Seitenwand zu Seitenwand), Stufe 2: Quadrat um die Bohrung
+    // Stufe 1: Streifen quer über den Schlitz (Brücke von Seitenwand zu Seitenwand), Stufe 2: Quadrat um die Bohrung,
+    // Stufe 3: Achteck. Jede Stufe überbrückt nur Ecken, die auf zwei Seiten aufliegen; über dem Achteck bleiben
+    // nur noch schmale Sicheln zur runden Bohrung (beim Quadrat wären es Ecken bis 0,4 × Radius)
     h = h.cut(box(-g.Rm, g.Rm, -g.yS, g.yS, z - s * 0.01, z + s * POCKET));
     h = h.cut(box(-g.Rm, g.Rm, -g.Rm, g.Rm, z + s * (POCKET - 0.01), z + s * 2 * POCKET));
+    h = h.cut(octagon(g.Rm, z + s * (2 * POCKET - 0.01), z + s * 3 * POCKET));
     for (const sx of [1, -1]) h = h.cut(cylZ(g.dr, z - s * 0.01, z + s * (g.hb + 0.1), sx * g.pd, 0));
   }
   return h;
@@ -110,7 +122,8 @@ export function gatePlate(g: GateDims): Shape3D {
   const nub = draw([g.xs - 5, g.pw - 0.3]).lineTo([g.xs - 0.4, g.pw + NUB]).lineTo([g.xs, g.pw + NUB]).lineTo([g.xs, g.pw - 0.3]).close();
   pl = pl.fuse(nub.sketchOnPlane('XY').extrude(g.T) as unknown as Shape3D);
   const a = Math.min(1.1, g.dr - 0.3), rs = (a * a + g.hb * g.hb) / (2 * g.hb);
-  for (const x of [g.pd, -g.pd]) pl = pl.fuse(makeSphere(rs).translate([x, 0, g.T + g.hb - rs]) as unknown as Shape3D);
+  // Kugel um 90° gekippt: ihre Pole liegen seitlich in der Platte (ein Pol oben ergäbe im Netz eine entartete Spitze)
+  for (const x of [g.pd, -g.pd]) pl = pl.fuse(makeSphere(rs).rotate(90, [0, 0, 0], [1, 0, 0]).translate([x, 0, g.T + g.hb - rs]) as unknown as Shape3D);
   return pl;
 }
 
@@ -186,6 +199,9 @@ export function gateHousing(s: GateSpec): Shape3D {
     const X = g.half + 12, Xp = keyTurned ? keyX + 12.5 : X;
     h = h.fuse(box(-X, Xp, -A, -A + WALL_T, 0, H));
     for (const sx of [1, -1]) h = h.fuse(box(sx * (g.half - 3), sx * g.half, -A + WALL_T - 0.01, 0, 0, H));
+    // Klotz an der Stelle, wo die Muffe die Wandplatte berührt: sonst stößt der Zylinder dort nur in einer Linie an
+    // (direkt an der Wand), das gibt im Netz Kanten mit vier Flächen
+    h = h.fuse(box(-6, 6, Math.max(-A + WALL_T - 0.01, -Ro - 1), -Ro + 2, 0, H));
   }
   // Muffen mit Anschlag; der untere Anschlag läuft unter 45° aus (hängt beim Druck nicht in der Luft)
   h = h.cut(cylZ(Rs, -1, s.depth));
