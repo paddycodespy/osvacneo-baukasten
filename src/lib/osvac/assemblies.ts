@@ -281,25 +281,26 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
   // Formstücke und Geräteanschluss
   for (const b of plan.bodies) out.push(part(b.name, b.cost, b.dep as object, b.make));
 
-  // Ende B als Anschluss von osVAC neo
-  if (spec.b.type !== 'device') {
-    const type = spec.b.type;
-    const pB = withDiameter(p, type, spec.b.d);
+  // Ende B (und Ende C am Abzweig) als Anschluss von osVAC neo
+  const osvacEnd = (E: { type: 'female' | 'male'; d: number }, fe: { o: V3; t: V3; u: V3 }, tag: 'B' | 'C', withSupport: boolean) => {
+    const type = E.type;
+    const pB = withDiameter(p, type, E.d);
     const rB = ringOf(pB, type);
-    const fe = plan.chainEnd.frame;
     const at = (d: number): V3 => [fe.o[0] + fe.t[0] * d, fe.o[1] + fe.t[1] * d, fe.o[2] + fe.t[2] * d];
     const cone = localPlacement(at(OSVAC_TRANSITION), fe.u, fe.t);
-    out.push(placedPart(part('Übergang B', 0.1, { kind: 'freeB', b: type, ...dAll(pB), w }, () => pipeTransition(rB.rIn, rB.rOut, pipeFor(spec.b.d))), cone));
+    out.push(placedPart(part(`Übergang ${tag}`, 0.1, { kind: tag === 'B' ? 'freeB' : 'freeC', b: type, ...dAll(pB), w }, () => pipeTransition(rB.rIn, rB.rOut, pipeFor(E.d))), cone));
     if (type === 'female') {
       const pl = localPlacement(at(OSVAC_TRANSITION + pB.femaleHeight), fe.u, fe.t);
-      for (const q of [...female(pB, o), part('Dichtnut-Füllung', 0.2, dF(pB), () => femaleBeadFill(pB))]) out.push(placedPart({ ...q, name: q.name + ' B' }, pl));
+      for (const q of [...female(pB, o), part('Dichtnut-Füllung', 0.2, dF(pB), () => femaleBeadFill(pB))]) out.push(placedPart({ ...q, name: `${q.name} ${tag}` }, pl));
     } else {
       const neg: V3 = [-fe.t[0], -fe.t[1], -fe.t[2]];
       const pl = localPlacement(at(OSVAC_TRANSITION), fe.u, neg);
-      out.push(placedPart(part('Male B', 9, dM(pB, o), () => maleTube(pB, o)), pl));
-      if (support && spec.bed === 'B') out.push(placedPart(part('Druckhilfe B', 1, dS(pB), () => maleSupport(pB), { helper: true }), pl));
+      out.push(placedPart(part(`Male ${tag}`, 9, dM(pB, o), () => maleTube(pB, o)), pl));
+      if (withSupport) out.push(placedPart(part(`Druckhilfe ${tag}`, 1, dS(pB), () => maleSupport(pB), { helper: true }), pl));
     }
-  }
+  };
+  if (spec.b.type !== 'device') osvacEnd({ type: spec.b.type, d: spec.b.d }, plan.chainEnd.frame, 'B', support && spec.bed === 'B');
+  if (plan.cChainEnd && spec.c && spec.c.type !== 'device') osvacEnd({ type: spec.c.type, d: spec.c.d }, plan.cChainEnd.frame, 'C', false);
   // gleiche Anschlüsse an beiden Enden: Namen eindeutig halten (Vorschau ordnet über den Namen zu)
   const seen = new Map<string, number>();
   for (const q of out) {

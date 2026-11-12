@@ -196,6 +196,30 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
   });
 
+  await test('Y-Abzweig mit Ende C', pg, async () => {
+    await step(pg, 'Aufbau');
+    await pg.getByRole('radio', { name: 'Y-Abzweig 45°' }).click();
+    const load = pg.getByRole('button', { name: 'Vorlage laden' });
+    if (await load.count()) await load.click();
+    await ready(pg);
+    expect((await pg.locator('.stage-head .code').innerText()).includes('+'), 'Kopfzeile ohne Ende C');
+    expect((await pg.locator('.print-note').innerText()).includes('Ende C'), 'Druckhinweis zur Kupplung am Abzweig fehlt');
+    await pg.locator('.card-head', { hasText: 'Ende C ·' }).click();
+    await pg.locator('.card.open .seg button', { hasText: 'Gerät' }).first().click();
+    await fill(pg, 'Steckweg', '7');
+    expect((await pg.locator('.card.open').innerText()).includes('Unter 10 mm Tiefe'), 'Meldung von Ende C nicht in der Karte C');
+    expect((await pg.locator('.num-in.flag-warn input[aria-label="Steckweg"]').count()) === 1, 'Feld an Ende C nicht markiert');
+    await pg.locator('.card.open .fix', { hasText: 'Tiefe auf 10 mm setzen' }).click();
+    expect((await pg.getByLabel('Steckweg', { exact: true }).inputValue()) === '10', 'Vorschlag setzt den Wert an Ende C nicht');
+    await ready(pg);
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Y-Abzweig mit Gerät an C nicht druckbar');
+    // Abzweig entfernen: Karte C verschwindet, nur ein Abzweig je Adapter
+    await pg.locator('.add-btn', { hasText: 'Abzweig' }).isDisabled().then((d) => expect(d, 'zweiter Abzweig möglich'));
+    await pg.getByRole('button', { name: 'Abzweig entfernen' }).click();
+    expect((await pg.locator('.card-head', { hasText: 'Ende C ·' }).count()) === 0, 'Karte C bleibt nach dem Entfernen');
+    await ready(pg);
+  });
+
   await test('Neu anfangen setzt alles zurück, Druckbett bleibt', pg, async () => {
     await step(pg, 'Verbindung');
     await pg.locator('.reset-all').click();

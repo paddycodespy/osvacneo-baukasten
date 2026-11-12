@@ -7,7 +7,7 @@
   let { type }: { type: BlockType } = $props();
 </script>
 
-<svg class="bfig" viewBox="0 0 280 104" role="img" aria-label="Skizze: {type === 'straight' ? 'Länge der Geraden' : type === 'bend' ? 'Winkel und Radius des Bogens' : type === 'transition' ? 'Länge, Versatz und Knick des Übergangs' : 'Absatz mit 45°-Schräge'}">
+<svg class="bfig" viewBox="0 0 280 104" role="img" aria-label="Skizze: {type === 'straight' ? 'Länge der Geraden' : type === 'bend' ? 'Winkel und Radius des Bogens' : type === 'transition' ? 'Länge, Versatz und Knick des Übergangs' : type === 'branch' ? 'Winkel, Durchmesser und Länge des Abzweigs' : 'Absatz mit 45°-Schräge'}">
   {#if type === 'straight'}
     <rect x="24" y="30" width="140" height="34" class="part" />
     <line x1="12" y1="47" x2="176" y2="47" class="axis" />
@@ -55,6 +55,30 @@
     <text x="196" y="50" class="mute">Versatz</text>
     <text x="178" y="70" class="key">K</text>
     <text x="196" y="70" class="mute">Knick</text>
+  {:else if type === 'branch'}
+    <!-- Rohr waagerecht, Abzweig unter 45° nach oben rechts, Ende C am Abzweig -->
+    <path d="M16 56 H55 L91.1 19.9 L108.1 36.9 L89 56 H136 V80 H16 Z" class="part" />
+    <line x1="8" y1="68" x2="144" y2="68" class="axis" />
+    <line x1="60" y1="68" x2="106" y2="22" class="axis" />
+    <path d="M80 68 A20 20 0 0 0 74.1 53.9" class="dim" fill="none" />
+    <polyline points="78.4,60.3 96,90" class="lead" />
+    <text x="98" y="101" class="lt">W</text>
+    <line x1="84" y1="27" x2="101" y2="44" class="dim" />
+    <polyline points="84,27 74,22" class="lead" />
+    <text x="62" y="24" class="lt">Ø</text>
+    <line x1="16" y1="88" x2="136" y2="88" class="dim" />
+    <line x1="16" y1="84" x2="16" y2="92" class="dim" />
+    <line x1="136" y1="84" x2="136" y2="92" class="dim" />
+    <text x="40" y="101" class="lt">L</text>
+    <text x="112" y="18" class="lt">C</text>
+    <text x="158" y="30" class="key">W</text>
+    <text x="174" y="30" class="mute">Winkel</text>
+    <text x="158" y="48" class="key">Ø</text>
+    <text x="174" y="48" class="mute">Abzweig, innen</text>
+    <text x="158" y="66" class="key">L</text>
+    <text x="174" y="66" class="mute">Rohrlänge</text>
+    <text x="158" y="84" class="key">C</text>
+    <text x="174" y="84" class="mute">Ende C</text>
   {:else}
     <path d="M16 30 H70 L88 48 H160 V56 H88 L70 74 H16 Z" class="part" />
     <line x1="8" y1="52" x2="170" y2="52" class="axis" />

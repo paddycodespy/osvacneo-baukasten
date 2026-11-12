@@ -236,6 +236,9 @@ class AppState {
     if (this.hasSwivel)
       t.push(`Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Klemmt er, beim nächsten Mal in „Passung“ das Spiel am Drehring erhöhen.`);
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
+    const c = this.free.c;
+    if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
+      t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);
     const dv = this.free.b.device;
     if (this.kind.freeform && this.free.b.type === 'device' && dv.mode === 'flange') {
       const d = (dv.flangeLayout === 'auto' ? AUTO_HOLE_D : dv.holeD).toLocaleString('de-DE');

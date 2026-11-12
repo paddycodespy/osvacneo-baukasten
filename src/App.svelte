@@ -92,7 +92,7 @@
       const below = app.kind.freeform ? belowBedEnd(full.bodies, app.free.bed) : 0;
       app.layoutError =
         below > 0.3
-          ? `Ein Teil des Adapters liegt ${fmt(below, 0)} mm tiefer als ${app.free.bed === 'B' ? 'Ende B' : 'Anschluss A'}. So liegt das Ende nicht auf dem Druckbett und der Adapter lässt sich nicht drucken. Bitte das andere Ende nach unten legen oder einen Bogen in eine andere Richtung zeigen lassen.`
+          ? `Ein Teil des Adapters liegt ${fmt(below, 0)} mm tiefer als ${app.free.bed === 'B' ? 'Ende B' : 'Anschluss A'}. So liegt das Ende nicht auf dem Druckbett und der Adapter lässt sich nicht drucken. Bitte das andere Ende nach unten legen oder einen Bogen oder Abzweig in eine andere Richtung zeigen lassen.`
           : '';
       app.measures = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
       app.progress = null;
@@ -152,6 +152,10 @@
     if (app.status !== 'ready') return null;
     if (app.needsSupportMaterial)
       return { level: 'warn', text: 'Ein Teil hängt beim Drucken schräg in der Luft. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Manchmal reicht es auch, das andere Ende nach unten zu legen.' };
+    // Kupplung oder Stecker am Abzweig: Bajonett und Nasen stehen schräg (die Prüfung oben zählt die Teile von osVAC neo nicht mit)
+    const c = app.free.c;
+    if (app.kind.freeform && c && c.type !== 'device' && app.free.blocks.some((b) => b.type === 'branch'))
+      return { level: 'warn', text: `${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C steht beim Drucken schräg. Im Slicer „Stützen nur auf dem Druckbett“ einschalten.` };
     return { level: 'ok', text: `Druckt so ohne Stützen${app.hasSupport ? ' (nur die Druckhilfe unter dem Stecker wird mitgedruckt)' : ''}.` };
   });
 

@@ -94,8 +94,10 @@ export function overhangArea(bodies: OverhangMesh[]): number {
  * Ende B: Geräteanschluss bzw. die Teile von Ende B („… B“); Anschluss A: die übrigen Teile von osVAC neo.
  */
 export function belowBedEnd(bodies: OverhangMesh[], bed: 'A' | 'B'): number {
-  const isB = (n: string) => n.startsWith('Geräteanschluss') || / B( \d+)?$/.test(n);
-  const isChain = (n: string) => /^(Formstück|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(n);
+  // Ende C (am Abzweig) liegt nie auf dem Bett und zählt wie die Kette
+  const isC = (n: string) => n.startsWith('Geräteanschluss C') || / C( \d+)?$/.test(n) || n === 'Übergang zu Ende C';
+  const isB = (n: string) => !isC(n) && (n.startsWith('Geräteanschluss') || / B( \d+)?$/.test(n));
+  const isChain = (n: string) => isC(n) || /^(Formstück|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(n);
   const isEnd = (n: string) => (bed === 'B' ? isB(n) : !isB(n) && !isChain(n));
   let zAll = Infinity, zEnd = Infinity;
   for (const b of bodies) {
