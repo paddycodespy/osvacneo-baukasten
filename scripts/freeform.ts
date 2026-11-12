@@ -28,6 +28,27 @@ const valid = (s: Shape3D) => {
   c.delete();
   return v;
 };
+/** Kanten im Netz, die nicht genau zwei Dreiecke haben (Slicer melden sie als „non-manifold“), Ecken auf 1e-4 mm zusammengeführt */
+const badEdges = (sh: Shape3D) => {
+  const m = sh.mesh({ tolerance: 0.01, angularTolerance: 0.1 });
+  const id = new Map<string, number>();
+  const vi = (i: number) => {
+    const k = [0, 1, 2].map((j) => Math.round(m.vertices[i * 3 + j] * 1e4)).join(',');
+    if (!id.has(k)) id.set(k, id.size);
+    return id.get(k)!;
+  };
+  const cnt = new Map<string, number>();
+  for (let t = 0; t < m.triangles.length; t += 3) {
+    const v = [vi(m.triangles[t]), vi(m.triangles[t + 1]), vi(m.triangles[t + 2])];
+    if (v[0] === v[1] || v[1] === v[2] || v[0] === v[2]) continue;
+    for (let e = 0; e < 3; e++) {
+      const a = v[e], b = v[(e + 1) % 3];
+      const k = a < b ? `${a}-${b}` : `${b}-${a}`;
+      cnt.set(k, (cnt.get(k) ?? 0) + 1);
+    }
+  }
+  return [...cnt.values()].filter((c) => c !== 2).length;
+};
 const writeStl = process.argv.includes('--stl');
 const only = process.argv.slice(2).find((a) => !a.startsWith('--'));
 
@@ -421,6 +442,7 @@ for (const [id, kind, pipe, text] of [
       const lay = gateLayout(s);
       const h = gateHousing(s), pl = gatePlate(lay.g);
       for (const x of [h, pl]) if (!valid(x) || !(measureVolume(x) > 0)) bad.push('ungültig');
+      for (const [n, x] of [['Gehäuse', h], ['Platte', pl]] as const) if (badEdges(x)) bad.push(`${n}: ${badEdges(x)} Kanten im Netz nicht geschlossen`);
       const touch = (dx: number) => measureVolume(h.clone().intersect(pl.clone().translate(plateInSlot(lay.g, lay.zc, false).map((c, i) => (i ? c : c + dx)) as [number, number, number])) as Shape3D);
       if (touch(0) > 0.01) bad.push(`berührt zu ${touch(0).toFixed(2)}`);
       if (touch(lay.g.P) > 0.01) bad.push(`berührt auf ${touch(lay.g.P).toFixed(2)}`);
