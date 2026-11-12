@@ -1,8 +1,4 @@
-@import '@fontsource/poppins/400.css';
-@import '@fontsource/poppins/500.css';
-@import '@fontsource/poppins/600.css';
-@import '@fontsource/poppins/700.css';
-@import '@fontsource/poppins/700-italic.css';
+@import './fonts.css';
 
 /* Farben nach osvacneo.de */
 :root {
@@ -571,6 +567,11 @@ legend.field-label { width: 100%; }
 .confirm p { margin: 0 0 8px; }
 .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
 .license .version { margin-top: 10px; font-size: 12px; }
+.license .news { margin: 4px 0 0; font-size: 13px; }
+.license .news summary { cursor: pointer; color: var(--grey); font-size: 12px; }
+.license .news summary:hover { color: var(--sky-d); }
+.license .news ul { margin: 6px 0 0; padding-left: 18px; }
+.license .news li { margin: 3px 0; }
 
 /* Häkchen mit Beschreibung darunter (Extras): Beschreibung beginnt dort, wo der Text neben dem Kästchen beginnt */
 .x-list { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }

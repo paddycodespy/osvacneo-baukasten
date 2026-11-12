@@ -141,6 +141,7 @@
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   $effect(() => {
     void app.saved;
+    void app.plateSaved;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => app.save(), 400);
   });

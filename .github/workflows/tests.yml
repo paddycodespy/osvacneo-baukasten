@@ -1,5 +1,6 @@
 # Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen, Bedienabläufe und die Geometrie aller Adapter.
 # Läuft bei jedem Push und jedem Pull Request; Ergebnis unter „Actions“ → „Tests“.
+# Drei Gruppen laufen gleichzeitig (zusammen etwa 10 statt 18 Minuten).
 name: Tests
 
 on:
@@ -8,18 +9,23 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Je Branch läuft höchstens ein Testlauf; kommt ein neuer Push, während einer wartet, ersetzt der neue den wartenden
+# (der laufende wird zu Ende geführt). Jeder Lauf prüft den ganzen Stand, also auch die übersprungenen Änderungen.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  test:
+  oberflaeche:
+    name: Typen, Build, Skizzen, Bedienung
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
 
       - name: Typen prüfen
@@ -27,12 +33,6 @@ jobs:
 
       - name: Web-Oberfläche bauen
         run: npm run build
-
-      - name: Cache-Schlüssel
-        run: npm run test:keys
-
-      - name: Freiform-Rechnung
-        run: npm run test:freeform
 
       # Chrome ist auf den GitHub-Rechnern vorinstalliert
       - name: Skizzen ohne Überschneidungen
@@ -53,6 +53,36 @@ jobs:
           name: ui-bildschirmfotos
           path: out/ui-*.png
           if-no-files-found: ignore
+
+  freiform:
+    name: Cache-Schlüssel, Freiform
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Cache-Schlüssel
+        run: npm run test:keys
+
+      - name: Freiform-Rechnung
+        run: npm run test:freeform
+
+  geometrie:
+    name: Geometrie aller Adapter
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
 
       # dauert am längsten: alle Adaptertypen und Größen mit dem CAD-Kern
       - name: Geometrie aller Adapter

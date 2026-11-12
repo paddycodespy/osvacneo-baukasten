@@ -44,13 +44,14 @@ const round2 = (v: number) => Math.round(v * 100) / 100;
 
 // alter Name bleibt, damit gespeicherte Stände nach Umbenennungen erhalten bleiben
 const STORE_KEY = 'osvacneo-konfigurator:stand:v1';
+/** Mehrfach-Druckbett getrennt gespeichert (gehört nicht zum Stand, „Neu anfangen“ lässt es stehen) */
+const PLATE_KEY = 'osvacneo-baukasten:druckbett:v1';
 
 class AppState {
   // ---------------------------------------------------------------- Eingaben
   step = $state(0);
   kindId = $state('MF');
   input = $state<OsvacInput>({ ...START_INPUT });
-  text = $state(true);
   /**
    * Druckhilfe je Verbindung (Anzeige und Export, berechnet wird sie immer). Gespeichert sind nur die
    * abgeschalteten Verbindungen, Standard ist überall an.
@@ -139,7 +140,6 @@ class AppState {
     if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
     if (this.hasSwivel && i.slipRingGapSize !== START_INPUT.slipRingGapSize) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
     if (i.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${i.generalMaterialWidth} mm`);
-    if (!this.text) extra.push('ohne Text');
     if (this.kind.machine && this.machine.ribs) extra.push('Rippen');
     if (this.kind.machine && this.machine.slots && this.machine.mode === 'over') extra.push('Schlitze');
     return [this.baseName, ...extra].join(' ');
@@ -180,19 +180,24 @@ class AppState {
     return w;
   });
 
+  /** Hinweise im Download; step: in welchem Schritt man es ändert (Link „Zu …“) */
   warnings = $derived.by(() => {
-    const w: string[] = [];
+    const w: { text: string; step?: number }[] = [];
+    const sizes = (text: string) => w.push({ text, step: 1 });
     for (const k of this.kind.diameters) {
       const v = this.input[k];
-      if (!(v >= 15 && v <= 60)) w.push(`${LABELS[k].name}: ${fmt(v)} mm liegt außerhalb von 15 bis 60 mm.`);
-      else if (!LABELS[k].presets.includes(v)) w.push(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
+      if (!(v >= 15 && v <= 60)) sizes(`${LABELS[k].name}: ${fmt(v)} mm liegt außerhalb von 15 bis 60 mm.`);
+      else if (!LABELS[k].presets.includes(v)) sizes(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
     }
-    w.push(...this.machineWarnings.map((x) => x.text));
-    if (this.kind.freeform) w.push(...this.freeIssues.map((x) => x.text), ...this.buildNotes);
+    for (const x of this.machineWarnings) sizes(x.text);
+    if (this.kind.freeform) {
+      for (const x of this.freeIssues) sizes(x.text);
+      for (const t of this.buildNotes) sizes(t);
+    }
     // übliche Druckbetten: 220–256 mm Kantenlänge, Bauhöhe ab 250 mm
     if (this.dims && (this.dims.width > 220 || this.dims.height > 250))
-      w.push(`Der Adapter ist ${fmt(this.dims.width, 0)} mm breit und ${fmt(this.dims.height, 0)} mm hoch. Das passt nicht auf jeden Drucker (viele haben 220 bis 256 mm). Bitte mit deinem Druckbett vergleichen.`);
-    if (this.input.maleFemaleGapSize < 0.1 || this.input.maleFemaleGapSize > 0.5) w.push('Das Spiel liegt außerhalb von 0,1 bis 0,5 mm. Stecker und Kupplung passen dann kaum zusammen.');
+      sizes(`Der Adapter ist ${fmt(this.dims.width, 0)} mm breit und ${fmt(this.dims.height, 0)} mm hoch. Das passt nicht auf jeden Drucker (viele haben 220 bis 256 mm). Bitte mit deinem Druckbett vergleichen.`);
+    if (this.input.maleFemaleGapSize < 0.1 || this.input.maleFemaleGapSize > 0.5) w.push({ text: 'Das Spiel liegt außerhalb von 0,1 bis 0,5 mm. Stecker und Kupplung passen dann kaum zusammen.', step: 2 });
     return w;
   });
 
@@ -267,14 +272,12 @@ class AppState {
     this.input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
       (!this.hasSwivel || this.input.slipRingGapSize === START_INPUT.slipRingGapSize) &&
       this.input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
-      this.text &&
       (!this.hasSupport || this.supports),
   );
   resetFit() {
     this.input.maleFemaleGapSize = START_INPUT.maleFemaleGapSize;
     if (this.hasSwivel) this.input.slipRingGapSize = START_INPUT.slipRingGapSize;
     this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
-    this.text = true;
     if (this.hasSupport) this.supports = true;
   }
   setDia(k: DiameterKey, v: number) {
@@ -284,7 +287,7 @@ class AppState {
   // ---------------------------------------------------------------- Bauaufträge
   /** volle Berechnung mit Rändelung und Beschriftung */
   spec() {
-    return makeBuild(this.kindId, $state.snapshot(this.input), { text: this.text, knurl: true, supports: true, ...$state.snapshot(this.buildOpts) });
+    return makeBuild(this.kindId, $state.snapshot(this.input), { text: true, knurl: true, supports: true, ...$state.snapshot(this.buildOpts) });
   }
   /** schnelle Vorschau ohne Rändelung und Schrift */
   quickSpec() {
@@ -295,7 +298,7 @@ class AppState {
   }
   /** alles, was eine neue Berechnung auslöst */
   buildKey = $derived(
-    JSON.stringify([this.kindId, this.input, this.text, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null]),
+    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null]),
   );
 
   // ---------------------------------------------------------------- Export und Druckbett
@@ -320,7 +323,7 @@ class AppState {
     this.files = [];
   }
   plateKey() {
-    return JSON.stringify([this.kindId, $state.snapshot(this.input), this.text, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null]);
+    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null]);
   }
   onPlate = $derived(this.plate.some((p) => p.key === this.plateKey()));
   addToPlate() {
@@ -349,7 +352,6 @@ class AppState {
       step: this.step,
       kindId: this.kindId,
       input: this.input,
-      text: this.text,
       supportsOff: this.supportsOff,
       machine: this.machine,
       free: this.free,
@@ -370,7 +372,6 @@ class AppState {
   resetAll() {
     this.kindId = 'MF';
     this.input = { ...START_INPUT };
-    this.text = true;
     this.supportsOff = {};
     this.machine = { ...MACHINE_DEFAULT };
     this.free = TEMPLATES[0].make();
@@ -383,12 +384,29 @@ class AppState {
   save() {
     try {
       localStorage.setItem(STORE_KEY, this.saved);
+      localStorage.setItem(PLATE_KEY, this.plateSaved);
     } catch {
       /* Speicher voll oder gesperrt: dann eben ohne */
     }
   }
+  plateSaved = $derived(JSON.stringify(this.plate.map(({ req, includeHelpers, label, key }) => ({ kind: req.kind, input: req.input, options: req.options, includeHelpers, label, key }))));
+  /** Druckbett vom letzten Mal; nur Einträge mit bekanntem Typ und vollständigen Angaben */
+  private loadPlate() {
+    try {
+      const raw = localStorage.getItem(PLATE_KEY);
+      if (!raw) return;
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return;
+      this.plate = list
+        .filter((x) => x && typeof x.kind === 'string' && kindById(x.kind)?.available && x.input && typeof x.input === 'object' && x.options && typeof x.options === 'object' && typeof x.label === 'string' && typeof x.key === 'string')
+        .map((x) => ({ req: makeBuild(x.kind, { ...START_INPUT, ...x.input }, x.options), includeHelpers: x.includeHelpers === true, label: x.label, key: x.key }));
+    } catch {
+      /* beschädigt: leeres Druckbett */
+    }
+  }
   /** Gespeicherten Stand übernehmen; unbekannte oder beschädigte Werte bleiben auf dem Standard. */
   load() {
+    this.loadPlate();
     let raw: string | null = null;
     try {
       raw = localStorage.getItem(STORE_KEY);

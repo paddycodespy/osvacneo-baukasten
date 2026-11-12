@@ -211,6 +211,19 @@ await withPreview(4180, async (url, browser) => {
     await pg.reload();
     await ready(pg);
     expect((await pg.locator('.reset-all').count()) === 0, 'nach dem Neuladen wieder der alte Stand');
+    await step(pg, 'Download');
+    expect((await pg.locator('.plate li').count()) === 1, 'Druckbett nach dem Neuladen leer');
+  });
+
+  await test('Download-Hinweis führt zum passenden Schritt', pg, async () => {
+    await step(pg, 'Größen');
+    await fill(pg, 'Innendurchmesser der Bajonett-Kupplung', '33');
+    await step(pg, 'Download');
+    expect((await pg.locator('ul.warn').innerText()).includes('kein Standardmaß'), 'Hinweis zum Maß fehlt');
+    await pg.locator('ul.warn .fix', { hasText: 'Zu den Größen' }).click();
+    expect((await pg.locator('.step-tab.current').innerText()).includes('Größen'), 'Link führt nicht zu den Größen');
+    await fill(pg, 'Innendurchmesser der Bajonett-Kupplung', '32');
+    await ready(pg);
   });
 
   await test('Druckhilfe gilt je Verbindung', pg, async () => {
