@@ -5,6 +5,7 @@
 import type { OsvacParams } from './params';
 import * as asm from './assemblies';
 import { DEFAULT_FREE, freeSummary } from './freeform';
+import { DEFAULT_GATE, gateName } from './gate';
 
 export type DiameterKey = 'maleDiameterInner' | 'femaleDiameterInner' | 'hoseDiameterInner';
 
@@ -25,10 +26,12 @@ export interface AdapterKind {
   machine?: boolean;
   /** Freiform: Aufbau aus Bausteinen statt fester Größen */
   freeform?: boolean;
+  /** Schieber einzeln: eigene Maße (Rohr, Muffen, Befestigung) */
+  gate?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
-export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free';
+export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate';
 
 function pipeName(o?: asm.BuildOptions): string {
   const s = o?.pipe;
@@ -125,6 +128,19 @@ export const KINDS: AdapterKind[] = [
     build: asm.buildMachineM,
     parts: asm.partsMachineM,
     fileName: (p, o) => `osVAC neo M${n(p.maleDiameterInner)}-Rohr${pipeName(o)}`,
+  },
+  {
+    id: 'GATE',
+    code: 'Schieber',
+    title: 'Schieber einzeln',
+    description: 'Absperrschieber für Rohre: das Rohr wird beidseitig eingesteckt. Mit Wandbefestigung.',
+    ends: { top: 'gate', bottom: null },
+    diameters: [],
+    gate: true,
+    available: true,
+    build: asm.buildGate,
+    parts: asm.partsGate,
+    fileName: (_p, o) => `osVAC neo ${gateName({ ...DEFAULT_GATE, ...o?.gate }).file}`,
   },
   {
     id: 'FREE',

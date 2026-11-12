@@ -22,7 +22,7 @@
         <strong>{k.title}</strong>
         <small>{k.available ? k.description : 'Folgt in der nächsten Version.'}</small>
       </span>
-      {#if !k.freeform}
+      {#if !k.freeform && !k.gate}
         <span class="kind-code" aria-label={k.code}>
           {#each codeParts(k.code) as part}
             {#if part.key}<b class="ck">{part.t}</b>{:else}<span class="cx">{part.t}</span>{/if}

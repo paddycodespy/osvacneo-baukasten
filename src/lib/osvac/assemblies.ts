@@ -11,7 +11,8 @@ import { revolveProfile, L } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
-import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
+import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, footprint, IDENTITY, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
+import { DEFAULT_GATE, gateLayout, gateHousing, gatePlate, gateClip, gateBed, type GateSpec } from './gate';
 import { UserError } from '../errors';
 
 export interface Body {
@@ -36,6 +37,8 @@ export interface Part {
   volumeOffset?: number;
   /** von der gemessenen Oberfläche abzuziehen (Flächen, die im Inneren eines anderen Körpers liegen) */
   areaOffset?: number;
+  /** eigenes Objekt im 3MF (z. B. die Schieberplatte, die getrennt gedruckt und eingesetzt wird) */
+  object?: string;
   make: () => Shape3D;
 }
 
@@ -47,6 +50,8 @@ export interface BuildOptions {
   pipe?: PipeSpec;
   /** Aufbau des Freiform-Adapters */
   free?: FreeSpec;
+  /** Schieber einzeln */
+  gate?: GateSpec;
 }
 
 /** Male mit Spitze nach oben (Anschluss unten bei z = -maleHeight); Nasen wie im Original bei 30/150/270°. */
@@ -67,6 +72,7 @@ type Dep = Partial<Record<keyof OsvacParams | 'text' | 'knurl' | 'pipe' | 'z' | 
 
 interface PartExtra {
   helper?: boolean;
+  object?: string;
   volumeOffset?: number;
   areaOffset?: number;
 }
@@ -308,7 +314,34 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
     seen.set(q.name, n + 1);
     if (n) q.name = `${q.name} ${n + 1}`;
   }
-  return out.map((q) => placedPart(q, G));
+  const placed = out.map((q) => placedPart(q, G));
+  // Schieberplatten flach hinter den Adapter legen (in +x), untereinander in y
+  if (plan.loose.length) {
+    const fp = footprint(spec, plan);
+    let y = fp.y0;
+    for (const q of plan.loose) {
+      const pl: Placement = { R: IDENTITY, tr: [fp.x1 + 10 - q.x0, y + q.hw, fp.z0] };
+      placed.push(placedPart(part(q.name, q.cost, q.dep as object, q.make, { object: q.name }), pl));
+      y += 2 * q.hw + 8;
+    }
+  }
+  return placed;
+}
+
+// ---------------------------------------------------------------- Schieber einzeln
+
+/** Absperrschieber mit Muffen: Gehäuse (stehend), Platte flach davor, ggf. Wandhalter dahinter */
+export function partsGate(_p: OsvacParams, o: BuildOptions = {}): Part[] {
+  const s = { ...DEFAULT_GATE, ...o.gate };
+  const lay = gateLayout(s);
+  const bed = gateBed(s);
+  const dep = { kind: 'gate', d: s.d, gap: s.pipeGap, pg: s.plateGap };
+  const out = [
+    part('Schieber-Gehäuse', 2, { ...dep, depth: s.depth, mount: s.mount === 'clip' ? 'none' : s.mount, A: s.mount === 'plate' || s.mount === 'keyhole' ? lay.A : 0 }, () => gateHousing(s)),
+    part('Schieberplatte', 0.4, { kind: 'gatePlate', d: s.d, gap: s.pipeGap, pg: s.plateGap, at: bed.plate }, () => gatePlate(lay.g).translate(bed.plate) as Shape3D, { object: 'Schieberplatte' }),
+  ];
+  if (s.mount === 'clip') out.push(part('Wandhalter', 0.3, { kind: 'gateClip', d: s.d, A: lay.A, at: bed.clip }, () => gateClip(s).translate(bed.clip) as Shape3D, { object: 'Wandhalter' }));
+  return out;
 }
 
 // Kompatible Bau-Funktionen (alle Körper sofort)
@@ -321,3 +354,4 @@ export const buildHose = (p: OsvacParams, o: BuildOptions = {}) => buildAll(part
 export const buildFxxHyy = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFxxHyy(p, o));
 export const buildMxxHyy = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMxxHyy(p, o));
 export const buildFree = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFree(p, o));
+export const buildGate = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsGate(p, o));

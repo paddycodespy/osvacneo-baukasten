@@ -203,7 +203,7 @@
     {/if}
 
     <header class="stage-head" bind:this={headEl}>
-      <h1 class="code" class:free={app.kind.freeform} aria-live="polite">{app.code}</h1>
+      <h1 class="code" class:free={app.kind.freeform || app.kind.gate} aria-live="polite">{app.code}</h1>
       <p class="kind-line">{app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
       {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen…' : busyText}</p>{/if}
     </header>
@@ -222,7 +222,7 @@
     <footer class="stage-foot" bind:this={footEl}>
       <dl class="dims">
         <div><dt>Höhe</dt><dd>{app.dims ? fmt(app.dims.height) : '–'}<span>mm</span></dd></div>
-        {#if app.kind.freeform}
+        {#if app.kind.freeform || app.kind.gate}
           <div><dt>Breite</dt><dd>{app.dims ? fmt(app.dims.width) : '–'}<span>mm</span></dd></div>
         {:else}
           <div><dt>Größter Ø</dt><dd>{app.dims ? fmt(app.dims.diameter) : '–'}<span>mm</span></dd></div>

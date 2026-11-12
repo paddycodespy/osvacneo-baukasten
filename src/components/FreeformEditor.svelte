@@ -13,6 +13,7 @@
   import EndEditor from './EndEditor.svelte';
   import IssueList from './IssueList.svelte';
   import { reveal } from '../lib/reveal';
+  import { gateDims, GATE_GAP } from '../lib/osvac/gate';
   import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, branchGeom, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | 'C' | null;
@@ -71,6 +72,7 @@
     { type: 'transition', title: 'Übergang: ändert die Form fließend, auch versetzt oder geknickt' },
     { type: 'step', title: 'Absatz: wechselt die Form auf kurzem Weg' },
     { type: 'branch', title: 'Abzweig: zweiter Abgang (Y oder T) mit eigenem Ende C' },
+    { type: 'gate', title: 'Schieber: Platte zum Auf- und Zumachen (Absperrschieber)' },
   ];
   const hasBranch = $derived(spec.blocks.some((b) => b.type === 'branch'));
   function add(type: BlockType) {
@@ -83,6 +85,8 @@
       v = { length: Math.ceil(branchGeom(d, d, spec.wall, 45).minLen), branchD: d };
       if (!spec.c) spec.c = defaultC(d);
     }
+    // Schieber: lang genug für den Rahmen um den Schlitz
+    if (type === 'gate' && cur.shape === 'circle') v = { length: Math.max(40, Math.ceil(gateDims(cur.d / 2, cur.d / 2 + spec.wall, GATE_GAP).minLen)) };
     const b = newBlock(type, v, cur);
     spec.blocks = [...spec.blocks, b];
     open = b.id;
@@ -107,6 +111,10 @@
     }
     if (b.type === 'branch') {
       parts.push(`${fmt(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}`, `Ø ${fmt(b.branchD)}`, `zu Ende C`);
+      if (b.dir) parts.push(`Richtung ${fmt(b.dir)}°`);
+    }
+    if (b.type === 'gate') {
+      parts.push(`${fmt(b.length)} mm lang`);
       if (b.dir) parts.push(`Richtung ${fmt(b.dir)}°`);
     }
     if (b.type === 'transition' || b.type === 'step') parts.push(`${sectionText(sectionBefore(i))} → ${sectionText(b.section)}`);
@@ -310,6 +318,19 @@
             </Field>
             <p class="hint">Der Sauger gehört an Anschluss A. Nur dann biegt die Luft aus Ende C {b.sweep && b.angle >= SWEEP_FROM ? 'sanft im Bogen' : `um ${fmt(b.angle)}°`} in den Hauptstrom ein; hängt er an B, müsste sie fast umkehren. Die Kante an der Einmündung wird innen ausgerundet.</p>
             <p class="hint">Rohr und Abzweig sind rund. Den Anschluss am Abzweig stellst du unten bei „Ende C“ ein. Am besten druckt sich der Abzweig, wenn er beim Drucken nach oben zeigt.</p>
+          {:else if b.type === 'gate'}
+            <div class="grid2">
+              <Field label="L · Länge" help="Länge des Rohrs mit dem Rahmen in der Mitte. Der Rahmen braucht je nach Ø eine Mindestlänge.">
+                <NumberField bind:value={b.length} min={10} max={300} step={1} label="Länge des Schiebers" />
+              </Field>
+            </div>
+            <Field label="Richtung" help="In welche Richtung die Platte herausgezogen wird. Die Platte passt von beiden Seiten, 0° und 180° sind also gleich.">
+              <div class="row">
+                {@render chipsWithField([0, 45, 90, 135], () => b.dir, (v) => (b.dir = v))}
+                <span class="num-sm"><NumberField bind:value={b.dir} min={0} max={359} step={5} unit="°" label="Richtung der Schieberplatte" /></span>
+              </div>
+            </Field>
+            <p class="hint">Die Platte wird flach neben dem Adapter gedruckt und danach in den Schlitz geschoben. Zwei Noppen rasten bei „auf“ und „zu“ ein. Am besten druckt sich der Schieber, wenn das Rohr senkrecht steht. Vor dem Schieber muss das Rohr rund sein.</p>
           {:else}
             <p class="hint">Wechselt von {sectionText(sectionBefore(i))} auf kürzestem Weg in eine neue Form.</p>
             <SectionEditor bind:section={b.section} label="Form nach dem Absatz" />

@@ -9,6 +9,26 @@
 <h2>Passung</h2>
 <p class="lead">Die Standardwerte passen meistens. Ändern lohnt sich erst, wenn ein Testdruck nicht gut sitzt.</p>
 
+{#if app.kind.gate}
+<fieldset class="opt">
+  <legend class="field-label">Spiel am Rohr <HelpToggle id="pipeGap" /></legend>
+  <div class="slider">
+    <input type="range" min="0.1" max="1" step="0.05" bind:value={app.gate.pipeGap} aria-describedby="pipe-hint" />
+    <output>{fmt(app.gate.pipeGap, 2)} mm</output>
+  </div>
+  <HelpText id="pipeGap" />
+  <p class="hint" id="pipe-hint">Geht das Rohr schwer hinein: größer. Sitzt es zu locker: kleiner. Standard: 0,4 mm.</p>
+</fieldset>
+<fieldset class="opt">
+  <legend class="field-label">Spiel der Platte <HelpToggle id="plateGap" /></legend>
+  <div class="slider">
+    <input type="range" min="0.15" max="0.5" step="0.05" bind:value={app.gate.plateGap} aria-describedby="plate-hint" />
+    <output>{fmt(app.gate.plateGap, 2)} mm</output>
+  </div>
+  <HelpText id="plateGap" />
+  <p class="hint" id="plate-hint">Klemmt die Platte im Schlitz: größer. Wackelt sie: kleiner. Standard: 0,3 mm.</p>
+</fieldset>
+{:else}
 <fieldset class="opt">
   <legend class="field-label">Spiel zwischen Stecker und Kupplung <HelpToggle id="gap" /></legend>
   <div class="slider">
@@ -47,5 +67,6 @@
     <legend>Extras</legend>
     <label><input type="checkbox" bind:checked={app.supports} /> Druckhilfe unter dem Stecker (wird nach dem Druck abgebrochen)</label>
   </fieldset>
+{/if}
 {/if}
 <ResetLink show={!app.fitDefault} label="Passung auf Standard zurücksetzen" onclick={() => app.resetFit()} />
