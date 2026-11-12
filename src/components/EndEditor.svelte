@@ -37,7 +37,7 @@
     if (m === 'flange') onflange?.();
   }
   /** Werte des Lochbilds nach Maß (für den Vergleich mit der Vorbelegung) */
-  const CUSTOM = ['plateW', 'plateH', 'holeX', 'holeY', 'holeNX', 'holeNY', 'plateD', 'holeCircle', 'holeN', 'holeD'] as const;
+  const CUSTOM = ['plateW', 'plateH', 'holeX', 'holeY', 'holeNX', 'holeNY', 'plateD', 'holeCircle', 'holeN', 'triCircle', 'holeD'] as const;
   const customKey = (o: Partial<DeviceEnd>) => JSON.stringify(CUSTOM.map((k) => o[k]));
   /** zuletzt vorbelegte Werte: solange nichts von Hand geändert wurde, laufen sie mit der Öffnung mit */
   let prefilled: string | null = null;
@@ -162,6 +162,7 @@
           <button type="button" role="radio" aria-checked={dv.flangeLayout === 'auto'} class:sel={dv.flangeLayout === 'auto'} onclick={() => setLayout('auto')}>Automatisch</button>
           <button type="button" role="radio" aria-checked={dv.flangeLayout === 'rect'} class:sel={dv.flangeLayout === 'rect'} onclick={() => setLayout('rect')}>Rechteckig</button>
           <button type="button" role="radio" aria-checked={dv.flangeLayout === 'round'} class:sel={dv.flangeLayout === 'round'} onclick={() => setLayout('round')}>Rund</button>
+          <button type="button" role="radio" aria-checked={dv.flangeLayout === 'tri'} class:sel={dv.flangeLayout === 'tri'} onclick={() => setLayout('tri')}>Dreieck</button>
         </div>
       </Field>
       {#if dv.flangeLayout === 'rect'}
@@ -182,6 +183,12 @@
           <Field label="Anzahl Löcher"><NumberField bind:value={dv.holeN} min={2} max={16} step={1} unit="" label="Anzahl der Löcher" /></Field>
           <Field label="Loch-Ø" help="4,5 mm für M4, 5,5 mm für M5, 3,4 mm für M3. Die Senkung passt sich an."><NumberField bind:value={dv.holeD} min={2} max={10} step={0.1} label="Loch-Durchmesser" /></Field>
         </div>
+      {:else if dv.flangeLayout === 'tri'}
+        <div class="grid2">
+          <Field label="Lochkreis-Ø" help="Durchmesser des Kreises durch die drei Lochmitten. Die Platte wächst mit: um jedes Loch bleibt ein runder Rand."><NumberField bind:value={dv.triCircle} min={5} max={290} step={0.5} label="Lochkreis-Durchmesser" /></Field>
+          <Field label="Loch-Ø" help="4,5 mm für M4, 5,5 mm für M5, 3,4 mm für M3. Die Senkung passt sich an."><NumberField bind:value={dv.holeD} min={2} max={10} step={0.1} label="Loch-Durchmesser" /></Field>
+        </div>
+        <p class="hint">Abgerundetes Dreieck mit einem Loch in jeder Ecke. Mit „Drehung“ zeigen die Ecken in die passende Richtung.</p>
       {/if}
       {#if dv.flangeLayout !== 'auto' && stale}
         <div class="refill-row">
@@ -194,7 +201,7 @@
         <Field label="Übergangslänge" help="Strecke, auf der die Form der Bausteine in die Form der Öffnung übergeht. Länger ist flacher und lässt sich besser drucken.">
           <NumberField bind:value={end.transition} min={2} max={150} step={1} label="Übergangslänge zum Flansch" />
         </Field>
-        {#if dv.section.shape !== 'circle' || dv.flangeLayout === 'rect'}
+        {#if dv.section.shape !== 'circle' || dv.flangeLayout === 'rect' || dv.flangeLayout === 'tri'}
           <Field label="Drehung" help="Dreht Öffnung und Platte um die Mitte, falls sie schräg zum Rest des Adapters stehen.">
             <NumberField bind:value={dv.rot} min={-180} max={180} step={5} unit="°" label="Drehung des Flanschs" />
           </Field>

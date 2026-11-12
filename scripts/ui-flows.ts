@@ -202,6 +202,10 @@ await withPreview(4180, async (url, browser) => {
     expect((await plateD()) !== '140', 'Link stellt die Werte nicht neu ein');
     await ready(pg);
     expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'neu vorbelegter Flansch passt nicht');
+    // dreieckige Platte: vorbelegter Lochkreis passt
+    await pg.getByRole('radio', { name: 'Dreieck', exact: true }).click();
+    await ready(pg);
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'dreieckiger Flansch aus der Vorbelegung passt nicht');
     await step(pg, 'Download');
     expect((await pg.locator('.tips').innerText()).includes('Dichtband 10 mm'), 'Druckhinweis zur Dichtung fehlt');
     await step(pg, 'Aufbau');
