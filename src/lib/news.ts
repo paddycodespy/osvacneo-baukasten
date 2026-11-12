@@ -4,6 +4,7 @@ export const NEWS: { version: string; items: string[] }[] = [
     version: '0.3.0',
     items: [
       'Neuer Name „osVAC neo Baukasten“ mit eigenem Symbol.',
+      'Freiform: Plaketten A, B, C in der Vorschau zeigen die Enden, das gerade bearbeitete ist blau.',
       'Freiform: Abzweig als neuer Baustein (Y- oder T-Stück, 30–90°) mit eigenem Ende C, Vorlage „Y-Abzweig 45°“. Einmündung innen ausgerundet, ab 50° auch gebogen für bessere Strömung.',
       'Freiform: Flansch zum Anschrauben an Ende B. Löcher automatisch oder nach Maß (rechteckig oder rund), Nut für Dichtband 6, 9 oder 10 mm, neue Vorlage „Flansch am Gehäuse“.',
       'Meldungen nennen das Feld und den Grenzwert. Ein Knopf „… auf … setzen“ übernimmt den passenden Wert, das Feld ist markiert.',

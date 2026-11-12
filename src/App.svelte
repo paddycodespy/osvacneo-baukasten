@@ -10,7 +10,7 @@
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
   import { overhangArea, belowBedEnd } from './lib/overhang';
-  import { freeSummary, sectionPlanes } from './lib/osvac/freeform';
+  import { freeSummary, sectionPlanes, endMarkers } from './lib/osvac/freeform';
   import { app, fmt } from './lib/app.svelte';
   import FreeformEditor from './components/FreeformEditor.svelte';
   import StepKind from './components/steps/StepKind.svelte';
@@ -121,6 +121,20 @@
     viewer?.setSectionPlanes(fn);
   });
 
+  // Plaketten A/B/C an den Enden (nur Freiform), das gerade aufgeklappte Ende hervorgehoben
+  let showEnds = $state(true);
+  let headEl = $state<HTMLElement>(), toolsEl = $state<HTMLElement>(), footEl = $state<HTMLElement>();
+  $effect(() => {
+    if (viewerOn && viewer) viewer.markerAvoid = [headEl, toolsEl, footEl].filter((x): x is HTMLElement => !!x);
+  });
+  $effect(() => {
+    void viewerOn;
+    const plan = app.freePlan;
+    const open = app.freeOpen;
+    const on = showEnds && app.kind.freeform && !!plan && !plan.issues.some((x) => x.level === 'error');
+    viewer?.setMarkers(on ? endMarkers($state.snapshot(app.free), plan!) : [], open === 'A' || open === 'B' || open === 'C' ? open : null);
+  });
+
   // Druckhilfe ein-/ausblenden ohne Neuberechnung
   $effect(() => {
     const on = app.supports; // zuerst lesen, damit Svelte die Abhängigkeit registriert
@@ -188,21 +202,24 @@
       <div class="stage-empty"><p>Noch keine Vorschau. Sobald die rot markierten Punkte behoben sind, erscheint hier der Adapter.</p></div>
     {/if}
 
-    <header class="stage-head">
+    <header class="stage-head" bind:this={headEl}>
       <h1 class="code" class:free={app.kind.freeform} aria-live="polite">{app.code}</h1>
       <p class="kind-line">{app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
       {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen…' : busyText}</p>{/if}
     </header>
 
-    <div class="stage-tools">
+    <div class="stage-tools" bind:this={toolsEl}>
       <button class="tool" class:on={section} aria-pressed={section} onclick={() => { section = !section; viewer?.setSection(section); }}>Schnitt</button>
       {#if app.hasSupport}
         <button class="tool" class:on={app.supports} aria-pressed={app.supports} onclick={() => (app.supports = !app.supports)}>Druckhilfe</button>
       {/if}
+      {#if app.kind.freeform}
+        <button class="tool" class:on={showEnds} aria-pressed={showEnds} title="Buchstaben A, B, C an den Enden zeigen" onclick={() => (showEnds = !showEnds)}>Enden</button>
+      {/if}
       <button class="tool" onclick={() => viewer?.resetView()}>Ansicht zurücksetzen</button>
     </div>
 
-    <footer class="stage-foot">
+    <footer class="stage-foot" bind:this={footEl}>
       <dl class="dims">
         <div><dt>Höhe</dt><dd>{app.dims ? fmt(app.dims.height) : '–'}<span>mm</span></dd></div>
         {#if app.kind.freeform}
