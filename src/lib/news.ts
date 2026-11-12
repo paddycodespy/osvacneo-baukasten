@@ -4,6 +4,7 @@ export const NEWS: { version: string; items: string[] }[] = [
     version: '0.3.0',
     items: [
       'Neuer Name „osVAC neo Baukasten“ mit eigenem Symbol.',
+      'Im Download-Schritt steht, von wem der Baukasten ist, mit Link zu GitHub.',
       'Neu: Schieber einzeln (Absperrschieber für Rohre Ø 15–60 mm) mit Muffen, Wandplatte, Schlüssellöchern oder Wandhalter, für Rohr senkrecht oder waagerecht, mit wählbarem Wandabstand.',
       'Freiform: Schieber als neuer Baustein, Vorlage „Absperrschieber“. Die Platte wird flach daneben gedruckt, rastet bei „auf“ und „zu“ ein und lässt sich nicht versehentlich herausziehen.',
       'Freiform: Plaketten A, B, C in der Vorschau zeigen die Enden, das gerade bearbeitete ist blau.',

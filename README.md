@@ -217,6 +217,7 @@ Die Version steht in `src-tauri/tauri.conf.json` (`version`) und sollte mit `pac
 
 Basiert auf **osVAC neo von Ludo Kerz**, ursprünglich entstanden im Hobbyhimmel Stuttgart.
 Für den Baukasten nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar.
+Der osVAC neo Baukasten ist von [paddycodespy](https://github.com/paddycodespy) (in der App im Download-Schritt bei Lizenz und Version; nicht in den exportierten Dateien).
 
 Auch die exportierten Dateien tragen Namensnennung und Lizenz: 3MF in den Metadaten, STL im Dateikopf, STEP im Kopfbereich (Autor, Organisation, Beschreibung).
 
