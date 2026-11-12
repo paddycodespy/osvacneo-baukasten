@@ -330,7 +330,7 @@
                 <span class="num-sm"><NumberField bind:value={b.dir} min={0} max={359} step={5} unit="°" label="Richtung der Schieberplatte" /></span>
               </div>
             </Field>
-            <p class="hint">Die Platte wird flach neben dem Adapter gedruckt und danach in den Schlitz geschoben. Zwei Noppen rasten bei „auf“ und „zu“ ein. Am besten druckt sich der Schieber, wenn das Rohr senkrecht steht. Vor dem Schieber muss das Rohr rund sein.</p>
+            <p class="hint">Die Platte wird flach neben dem Adapter gedruckt und danach in den Schlitz geschoben. Sie rastet bei „auf“ und „zu“ ein; der dicke Griff und eine federnde Nase verhindern, dass sie herausrutscht. Am besten druckt sich der Schieber, wenn das Rohr senkrecht steht. Vor dem Schieber muss das Rohr rund sein.</p>
           {:else}
             <p class="hint">Wechselt von {sectionText(sectionBefore(i))} auf kürzestem Weg in eine neue Form.</p>
             <SectionEditor bind:section={b.section} label="Form nach dem Absatz" />

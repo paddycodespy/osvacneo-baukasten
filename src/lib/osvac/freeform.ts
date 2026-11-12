@@ -1110,7 +1110,7 @@ export function planFree(spec: FreeSpec): FreePlan {
       const pl = localPlacement(start.o, inPlane(start, b.dir), start.t);
       const dg = { ...base, t: 'gate', L: r6(L), dir: r6(b.dir), gap: GATE_GAP };
       bodies.push({ name, cost: 1.5, dep: dg, make: () => placeShape(gateTube(g, L), pl) });
-      loose.push({ name: `Schieberplatte ${idx + 1}`, cost: 0.3, dep: { kind: 'free', t: 'gatePlate', d: r6(s0.d), w, gap: GATE_GAP }, make: () => gatePlate(g), x0: g.x0, x1: g.x1, hw: g.pw });
+      loose.push({ name: `Schieberplatte ${idx + 1}`, cost: 0.3, dep: { kind: 'free', t: 'gatePlate', d: r6(s0.d), w, gap: GATE_GAP }, make: () => gatePlate(g), x0: g.x0, x1: g.x1, hw: g.hw });
       f = advance(start, L);
       path.push(f.o);
     } else {

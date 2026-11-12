@@ -5,7 +5,7 @@ Die Liste steht auch in der App im Schritt „Download“ unter der Version (src
 ## 0.3.0
 
 - Neu: Schieber einzeln (Absperrschieber, Blast Gate) für Rohre Ø 15–60 mm außen. Das Rohr wird beidseitig in eine Muffe mit Anschlag gesteckt. Befestigung: ohne, Wandplatte mit zwei Senklöchern, Schlüssellöcher oder eigener Wandhalter; Wandabstand bis Rohrmitte frei wählbar. Spiel am Rohr und der Platte in „Passung“.
-- Freiform: Schieber als neuer Baustein (rund, Richtung der Platte wählbar), Vorlage „Absperrschieber“. Die Platte ist ein eigenes Teil (eigenes Objekt im 3MF), wird flach daneben gedruckt und rastet bei „auf“ und „zu“ ein.
+- Freiform: Schieber als neuer Baustein (rund, Richtung der Platte wählbar), Vorlage „Absperrschieber“. Die Platte ist ein eigenes Teil (eigenes Objekt im 3MF), wird flach daneben gedruckt und rastet bei „auf“ und „zu“ ein. Anschläge: dicker Griff (zu) und federnde Zunge mit Nase (auf), zum Herausnehmen die Nase eindrücken.
 - Freiform: Abzweig als neuer Baustein (Y- oder T-Stück, Winkel 30–90°) mit eigenem Ende C (Kupplung, Stecker oder Gerät), Vorlage „Y-Abzweig 45°“. Innen ausgerundete Einmündung, ab 50° auch gebogen (Bogen-T) für bessere Strömung.
 - Freiform: Plaketten A, B, C in der Vorschau zeigen die Enden (Knopf „Enden“), das gerade bearbeitete Ende ist blau.
 - Neuer Name „osVAC neo Baukasten“ mit eigenem Symbol (vorher „osVAC neo Konfigurator“). Das Programm hat eine neue App-Kennung und installiert sich neben dem alten; das alte bitte deinstallieren. Der zuletzt bearbeitete Adapter wird im Programm nicht übernommen.

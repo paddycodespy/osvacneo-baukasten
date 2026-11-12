@@ -414,6 +414,9 @@ for (const [id, kind, pipe, text] of [
       if (touch(0) > 0.01) bad.push(`berührt zu ${touch(0).toFixed(2)}`);
       if (touch(lay.g.P) > 0.01) bad.push(`berührt auf ${touch(lay.g.P).toFixed(2)}`);
       if (!(touch(3) > 0.01)) bad.push('rastet nicht');
+      // Anschläge: Griff bei „zu“, Nase der Zunge bei „auf“
+      if (!(touch(-1.2) > 0.01)) bad.push('kein Anschlag bei zu');
+      if (!(touch(lay.g.P + 1.2) > 0.01)) bad.push('kein Anschlag bei auf');
       // Rohr passt in die Muffe, Anschlag hält es
       if (!(lay.Rs > s.d / 2 && lay.Rm < s.d / 2)) bad.push('Muffe/Anschlag');
       if (s.mount === 'clip') {

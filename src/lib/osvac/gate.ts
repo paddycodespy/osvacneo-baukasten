@@ -10,7 +10,7 @@
  * Der Schieber einzeln hat statt Kupplung und Stecker zwei Muffen: das Rohr wird beidseitig bis zu einem Anschlag
  * eingesteckt. Dazu optional eine Wandplatte, Schlüssellöcher oder ein eigener Wandhalter für das Rohr.
  */
-import { makeBox, makeCylinder, makeSphere, type Shape3D } from 'replicad';
+import { makeBox, makeCylinder, makeSphere, draw, type Shape3D } from 'replicad';
 import { revolveProfile, L } from './geom';
 
 /** Dicke der Platte */
@@ -19,6 +19,8 @@ export const GATE_T = 2.4;
 const GATE_FR = 2.4;
 /** Tiefe je Stufe der Brückenhilfe über (und unter) dem Schlitz */
 const POCKET = 0.4;
+/** Nase der Zunge: so weit steht sie seitlich über die Platte (1 mm Anschlag am Rahmen), Länge der Zunge, Höhe des Griffs über der Platte */
+const NUB = 1.3, ZUNGE = 16, GRIP_H = 2.5;
 /** Spiel der Platte im Schlitz (je Seite), Standard */
 export const GATE_GAP = 0.3;
 /** Wand der Muffen beim Schieber einzeln */
@@ -33,6 +35,9 @@ const cylZ = (r: number, z0: number, z1: number, x = 0, y = 0) => makeCylinder(r
 /**
  * Maße des Schiebers aus der lichten Weite am Schlitz (Rm), dem Außenradius des Rohrs daneben (Ro) und dem Spiel der Platte.
  * Platte: x0 … x1 entlang der Gleitrichtung, Fenster bei −P, Griffloch bei gripX; zu = Platte bei 0, auf = um +P verschoben.
+ * Anschläge: der Griff ist dicker als der Schlitz (schlägt bei „zu“ am Rahmen an), am anderen Ende sitzt eine federnde
+ * Zunge mit Nase (seitlich, in der Ebene der Platte): sie drückt sich beim Einschieben weg, springt hinter dem Rahmen
+ * heraus und schlägt bei „auf“ an. Anschlagfläche der Nase bei xs.
  */
 export function gateDims(Rm: number, Ro: number, gap: number) {
   const T = GATE_T, fr = GATE_FR;
@@ -52,8 +57,11 @@ export function gateDims(Rm: number, Ro: number, gap: number) {
    */
   const pd = (Rm + half) / 2, dr = Math.min(1.4, (half - Rm) / 2 - 0.5), hb = 2 * gap + 0.25;
   const P = 2 * pd;
-  const x0 = -(P + Rm + 3), x1 = half + 16, gripX = half + 9.5;
-  return { T, gap, slot, fr, yS, pw, half, Hf, Rc, ch, P, pd, dr, hb, x0, x1, gripX, Rm, Ro, minLen: Hf + 2 * ch };
+  const xs = -half - 0.5 - P;
+  const x0 = xs - ZUNGE - 3, x1 = half + 16, gripX = half + 9.5;
+  /** halbe Breite der Platte mit Nase */
+  const hw = pw + NUB;
+  return { T, gap, slot, fr, yS, pw, hw, half, Hf, Rc, ch, P, pd, dr, hb, xs, x0, x1, gripX, Rm, Ro, minLen: Hf + 2 * ch };
 }
 export type GateDims = ReturnType<typeof gateDims>;
 
@@ -88,9 +96,19 @@ export function gateTube(g: GateDims, len: number): Shape3D {
 
 /** Platte flach (z = 0 … T), Gleitrichtung x, Griff bei +x, Noppen oben */
 export function gatePlate(g: GateDims): Shape3D {
-  let pl = box(g.x0, g.x1, -g.pw, g.pw, 0, g.T).fillet(Math.min(3, g.pw - 0.5), (e) => e.inDirection('Z')) as Shape3D;
+  const outline = (h: number) => box(g.x0, g.x1, -g.pw, g.pw, 0, h).fillet(Math.min(3, g.pw - 0.5), (e) => e.inDirection('Z')) as Shape3D;
+  let pl = outline(g.T);
+  // Griff dicker als der Schlitz: Anschlag bei „zu“ (0,5 mm Luft, damit die Noppen vorher einrasten)
+  pl = pl.fuse(outline(g.T + GRIP_H).intersect(box(g.half + 0.5, g.x1 + 1, -g.pw - 1, g.pw + 1, -1, g.T + GRIP_H + 1)));
   pl = pl.cut(cylZ(g.Rm, -1, g.T + 1, -g.P, 0));
-  pl = pl.cut(cylZ(4.5, -1, g.T + 1, g.gripX, 0));
+  pl = pl.cut(cylZ(4.5, -1, g.T + GRIP_H + 1, g.gripX, 0));
+  // Zunge an der Kante +y: fest bei xs − ZUNGE, freies Ende kurz hinter der Nase; Schlitz 0,8 mm, Zunge 1,8 mm breit
+  const yz = g.pw - 1.8;
+  pl = pl.cut(box(g.xs - ZUNGE, g.xs + 1.3, yz - 0.8, yz, -1, g.T + 1));
+  pl = pl.cut(box(g.xs + 0.5, g.xs + 1.3, yz - 0.8, g.pw + 1, -1, g.T + 1));
+  // Nase: Schräge zum festen Ende hin (beim Einschieben voran), Anschlagfläche bei xs
+  const nub = draw([g.xs - 5, g.pw - 0.3]).lineTo([g.xs - 0.4, g.pw + NUB]).lineTo([g.xs, g.pw + NUB]).lineTo([g.xs, g.pw - 0.3]).close();
+  pl = pl.fuse(nub.sketchOnPlane('XY').extrude(g.T) as unknown as Shape3D);
   const a = Math.min(1.1, g.dr - 0.3), rs = (a * a + g.hb * g.hb) / (2 * g.hb);
   for (const x of [g.pd, -g.pd]) pl = pl.fuse(makeSphere(rs).translate([x, 0, g.T + g.hb - rs]) as unknown as Shape3D);
   return pl;
@@ -191,7 +209,7 @@ export function gateBed(s: GateSpec) {
   const { g, A, r2 } = gateLayout(s);
   const front = g.half + 8;
   const plate: [number, number, number] = [-(g.x0 + g.x1) / 2, front + g.pw, 0];
-  const clipY = front + 2 * g.pw + 8 + A;
+  const clipY = front + g.pw + g.hw + 8 + A;
   const clip: [number, number, number] = [0, clipY, 0];
   return { plate, clip, clipFront: clipY + r2 };
 }
