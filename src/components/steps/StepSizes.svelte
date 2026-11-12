@@ -6,7 +6,7 @@
   import MeasureFigure from '../MeasureFigure.svelte';
   import ResetLink from '../ResetLink.svelte';
   import { setContext } from 'svelte';
-  import { MOUNT_LABELS, type GateMount } from '../../lib/osvac/gate';
+  import { MOUNT_LABELS, ORIENT_LABELS, type GateMount, type GateOrient } from '../../lib/osvac/gate';
 
   // Felder markieren, die ein Hinweis zum Stutzen betrifft
   setContext('fieldFlag', (label: string) => (app.machineWarnings.some((w) => w.fixes?.some((fx) => fx.fields.includes(label))) ? 'warn' : null));
@@ -42,18 +42,25 @@
     {g.mount === 'none'
       ? 'Der Schieber hängt nur am Rohr.'
       : g.mount === 'plate'
-      ? 'Platte hinten am Schieber mit zwei Löchern für Senkkopfschrauben (Ø 4 mm). Hält am festesten.'
+      ? 'Platte hinten am Schieber mit vier Löchern für Senkkopfschrauben (Ø 4 mm), je Seite unten und oben. Hält am festesten.'
       : g.mount === 'keyhole'
       ? 'Zwei Schlüssellöcher: Schrauben in die Wand drehen, Schieber einhängen. Schnell wieder abzunehmen.'
       : 'Eigenes kleines Teil, das an die Wand geschraubt wird. Das Rohr neben dem Schieber wird hineingedrückt.'}
   </p>
   {#if g.mount !== 'none'}
+    <Field label="Lage an der Wand" help={app.helpTexts.orient}>
+      <div class="seg wide" role="radiogroup" aria-label="Lage an der Wand">
+        {#each Object.entries(ORIENT_LABELS) as [o, label]}
+          <button role="radio" aria-checked={g.orient === o} class:sel={g.orient === o} onclick={() => (app.gate.orient = o as GateOrient)}>{label}</button>
+        {/each}
+      </div>
+    </Field>
     <div class="grid2">
       <Field label="Wand bis Rohrmitte" help={app.helpTexts.wallDist}>
-        <NumberField value={app.gateLay.A} min={Math.ceil(app.gateLay.minA * 10) / 10} max={200} step={0.5} label="Abstand Wand bis Rohrmitte" oncommit={(v) => app.setWallDist(v)} />
+        <NumberField value={app.gateLay.A} min={Math.ceil(app.gateLay.minA * 10) / 10} max={Math.floor(app.gateLay.maxA * 10) / 10} step={0.5} label="Abstand Wand bis Rohrmitte" oncommit={(v) => app.setWallDist(v)} />
       </Field>
     </div>
-    <p class="hint">Die Rohrmitte liegt {fmt(app.gateLay.A)} mm vor der Wand{g.wallDist ? '' : `, ${g.mount === 'clip' ? 'der Wandhalter sitzt' : 'der Schieber sitzt'} direkt an der Wand`}. Lochabstand der Schrauben: {fmt(app.gateLay.pitch)} mm.</p>
+    <p class="hint">Die Rohrmitte liegt {fmt(app.gateLay.A)} mm vor der Wand{g.wallDist ? '' : `, ${g.mount === 'clip' ? 'der Wandhalter sitzt' : 'der Schieber sitzt'} direkt an der Wand`}. {app.gatePitch}.</p>
   {/if}
   <ResetLink show={!app.gateIsDefault} label="Schieber auf Standard zurücksetzen" onclick={() => app.resetGate()} />
 {:else}

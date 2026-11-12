@@ -397,6 +397,8 @@ for (const [id, kind, pipe, text] of [
     ['schieber-50-wandplatte', {}],
     ['schieber-15-wandplatte', { d: 15 }],
     ['schieber-32-schluessel', { d: 32, mount: 'keyhole', wallDist: 45 }],
+    ['schieber-32-schluessel-quer', { d: 32, mount: 'keyhole', orient: 'turned', wallDist: 30 }],
+    ['schieber-50-wand-max', { mount: 'plate', orient: 'turned', wallDist: 200 }],
     ['schieber-25-wandhalter', { d: 25, mount: 'clip', wallDist: 30 }],
     ['schieber-60-ohne', { d: 60, mount: 'none', depth: 10 }],
     ['schieber-40-spiel', { d: 40, pipeGap: 0.8, plateGap: 0.45, wallDist: 80 }],
@@ -419,6 +421,7 @@ for (const [id, kind, pipe, text] of [
       if (!(touch(lay.g.P + 1.2) > 0.01)) bad.push('kein Anschlag bei auf');
       // Rohr passt in die Muffe, Anschlag hält es
       if (!(lay.Rs > s.d / 2 && lay.Rm < s.d / 2)) bad.push('Muffe/Anschlag');
+      if (lay.A > lay.minA + 50 + 1e-9) bad.push(`Wandabstand ${lay.A} über dem Höchstwert`);
       if (s.mount === 'clip') {
         const c = gateClip(s);
         if (!valid(c) || !(measureVolume(c) > 0)) bad.push('Wandhalter ungültig');

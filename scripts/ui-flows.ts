@@ -269,6 +269,10 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.step-body').innerText()).includes('direkt an der Wand'), 'Hinweis „direkt an der Wand“ fehlt');
     await fill(pg, 'Abstand Wand bis Rohrmitte', '60');
     expect((await pg.locator('.step-body').innerText()).includes('60 mm vor der Wand'), 'Wandabstand nicht übernommen');
+    await fill(pg, 'Abstand Wand bis Rohrmitte', '200');
+    expect(Math.abs((await wall()) - (minA + 50)) < 0.11, `Wandabstand nicht auf den Höchstwert begrenzt: ${await wall()}`);
+    await pg.getByRole('radio', { name: 'Rohr waagerecht' }).click();
+    await fill(pg, 'Abstand Wand bis Rohrmitte', '60');
     // kleiner als möglich: springt auf den kleinsten Wert
     await fill(pg, 'Abstand Wand bis Rohrmitte', '5');
     expect((await wall()) === minA, 'Wandabstand unter dem kleinsten Wert');
