@@ -13,7 +13,7 @@
   import EndEditor from './EndEditor.svelte';
   import IssueList from './IssueList.svelte';
   import { reveal } from '../lib/reveal';
-  import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, branchGeom, defaultC, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
+  import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, branchGeom, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | 'C' | null;
   let {
@@ -106,7 +106,7 @@
       if (b.dir) parts.push(`Richtung ${fmt(b.dir)}°`);
     }
     if (b.type === 'branch') {
-      parts.push(`${fmt(b.angle)}°`, `Ø ${fmt(b.branchD)}`, `zu Ende C`);
+      parts.push(`${fmt(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}`, `Ø ${fmt(b.branchD)}`, `zu Ende C`);
       if (b.dir) parts.push(`Richtung ${fmt(b.dir)}°`);
     }
     if (b.type === 'transition' || b.type === 'step') parts.push(`${sectionText(sectionBefore(i))} → ${sectionText(b.section)}`);
@@ -288,6 +288,9 @@
                 <span class="num-sm"><NumberField bind:value={b.angle} min={30} max={90} step={5} unit="°" label="Winkel des Abzweigs" /></span>
               </div>
             </Field>
+            {#if b.angle >= SWEEP_FROM}
+              <label class="inline-check"><input type="checkbox" bind:checked={b.sweep} /> Gebogen: erst unter {SWEEP_ENTRY}° aus dem Rohr, dann im Bogen auf {fmt(b.angle)}°. Die Luft wird weniger gebremst.</label>
+            {/if}
             <div class="grid2">
               <Field label="Ø · Abzweig" help="Innendurchmesser des Abzweigs, höchstens so weit wie das Rohr.">
                 <NumberField bind:value={b.branchD} min={10} max={60} step={0.1} label="Innendurchmesser des Abzweigs" />
@@ -295,7 +298,7 @@
               <Field label="L · Länge" help="Länge des Rohrs, auf dem der Abzweig sitzt. Der Abzweig sitzt immer in der Mitte.">
                 <NumberField bind:value={b.length} min={10} max={300} step={1} label="Länge am Abzweig" />
               </Field>
-              <Field label="Länge des Abzweigs" help="Wie weit der Abzweig über das Rohr hinausragt, bevor Ende C beginnt.">
+              <Field label="Länge des Abzweigs" help="Wie weit der Abzweig über das Rohr hinausragt, bevor Ende C beginnt. Beim gebogenen Abzweig: das gerade Stück nach dem Bogen.">
                 <NumberField bind:value={b.branchLen} min={3} max={200} step={1} label="Länge des Abzweigs" />
               </Field>
             </div>
@@ -305,7 +308,8 @@
                 <span class="num-sm"><NumberField bind:value={b.dir} min={0} max={359} step={5} unit="°" label="Richtung des Abzweigs" /></span>
               </div>
             </Field>
-            <p class="hint">Rohr und Abzweig sind rund. Am Abzweig sitzt Ende C, seinen Anschluss stellst du unten bei „Ende C“ ein. Am besten druckt sich der Abzweig, wenn er beim Drucken nach oben zeigt.</p>
+            <p class="hint">Der Sauger gehört an Anschluss A. Nur dann biegt die Luft aus Ende C {b.sweep && b.angle >= SWEEP_FROM ? 'sanft im Bogen' : `um ${fmt(b.angle)}°`} in den Hauptstrom ein; hängt er an B, müsste sie fast umkehren. Die Kante an der Einmündung wird innen ausgerundet.</p>
+            <p class="hint">Rohr und Abzweig sind rund. Den Anschluss am Abzweig stellst du unten bei „Ende C“ ein. Am besten druckt sich der Abzweig, wenn er beim Drucken nach oben zeigt.</p>
           {:else}
             <p class="hint">Wechselt von {sectionText(sectionBefore(i))} auf kürzestem Weg in eine neue Form.</p>
             <SectionEditor bind:section={b.section} label="Form nach dem Absatz" />

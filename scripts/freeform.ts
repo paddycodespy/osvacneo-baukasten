@@ -129,6 +129,17 @@ for (const [i, shape] of shapes.entries()) {
   mk('flansch-c', { angle: 90 }, { type: 'device', transition: 20, device: { ...DEFAULT_DEVICE, mode: 'flange', section: sec('circle', { d: 40 }) } });
   mk('kette', { angle: 45, dir: 270 }, {}, { before: [newBlock('straight', { length: 15 })], after: [newBlock('bend', { angle: 30, radius: 50 }), newBlock('straight', { length: 10 })] });
   mk('b-unten', { angle: 90 }, {}, { bed: 'B', b: { type: 'device', device: { ...DEFAULT_DEVICE } } });
+  // gebogener Abzweig (erst 45°, dann im Bogen weiter)
+  for (const [id, v, c] of [
+    ['gebogen-90', { angle: 90, sweep: true }, {}],
+    ['gebogen-60-geraet', { angle: 60, sweep: true, branchD: 25, dir: 90 }, { type: 'device', device: { ...DEFAULT_DEVICE, section: sec('circle', { d: 30 }), dDepth: 30 } }],
+    ['gebogen-75-stecker', { angle: 75, sweep: true, branchD: 32, branchLen: 5 }, { type: 'male', d: 32 }],
+  ] as [string, Partial<Block>, Partial<EndSpec>][]) {
+    const s = TEMPLATES.find((t) => t.id === 'y')!.make();
+    s.blocks = [newBlock('branch', { length: Math.ceil(branchGeom(32, v.branchD ?? 32, s.wall, 45).minLen), ...v })];
+    s.c = { ...s.c!, ...c, device: { ...s.c!.device, ...(c.device ?? {}) } };
+    cases.push([`abzweig-${id}`, s]);
+  }
 }
 
 let fail = 0;
@@ -147,6 +158,7 @@ for (const [id, spec] of cases) {
       if (Math.abs(det - 1) > 1e-6) throw new Error(`Rahmen gespiegelt (det ${det.toFixed(3)})`);
     }
     const parts = partsFree(p, { text: false, knurl: false, supports: true, free: spec });
+    partNotes.length = 0;
     let vol = 0;
     const bad: string[] = [];
     const built: Shape3D[] = [];
@@ -159,6 +171,8 @@ for (const [id, spec] of cases) {
       built.push(sh);
       low.push({ name: q.name, helper: !!q.helper, positions: [0, 0, sh.boundingBox.bounds[0][2]], normals: [], indices: [] });
     }
+    // Abzweig: Einmündung innen ausgerundet (sonst steht ein Hinweis in partNotes)
+    if (id.startsWith('abzweig') && partNotes.some((t) => t.includes('ausrunden'))) bad.push('Einmündung nicht ausgerundet');
     // das Ende auf dem Druckbett ist der tiefste Punkt (außer bei Fällen, die genau das prüfen)
     const below = belowBedEnd(low, spec.bed);
     if (id.startsWith('unter-bett') ? !(below > 5) : below > 0.3) bad.push(`Ende auf dem Bett ${below.toFixed(1)} mm über dem tiefsten Punkt`);
@@ -265,6 +279,7 @@ if (!only || only === 'vorschlaege') {
       return s;
     };
     broken.push(['Abzweig Winkel', y({ angle: 120 })]);
+    broken.push(['Abzweig steil (Strömung)', y({ angle: 90 })]);
     broken.push(['Abzweig zu weit', y({ branchD: 40 })]);
     broken.push(['Abzweig Rohr zu kurz', y({ length: 30 })]);
     broken.push(['Abzweig zu kurz', y({ branchLen: 1 })]);
