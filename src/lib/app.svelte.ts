@@ -51,8 +51,18 @@ class AppState {
   kindId = $state('MF');
   input = $state<OsvacInput>({ ...START_INPUT });
   text = $state(true);
-  /** Eine Einstellung für Anzeige und Export der Druckhilfe (wird immer mitberechnet) */
-  supports = $state(true);
+  /**
+   * Druckhilfe je Verbindung (Anzeige und Export, berechnet wird sie immer). Gespeichert sind nur die
+   * abgeschalteten Verbindungen, Standard ist überall an.
+   */
+  supportsOff = $state<Record<string, true>>({});
+  get supports() {
+    return !this.supportsOff[this.kindId];
+  }
+  set supports(on: boolean) {
+    const { [this.kindId]: _, ...rest } = this.supportsOff;
+    this.supportsOff = on ? rest : { ...rest, [this.kindId]: true };
+  }
   machine = $state<Machine>({ ...MACHINE_DEFAULT });
   /** Freiform: Aufbau, zuletzt gewählte Vorlage, aufgeklappte Karte */
   free = $state<FreeSpec>(TEMPLATES[0].make());
@@ -339,7 +349,7 @@ class AppState {
       kindId: this.kindId,
       input: this.input,
       text: this.text,
-      supports: this.supports,
+      supportsOff: this.supportsOff,
       machine: this.machine,
       free: this.free,
       freeTemplate: this.freeTemplate,
@@ -360,7 +370,7 @@ class AppState {
     this.kindId = 'MF';
     this.input = { ...START_INPUT };
     this.text = true;
-    this.supports = true;
+    this.supportsOff = {};
     this.machine = { ...MACHINE_DEFAULT };
     this.free = TEMPLATES[0].make();
     this.freeTemplate = TEMPLATES[0].id;
@@ -392,7 +402,9 @@ class AppState {
       if (s.input && typeof s.input === 'object')
         for (const k of Object.keys(START_INPUT) as (keyof OsvacInput)[]) if (num(s.input[k])) (this.input[k] as number) = s.input[k];
       // Beschriftung ist nicht mehr abwählbar: ein gespeichertes „ohne Text“ wird nicht übernommen
-      if (typeof s.supports === 'boolean') this.supports = s.supports;
+      if (s.supportsOff && typeof s.supportsOff === 'object') {
+        for (const [k, v] of Object.entries(s.supportsOff)) if (v === true && kindById(k)) this.supportsOff = { ...this.supportsOff, [k]: true };
+      } else if (s.supports === false) this.supports = false; // älterer Stand: eine Einstellung für alle, gilt jetzt nur für die zuletzt offene Verbindung
       if (s.machine && typeof s.machine === 'object') {
         for (const k of MACHINE_KEYS) if (MACHINE_FLAGS.includes(k) ? typeof s.machine[k] === 'boolean' : num(s.machine[k])) (this.machine[k] as number | boolean) = s.machine[k];
         if (s.machine.mode === 'over' || s.machine.mode === 'into') this.machine.mode = s.machine.mode;
