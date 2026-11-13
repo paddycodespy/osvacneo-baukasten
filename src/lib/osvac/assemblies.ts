@@ -11,7 +11,7 @@ import { revolveProfile, L } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
-import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
+import { planFree, partPlacements, inPart2, hasSplit, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
 import { DEFAULT_GATE, gateLayout, gateLower, gateUpper, gateSlider, gateClip, gateBed, upperOnBed, type GateSpec } from './gate';
 import { UserError } from '../errors';
 
@@ -253,6 +253,8 @@ const ringOf = (p: OsvacParams, type: 'female' | 'male') =>
 
 /** Steht ein Stecker mit der Spitze auf dem Druckbett? Dann gibt es eine Druckhilfe. */
 export function freeMaleOnBed(spec: FreeSpec): boolean {
+  // mit Schieber stehen beide Teile auf ihrem Ende
+  if (hasSplit(spec)) return spec.a.type === 'male' || spec.b.type === 'male';
   return spec.bed === 'A' ? spec.a.type === 'male' : spec.b.type === 'male';
 }
 
@@ -265,7 +267,9 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
   const plan = planFree(spec);
   const err = plan.issues.find((x) => x.level === 'error');
   if (err) throw new UserError(err.text.replace(/^[^:]*\(Baustein (\d+)\): /, 'Baustein $1: '));
-  const G = bedPlacement(spec, plan);
+  const { p1, p2 } = partPlacements(spec, plan);
+  const split = !!plan.split;
+  const bedA = split || spec.bed === 'A', bedB = split || spec.bed === 'B';
   const w = spec.wall;
   const pipeFor = (d: number): PipeSpec => ({ d1Inner: d, d2Inner: d, length: 0, wall: w, transition: OSVAC_TRANSITION, screwHoles: false });
   const out: Part[] = [];
@@ -279,7 +283,7 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
     out.push(part('Übergang A', 0.1, { kind: 'freeA', a: 'female', ...dAll(pA), w }, () => pipeTransition(rA.rIn, rA.rOut, pipeFor(spec.a.d)).translate([0, 0, -pA.femaleHeight])));
   } else {
     out.push(part('Male', 9, { ...dM(pA, o), rot: 'flip' }, () => flippedMale(pA, o)));
-    if (support && spec.bed === 'A')
+    if (support && bedA && spec.a.type === 'male')
       out.push(part('Druckhilfe', 1, { ...dS(pA), rot: 'flip' }, () => maleSupport(pA).rotate(180, [0, 0, 0], [1, 0, 0]).rotate(180, [0, 0, 0], [0, 0, 1]).translate([0, 0, -pA.maleHeight]), { helper: true }));
     out.push(part('Übergang A', 0.1, { kind: 'freeA', a: 'male', ...dAll(pA), w }, () => pipeTransition(rA.rIn, rA.rOut, pipeFor(spec.a.d)).translate([0, 0, -pA.maleHeight])));
   }
@@ -305,7 +309,7 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
       if (withSupport) out.push(placedPart(part(`Druckhilfe ${tag}`, 1, dS(pB), () => maleSupport(pB), { helper: true }), pl));
     }
   };
-  if (spec.b.type !== 'device') osvacEnd({ type: spec.b.type, d: spec.b.d }, plan.chainEnd.frame, 'B', support && spec.bed === 'B');
+  if (spec.b.type !== 'device') osvacEnd({ type: spec.b.type, d: spec.b.d }, plan.chainEnd.frame, 'B', support && bedB && spec.b.type === 'male');
   if (plan.cChainEnd && spec.c && spec.c.type !== 'device') osvacEnd({ type: spec.c.type, d: spec.c.d }, plan.cChainEnd.frame, 'C', false);
   // gleiche Anschlüsse an beiden Enden: Namen eindeutig halten (Vorschau ordnet über den Namen zu)
   const seen = new Map<string, number>();
@@ -314,7 +318,9 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
     seen.set(q.name, n + 1);
     if (n) q.name = `${q.name} ${n + 1}`;
   }
-  const placed = out.map((q) => placedPart(q, G));
+  // geteilt (Schieber): B-Teil eigene Lage und eigenes Objekt im 3MF
+  const isB = inPart2(plan);
+  const placed = out.map((q) => (p2 && isB(q.name) ? { ...placedPart(q, p2), object: 'Teil B' } : placedPart(q, p1)));
   // Schieberplatten flach hinter den Adapter legen (in +x), untereinander in y
   const lp = plan.loose.length ? loosePlacements(spec, plan) : [];
   plan.loose.forEach((q, i) => placed.push(placedPart(part(q.name, q.cost, q.dep as object, q.make, { object: q.name }), lp[i])));

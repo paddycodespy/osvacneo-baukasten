@@ -10,7 +10,7 @@
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
   import { overhangArea, belowBedEnd, COUNTED_MACHINE, COUNTED_GATE } from './lib/overhang';
-  import { freeSummary, sectionPlanes } from './lib/osvac/freeform';
+  import { freeSummary, sectionPlanes, inPart2 } from './lib/osvac/freeform';
   import { gateBed } from './lib/osvac/gate';
   import { app, fmt } from './lib/app.svelte';
   import FreeformEditor from './components/FreeformEditor.svelte';
@@ -97,10 +97,14 @@
         ? overhangArea(full.bodies, COUNTED_GATE, 25)
         : 0;
       app.buildNotes = full.notes;
-      const below = app.kind.freeform ? belowBedEnd(full.bodies, app.free.bed) : 0;
+      const plan = app.kind.freeform ? app.freePlan : null;
+      const split = !!plan?.split;
+      const below = app.kind.freeform ? belowBedEnd(full.bodies, app.free.bed, split && plan ? inPart2(plan) : undefined) : 0;
       app.layoutError =
         below > 0.3
-          ? `Ein Teil des Adapters liegt ${fmt(below, 0)} mm tiefer als ${app.free.bed === 'B' ? 'Ende B' : 'Anschluss A'}. So liegt das Ende nicht auf dem Druckbett und der Adapter lässt sich nicht drucken. Bitte das andere Ende nach unten legen oder einen Bogen oder Abzweig in eine andere Richtung zeigen lassen.`
+          ? split
+            ? `Ein Teil des Adapters liegt ${fmt(below, 0)} mm tiefer als das Ende, auf dem es steht (mit Schieber steht das Teil mit A auf Anschluss A, das Teil mit B auf Ende B). So lässt es sich nicht drucken. Bitte einen Bogen oder Abzweig in eine andere Richtung zeigen lassen.`
+            : `Ein Teil des Adapters liegt ${fmt(below, 0)} mm tiefer als ${app.free.bed === 'B' ? 'Ende B' : 'Anschluss A'}. So liegt das Ende nicht auf dem Druckbett und der Adapter lässt sich nicht drucken. Bitte das andere Ende nach unten legen oder einen Bogen oder Abzweig in eine andere Richtung zeigen lassen.`
           : '';
       app.measures = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
       app.progress = null;

@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import { deriveParams } from '../src/lib/osvac/params';
 import { initFont } from '../src/lib/osvac/text';
 import { partsFree } from '../src/lib/osvac/assemblies';
-import { TEMPLATES, newBlock, sec, planFree, testHooks, flangeGeom, flangeMinRim, flangeDefaults, branchGeom, DEFAULT_DEVICE, type FreeSpec, type SectionShape, type Block, type EndSpec } from '../src/lib/osvac/freeform';
+import { TEMPLATES, newBlock, sec, planFree, partPlacements, inPart2, testHooks, flangeGeom, flangeMinRim, flangeDefaults, branchGeom, DEFAULT_DEVICE, type FreeSpec, type SectionShape, type Block, type EndSpec, type Placement, type V3 } from '../src/lib/osvac/freeform';
 import { partNotes } from '../src/lib/errors';
 import { weld, meshTolerance } from '../src/lib/worker/threemf';
 import { belowBedEnd, overhangArea, COUNTED_GATE } from '../src/lib/overhang';
@@ -166,24 +166,29 @@ for (const [i, shape] of shapes.entries()) {
   }
 }
 
-// Schieber in der Kette: liegend nach einem Bogen, mit A unten, mit Übergang davor, vor einem Gerät, gedreht
+// Schieber in der Kette (Adapter in zwei Teilen): Kupplung an B, nach einem Bogen (schräg), mit Übergang davor vor
+// einem Gerät, gedreht, mit Flansch, mit Abzweig davor
 {
   const g = TEMPLATES.find((t) => t.id === 'gate')!;
   const a = g.make();
-  a.bed = 'A';
   a.b = { ...a.b, type: 'female' };
-  cases.push(['schieber-A-unten', a]);
+  cases.push(['schieber-kupplung-B', a]);
   const l = TEMPLATES[3].make();
-  l.blocks = [newBlock('bend', { angle: 90, radius: 40 }), newBlock('gate', { length: 40, dir: 90 }), newBlock('straight', { length: 10 })];
+  l.blocks = [newBlock('bend', { angle: 90, radius: 40 }), newBlock('gate', { length: 46, dir: 90 }), newBlock('straight', { length: 10 })];
   cases.push(['schieber-liegend', l]);
   const t = TEMPLATES[3].make();
   t.a.d = 25;
-  t.blocks = [newBlock('transition', { length: 30, section: sec('circle', { d: 50 }) }), newBlock('gate', { length: 50, dir: 45 })];
+  t.blocks = [newBlock('transition', { length: 30, section: sec('circle', { d: 50 }) }), newBlock('gate', { length: 54, dir: 45 })];
   t.b.device = { ...t.b.device, section: sec('circle', { d: 50 }), dDepth: 51 };
   cases.push(['schieber-50-geraet', t]);
-  const two = g.make();
-  two.blocks = [newBlock('gate', { length: 40 }), newBlock('straight', { length: 10 }), newBlock('gate', { length: 40, dir: 90 })];
-  cases.push(['schieber-zwei', two]);
+  const fl = g.make();
+  fl.blocks = [newBlock('gate', { length: 46 }), newBlock('straight', { length: 10 })];
+  fl.b = { ...fl.b, type: 'device', device: { ...DEFAULT_DEVICE, mode: 'flange', section: sec('circle', { d: 40 }) } };
+  cases.push(['schieber-flansch', fl]);
+  const y = TEMPLATES.find((x) => x.id === 'y')!.make();
+  y.blocks = [...y.blocks, newBlock('straight', { length: 10 }), newBlock('gate', { length: 46 })];
+  y.b = { ...y.b, type: 'male' };
+  cases.push(['schieber-nach-abzweig', y]);
 }
 
 let fail = 0;
@@ -228,7 +233,7 @@ for (const [id, spec] of cases) {
     {
       const fixed = parts.map((q, i) => ({ q, b: built[i].boundingBox.bounds })).filter((x) => !x.q.helper);
       const zBed = Math.min(...fixed.filter((x) => !x.q.object).map((x) => x.b[0][2]));
-      for (const x of fixed.filter((y) => y.q.object)) {
+      for (const x of fixed.filter((y) => y.q.name.startsWith('Schieberplatte'))) {
         if (Math.abs(x.b[0][2] - zBed) > 0.01) bad.push(`${x.q.name} liegt nicht auf dem Bett`);
         for (const y of fixed)
           if (y !== x && x.b[0][0] < y.b[1][0] && y.b[0][0] < x.b[1][0] && x.b[0][1] < y.b[1][1] && y.b[0][1] < x.b[1][1]) bad.push(`${x.q.name} überlappt ${y.q.name}`);
@@ -238,7 +243,24 @@ for (const [id, spec] of cases) {
     // Abzweig: Einmündung innen ausgerundet (sonst steht ein Hinweis in partNotes)
     if (id.startsWith('abzweig') && partNotes.some((t) => t.includes('ausrunden'))) bad.push('Einmündung nicht ausgerundet');
     // das Ende auf dem Druckbett ist der tiefste Punkt (außer bei Fällen, die genau das prüfen)
-    const below = belowBedEnd(low, spec.bed);
+    const isB = inPart2(plan);
+    const below = belowBedEnd(low, spec.bed, plan.split ? isB : undefined);
+    // geteilt (Schieber): beide Teile stehen auf dem Bett, nebeneinander; Boden und Trennfläche im 0,2-mm-Raster
+    if (plan.split) {
+      const box = (sel: (n: string) => boolean) => {
+        const bs = parts.map((q, i) => ({ q, b: built[i].boundingBox.bounds })).filter((x) => !x.q.helper && !x.q.name.startsWith('Schieberplatte') && sel(x.q.name));
+        return { x0: Math.min(...bs.map((x) => x.b[0][0])), x1: Math.max(...bs.map((x) => x.b[1][0])), y0: Math.min(...bs.map((x) => x.b[0][1])), y1: Math.max(...bs.map((x) => x.b[1][1])), z0: Math.min(...bs.map((x) => x.b[0][2])) };
+      };
+      const A = box((n) => !isB(n)), B = box(isB);
+      if (Math.abs(A.z0) > 0.01 || Math.abs(B.z0) > 0.01) bad.push(`Teile nicht auf dem Bett (A ${A.z0.toFixed(2)}, B ${B.z0.toFixed(2)})`);
+      if (A.x0 < B.x1 && B.x0 < A.x1 && A.y0 < B.y1 && B.y0 < A.y1) bad.push('A-Teil und B-Teil überlappen');
+      const { p1, p2 } = partPlacements(spec, plan);
+      const zOf = (pl: Placement, v: V3) => pl.R[2][0] * v[0] + pl.R[2][1] * v[1] + pl.R[2][2] * v[2] + pl.tr[2];
+      const tilted = plan.issues.some((x) => x.text.includes('nicht waagerecht'));
+      for (const [n, v] of [['Boden', zOf(p1, plan.split.floor)], ['Trennfläche', zOf(p2!, plan.split.lid)]] as const)
+        if (!tilted && Math.abs(v / 0.2 - Math.round(v / 0.2)) > 1e-6) bad.push(`${n} ${v.toFixed(3)} nicht im 0,2-mm-Raster`);
+      if (!tilted && !parts.some((q) => q.object === 'Teil B')) bad.push('B-Teil kein eigenes Objekt');
+    }
     if (id.startsWith('unter-bett') ? !(below > 5) : below > 0.3) bad.push(`Ende auf dem Bett ${below.toFixed(1)} mm über dem tiefsten Punkt`);
     const c = makeCompound(built) as Shape3D;
     const bb = c.boundingBox.bounds;
@@ -387,6 +409,12 @@ if (!only || only === 'vorschlaege') {
     const q = TEMPLATES.find((x) => x.id === 'gate')!.make();
     q.blocks = [newBlock('transition', { section: sec('rect', { w: 40, h: 30 }) }), q.blocks[0]];
     if (!planFree(q).issues.some((x) => x.level === 'error' && x.text.includes('Schieber muss das Rohr rund'))) wrong.push('eckiges Rohr vor dem Schieber nicht abgefangen');
+    const two = TEMPLATES.find((x) => x.id === 'gate')!.make();
+    two.blocks = [newBlock('gate', { length: 46 }), newBlock('straight', { length: 10 }), newBlock('gate', { length: 46, dir: 90 })];
+    if (!planFree(two).issues.some((x) => x.level === 'error' && x.text.includes('nur ein Schieber'))) wrong.push('zweiter Schieber nicht abgefangen');
+    const tilt = TEMPLATES[3].make();
+    tilt.blocks = [newBlock('bend', { angle: 90, radius: 40 }), newBlock('gate', { length: 46 })];
+    if (!planFree(tilt).issues.some((x) => x.text.includes('nicht waagerecht'))) wrong.push('schräger Schieber ohne Hinweis');
     const c = TEMPLATES.find((x) => x.id === 'y')!.make();
     c.c = { ...c.c!, type: 'device', device: { ...DEFAULT_DEVICE, length: 3 } };
     if (!planFree(c).issues.some((x) => x.text.startsWith('Ende C:'))) wrong.push('Meldung von Ende C nicht als „Ende C“ benannt');

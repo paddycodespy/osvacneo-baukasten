@@ -13,7 +13,7 @@
   import EndEditor from './EndEditor.svelte';
   import IssueList from './IssueList.svelte';
   import { reveal } from '../lib/reveal';
-  import { gateDims, GATE_GAP } from '../lib/osvac/gate';
+  import { tubeGateDims, GATE_GAP } from '../lib/osvac/gate';
   import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, branchGeom, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | 'C' | null;
@@ -75,6 +75,8 @@
     { type: 'gate', title: 'Schieber: Platte zum Auf- und Zumachen (Absperrschieber)' },
   ];
   const hasBranch = $derived(spec.blocks.some((b) => b.type === 'branch'));
+  /** Schieber: Adapter wird in zwei Teilen gedruckt, jedes steht auf seinem Ende */
+  const hasGate = $derived(spec.blocks.some((b) => b.type === 'gate'));
   function add(type: BlockType) {
     const cur = sectionBefore(spec.blocks.length);
     let v: Partial<Block> = {};
@@ -85,8 +87,8 @@
       v = { length: Math.ceil(branchGeom(d, d, spec.wall, 45).minLen), branchD: d };
       if (!spec.c) spec.c = defaultC(d);
     }
-    // Schieber: lang genug für den Rahmen um den Schlitz
-    if (type === 'gate' && cur.shape === 'circle') v = { length: Math.max(40, Math.ceil(gateDims(cur.d / 2, cur.d / 2 + spec.wall, GATE_GAP).minLen)) };
+    // Schieber: lang genug für das Gehäuse mit seinen Schrägen
+    if (type === 'gate' && cur.shape === 'circle') v = { length: Math.max(40, Math.ceil(tubeGateDims(cur.d / 2, cur.d / 2 + spec.wall, spec.gateGap ?? GATE_GAP).minLen)) };
     const b = newBlock(type, v, cur);
     spec.blocks = [...spec.blocks, b];
     open = b.id;
@@ -178,7 +180,7 @@
   <div class="chips">{#each SIZES as v}<button type="button" class="chip" class:sel={get() === v} onclick={() => set(v)}>{v}</button>{/each}</div>
 {/snippet}
 
-<p class="lead">Setze deinen Adapter aus Bausteinen zusammen, vom Anschluss A bis zum Ende B{hasBranch ? ', mit dem Abzweig zu Ende C' : ''}. In der Vorschau liegt {spec.bed === 'A' ? 'A' : 'B'} unten auf dem Druckbett. Jede Änderung ist sofort zu sehen.</p>
+<p class="lead">Setze deinen Adapter aus Bausteinen zusammen, vom Anschluss A bis zum Ende B{hasBranch ? ', mit dem Abzweig zu Ende C' : ''}. {hasGate ? 'Mit Schieber wird er in zwei Teilen gedruckt, in der Vorschau stehen sie nebeneinander.' : `In der Vorschau liegt ${spec.bed === 'A' ? 'A' : 'B'} unten auf dem Druckbett.`} Jede Änderung ist sofort zu sehen.</p>
 
 <div class="tpl-label">Vorlage als Startpunkt</div>
 <div class="tpl" role="radiogroup" aria-label="Vorlage">
@@ -387,7 +389,9 @@
 
 <fieldset class="opt fi-opt">
   <legend>Was liegt beim Drucken unten?</legend>
-  {#if isFlange}
+  {#if hasGate}
+  <p class="hint">Mit Schieber wird der Adapter am Schieber geteilt und in zwei Teilen gedruckt: das Teil mit Anschluss A steht auf A, das Teil mit Ende B auf B. Die Trennflächen zeigen nach oben.</p>
+  {:else if isFlange}
   <p class="hint">Der Flansch (Ende B) liegt flach auf dem Druckbett.</p>
   {:else}
   <div class="seg wide" role="radiogroup" aria-label="Was liegt beim Drucken unten">
