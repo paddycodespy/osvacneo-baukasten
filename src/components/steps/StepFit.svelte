@@ -22,11 +22,11 @@
 <fieldset class="opt">
   <legend class="field-label">Spiel der Platte <HelpToggle id="plateGap" /></legend>
   <div class="slider">
-    <input type="range" min="0.15" max="0.5" step="0.05" bind:value={app.gate.plateGap} aria-describedby="plate-hint" />
+    <input type="range" min="0.2" max="0.5" step="0.1" bind:value={app.gate.plateGap} aria-describedby="plate-hint" />
     <output>{fmt(app.gate.plateGap, 2)} mm</output>
   </div>
   <HelpText id="plateGap" />
-  <p class="hint" id="plate-hint">Geht die Platte zu schwer: größer. Zieht der Schieber Falschluft: kleiner. Standard: 0,25 mm.</p>
+  <p class="hint" id="plate-hint">Geht die Platte zu schwer: größer. Zieht der Schieber Falschluft: kleiner. Standard: 0,3 mm.</p>
 </fieldset>
 {:else}
 <fieldset class="opt">

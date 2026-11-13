@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Seitenansicht Schieber einzeln an der Wand: Rohr steckt oben und unten in den Muffen.
+   * Seitenansicht Schieber einzeln an der Wand: Rohr steckt oben und unten in den Muffen, Unter- und Oberteil sind verschraubt, die Platte gleitet in der Fuge.
    * In der Zeichnung nur Buchstaben an freien Stellen, die Bedeutung steht rechts daneben.
    */
   let { mount = true }: { mount?: boolean } = $props();
@@ -13,8 +13,11 @@
     <rect x="20" y="40" width="6" height="96" class="part" />
     <rect x="26" y="74" width="40" height="28" class="part" />
   {/if}
-  <!-- Gehäuse: Muffen oben und unten, Rahmen in der Mitte -->
+  <!-- Gehäuse aus Unter- und Oberteil (Trennfuge in der Mitte, Platte dazwischen), je eine Muffe -->
   <path d="M66 34 H124 V76 H134 V100 H124 V142 H66 V100 H56 V76 H66 Z" class="part" />
+  <line x1="56" y1="88" x2="134" y2="88" class="split" />
+  <rect x="134" y="86" width="14" height="4" class="plate" />
+  <path d="M60 78 V98 M130 78 V98" class="screw" />
   <!-- Rohre (eingesteckt) -->
   <path d="M71 6 V58 M119 6 V58 M71 118 V170 M119 118 V170" class="pipe" />
   <line x1="95" y1="2" x2="95" y2="174" class="axis" />
@@ -44,6 +47,9 @@
 <style>
   .gfig { width: 100%; max-width: 340px; height: auto; display: block; background: var(--mist); border-radius: 8px; margin: 10px 0 6px; }
   .part { fill: #ffd9d6; stroke: var(--red); stroke-width: 1.4; }
+  .split { stroke: var(--red); stroke-width: 1.4; }
+  .plate { fill: var(--red); }
+  .screw { stroke: var(--graphite); stroke-width: 1.6; }
   .wall { fill: #c9d1d5; stroke: var(--slate-2); stroke-width: 1; }
   .pipe { fill: none; stroke: var(--graphite); stroke-width: 1.2; stroke-dasharray: 4 3; }
   .axis { stroke: var(--graphite); stroke-width: 1; stroke-dasharray: 5 3; opacity: 0.5; }

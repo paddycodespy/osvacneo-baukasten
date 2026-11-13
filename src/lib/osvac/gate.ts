@@ -154,8 +154,8 @@ export interface GateSpec {
   plateGap: number;
 }
 
-/** Spiel der Platte beim Schieber einzeln: die Dichtlippen (0,3 mm) drücken dann je Seite 0,05 mm auf die Platte */
-export const DEFAULT_GATE: GateSpec = { d: 50, depth: 20, mount: 'plate', orient: 'upright', wallDist: 0, pipeGap: 0.4, plateGap: 0.25 };
+/** Spiel der Platte beim Schieber einzeln: die Dichtlippen (0,4 mm) drücken dann je Seite 0,1 mm auf die Platte */
+export const DEFAULT_GATE: GateSpec = { d: 50, depth: 20, mount: 'plate', orient: 'upright', wallDist: 0, pipeGap: 0.4, plateGap: 0.3 };
 /** so viel weiter als der kleinste Wandabstand geht es höchstens */
 export const WALL_MORE = 50;
 
@@ -171,9 +171,21 @@ const WALL_T = 3, CLIP_H = 14, CLIP_W = 3.5;
  * Höhen (z, Rohrachse, z = 0 Ende der unteren Muffe): Muffe 0 … zL, Boden zL … zF, Kanal zF … zT, Deckel zT … zT + TP,
  * obere Muffe bis H. Die Platte gleitet entlang x, die Wand liegt auf der Seite −y.
  */
-/** Dicke der Platte, Dicke von Boden und Deckel, Höhe der Dichtlippen, Lage der Lippen (ab der Bohrung) */
+/**
+ * Dicke der Platte, Dicke von Boden und Deckel (mindestens), Höhe der Dichtlippen, Lage der Lippen (ab der Bohrung).
+ * Alle Höhen, auf die es beim Dichten ankommt, liegen im Raster von 0,2 mm (übliche Schichthöhe): sonst rundet der
+ * Slicer Boden und Lippe um bis zu 0,1 mm, und die Lippe liegt nicht an oder klemmt.
+ */
 export const SINGLE_T = 4;
-const TP = 3.5, LIP = 0.3, LIP_IN = 1, LIP_W = 1.2;
+const TP = 3.5, LIP = 0.4, LIP_IN = 1, LIP_W = 1.2;
+/** Schichtraster */
+const LAYER = 0.2;
+const onGrid = (v: number) => Math.ceil(v / LAYER - 1e-6) * LAYER;
+/** Spiel der Platte (über und unter, außerhalb der Lippen): Raster 0,1 mm (Kanal = Platte + 2 × Spiel im 0,2-mm-Raster) */
+export const PLATE_GAP_MIN = 0.2, PLATE_GAP_MAX = 0.5;
+export const snapPlateGap = (v: number) => Math.min(PLATE_GAP_MAX, Math.max(PLATE_GAP_MIN, Math.round(v * 10) / 10));
+/** Einführfase an den Muffen (gegen den breiter gedrückten ersten Layer, das Rohr findet leichter hinein) */
+const SOCKET_CH = 0.6;
 /** Schrauben M3: Loch, Mutter (Schlüsselweite 5,5 + Luft), Kopf; Mutter und Kopf sitzen je 1,5 mm vor dem Kanal */
 const M3_R = 1.7, NUT_AF = 5.8, HEAD_R = 3.2, SEAT = 1.5;
 /** Spiel der Platte im Kanal seitlich (je Seite) */
@@ -183,29 +195,37 @@ const CH_K = 1.2;
 
 export function singleDims(Rm: number, Ro: number, gap: number) {
   const T = SINGLE_T;
-  /** Höhe des Kanals */
-  const ch = T + 2 * gap;
+  /** Höhe des Kanals (im 0,2-mm-Raster) */
+  const ch = onGrid(T + 2 * gap);
   /** halbe Breite der Platte und des Kanals: Platte deckt die Bohrung 3 mm rundum ab */
   const pw = Rm + 3, yC = pw + SIDE_GAP;
-  /** Gehäuse: halbe Länge in Gleitrichtung so knapp wie möglich, quer Platz für die Schrauben neben dem Kanal */
-  // Schrauben: zwischen Kanal und Kopfsenkung bzw. Muttertasche mindestens 1,2 mm Wand, außen 1,6 mm
-  const hx = Ro + 3, sx = hx - 5, sy = yC + 1.2 + HEAD_R, hy = sy + HEAD_R + 1.6;
-  /** Ecke des Gehäuses und Länge der 45°-Schräge zur Muffe */
-  const Rc = Math.hypot(hx, hy), cl = Rc - Ro;
+  /**
+   * Gehäuse: halbe Länge in Gleitrichtung so knapp wie möglich, quer Platz für die Schrauben neben dem Kanal.
+   * Grundriss achteckig: die Ecken sind unter 45° gebrochen (x + y ≤ cut), an den Enden des Kanals bleibt 1,6 mm
+   * Seitenwand. Das kürzt die Schräge zur Muffe und spart viel Material.
+   */
+  const hx = Ro + 3, sy = yC + 1.2 + HEAD_R, hy = sy + HEAD_R + 1.6;
+  const cut = hx + yC + 1.6;
+  // Schrauben: zwischen Kanal und Kopfsenkung bzw. Muttertasche mindestens 1,2 mm Wand, außen und zur Ecke 1,6 mm
+  const sx = Math.max(0, Math.min(hx - 5, cut - sy - (HEAD_R + 1.6) * Math.SQRT2));
+  /** äußerster Punkt des Grundrisses und Länge der Schräge zur Muffe */
+  const Rc = Math.max(Math.hypot(hx, cut - hx), Math.hypot(cut - hy, hy)), cl = Rc - Ro;
+  /** halbe Breite der geraden Vorderseite (für die Gravur) */
+  const front = cut - hy;
   /** Platte: zu bei x = 0, auf um +P (Fenster bei −P liegt bei „zu“ außerhalb des Gehäuses) */
   const P = Rm + hx + 2;
   /** Anschlag für „auf“: Fläche bei xs, 8 mm lang */
   const xs = -hx - 0.5 - P;
   const x0 = xs - 8, x1 = hx + 16, gripX = hx + 9.5;
   const hw = pw;
-  return { T, gap, ch, pw, yC, hx, hy, sx, sy, Rc, cl, P, xs, x0, x1, gripX, hw, Rm, Ro };
+  return { T, gap, ch, pw, yC, hx, hy, cut, front, sx, sy, Rc, cl, P, xs, x0, x1, gripX, hw, Rm, Ro };
 }
 export type SingleDims = ReturnType<typeof singleDims>;
 
 export function gateLayout(s: GateSpec) {
   const Rs = s.d / 2 + s.pipeGap, Rm = s.d / 2 - STOP, Ro = Rs + SOCKET_WALL;
   const g = singleDims(Rm, Ro, s.plateGap);
-  const zL = s.depth, zF = zL + TP, zT = zF + g.ch, H = zT + TP + s.depth;
+  const zL = s.depth, zF = onGrid(zL + TP), zT = zF + g.ch, H = zT + (zF - zL) + s.depth;
   const zc = (zF + zT) / 2;
   const r1 = s.d / 2 + 0.2, r2 = r1 + CLIP_W;
   /** kleinster Abstand Wand bis Rohrmitte (Teil direkt an der Wand) */
@@ -243,24 +263,37 @@ function hexPrism(af: number, x: number, y: number, z0: number, z1: number): Sha
   return d.close().sketchOnPlane('XY', Math.min(z0, z1)).extrude(Math.abs(z1 - z0)) as unknown as Shape3D;
 }
 
+/** Grundriss des Gehäuses (Achteck: Rechteck ±hx × ±hy mit gebrochenen Ecken) zwischen z0 und z1; backY: Rückseite zurückgesetzt */
+function outline(g: SingleDims, z0: number, z1: number, backY: number): Shape3D {
+  const x = g.hx, y = g.hy, c = g.cut, yb = -y + backY;
+  const pts: [number, number][] = [[x, -(c - x)], [x, c - x], [c - y, y], [-(c - y), y], [-x, c - x], [-x, -(c - x)], [-(c + yb), yb], [c + yb, yb]];
+  let d = draw(pts[0]);
+  for (const q of pts.slice(1)) d = d.lineTo(q);
+  return d.close().sketchOnPlane('XY', Math.min(z0, z1)).extrude(Math.abs(z1 - z0)) as unknown as Shape3D;
+}
+
 /**
  * Hälfte des Gehäuses: Platte zwischen zFace (innen, zum Kanal) und zOut, davor 45°-Schräge bis zur Muffe, Muffe bis zEnd.
  * s = Richtung von innen nach außen (−1 unten, +1 oben); backY: Rückseite (−y) etwas zurückgesetzt.
  */
 function half(lay: ReturnType<typeof gateLayout>, s: 1 | -1, zFace: number, depth: number, backY: number): Shape3D {
   const { g, Rs, Rm, Ro } = lay;
-  const zOut = zFace + s * TP, zEnd = zOut + s * depth;
+  const tp = lay.zF - lay.zL;
+  const zOut = zFace + s * tp, zEnd = zOut + s * depth;
   const zA = Math.min(zFace, zOut), zB = Math.max(zFace, zOut);
-  let h = box(-g.hx, g.hx, -g.hy + backY, g.hy, zA, zB);
+  let h = outline(g, zA, zB, backY);
   // Schräge: Kegel von der Ecke zur Muffe (50° zur Waagerechten, sicher ohne Stützen), nicht länger als die Muffe
   const rEnd = Math.max(Ro, g.Rc + 0.02 - depth / CH_K), zc1 = zOut + s * CH_K * (g.Rc + 0.02 - rEnd);
   const cone = s > 0 ? revolveProfile([0, zOut], [L(g.Rc + 0.02, zOut), L(rEnd, zc1), L(0, zc1)]) : revolveProfile([0, zc1], [L(rEnd, zc1), L(g.Rc + 0.02, zOut), L(0, zOut)]);
-  h = h.fuse(box(-g.hx, g.hx, -g.hy + backY, g.hy, Math.min(zOut, zc1), Math.max(zOut, zc1)).intersect(cone) as Shape3D);
+  h = h.fuse(outline(g, Math.min(zOut, zc1), Math.max(zOut, zc1), backY).intersect(cone) as Shape3D);
   h = h.fuse(cylZ(Ro, zOut, zEnd));
   // Muffe bis zum Anschlag, der Anschlag läuft unter 45° zur lichten Weite (hängt beim Druck nicht in der Luft)
   h = h.cut(cylZ(Rs, zEnd + s, zOut + s * 0.01));
   const k = Rs - Rm;
   h = h.cut(s > 0 ? revolveProfile([0, zOut - k], [L(Rm, zOut - k), L(Rs, zOut + 0.01), L(0, zOut + 0.01)]) : revolveProfile([0, zOut - 0.01], [L(Rs, zOut - 0.01), L(Rm, zOut + k), L(0, zOut + k)]));
+  // Einführfase am Rand der Muffe
+  const c = SOCKET_CH;
+  h = h.cut(s > 0 ? revolveProfile([0, zEnd - c - 0.01], [L(Rs - 0.01, zEnd - c - 0.01), L(Rs + c, zEnd + 0.01), L(0, zEnd + 0.01)]) : revolveProfile([0, zEnd - 0.01], [L(Rs + c, zEnd - 0.01), L(Rs - 0.01, zEnd + c + 0.01), L(0, zEnd + c + 0.01)]));
   return h;
 }
 
@@ -275,7 +308,7 @@ export function gateLower(s: GateSpec, text = true): Shape3D {
   const { g, Rm, H, zL, zF, zT, A, holeX, holeZ, keyTurned, keyZ, keyX } = lay;
   let h = half(lay, -1, zF, s.depth, 0);
   // Seitenwände des Kanals
-  h = h.fuse(box(-g.hx, g.hx, -g.hy, g.hy, zF - 0.01, zT).cut(box(-g.hx - 1, g.hx + 1, -g.yC, g.yC, zF - 1, zT + 1)));
+  h = h.fuse(outline(g, zF - 0.01, zT, 0).cut(box(-g.hx - 1, g.hx + 1, -g.yC, g.yC, zF - 1, zT + 1)));
   h = h.fuse(lipRing(Rm, zF - 0.01, 1));
   if (s.mount === 'plate' || s.mount === 'keyhole') {
     // Wandplatte über die ganze Höhe (auch neben dem Deckel), Stege zum Gehäuse: außen bis in die Seitenwand,
@@ -283,7 +316,8 @@ export function gateLower(s: GateSpec, text = true): Shape3D {
     const X = g.hx + 12, Xp = keyTurned ? keyX + 12.5 : X;
     const yW = -A + WALL_T;
     h = h.fuse(box(-X, Xp, -A, yW, 0, H));
-    for (const sx of [1, -1]) h = h.fuse(box(sx * (g.hx - 3), sx * g.hx, yW - 0.01, -g.hy + 1, 0, zT));
+    // äußere Stege dort, wo die Rückseite noch gerade ist (vor den gebrochenen Ecken)
+    for (const sx of [1, -1]) h = h.fuse(box(sx * (g.front - 3), sx * g.front, yW - 0.01, -g.hy + 1, 0, zT));
     const wc = Math.min(6, lay.Ro * 0.5);
     h = h.fuse(box(-wc, wc, yW - 0.01, -lay.Ro + 1, 0, zL + 1));
   }
@@ -307,7 +341,8 @@ export function gateLower(s: GateSpec, text = true): Shape3D {
   // Rohr-Ø vorne (Seite gegenüber der Wand), 0,4 mm tief, zum Sortieren
   if (text) {
     const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
-    const size = Math.min(5, zT - zL - 2.4);
+    // passt auf die gerade Vorderseite (die Schrift ist etwa 2,3 × so breit wie hoch)
+    const size = Math.min(5, zT - zL - 2.4, (1.7 * g.front) / 2.3);
     const tool = textOnFlat(g.hy, 90, (zL + zT) / 2, `Ø${f(s.d)}`, size, 0.4);
     if (tool) h = h.cut(tool);
   }
