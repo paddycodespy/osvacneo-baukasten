@@ -13,6 +13,8 @@
     "part": "tsx scripts/build-ref.ts",
     "test:keys": "tsx scripts/check-keys.ts",
     "test:freeform": "tsx scripts/freeform.ts",
+    "test:freeform:1": "tsx scripts/freeform.ts --teil=1/2",
+    "test:freeform:2": "tsx scripts/freeform.ts --teil=2/2",
     "test:sketches": "tsx scripts/sketch-overlap.ts",
     "test:ui": "tsx scripts/ui-flows.ts",
     "tauri": "tauri",

@@ -2310,7 +2310,13 @@ export function partPlacements(spec: FreeSpec, plan: FreePlan): { p1: Placement;
   const R2 = bedRotation('B', plan);
   const p2 = centerOn(R2, pts2, -mulMV(R2, plan.end.o)[2]);
   const b1 = partBox(p1, partPoints(spec, plan, 1)), b2 = partBox(p2, partPoints(spec, plan, 2));
-  p2.tr = [p2.tr[0] + b1.x1 - b2.x0 + 10, p2.tr[1] + (b1.y0 + b1.y1) / 2 - (b2.y0 + b2.y1) / 2, p2.tr[2]];
+  // B-Teil rechts daneben oder dahinter (+y, die Schieberplatten liegen davor): was die kleinere größte Kante ergibt
+  const w1 = b1.x1 - b1.x0, d1 = b1.y1 - b1.y0, w2 = b2.x1 - b2.x0, d2 = b2.y1 - b2.y0;
+  const side = Math.max(w1 + 10 + w2, Math.max(d1, d2)), back = Math.max(Math.max(w1, w2), d1 + 10 + d2);
+  p2.tr =
+    side <= back
+      ? [p2.tr[0] + b1.x1 - b2.x0 + 10, p2.tr[1] + (b1.y0 + b1.y1) / 2 - (b2.y0 + b2.y1) / 2, p2.tr[2]]
+      : [p2.tr[0] + (b1.x0 + b1.x1) / 2 - (b2.x0 + b2.x1) / 2, p2.tr[1] + b1.y1 - b2.y0 + 10, p2.tr[2]];
   return { p1, p2 };
 }
 
@@ -2418,7 +2424,8 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   const B = isDev ? dev : end(spec.b.type as OsvacEnd, spec.b.d);
   const blocks = spec.blocks.map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : b.type === 'branch' ? `Abzweig ${f(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}` : BLOCK_LABELS[b.type])).join(', ');
   const devText = `Gerät ${{ over: 'aufgesteckt', into: 'eingesteckt', flange: 'mit Flansch' }[spec.b.device.mode]}`;
-  const sub = ['Freiform', blocks, isDev ? devText : ''].filter(Boolean).join(' · ');
+  const split = hasSplit(spec);
+  const sub = ['Freiform', blocks, isDev ? devText : '', split ? '2 Druckteile' : ''].filter(Boolean).join(' · ');
   const fileB = isDev ? `Geraet ${dev.replace(/ × /g, 'x').replace('Ø ', 'D')}` : B;
   const fileMid = spec.blocks.filter((b) => b.type === 'bend' || b.type === 'branch' || b.type === 'gate').map((b) => (b.type === 'gate' ? 'Schieber' : `${b.type === 'bend' ? 'Bogen' : 'Abzweig'}${f(b.angle)}`)).join(' ');
   // Ende C am Abzweig
@@ -2429,8 +2436,8 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   return {
     code: `${A} → ${B}${hasC ? ` + ${C}` : ''}`,
     sub,
-    long: `${A} → ${isDev ? `${devText} ${dev}` : B}${hasC ? `, Abzweig → ${spec.c!.type === 'device' ? `Gerät ${C}` : C}` : ''}`,
-    file: [A, 'Freiform', fileMid, fileB, ...x, hasC ? `und ${fileC}` : ''].filter(Boolean).join(' '),
+    long: `${A} → ${isDev ? `${devText} ${dev}` : B}${hasC ? `, Abzweig → ${spec.c!.type === 'device' ? `Gerät ${C}` : C}` : ''}${split ? ', 2 Druckteile' : ''}`,
+    file: [A, 'Freiform', fileMid, fileB, ...x, hasC ? `und ${fileC}` : '', split ? '2 Teile' : ''].filter(Boolean).join(' '),
     blocks,
   };
 }

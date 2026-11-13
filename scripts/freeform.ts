@@ -45,6 +45,14 @@ const badEdges = (sh: Shape3D, name = '') => {
 };
 const writeStl = process.argv.includes('--stl');
 const only = process.argv.slice(2).find((a) => !a.startsWith('--'));
+/**
+ * --teil=1/2 bzw. --teil=2/2: nur die Hälfte der Fälle (für zwei parallele Läufe auf GitHub). Die Fälle der Kette
+ * werden abwechselnd verteilt, die Prüfungen ohne Berechnung laufen im ersten, Stutzen und Schieber einzeln im zweiten Teil.
+ */
+const teil = /^--teil=(\d)\/(\d)$/.exec(process.argv.find((a) => a.startsWith('--teil=')) ?? '');
+const [teilK, teilN] = teil ? [Number(teil[1]), Number(teil[2])] : [1, 1];
+const mine = (i: number) => i % teilN === teilK - 1;
+const sectionIn = (k: number) => teilN === 1 || teilK === k;
 
 const cases: [string, FreeSpec][] = TEMPLATES.map((t) => [t.id, t.make()]);
 const shapes: SectionShape[] = ['circle', 'ellipse', 'slot', 'rect', 'dshape', 'trapezoid'];
@@ -194,8 +202,9 @@ for (const [i, shape] of shapes.entries()) {
 let fail = 0;
 const meshNotes: string[] = [];
 const p = deriveParams({});
-for (const [id, spec] of cases) {
+for (const [ci, [id, spec]] of cases.entries()) {
   if (only && id !== only) continue;
+  if (!only && !mine(ci)) continue;
   const t0 = Date.now();
   try {
     const plan = planFree(spec);
@@ -278,7 +287,7 @@ for (const [id, spec] of cases) {
   }
 }
 // Flansch: unpassende Eingaben werden verständlich abgefangen (ohne Berechnung)
-if (!only || only === 'flansch-pruefungen') {
+if ((!only && sectionIn(1)) || only === 'flansch-pruefungen') {
   const base = { ...TEMPLATES[3].make().b.device, mode: 'flange' as const, section: sec('circle', { d: 50 }) };
   const expect: [string, Partial<typeof base>, string][] = [
     ['Rand zu schmal', { flangeRim: 8 }, 'Rand muss'],
@@ -324,7 +333,7 @@ if (!only || only === 'flansch-pruefungen') {
 }
 
 // Vorschläge („… auf … setzen“): jede Meldung mit Vorschlag verschwindet, wenn man ihn übernimmt
-if (!only || only === 'vorschlaege') {
+if ((!only && sectionIn(1)) || only === 'vorschlaege') {
   const wrong: string[] = [];
   let n = 0;
   const flange = (v: Partial<FreeSpec['b']['device']>) => {
@@ -430,7 +439,7 @@ for (const [id, kind, pipe, text] of [
   ['stutzen-M-ein-konisch', 'MACHINE_M', { d1Inner: 26.8, d2Inner: 25.8, mode: 'into', screwHoles: true, ribs: true }, true],
   ['stutzen-M-auf-50', 'MACHINE_M', { d1Inner: 50.2, d2Inner: 51.2, mode: 'over', screwHoles: true, slots: true, ribs: false }, true],
 ] as const) {
-  if (only && id !== only) continue;
+  if (only ? id !== only : !sectionIn(2)) continue;
   const t0 = Date.now();
   try {
     const k = kindById(kind);
@@ -469,7 +478,7 @@ for (const [id, kind, pipe, text] of [
     ['schieber-32-tief', { d: 32, depth: 37.5, plateGap: 0.2 }],
   ];
   for (const [id, v] of variants) {
-    if (only && id !== only) continue;
+    if (only ? id !== only : !sectionIn(2)) continue;
     const t0 = Date.now();
     const s = { ...DEFAULT_GATE, ...v };
     const bad: string[] = [];
@@ -539,7 +548,7 @@ for (const [id, kind, pipe, text] of [
 }
 
 // Weg des Hinweises: fehlerhafte Klemmrippen fallen weg, ab einem Viertel gibt es einen Hinweis (kein Fehler)
-if (!only || only === 'rippen-hinweis') {
+if ((!only && sectionIn(2)) || only === 'rippen-hinweis') {
   const s = TEMPLATES[3].make();
   s.b.device.ribs = true;
   const ribs = partsFree(p, { text: false, knurl: false, supports: true, free: s }).find((q) => q.name === 'Geräteanschluss · Klemmrippen');
