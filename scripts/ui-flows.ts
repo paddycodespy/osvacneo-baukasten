@@ -235,14 +235,10 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
     expect((await pg.locator('.stage-head .code').innerText()).includes('+'), 'Kopfzeile ohne Ende C');
     expect((await pg.locator('.print-note').innerText()).includes('Ende C'), 'Druckhinweis zur Kupplung am Abzweig fehlt');
-    // Plaketten A, B, C in der Vorschau; das aufgeklappte Ende ist hervorgehoben, „Enden“ blendet sie aus
-    expect((await pg.locator('.end-marker').count()) === 3, 'nicht drei Plaketten A, B, C');
+    // keine Plaketten mehr in der Vorschau
+    expect((await pg.locator('.end-marker').count()) === 0, 'Plaketten A, B, C noch da');
     await pg.locator('.card-head', { hasText: 'Ende C ·' }).click();
     await pg.waitForTimeout(200);
-    expect((await pg.locator('.end-marker.active').innerText().catch(() => '')) === 'C', 'Plakette C nicht hervorgehoben');
-    await pg.locator('button.tool', { hasText: 'Enden' }).click();
-    expect((await pg.locator('.end-marker').count()) === 0, '„Enden“ blendet die Plaketten nicht aus');
-    await pg.locator('button.tool', { hasText: 'Enden' }).click();
     await pg.locator('.card.open .seg button', { hasText: 'Gerät' }).first().click();
     await fill(pg, 'Steckweg', '7');
     expect((await pg.locator('.card.open').innerText()).includes('Unter 10 mm Tiefe'), 'Meldung von Ende C nicht in der Karte C');
