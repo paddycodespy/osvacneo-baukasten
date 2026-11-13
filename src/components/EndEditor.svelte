@@ -22,7 +22,8 @@
     issues = [],
     apply,
     onflange,
-  }: { end: EndSpec; wall: number; tag: 'B' | 'C'; issues?: Issue[]; apply: (fx: Fix) => void; onflange?: () => void } = $props();
+    transition = true,
+  }: { end: EndSpec; wall: number; tag: 'B' | 'C'; issues?: Issue[]; apply: (fx: Fix) => void; onflange?: () => void; transition?: boolean } = $props();
 
   const SIZES = [25, 32, 36, 40, 50];
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
@@ -198,9 +199,11 @@
         <HelpText id="refill" />
       {/if}
       <div class="grid2">
-        <Field label="Übergangslänge" help="Strecke, auf der die Form der Bausteine in die Form der Öffnung übergeht. Länger ist flacher und lässt sich besser drucken.">
-          <NumberField bind:value={end.transition} min={2} max={150} step={1} label="Übergangslänge zum Flansch" />
-        </Field>
+        {#if transition}
+          <Field label="Übergangslänge" help="Strecke, auf der die Form der Bausteine in die Form der Öffnung übergeht. Länger ist flacher und lässt sich besser drucken.">
+            <NumberField bind:value={end.transition} min={2} max={150} step={1} label="Übergangslänge zum Flansch" />
+          </Field>
+        {/if}
         {#if dv.section.shape !== 'circle' || dv.flangeLayout === 'rect' || dv.flangeLayout === 'tri'}
           <Field label="Drehung" help="Dreht Öffnung und Platte um die Mitte, falls sie schräg zum Rest des Adapters stehen.">
             <NumberField bind:value={dv.rot} min={-180} max={180} step={5} unit="°" label="Drehung des Flanschs" />
@@ -273,9 +276,11 @@
         <Field label="Luft (Zugabe)" help={`Etwas Spiel, damit der Adapter passt. Geht er nicht ${end.device.mode === 'over' ? 'drauf' : 'hinein'}: erhöhen. Sitzt er zu locker: verringern, bis 0. Bei eckigen Formen eher 0,3 bis 0,5 mm.`}>
           <NumberField bind:value={end.device.allowance} min={0} max={3} step={0.05} label="Zugabe für den Sitz" />
         </Field>
-        <Field label="Übergangslänge" help="Strecke, auf der die Form der Bausteine in die Form am Gerät übergeht. Länger ist flacher und lässt sich besser drucken.">
-          <NumberField bind:value={end.transition} min={2} max={150} step={1} label="Übergangslänge zum Geräteanschluss" />
-        </Field>
+        {#if transition}
+          <Field label="Übergangslänge" help="Strecke, auf der die Form der Bausteine in die Form am Gerät übergeht. Länger ist flacher und lässt sich besser drucken.">
+            <NumberField bind:value={end.transition} min={2} max={150} step={1} label="Übergangslänge zum Geräteanschluss" />
+          </Field>
+        {/if}
         {#if end.device.section.shape !== 'circle'}
           <Field label="Drehung" help="Dreht die Form um die Mitte, falls sie schräg zum Rest des Adapters steht.">
             <NumberField bind:value={end.device.rot} min={-180} max={180} step={5} unit="°" label="Drehung des Geräteanschlusses" />
@@ -295,16 +300,19 @@
   </div>
   <p class="hint">Innendurchmesser in mm.</p>
   <IssueList list={issues} {apply} />
-  <details class="more">
-    <summary>Feineinstellungen <small>meist nicht nötig</small></summary>
-    <div class="more-body">
-      <div class="grid2">
-        <Field label="Übergangslänge" help="Ist der Baustein davor nicht rund oder anders weit, geht er auf dieser Strecke in den Anschluss über.">
-          <NumberField bind:value={end.transition} min={2} max={150} step={1} label="Übergangslänge zu Ende {tag}" />
-        </Field>
+  <!-- nur, wenn es einen Übergang gibt (Baustein davor nicht rund oder anders weit): sonst ändert der Wert nichts -->
+  {#if transition}
+    <details class="more">
+      <summary>Feineinstellungen <small>meist nicht nötig</small></summary>
+      <div class="more-body">
+        <div class="grid2">
+          <Field label="Übergangslänge" help="Der Baustein davor ist nicht rund oder anders weit. Auf dieser Strecke geht er in den Anschluss über.">
+            <NumberField bind:value={end.transition} min={2} max={150} step={1} label="Übergangslänge zu Ende {tag}" />
+          </Field>
+        </div>
       </div>
-    </div>
-  </details>
+    </details>
+  {/if}
 {/if}
 
 <style>

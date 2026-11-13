@@ -14,7 +14,7 @@
   import IssueList from './IssueList.svelte';
   import { reveal } from '../lib/reveal';
   import { tubeGateDims, GATE_GAP } from '../lib/osvac/gate';
-  import { TEMPLATES, BLOCK_LABELS, newBlock, sec, sectionText, specKey, branchGeom, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
+  import { TEMPLATES, planFree, BLOCK_LABELS, newBlock, sec, sectionText, specKey, branchGeom, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | 'C' | null;
   let {
@@ -75,6 +75,16 @@
     { type: 'gate', title: 'Schieber: Platte zum Auf- und Zumachen (Absperrschieber)' },
   ];
   const hasBranch = $derived(spec.blocks.some((b) => b.type === 'branch'));
+  /**
+   * Gibt es an Ende B bzw. C einen Übergang? (Nur wenn der Baustein davor eine andere Form hat als das Ende; sonst
+   * ändert die Übergangslänge nichts und das Feld bleibt weg.) Bei Fehlern im Plan lieber anzeigen.
+   */
+  const plan = $derived(planFree($state.snapshot(spec)));
+  const hasTransition = (tag: 'B' | 'C') => {
+    if (plan.issues.some((x) => x.level === 'error')) return true;
+    const names = tag === 'B' ? ['Übergang zu Ende B', 'Übergang zum Gerät'] : ['Übergang zu Ende C', 'Übergang zum Gerät C'];
+    return plan.bodies.some((b) => names.includes(b.name));
+  };
   /** Schieber: Adapter wird in zwei Teilen gedruckt, jedes steht auf seinem Ende */
   const hasGate = $derived(spec.blocks.some((b) => b.type === 'gate'));
   function add(type: BlockType) {
@@ -364,7 +374,7 @@
     </button>
     {#if open === 'B'}
       <div class="card-body">
-        <EndEditor bind:end={spec.b} wall={spec.wall} tag="B" issues={bIssues} apply={applyFix} onflange={() => (spec.bed = 'B')} />
+        <EndEditor bind:end={spec.b} wall={spec.wall} tag="B" issues={bIssues} apply={applyFix} onflange={() => (spec.bed = 'B')} transition={hasTransition('B')} />
       </div>
     {/if}
   </li>
@@ -380,7 +390,7 @@
       </button>
       {#if open === 'C'}
         <div class="card-body">
-          <EndEditor bind:end={spec.c} wall={spec.wall} tag="C" issues={cIssues} apply={applyFix} />
+          <EndEditor bind:end={spec.c} wall={spec.wall} tag="C" issues={cIssues} apply={applyFix} transition={hasTransition('C')} />
         </div>
       {/if}
     </li>
