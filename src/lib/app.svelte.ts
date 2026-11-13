@@ -14,7 +14,7 @@ import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
-import { DEFAULT_GATE, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
+import { DEFAULT_GATE, GATE_GAP, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
   { id: '3mf', label: '3MF', hint: 'Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura' },
@@ -257,7 +257,9 @@ class AppState {
     swivel: `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(this.swivelMax, 2)} mm${this.kind.id === 'FH' ? ` bei ${this.input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
     pipeGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als das Rohr außen. Sitzt das Rohr zu stramm: größer. Rutscht es heraus: kleiner, oder das Rohr mit etwas Klebeband umwickeln.',
-    plateGap: 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
+    plateGap: this.kind.gate
+      ? 'Luft über und unter der Platte im Kanal. Um die Bohrung drücken zwei Dichtlippen (0,3 mm hoch) auf die Platte, beim Standardwert je Seite 0,05 mm: das dichtet und hält die Platte durch Reibung. Geht die Platte zu schwer: größer. Zieht der Schieber Falschluft oder rutscht die Platte von allein: kleiner.'
+      : 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
     wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg, höchstens ${WALL_MORE} mm mehr (${fmt(this.gateLay.maxA)} mm), sonst wird die Halterung wacklig.`,
     orient: 'Wie das Rohr an der Wand entlangläuft. Der Schlitz der Schlüssellöcher muss nach oben zeigen: bei senkrechtem Rohr zum oberen Ende, bei waagerechtem zur Seite.',
     filament: 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
@@ -269,8 +271,9 @@ class AppState {
   gateTips = $derived.by(() => {
     const s = this.gate, L = this.gateLay;
     const t = [
-      `Das Gehäuse steht mit einer Muffe auf dem Druckbett. Über dem Schlitz druckt der Drucker eine Brücke, das geht ohne Stützen. Bambu Studio meldet dazu eventuell „Fliegender Träger“: einfach wegklicken und keine Stützen einschalten, sie würden den Schlitz zusetzen.`,
-      'Die Platte liegt flach daneben. Nach dem Druck mit dem schmalen Ende (der federnden Zunge) voran in den Schlitz schieben, von welcher Seite ist egal, bis die kleine Nase auf der anderen Seite herausspringt. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein, der dicke Griff und die Nase halten die Platte im Schieber. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.',
+      'Der Schieber besteht aus Unterteil, Oberteil und Platte. Beide Gehäuseteile stehen mit der Muffe auf dem Druckbett, ohne Stützen. Die Platte liegt flach daneben.',
+      `Zusammenbau: vier Muttern M3 von unten in die Sechskant-Taschen des Unterteils drücken. Die Platte mit dem schmalen Ende (der federnden Zunge) voran in den Kanal legen und durchschieben, bis die kleine Nase auf der anderen Seite herausspringt. Oberteil aufsetzen und mit vier Schrauben M3 × ${L.screwLen} (Zylinderkopf) gleichmäßig über Kreuz anziehen, nur so fest, dass die Platte noch gleitet.`,
+      'Herausziehen öffnet, hineinschieben schließt. Der dicke Griff und die Nase halten die Platte im Schieber. Die Dichtlippen um die Bohrung drücken leicht auf die Platte, dadurch zieht der Schieber kaum Falschluft und die Platte bleibt in jeder Stellung stehen. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.',
       `Das Rohr (außen Ø ${fmt(s.d)} mm) auf beiden Seiten bis zum Anschlag einstecken.`,
     ];
     const at = `Die Rohrmitte liegt ${fmt(L.A)} mm vor der Wand.`;
@@ -282,7 +285,7 @@ class AppState {
           : `Zwei Schlüssellöcher, ${this.gatePitch}: zwei Schrauben (Ø 4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit dem oberen Ende (wie gedruckt) nach oben einhängen; das Rohr läuft dann senkrecht. ${at}`,
       );
     if (s.mount === 'clip') t.push(`Der Wandhalter ist ein eigenes Teil für das Rohr neben dem Schieber. Mit zwei Senkkopfschrauben Ø 4 mm (${this.gatePitch}) an die Wand schrauben und das Rohr hineindrücken. ${at}`);
-    if (s.mount === 'keyhole' && s.orient === 'turned') t.push('Bei waagerechtem Rohr gleitet die Platte senkrecht. Die Rastung hält sie in beiden Stellungen, auch gegen ihr Gewicht.');
+    if (s.mount === 'keyhole' && s.orient === 'turned') t.push('Bei waagerechtem Rohr gleitet die Platte senkrecht. Die Dichtlippen halten sie durch Reibung, auch gegen ihr Gewicht; rutscht sie doch, in „Passung“ das Spiel der Platte verkleinern.');
     return t;
   });
 
@@ -354,7 +357,7 @@ class AppState {
       (!this.hasSwivel || this.input.slipRingGapSize === START_INPUT.slipRingGapSize) &&
       this.input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
       (!this.hasSupport || this.supports) &&
-      (!this.freeHasGate || (this.free.gateGap ?? DEFAULT_GATE.plateGap) === DEFAULT_GATE.plateGap),
+      (!this.freeHasGate || (this.free.gateGap ?? GATE_GAP) === GATE_GAP),
   );
   resetFit() {
     if (this.kind.gate) {

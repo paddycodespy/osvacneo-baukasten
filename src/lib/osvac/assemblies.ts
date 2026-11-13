@@ -12,7 +12,7 @@ import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, h
 import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, bedPlacement, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
-import { DEFAULT_GATE, gateLayout, gateHousing, gatePlate, gateClip, gateBed, type GateSpec } from './gate';
+import { DEFAULT_GATE, gateLayout, gateLower, gateUpper, gateSlider, gateClip, gateBed, upperOnBed, type GateSpec } from './gate';
 import { UserError } from '../errors';
 
 export interface Body {
@@ -323,15 +323,16 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
 
 // ---------------------------------------------------------------- Schieber einzeln
 
-/** Absperrschieber mit Muffen: Gehäuse (stehend), Platte flach davor, ggf. Wandhalter dahinter */
+/** Absperrschieber mit Muffen, zweiteilig verschraubt: Unterteil (stehend), Oberteil umgedreht daneben, Platte flach davor, ggf. Wandhalter dahinter */
 export function partsGate(_p: OsvacParams, o: BuildOptions = {}): Part[] {
   const s = { ...DEFAULT_GATE, ...o.gate };
   const lay = gateLayout(s);
   const bed = gateBed(s);
-  const dep = { kind: 'gate', d: s.d, gap: s.pipeGap, pg: s.plateGap };
+  const dep = { kind: 'gate2', d: s.d, gap: s.pipeGap, pg: s.plateGap, depth: s.depth };
   const out = [
-    part('Schieber-Gehäuse', 2, { ...dep, depth: s.depth, mount: s.mount === 'clip' ? 'none' : s.mount, A: s.mount === 'plate' || s.mount === 'keyhole' ? lay.A : 0, holes: 4, ...(lay.keyTurned ? { orient: 'turned' } : {}), text: o.text !== false }, () => gateHousing(s, o.text !== false)),
-    part('Schieberplatte', 0.4, { kind: 'gatePlate', d: s.d, gap: s.pipeGap, pg: s.plateGap, at: bed.plate }, () => gatePlate(lay.g).translate(bed.plate) as Shape3D, { object: 'Schieberplatte' }),
+    part('Schieber-Unterteil', 2, { ...dep, mount: s.mount === 'clip' ? 'none' : s.mount, A: s.mount === 'plate' || s.mount === 'keyhole' ? lay.A : 0, ...(lay.keyTurned ? { orient: 'turned' } : {}), text: o.text !== false }, () => gateLower(s, o.text !== false)),
+    part('Schieber-Oberteil', 1.5, { ...dep, at: bed.upper }, () => upperOnBed(gateUpper(s), bed.upper), { object: 'Schieber-Oberteil' }),
+    part('Schieberplatte', 0.4, { kind: 'gate2Plate', d: s.d, gap: s.pipeGap, pg: s.plateGap, at: bed.plate }, () => gateSlider(lay.g).translate(bed.plate) as Shape3D, { object: 'Schieberplatte' }),
   ];
   if (s.mount === 'clip') out.push(part('Wandhalter', 0.3, { kind: 'gateClip', d: s.d, A: lay.A, at: bed.clip }, () => gateClip(s).translate(bed.clip) as Shape3D, { object: 'Wandhalter' }));
   return out;

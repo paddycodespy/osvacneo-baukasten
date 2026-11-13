@@ -313,6 +313,8 @@ await withPreview(4180, async (url, browser) => {
     expect(await pg.getByText('Spiel der Platte').isVisible(), 'Spiel der Platte fehlt in der Passung');
     await step(pg, 'Download');
     expect((await pg.locator('.tips').innerText()).includes('Schlüssellöcher'), 'Druckhinweis zu den Schlüssellöchern fehlt');
+    expect((await pg.locator('.tips').innerText()).includes('Schrauben M3'), 'Druckhinweis zu den Schrauben fehlt');
+    expect((await pg.locator('.tips').innerText()).includes('Stützen werden nicht gebraucht'), 'Schieber einzeln braucht Stützen');
     expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download gesperrt');
     await step(pg, 'Verbindung');
     await pg.getByRole('radio', { name: 'Freiform' }).click();

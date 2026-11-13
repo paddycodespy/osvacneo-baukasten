@@ -26,7 +26,7 @@
     <output>{fmt(app.gate.plateGap, 2)} mm</output>
   </div>
   <HelpText id="plateGap" />
-  <p class="hint" id="plate-hint">Klemmt die Platte im Schlitz: größer. Wackelt sie: kleiner. Standard: 0,3 mm.</p>
+  <p class="hint" id="plate-hint">Geht die Platte zu schwer: größer. Zieht der Schieber Falschluft: kleiner. Standard: 0,25 mm.</p>
 </fieldset>
 {:else}
 <fieldset class="opt">

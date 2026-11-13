@@ -133,7 +133,7 @@ export const KINDS: AdapterKind[] = [
     id: 'GATE',
     code: 'Schieber',
     title: 'Schieber einzeln',
-    description: 'Absperrschieber für Rohre: das Rohr wird beidseitig eingesteckt. Mit Wandbefestigung.',
+    description: 'Absperrschieber für Rohre, zwei Teile zum Verschrauben: das Rohr wird beidseitig eingesteckt. Mit Wandbefestigung.',
     ends: { top: 'gate', bottom: null },
     diameters: [],
     gate: true,
