@@ -170,7 +170,8 @@
     if (app.layoutError) return { level: 'error', text: app.layoutError };
     if (app.status !== 'ready') return null;
     if (app.needsSupportMaterial)
-      return { level: 'warn', text: 'Ein Teil hängt beim Drucken schräg in der Luft. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Manchmal reicht es auch, das andere Ende nach unten zu legen.' };
+      return { level: 'warn', text: `Ein Teil hängt beim Drucken schräg in der Luft. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Manchmal reicht es auch, das andere Ende nach unten zu legen.${app.femaleOnBed ? ` Auch die Kupplung an ${app.femaleOnBed} steht auf ihrer Öffnung (Decke der Bajonett-Nut hängt in der Luft).` : ''}` };
+    if (app.femaleOnBed) return { level: 'warn', text: app.femaleOnBedText };
     // Kupplung oder Stecker am Abzweig: Bajonett und Nasen stehen schräg (die Prüfung oben zählt die Teile von osVAC neo nicht mit)
     const c = app.free.c;
     if (app.kind.freeform && c && c.type !== 'device' && app.free.blocks.some((b) => b.type === 'branch'))

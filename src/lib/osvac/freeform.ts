@@ -1313,16 +1313,7 @@ function planRaw(spec: FreeSpec, adj: GateAdj): FreePlan {
   });
 
   const ga = gateAt as GateAt | null;
-  if (ga) {
-    // geteilt: beide Teile stehen auf ihrem Ende
-    for (const [type, tag] of [[spec.a.type, 'Anschluss A'], [spec.b.type, 'Ende B']] as const)
-      if (type === 'female')
-        issues.push({ level: 'warn', text: `Mit Schieber werden zwei Teile gedruckt, jedes steht auf seinem Ende. Die Kupplung an ${tag} liegt dabei mit der Öffnung nach unten und bräuchte innen Stützen. Besser dort einen Stecker oder ein Gerät wählen.` });
-  } else {
-    const bedEnd = spec.bed === 'A' ? spec.a.type : spec.b.type;
-    if (bedEnd === 'female')
-      issues.push({ level: 'warn', text: 'Die Kupplung liegt mit der Öffnung nach unten. So bräuchte sie innen Stützen. Besser das andere Ende nach unten legen.' });
-  }
+  // Kupplung auf ihrer Öffnung (Ende auf dem Bett): Hinweis „Stützen nötig“ steht unter „Was liegt unten?“ und in den Druckhinweisen
   const { chainEnd, end } = planEnd(spec, { frame: f, section: s, rot: rotS }, bodies, issues, path);
   const plan: FreePlan = { bodies, issues, chainEnd, end, path, cuts, startFrame, loose };
   const pathC0 = path.length;
