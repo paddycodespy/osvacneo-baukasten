@@ -272,8 +272,8 @@ class AppState {
     const s = this.gate, L = this.gateLay;
     const t = [
       'Der Schieber besteht aus Unterteil, Oberteil und Platte. Beide Gehäuseteile stehen mit der Muffe auf dem Druckbett, ohne Stützen. Die Platte liegt flach daneben.',
-      `Zusammenbau: vier Muttern M3 von unten in die Sechskant-Taschen des Unterteils drücken. Die Platte mit dem schmalen Ende (der federnden Zunge) voran in den Kanal legen und durchschieben, bis die kleine Nase auf der anderen Seite herausspringt. Oberteil aufsetzen und mit vier Schrauben M3 × ${L.screwLen} (Zylinderkopf) gleichmäßig über Kreuz anziehen, nur so fest, dass die Platte noch gleitet.`,
-      'Herausziehen öffnet, hineinschieben schließt. Der dicke Griff und die Nase halten die Platte im Schieber. Die Dichtlippen um die Bohrung drücken leicht auf die Platte, dadurch zieht der Schieber kaum Falschluft und die Platte bleibt in jeder Stellung stehen. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.',
+      `Zusammenbau: vier Muttern M3 von unten in die Sechskant-Taschen des Unterteils drücken. Die Platte mit den dicken Enden nach oben in den Kanal legen. Oberteil aufsetzen und mit vier Schrauben M3 × ${L.screwLen} (Zylinderkopf) gleichmäßig über Kreuz anziehen, nur so fest, dass die Platte noch gleitet.`,
+      'Herausziehen öffnet, hineinschieben schließt. Die dicken Enden schlagen bei „auf“ und „zu“ am Gehäuse an, so bleibt die Platte im Schieber. Die Dichtlippen um die Bohrung drücken leicht auf die Platte, dadurch zieht der Schieber kaum Falschluft und die Platte bleibt in jeder Stellung stehen. Zum Herausnehmen das Oberteil abschrauben.',
       `Das Rohr (außen Ø ${fmt(s.d)} mm) auf beiden Seiten bis zum Anschlag einstecken.`,
     ];
     const at = `Die Rohrmitte liegt ${fmt(L.A)} mm vor der Wand.`;
