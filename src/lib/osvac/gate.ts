@@ -188,14 +188,16 @@ export function singleDims(Rm: number, Ro: number, gap: number) {
   /** halbe Breite der Platte und des Kanals: Platte deckt die Bohrung 3 mm rundum ab */
   const pw = Rm + 3, yC = pw + SIDE_GAP;
   /** Gehäuse: halbe Länge in Gleitrichtung so knapp wie möglich, quer Platz für die Schrauben neben dem Kanal */
-  const hx = Ro + 3, sx = hx - 5, sy = yC + 3.6, hy = sy + 4;
+  // Schrauben: zwischen Kanal und Kopfsenkung bzw. Muttertasche mindestens 1,2 mm Wand, außen 1,6 mm
+  const hx = Ro + 3, sx = hx - 5, sy = yC + 1.2 + HEAD_R, hy = sy + HEAD_R + 1.6;
   /** Ecke des Gehäuses und Länge der 45°-Schräge zur Muffe */
   const Rc = Math.hypot(hx, hy), cl = Rc - Ro;
   /** Platte: zu bei x = 0, auf um +P (Fenster bei −P liegt bei „zu“ außerhalb des Gehäuses) */
   const P = Rm + hx + 2;
+  /** Anschlag für „auf“: Fläche bei xs, 8 mm lang */
   const xs = -hx - 0.5 - P;
-  const x0 = xs - ZUNGE - 3, x1 = hx + 16, gripX = hx + 9.5;
-  const hw = pw + NUB;
+  const x0 = xs - 8, x1 = hx + 16, gripX = hx + 9.5;
+  const hw = pw;
   return { T, gap, ch, pw, yC, hx, hy, sx, sy, Rc, cl, P, xs, x0, x1, gripX, hw, Rm, Ro };
 }
 export type SingleDims = ReturnType<typeof singleDims>;
@@ -323,20 +325,19 @@ export function gateUpper(s: GateSpec): Shape3D {
   return h;
 }
 
-/** Platte des Schiebers einzeln flach (z = 0 … T), Gleitrichtung x, Griff bei +x, Zunge mit Nase bei −x */
+/**
+ * Platte des Schiebers einzeln flach (z = 0 … T), Gleitrichtung x. An beiden Enden 2,5 mm dicker: der Griff (+x) schlägt
+ * bei „zu“ am Gehäuse an, der Anschlag am anderen Ende bei „auf“. Die Platte wird vor dem Aufschrauben des Oberteils
+ * eingelegt, eine federnde Zunge braucht es deshalb nicht.
+ */
 export function gateSlider(g: SingleDims): Shape3D {
   const outline = (h: number) => box(g.x0, g.x1, -g.pw, g.pw, 0, h).fillet(Math.min(3, g.pw - 0.5), (e) => e.inDirection('Z')) as Shape3D;
   let pl = outline(g.T);
-  // Griff dicker als der Kanal: Anschlag bei „zu“
-  pl = pl.fuse(outline(g.T + GRIP_H).intersect(box(g.hx + 0.5, g.x1 + 1, -g.pw - 1, g.pw + 1, -1, g.T + GRIP_H + 1)));
+  const thick = outline(g.T + GRIP_H);
+  pl = pl.fuse(thick.clone().intersect(box(g.hx + 0.5, g.x1 + 1, -g.pw - 1, g.pw + 1, -1, g.T + GRIP_H + 1)) as Shape3D);
+  pl = pl.fuse(thick.intersect(box(g.x0 - 1, g.xs, -g.pw - 1, g.pw + 1, -1, g.T + GRIP_H + 1)) as Shape3D);
   pl = pl.cut(cylZ(g.Rm, -1, g.T + 1, -g.P, 0));
   pl = pl.cut(cylZ(4.5, -1, g.T + GRIP_H + 1, g.gripX, 0));
-  // Zunge an der Kante +y: fest bei xs − ZUNGE, freies Ende kurz hinter der Nase
-  const yz = g.pw - 1.8;
-  pl = pl.cut(box(g.xs - ZUNGE, g.xs + 1.3, yz - 0.8, yz, -1, g.T + 1));
-  pl = pl.cut(box(g.xs + 0.5, g.xs + 1.3, yz - 0.8, g.pw + 1, -1, g.T + 1));
-  const nub = draw([g.xs - 5, g.pw - 0.3]).lineTo([g.xs - 0.4, g.pw + NUB]).lineTo([g.xs, g.pw + NUB]).lineTo([g.xs, g.pw - 0.3]).close();
-  pl = pl.fuse(nub.sketchOnPlane('XY').extrude(g.T) as unknown as Shape3D);
   return pl;
 }
 
