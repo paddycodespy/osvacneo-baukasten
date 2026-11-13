@@ -340,6 +340,21 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
   });
 
+  await test('Übergangslänge nur mit Übergang', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: 'Freiform' }).click();
+    await step(pg, 'Aufbau');
+    await pickTemplate(pg, 'Absperrschieber');
+    await pg.locator('.card-head', { hasText: 'Ende B ·' }).click();
+    await pg.waitForTimeout(200);
+    const field = pg.locator('input[aria-label="Übergangslänge zu Ende B"]');
+    expect((await field.count()) === 0, 'Übergangslänge angezeigt, obwohl es keinen Übergang gibt');
+    await pg.locator('.card.open .chip', { hasText: /^40$/ }).click();
+    await until(pg, async () => (await field.count()) === 1, 'Übergangslänge fehlt bei anderem Durchmesser');
+    await pg.locator('.card.open .chip', { hasText: /^32$/ }).click();
+    await ready(pg);
+  });
+
   await test('Stutzen: steiler Übergang mit Vorschlag', pg, async () => {
     await step(pg, 'Verbindung');
     await pg.getByRole('radio', { name: /Kupplung → Stutzen/ }).click();
