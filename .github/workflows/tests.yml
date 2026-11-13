@@ -1,6 +1,6 @@
 # Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen, Bedienabläufe und die Geometrie aller Adapter.
 # Läuft bei jedem Push und jedem Pull Request; Ergebnis unter „Actions“ → „Tests“.
-# Drei Gruppen laufen gleichzeitig (zusammen etwa 10 statt 18 Minuten).
+# Die Gruppen laufen gleichzeitig (Freiform in zwei Hälften).
 name: Tests
 
 on:
@@ -54,10 +54,15 @@ jobs:
           path: out/ui-*.png
           if-no-files-found: ignore
 
+  # Freiform in zwei Hälften gleichzeitig (die Schieber-Fälle machen die Rechnung lang)
   freiform:
-    name: Cache-Schlüssel, Freiform
+    name: Cache-Schlüssel, Freiform ${{ matrix.teil }}/2
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        teil: [1, 2]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -67,10 +72,11 @@ jobs:
       - run: npm ci
 
       - name: Cache-Schlüssel
+        if: matrix.teil == 1
         run: npm run test:keys
 
       - name: Freiform-Rechnung
-        run: npm run test:freeform
+        run: npx tsx scripts/freeform.ts --teil=${{ matrix.teil }}/2
 
   geometrie:
     name: Geometrie aller Adapter
