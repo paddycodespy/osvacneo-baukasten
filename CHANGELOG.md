@@ -2,6 +2,10 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## 0.4.1
+
+- Schieber (einzeln und in der Freiform): Auflagen für Schraubenkopf und Mutter 2,4 statt 1,5 mm dick und mit Brückenhilfe gedruckt (gerade Brücken statt Kreise in der Luft), dadurch sauberer und fester; Schrauben M3 × 14 statt × 12. Kleine Schieber (um Ø 15) mit nur einer Schraube je Seite, sonst berühren sich die Muttern.
+
 ## 0.4.0
 
 - Neu: Programm für Linux (AppImage und .deb). Downloads landen jetzt auch unter macOS und Linux im Ordner „Downloads“.

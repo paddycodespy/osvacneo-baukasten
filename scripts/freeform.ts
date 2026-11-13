@@ -487,6 +487,9 @@ for (const [id, kind, pipe, text] of [
       const lo = gateLower(s), up = gateUpper(s), pl = gateSlider(lay.g);
       for (const x of [lo, up, pl]) if (!valid(x) || !(measureVolume(x) > 0)) bad.push('ungültig');
       for (const [n, x, nm] of [['Unterteil', lo, 'Schieber-Unterteil'], ['Oberteil', up, 'Schieber-Oberteil'], ['Platte', pl, 'Schieberplatte']] as const) if (badEdges(x, nm)) bad.push(`${n}: ${badEdges(x, nm)} Kanten im Netz nicht geschlossen`);
+      // Schrauben: Muttern und Köpfe einer Seite dürfen sich nicht berühren (sonst nur eine je Seite)
+      if (lay.screwN === 4 && 2 * lay.g.sx < (2 * 5.8) / Math.sqrt(3) + 0.8 - 1e-9) bad.push(`Muttern zu nah (Abstand ${(2 * lay.g.sx).toFixed(1)})`);
+      if (lay.screwLen < lay.g.ch + 2 * 2.4 + 2.4) bad.push(`Schrauben zu kurz (${lay.screwLen})`);
       // Gehäuseteile berühren sich nur an der Trennfläche (kein Volumen gemeinsam)
       const both = measureVolume(lo.clone().intersect(up.clone()) as Shape3D);
       if (both > 0.01) bad.push(`Unter- und Oberteil überlappen ${both.toFixed(2)}`);

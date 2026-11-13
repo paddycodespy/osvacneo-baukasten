@@ -12,7 +12,7 @@
  */
 import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, measureVolume, type Shape3D, type Point } from 'replicad';
 import { UserError, partLabel, partNotes } from '../errors';
-import { tubeGateDims, tubeGateLower, tubeGateUpper, tubeGateScrew, gateSlider, snapPlateGap, GATE_GAP, GATE_LAYER } from './gate';
+import { tubeGateDims, tubeGateLower, tubeGateUpper, tubeGateScrew, gateScrewCount, gateSlider, snapPlateGap, GATE_GAP, GATE_LAYER } from './gate';
 
 // ---------------------------------------------------------------- Datenmodell
 
@@ -840,7 +840,7 @@ export interface FreePlan {
    * B-Teil auf Ende B). floor/lid: Boden des Kanals und Trennfläche auf der Achse, t: Laufrichtung (von A nach B).
    * pathPart2: je Punkt von path, ob er zum B-Teil gehört. cPart2: Ende C hängt am B-Teil.
    */
-  split?: { block: number; floor: V3; lid: V3; t: V3; pathPart2: boolean[]; cPart2: boolean; screw: number };
+  split?: { block: number; floor: V3; lid: V3; t: V3; pathPart2: boolean[]; cPart2: boolean; screw: number; screwN: number };
 }
 
 /** Freiform mit Schieber: wird in zwei Teilen gedruckt */
@@ -984,7 +984,7 @@ function planRaw(spec: FreeSpec, adj: GateAdj): FreePlan {
   type BranchStart = { frame: Frame; section: Section; rot: number; n: V3 };
   let branch = null as BranchStart | null;
   let branchIdx = -1;
-  type GateAt = { block: number; body: number; floor: V3; lid: V3; t: V3; path: number; screw: number };
+  type GateAt = { block: number; body: number; floor: V3; lid: V3; t: V3; path: number; screw: number; screwN: number };
   let gateAt = null as GateAt | null;
   spec.blocks.forEach((b, idx) => {
     const name = `Formstück ${idx + 1} · ${BLOCK_LABELS[b.type]}`;
@@ -1184,7 +1184,7 @@ function planRaw(spec: FreeSpec, adj: GateAdj): FreePlan {
       bodies.push({ name: `${name} unten`, cost: 1.5, dep: { ...dg, h: 'lo' }, make: () => placeShape(tubeGateLower(td, zF), pl) });
       const floor = add(start.o, mul(start.t, zF)), lid = add(start.o, mul(start.t, zF + td.g.ch));
       path.push(floor);
-      gateAt = { block: idx, body: bodies.length, floor, lid, t: start.t, path: path.length, screw: tubeGateScrew(td) };
+      gateAt = { block: idx, body: bodies.length, floor, lid, t: start.t, path: path.length, screw: tubeGateScrew(td), screwN: gateScrewCount(td.g) };
       bodies.push({ name: `${name} oben`, cost: 1.2, dep: { ...dg, h: 'up' }, make: () => placeShape(tubeGateUpper(td, zF, Le), pl) });
       path.push(lid);
       loose.push({ name: `Schieberplatte ${idx + 1}`, cost: 0.3, dep: { kind: 'free', t: 'gate2Plate', d: r6(s0.d), w, gap }, make: () => gateSlider(td.g), x0: td.g.x0, x1: td.g.x1, hw: td.g.hw });
@@ -1342,7 +1342,7 @@ function planRaw(spec: FreeSpec, adj: GateAdj): FreePlan {
       if (i >= ga.body && x.part2 === undefined) x.part2 = true;
     });
     const pathPart2 = path.map((_, i) => (i >= pathC0 ? cPart2 : i >= ga.path));
-    plan.split = { block: ga.block, floor: ga.floor, lid: ga.lid, t: ga.t, pathPart2, cPart2, screw: ga.screw };
+    plan.split = { block: ga.block, floor: ga.floor, lid: ga.lid, t: ga.t, pathPart2, cPart2, screw: ga.screw, screwN: ga.screwN };
   }
   return plan;
 }
