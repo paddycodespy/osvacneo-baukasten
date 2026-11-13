@@ -2263,25 +2263,6 @@ export function loosePlacements(spec: FreeSpec, plan: FreePlan): Placement[] {
   });
 }
 
-/** Mitte der Endflächen A, B (und C) mit Richtung aus dem Adapter heraus, in den Koordinaten auf dem Druckbett (für die Plaketten) */
-export function endMarkers(spec: FreeSpec, plan: FreePlan): { id: 'A' | 'B' | 'C'; p: V3; t: V3; r: number }[] {
-  const { R, tr } = bedPlacement(spec, plan);
-  const pt = (p: V3): V3 => add(mulMV(R, p), tr);
-  // Außenradius: Kupplung etwa Innen-Ø/2 + 9 mm, Stecker + 4 mm, Gerät größte Ausdehnung von Wand bzw. Flanschplatte
-  const radius = (E: EndSpec) => {
-    if (E.type !== 'device') return E.d / 2 + (E.type === 'female' ? 9 : 4);
-    const dv = E.device;
-    const sh = dv.mode === 'flange' ? flangeGeom(dv, spec.wall, false).plate : grow(dv.section, spec.wall + (dv.mode === 'over' ? dv.allowance : 0));
-    return Math.max(...samplePoints(sh, 72, dv.rot).map((q) => Math.hypot(q[0], q[1])));
-  };
-  const out: { id: 'A' | 'B' | 'C'; p: V3; t: V3; r: number }[] = [
-    { id: 'A', p: pt([0, 0, 0]), t: mulMV(R, [0, 0, 1]), r: spec.a.d / 2 + (spec.a.type === 'female' ? 9 : 4) },
-    { id: 'B', p: pt(plan.end.o), t: mulMV(R, plan.end.t), r: radius(spec.b) },
-  ];
-  if (plan.cEnd && spec.c) out.push({ id: 'C', p: pt(plan.cEnd.o), t: mulMV(R, plan.cEnd.t), r: radius(spec.c) });
-  return out;
-}
-
 /** Gewählte Extras am Gerät, die auch wirklich gebaut werden (für Dateiname und Druckbett-Liste) */
 export function extrasText(spec: FreeSpec): string[] {
   const dv = spec.b.device;

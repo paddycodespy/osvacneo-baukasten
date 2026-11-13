@@ -91,10 +91,6 @@ button:disabled { cursor: not-allowed; }
 .viewport { position: absolute; inset: 0; }
 .viewport :global(canvas) { display: block; }
 /* Plaketten A/B/C an den Enden (Freiform): klein, durchscheinend, wie die Buchstaben an den Karten */
-.end-markers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.end-marker { position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(51, 51, 51, 0.78); color: #fff; font: 700 12px/1 var(--body); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: opacity 0.15s, background 0.15s; }
-.end-marker.active { background: var(--sky); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7); }
-.end-marker.behind { opacity: 0.35; }
 
 .stage-head {
   position: absolute;
@@ -574,11 +570,6 @@ legend.field-label { width: 100%; }
 .license .version { margin-top: 10px; font-size: 12px; }
 .license .gh { display: inline-flex; align-items: center; gap: 5px; }
 .license .gh svg { width: 14px; height: 14px; fill: currentColor; }
-.license .news { margin: 4px 0 0; font-size: 13px; }
-.license .news summary { cursor: pointer; color: var(--grey); font-size: 12px; }
-.license .news summary:hover { color: var(--sky-d); }
-.license .news ul { margin: 6px 0 0; padding-left: 18px; }
-.license .news li { margin: 3px 0; }
 
 /* Häkchen mit Beschreibung darunter (Extras): Beschreibung beginnt dort, wo der Text neben dem Kästchen beginnt */
 .x-list { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }

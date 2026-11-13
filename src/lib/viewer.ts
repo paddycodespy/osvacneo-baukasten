@@ -77,13 +77,6 @@ export class PartViewer {
   private planes: ((name: string) => { p: [number, number, number]; n: [number, number, number] } | null) | null = null;
   section = false;
   showHelpers = true;
-  /** Plaketten A/B/C an den Enden (HTML über der Vorschau, folgen Drehen und Zoomen) */
-  private markers: { el: HTMLElement; p: THREE.Vector3; t: THREE.Vector3; r: number }[] = [];
-  private markerLayer: HTMLElement;
-  private ray = new THREE.Raycaster();
-  /** Bereiche über der Vorschau (Kopfzeile, Werkzeuge, Fußzeile): dort keine Plaketten */
-  markerAvoid: HTMLElement[] = [];
-
   constructor(private host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -91,9 +84,6 @@ export class PartViewer {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     host.appendChild(this.renderer.domElement);
-    this.markerLayer = document.createElement('div');
-    this.markerLayer.className = 'end-markers';
-    host.appendChild(this.markerLayer);
 
     this.camera = new THREE.PerspectiveCamera(32, 1, 1, 5000);
     this.camera.up.set(0, 0, 1);
@@ -151,7 +141,6 @@ export class PartViewer {
       if (moved || this.needsRender) {
         this.renderer.render(this.scene, this.camera);
         this.needsRender = false;
-        this.placeMarkers();
       }
     };
     loop();
@@ -331,63 +320,8 @@ export class PartViewer {
     this.needsRender = true;
   }
 
-  /**
-   * Plaketten an den Enden setzen. p: Mitte der Endfläche, t: Richtung aus dem Adapter heraus, r: Außenradius des Endes
-   * (Koordinaten wie die Körper). Die Plakette sitzt seitlich neben der Öffnung (zur Bildschirmseite hin), beim Ende
-   * auf dem Bett knapp darüber. active: hervorgehobenes Ende (gerade bearbeitet).
-   */
-  setMarkers(list: { id: string; p: [number, number, number]; t: [number, number, number]; r: number }[], active: string | null) {
-    for (const m of this.markers) m.el.remove();
-    this.markers = list.map((x) => {
-      const el = document.createElement('span');
-      el.className = 'end-marker' + (x.id === active ? ' active' : '');
-      el.textContent = x.id;
-      el.setAttribute('aria-hidden', 'true');
-      this.markerLayer.appendChild(el);
-      return { el, p: new THREE.Vector3(...x.p), t: new THREE.Vector3(...x.t).normalize(), r: x.r };
-    });
-    this.needsRender = true;
-  }
-
-  /** Plaketten auf den Bildschirm projizieren; vom Modell verdeckte werden blasser */
-  private placeMarkers() {
-    if (!this.markers.length) return;
-    const w = this.host.clientWidth, h = this.host.clientHeight;
-    const meshes = this.model.children;
-    const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
-    const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
-    for (const m of this.markers) {
-      // seitlich: Bildschirm-rechts, senkrecht zur Achse des Endes (blickt man genau in die Öffnung, nach oben)
-      let side = right.clone().addScaledVector(m.t, -right.dot(m.t));
-      if (side.lengthSq() < 0.05) side = up.clone().addScaledVector(m.t, -up.dot(m.t));
-      side.normalize();
-      const onBed = m.t.z < -0.9;
-      const wp = m.p.clone().addScaledVector(m.t, onBed ? -4 : 2).addScaledVector(side, m.r + 8).add(this.model.position);
-      const q = wp.clone().project(this.camera);
-      const off = q.z > 1 || q.x < -1.1 || q.x > 1.1 || q.y < -1.1 || q.y > 1.1;
-      m.el.style.display = off ? 'none' : '';
-      if (off) continue;
-      const sx = ((q.x + 1) / 2) * w, sy = ((1 - q.y) / 2) * h;
-      const host = this.host.getBoundingClientRect();
-      const under = this.markerAvoid.some((el) => {
-        const r = el.getBoundingClientRect();
-        return r.width > 0 && sx + 12 > r.left - host.left && sx - 12 < r.right - host.left && sy + 12 > r.top - host.top && sy - 12 < r.bottom - host.top;
-      });
-      m.el.style.display = under ? 'none' : '';
-      if (under) continue;
-      m.el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -50%)`;
-      const dir = wp.clone().sub(this.camera.position);
-      const dist = dir.length();
-      this.ray.set(this.camera.position, dir.normalize());
-      this.ray.far = dist - 1;
-      m.el.classList.toggle('behind', this.ray.intersectObjects(meshes, false).length > 0);
-    }
-  }
-
   dispose() {
     this.disposed = true;
-    for (const m of this.markers) m.el.remove();
-    this.markerLayer.remove();
     this.ro.disconnect();
     this.controls.dispose();
     this.renderer.dispose();

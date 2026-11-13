@@ -1,6 +1,6 @@
 # Was ist neu
 
-Die Liste steht auch in der App im Schritt „Download“ unter der Version (src/lib/news.ts, bitte beide pflegen).
+Änderungen je Version (in der App nicht mehr angezeigt).
 
 ## 0.4.0
 
