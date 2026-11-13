@@ -13,6 +13,7 @@
     "windows": [
       {
         "label": "main",
+        "create": false,
         "title": "osVAC neo Baukasten",
         "width": 1440,
         "height": 900,
@@ -34,7 +35,11 @@
     "shortDescription": "Absaugadapter selbst gestalten",
     "longDescription": "Absaugadapter von osVAC neo konfigurieren und als 3MF, STL oder STEP speichern.",
     "licenseFile": "../LICENSE",
+    "category": "Utility",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "linux": {
+      "deb": { "section": "graphics" }
+    },
     "windows": {
       "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
       "nsis": {

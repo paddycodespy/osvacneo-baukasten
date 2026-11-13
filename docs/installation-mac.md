@@ -9,6 +9,8 @@ Voraussetzung: macOS 11 (Big Sur) oder neuer. Die App läuft auf Apple-Silicon- 
    - **macOS 11 bis 14:** Im Ordner „Programme“ mit der rechten Maustaste (oder Ctrl-Klick) auf die App, **Öffnen** wählen und in der Meldung noch einmal **Öffnen** klicken.
 4. Danach startet die App normal per Doppelklick.
 
+Heruntergeladene Dateien (3MF, STL, STEP) landen im Ordner „Downloads“.
+
 **Umstieg vom „osVAC neo Konfigurator“ (bis 0.2.0):** Die App heißt seit 0.3.0 „osVAC neo Baukasten“ und wird neben der alten installiert. Die alte App einfach aus „Programme“ in den Papierkorb ziehen. Der zuletzt bearbeitete Adapter wird nicht übernommen, die App startet einmal mit dem Standard.
 
 Meldet macOS, die App sei „beschädigt“, hilft im Terminal:
