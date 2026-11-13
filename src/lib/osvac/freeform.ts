@@ -12,7 +12,7 @@
  */
 import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, measureVolume, type Shape3D, type Point } from 'replicad';
 import { UserError, partLabel, partNotes } from '../errors';
-import { gateDims, gateTube, gatePlate, GATE_GAP } from './gate';
+import { tubeGateDims, tubeGateLower, tubeGateUpper, tubeGateScrew, gateSlider, snapPlateGap, GATE_GAP, GATE_LAYER } from './gate';
 
 // ---------------------------------------------------------------- Datenmodell
 
@@ -424,11 +424,11 @@ export const TEMPLATES: { id: string; title: string; hint: string; make: () => F
   {
     id: 'gate',
     title: 'Absperrschieber',
-    hint: 'Schieber zwischen Kupplung und Stecker',
+    hint: 'Schieber zwischen zwei Steckern, in zwei Teilen gedruckt',
     make: () => ({
-      a: { type: 'female', d: 32 },
+      a: { type: 'male', d: 32 },
       wall: 3,
-      blocks: [newBlock('gate', { length: 40 })],
+      blocks: [newBlock('gate', { length: 46 })],
       b: { type: 'male', d: 32, device: { ...DEFAULT_DEVICE }, transition: 10 },
       bed: 'B',
     }),
@@ -804,6 +804,8 @@ export interface FreeBody {
   cost: number;
   dep: unknown;
   make: () => Shape3D;
+  /** Schieber teilt den Adapter: Körper des Teils mit Ende B (sonst Teil mit Anschluss A) */
+  part2?: boolean;
 }
 
 /** Eigenes Teil, das flach neben dem Adapter gedruckt wird (Platte des Schiebers); x0 … x1 und ±hw im eigenen System */
@@ -833,7 +835,16 @@ export interface FreePlan {
   cEnd?: Frame;
   /** Schnittebene für Ende C (Ebene von Rohr und Abzweig) */
   cCut?: V3;
+  /**
+   * Schieber: der Adapter wird an der Trennfläche geteilt und in zwei Teilen gedruckt (A-Teil steht auf Anschluss A,
+   * B-Teil auf Ende B). floor/lid: Boden des Kanals und Trennfläche auf der Achse, t: Laufrichtung (von A nach B).
+   * pathPart2: je Punkt von path, ob er zum B-Teil gehört. cPart2: Ende C hängt am B-Teil.
+   */
+  split?: { block: number; floor: V3; lid: V3; t: V3; pathPart2: boolean[]; cPart2: boolean; screw: number };
 }
+
+/** Freiform mit Schieber: wird in zwei Teilen gedruckt */
+export const hasSplit = (spec: FreeSpec) => spec.blocks.some((b) => b.type === 'gate');
 
 /** Länge des Übergangskonus zwischen Anschluss von osVAC neo und Formstück (TransitionConeLength) */
 export const OSVAC_TRANSITION = 8;
@@ -920,7 +931,38 @@ function hollowLoft(frames: Frame[], inner: P2[][], outer: P2[][], ruled: boolea
  * Plant die Kette ab dem Anschlussende des Übergangskonus von Anschluss A.
  * Lage: Anschluss A oben in der Achse, Oberkante z = 0, Laufrichtung −Z (wie bei den Stutzen-Adaptern).
  */
+type GateAdj = { delta: number; eps: number };
+
+/**
+ * Plan der Freiform. Mit Schieber zweimal nachgerechnet: Boden und Trennfläche sollen beim Druck im Schichtraster
+ * (0,2 mm) liegen, sonst rundet der Slicer die Dichtlippen weg. Dazu wird das Gehäuse auf dem Rohr um delta
+ * verschoben (Boden im A-Teil) und das Rohr hinter dem Deckel um eps verlängert (Trennfläche im B-Teil).
+ */
 export function planFree(spec: FreeSpec): FreePlan {
+  const p0 = planRaw(spec, { delta: 0, eps: 0 });
+  if (!p0.split || p0.issues.some((x) => x.level === 'error')) return p0;
+  const up = (pl: Placement, v: V3) => mulMV(pl.R, v)[2];
+  const zOf = (pl: Placement, v: V3) => add(mulMV(pl.R, v), pl.tr)[2];
+  const { p1, p2 } = partPlacements(spec, p0);
+  const n1 = up(p1, p0.split.t), n2 = up(p2!, p0.split.t);
+  if (n1 < 0.999 || n2 > -0.999) {
+    p0.issues.push({
+      level: 'warn',
+      text: `Schieber (Baustein ${p0.split.block + 1}): Die Trennfläche liegt beim Druck nicht waagerecht oben. Beide Teile stehen auf ihren Enden (A und B); liegt dazwischen ein Bogen, steht das Gehäuse schräg, die Dichtlippen werden ungenau und es braucht eventuell Stützen. Den Schieber besser in ein gerades Stück direkt an einem Ende setzen.`,
+    });
+    return p0;
+  }
+  const L = GATE_LAYER;
+  const z1 = zOf(p1, p0.split.floor);
+  const delta = (Math.round(z1 / L) * L - z1) / n1;
+  const pa = planRaw(spec, { delta, eps: 0 });
+  const q = partPlacements(spec, pa);
+  const z2 = zOf(q.p2!, pa.split!.lid);
+  const eps = (Math.ceil(z2 / L - 1e-6) * L - z2) / -n2;
+  return planRaw(spec, { delta, eps });
+}
+
+function planRaw(spec: FreeSpec, adj: GateAdj): FreePlan {
   const issues: Issue[] = [];
   const bodies: FreeBody[] = [];
   const w = spec.wall;
@@ -941,6 +983,9 @@ export function planFree(spec: FreeSpec): FreePlan {
   /** Abzweig: Anfang von Ende C */
   type BranchStart = { frame: Frame; section: Section; rot: number; n: V3 };
   let branch = null as BranchStart | null;
+  let branchIdx = -1;
+  type GateAt = { block: number; body: number; floor: V3; lid: V3; t: V3; path: number; screw: number };
+  let gateAt = null as GateAt | null;
   spec.blocks.forEach((b, idx) => {
     const name = `Formstück ${idx + 1} · ${BLOCK_LABELS[b.type]}`;
     const what = `${BLOCK_LABELS[b.type]} (Baustein ${idx + 1})`;
@@ -1111,28 +1156,41 @@ export function planFree(spec: FreeSpec): FreePlan {
         }
       }
       branch = { frame: fc, section: inner, rot: 0, n: axis };
+      branchIdx = idx;
       f = advance(start, L);
       path.push(f.o);
     } else if (b.type === 'gate') {
+      if (gateAt) {
+        issues.push({ level: 'error', text: `${what}: Es geht nur ein Schieber je Adapter (der Adapter wird am Schieber in zwei Teile geteilt). Bitte einen der beiden entfernen.` });
+        return;
+      }
       if (s0.shape !== 'circle') {
         issues.push({ level: 'error', text: `${what}: Vor dem Schieber muss das Rohr rund sein. Bitte davor einen Übergang auf „Kreis“ einfügen.` });
         return;
       }
-      const gap = spec.gateGap ?? GATE_GAP;
-      const g = gateDims(s0.d / 2, s0.d / 2 + w, gap);
+      const gap = snapPlateGap(spec.gateGap ?? GATE_GAP);
+      const td = tubeGateDims(s0.d / 2, s0.d / 2 + w, gap);
       const L = b.length;
-      if (!(L >= g.minLen - 1e-9)) {
-        issues.push({ level: 'error', text: `${what}: Der Schieber muss mindestens ${f1(upHalf(g.minLen))} mm lang sein, sonst passt der Rahmen um den Schlitz nicht aufs Rohr.`, fixes: [fixTo('Länge', 'Länge des Schiebers', upHalf(g.minLen), (sp, x) => void (blk(sp).length = x))] });
+      if (!(L >= td.minLen - 1e-9)) {
+        issues.push({ level: 'error', text: `${what}: Der Schieber muss mindestens ${f1(upHalf(td.minLen))} mm lang sein, sonst passt das Gehäuse mit seinen Schrägen nicht aufs Rohr.`, fixes: [fixTo('Länge', 'Länge des Schiebers', upHalf(td.minLen), (sp, x) => void (blk(sp).length = x))] });
         return;
       }
-      // Gehäuse im eigenen System bauen (Achse +z, Platte gleitet entlang +x = Richtung) und an den Anfang des Bausteins legen
+      // Gehäuse im eigenen System bauen (Achse +z, Platte gleitet entlang +x = Richtung) und an den Anfang des Bausteins
+      // legen; Boden mittig (plus delta fürs Schichtraster), das Rohr hinter dem Deckel um eps länger
+      const Le = L + adj.eps;
+      const zF = L / 2 - td.g.ch / 2 + adj.delta;
       const pl = localPlacement(start.o, inPlane(start, b.dir), start.t);
-      const dg = { ...base, t: 'gate', L: r6(L), dir: r6(b.dir), gap };
-      bodies.push({ name, cost: 1.5, dep: dg, make: () => placeShape(gateTube(g, L), pl) });
-      loose.push({ name: `Schieberplatte ${idx + 1}`, cost: 0.3, dep: { kind: 'free', t: 'gatePlate', d: r6(s0.d), w, gap }, make: () => gatePlate(g), x0: g.x0, x1: g.x1, hw: g.hw });
-      f = advance(start, L);
+      const dg = { ...base, t: 'gate2', L: r6(Le), zF: r6(zF), dir: r6(b.dir), gap };
+      bodies.push({ name: `${name} unten`, cost: 1.5, dep: { ...dg, h: 'lo' }, make: () => placeShape(tubeGateLower(td, zF), pl) });
+      const floor = add(start.o, mul(start.t, zF)), lid = add(start.o, mul(start.t, zF + td.g.ch));
+      path.push(floor);
+      gateAt = { block: idx, body: bodies.length, floor, lid, t: start.t, path: path.length, screw: tubeGateScrew(td) };
+      bodies.push({ name: `${name} oben`, cost: 1.2, dep: { ...dg, h: 'up' }, make: () => placeShape(tubeGateUpper(td, zF, Le), pl) });
+      path.push(lid);
+      loose.push({ name: `Schieberplatte ${idx + 1}`, cost: 0.3, dep: { kind: 'free', t: 'gate2Plate', d: r6(s0.d), w, gap }, make: () => gateSlider(td.g), x0: td.g.x0, x1: td.g.x1, hw: td.g.hw });
+      f = advance(start, Le);
       path.push(f.o);
-    } else {
+        } else {
       const s1 = b.section;
       checkSection(s1, what, issues, { label: b.type === 'step' ? 'Form nach dem Absatz' : 'Form am Ende', get: (sp) => blk(sp).section });
       if (issues.some((x) => x.level === 'error' && x.text.startsWith(what))) return;
@@ -1254,11 +1312,20 @@ export function planFree(spec: FreeSpec): FreePlan {
     }
   });
 
-  const bedEnd = spec.bed === 'A' ? spec.a.type : spec.b.type;
-  if (bedEnd === 'female')
-    issues.push({ level: 'warn', text: 'Die Kupplung liegt mit der Öffnung nach unten. So bräuchte sie innen Stützen. Besser das andere Ende nach unten legen.' });
+  const ga = gateAt as GateAt | null;
+  if (ga) {
+    // geteilt: beide Teile stehen auf ihrem Ende
+    for (const [type, tag] of [[spec.a.type, 'Anschluss A'], [spec.b.type, 'Ende B']] as const)
+      if (type === 'female')
+        issues.push({ level: 'warn', text: `Mit Schieber werden zwei Teile gedruckt, jedes steht auf seinem Ende. Die Kupplung an ${tag} liegt dabei mit der Öffnung nach unten und bräuchte innen Stützen. Besser dort einen Stecker oder ein Gerät wählen.` });
+  } else {
+    const bedEnd = spec.bed === 'A' ? spec.a.type : spec.b.type;
+    if (bedEnd === 'female')
+      issues.push({ level: 'warn', text: 'Die Kupplung liegt mit der Öffnung nach unten. So bräuchte sie innen Stützen. Besser das andere Ende nach unten legen.' });
+  }
   const { chainEnd, end } = planEnd(spec, { frame: f, section: s, rot: rotS }, bodies, issues, path);
   const plan: FreePlan = { bodies, issues, chainEnd, end, path, cuts, startFrame, loose };
+  const pathC0 = path.length;
   const br = branch as BranchStart | null;
   if (br) {
     // Ende C wie Ende B planen (gleicher Code mit spec.c an der Stelle von spec.b), Meldungen und Körper umbenennen
@@ -1272,10 +1339,19 @@ export function planFree(spec: FreeSpec): FreePlan {
         text: toC(x.text),
         fixes: x.fixes?.map((fx) => ({ label: toC(fx.label), fields: fx.fields.map(toC), set: (sp) => fx.set({ ...sp, b: (sp.c ??= defaultC(br.section.d)), bed: 'B' }) })),
       });
-    for (const x of bod) bodies.push({ ...x, name: cName(x.name) });
+    for (const x of bod) bodies.push({ ...x, name: cName(x.name), part2: !!ga && branchIdx > ga.block });
     plan.cChainEnd = rc.chainEnd;
     plan.cEnd = rc.end;
     plan.cCut = br.n;
+  }
+  if (ga) {
+    const cPart2 = !!br && branchIdx > ga.block;
+    // Körper ab dem Deckel gehören zum B-Teil (Ende C wurde oben schon zugeordnet)
+    bodies.forEach((x, i) => {
+      if (i >= ga.body && x.part2 === undefined) x.part2 = true;
+    });
+    const pathPart2 = path.map((_, i) => (i >= pathC0 ? cPart2 : i >= ga.path));
+    plan.split = { block: ga.block, floor: ga.floor, lid: ga.lid, t: ga.t, pathPart2, cPart2, screw: ga.screw };
   }
   return plan;
 }
@@ -1801,7 +1877,7 @@ function planFlange(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
   const o = dv.section;
   checkSection(o, 'Gerät', issues, { label: 'Form der Öffnung', get: (sp) => sp.b.device.section });
   if ((o.shape === 'circle' ? o.d : Math.min(o.w, o.h)) < 4) issues.push({ level: 'error', text: 'Gerät: Die Öffnung muss mindestens 4 mm groß sein.' });
-  if (spec.bed === 'A') issues.push({ level: 'error', text: 'Gerät: Mit Flansch liegt Ende B beim Drucken unten. Bitte unten „Ende B“ wählen.' });
+  if (spec.bed === 'A' && !hasSplit(spec)) issues.push({ level: 'error', text: 'Gerät: Mit Flansch liegt Ende B beim Drucken unten. Bitte unten „Ende B“ wählen.' });
   if (issues.some((x) => x.level === 'error')) return ce.frame;
   const G = flangeGeom(dv, w);
   for (const e of G.errors) issues.push({ level: 'error', text: `Gerät: ${e.text}`, fixes: e.fixes });
@@ -2137,25 +2213,114 @@ export function localPlacement(o: V3, xDir: V3, zDir: V3): Placement {
   return { R: colsToM(xDir, y, zDir), tr: o };
 }
 
+/** Drehung, die ein Ende nach unten legt: A (Achse −z im Plan) oder B (Laufrichtung der Endfläche nach −z) */
+function bedRotation(bed: 'A' | 'B', plan: FreePlan): M3 {
+  if (bed === 'A') return rotM([1, 0, 0], Math.PI);
+  const t = plan.end.t;
+  const target: V3 = [0, 0, -1];
+  const c = dot(t, target);
+  if (c < -1 + 1e-9) return rotM([1, 0, 0], Math.PI);
+  if (c < 1 - 1e-9) return rotM(unit(cross(t, target)), Math.acos(c));
+  return IDENTITY;
+}
+
+/** in x/y mittig über den Ursprung legen */
+function centerOn(R: M3, pts: V3[], z: number): Placement {
+  const q = pts.map((p) => mulMV(R, p));
+  const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  return { R, tr: [Math.abs(cx) < 1e-6 ? 0 : -cx, Math.abs(cy) < 1e-6 ? 0 : -cy, z] };
+}
+
 /**
  * Lage auf dem Druckbett: gewähltes Ende nach unten (Endfläche flach auf dem Bett),
- * in x/y mittig über dem Ursprung.
+ * in x/y mittig über dem Ursprung. (Ohne Schieber; mit Schieber siehe partPlacements.)
  */
 export function bedPlacement(spec: FreeSpec, plan: FreePlan): Placement {
-  let R: M3 = IDENTITY;
-  if (spec.bed === 'A') R = rotM([1, 0, 0], Math.PI);
-  else {
-    const t = plan.end.t;
-    const target: V3 = [0, 0, -1];
-    const c = dot(t, target);
-    if (c < -1 + 1e-9) R = rotM([1, 0, 0], Math.PI);
-    else if (c < 1 - 1e-9) R = rotM(unit(cross(t, target)), Math.acos(c));
+  return centerOn(bedRotation(spec.bed, plan), plan.path, 0);
+}
+
+/** Körper eines geteilten Adapters: gehört der Name zum B-Teil? (A-Teil, Schieberplatten und ungeteilt: nein) */
+export function inPart2(plan: FreePlan): (name: string) => boolean {
+  const sp = plan.split;
+  if (!sp) return () => false;
+  return (n: string) => {
+    if (n.startsWith('Schieberplatte')) return false;
+    const m = /^Formstück (\d+)/.exec(n);
+    if (m) {
+      const i = Number(m[1]) - 1;
+      return i > sp.block || (i === sp.block && n.endsWith(' oben'));
+    }
+    if (/^(Geräteanschluss C|Übergang zu Ende C)/.test(n) || / C( \d+)?$/.test(n)) return sp.cPart2;
+    return /^(Geräteanschluss|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(n) || / B( \d+)?$/.test(n);
+  };
+}
+
+/** Außenradius eines Endes auf dem Bett bzw. frei (Kupplung mit Rändelung, Stecker mit Rand der Druckhilfe, Gerät/Flansch) */
+function endRadius(E: EndSpec, onBed: boolean, w: number) {
+  if (E.type === 'female') return E.d / 2 + 12;
+  if (E.type === 'male') return E.d / 2 + (onBed ? 27 : 6);
+  const dv = E.device;
+  const sh = dv.mode === 'flange' ? flangeGeom(dv, w, false).plate : grow(dv.section, w + dv.allowance + 1);
+  return Math.max(...samplePoints(sh, 72, dv.rot).map((q) => Math.hypot(q[0], q[1]))) + 1;
+}
+
+/** größte Ausdehnung der Bausteine quer zur Mittellinie */
+function chainRadius(spec: FreeSpec): number {
+  const w = spec.wall;
+  let rc = spec.a.d / 2 + w + 1;
+  let cur = spec.a.d;
+  for (const b of spec.blocks) {
+    if (b.type === 'transition' || b.type === 'step') {
+      rc = Math.max(rc, Math.max(b.section.d, b.section.w, b.section.h, b.section.w2) / 2 + w + 1);
+      cur = b.section.shape === 'circle' ? b.section.d : Math.max(b.section.w, b.section.h);
+    }
+    if (b.type === 'gate') rc = Math.max(rc, tubeGateDims(cur / 2, cur / 2 + w, snapPlateGap(spec.gateGap ?? GATE_GAP)).g.Rc + 1);
+    if (b.type === 'branch') rc = Math.max(rc, b.branchD / 2 + w + 1);
   }
-  const pts = plan.path.map((p) => mulMV(R, p));
-  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
-  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-  const tr: V3 = [Math.abs(cx) < 1e-6 ? 0 : -cx, Math.abs(cy) < 1e-6 ? 0 : -cy, 0];
-  return { R, tr };
+  return rc;
+}
+
+type Box2 = { x0: number; x1: number; y0: number; y1: number };
+/** Grundfläche (grob, eher zu groß) eines Teils: Punkte der Mittellinie mit Radius, Enden mit eigenem Radius */
+function partBox(pl: Placement, pts: [V3, number][]): Box2 {
+  const box = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+  for (const [p, r] of pts) {
+    const q = add(mulMV(pl.R, p), pl.tr);
+    box.x0 = Math.min(box.x0, q[0] - r); box.x1 = Math.max(box.x1, q[0] + r);
+    box.y0 = Math.min(box.y0, q[1] - r); box.y1 = Math.max(box.y1, q[1] + r);
+  }
+  return box;
+}
+
+/** Punkte (mit Radius) je Teil: 1 = mit Anschluss A (bzw. alles, wenn ungeteilt), 2 = mit Ende B */
+function partPoints(spec: FreeSpec, plan: FreePlan, part: 1 | 2): [V3, number][] {
+  const sp = plan.split, w = spec.wall;
+  const rc = chainRadius(spec);
+  const mine = (i: number) => !sp || sp.pathPart2[i] === (part === 2);
+  const out: [V3, number][] = plan.path.filter((_, i) => mine(i)).map((p) => [p, rc]);
+  const bedA = sp ? true : spec.bed === 'A', bedB = sp ? true : spec.bed === 'B';
+  if (!sp || part === 1) for (const p of [[0, 0, 0] as V3, plan.startFrame.o]) out.push([p, endRadius({ ...spec.b, type: spec.a.type, d: spec.a.d }, bedA, w)]);
+  if (!sp || part === 2) for (const p of [plan.chainEnd.frame.o, plan.end.o]) out.push([p, endRadius(spec.b, bedB, w)]);
+  if (plan.cChainEnd && plan.cEnd && spec.c && (!sp || sp.cPart2 === (part === 2))) for (const p of [plan.cChainEnd.frame.o, plan.cEnd.o]) out.push([p, endRadius(spec.c, false, w)]);
+  return out;
+}
+
+/**
+ * Lage der Teile auf dem Druckbett. Ohne Schieber: ein Teil, gewähltes Ende unten (p2 = null). Mit Schieber: A-Teil
+ * steht auf Anschluss A, B-Teil auf Ende B (Endfläche bei z = 0), rechts daneben mit 10 mm Abstand.
+ */
+export function partPlacements(spec: FreeSpec, plan: FreePlan): { p1: Placement; p2: Placement | null } {
+  const sp = plan.split;
+  if (!sp) return { p1: bedPlacement(spec, plan), p2: null };
+  const pts1 = plan.path.filter((_, i) => !sp.pathPart2[i]);
+  const pts2 = plan.path.filter((_, i) => sp.pathPart2[i]);
+  const p1 = centerOn(bedRotation('A', plan), pts1, 0);
+  const R2 = bedRotation('B', plan);
+  const p2 = centerOn(R2, pts2, -mulMV(R2, plan.end.o)[2]);
+  const b1 = partBox(p1, partPoints(spec, plan, 1)), b2 = partBox(p2, partPoints(spec, plan, 2));
+  p2.tr = [p2.tr[0] + b1.x1 - b2.x0 + 10, p2.tr[1] + (b1.y0 + b1.y1) / 2 - (b2.y0 + b2.y1) / 2, p2.tr[2]];
+  return { p1, p2 };
 }
 
 /**
@@ -2164,8 +2329,7 @@ export function bedPlacement(spec: FreeSpec, plan: FreePlan): Placement {
  * des nächsten Bogens, damit der Schnitt der Kette folgt. Liefert eine Funktion Name → Ebene (Punkt, Normale).
  */
 export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) => { p: V3; n: V3 } | null {
-  const { R, tr } = bedPlacement(spec, plan);
-  const place = (p: V3): V3 => add(mulMV(R, p), tr);
+  const { p1, p2 } = partPlacements(spec, plan);
   const n0: V3 = [0, 1, 0];
   const perp = (n: V3, t: V3): V3 | null => {
     const q = sub(n, mul(t, dot(n, t)));
@@ -2179,24 +2343,27 @@ export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) =>
       for (const j of [i - d, i + d]) if (j >= 0 && j < k && plan.cuts[j]?.n) return plan.cuts[j].n;
     return null;
   };
-  const planeAt = (f: Frame, n: V3 | null) => {
+  const planeAt = (pl: Placement, f: Frame, n: V3 | null) => {
     const m = (n && perp(n, f.t)) ?? perp(n0, f.t) ?? f.u;
-    return { p: place(f.o), n: mulMV(R, m) };
+    return { p: add(mulMV(pl.R, f.o), pl.tr), n: mulMV(pl.R, m) };
   };
-  const blocks = plan.cuts.map((c, i) => (c ? planeAt(c.start, c.n ?? ref(i)) : null));
-  const a = planeAt(plan.startFrame, ref(0));
-  const b = planeAt(plan.chainEnd.frame, ref(k - 1));
-  const c = plan.cChainEnd ? planeAt(plan.cChainEnd.frame, plan.cCut ?? null) : null;
+  const P2 = p2 ?? p1;
+  const sb = plan.split?.block ?? Infinity;
+  const blocks = plan.cuts.map((c, i) => (c ? planeAt(i > sb ? P2 : p1, c.start, c.n ?? ref(i)) : null));
+  const gateUp = plan.split && plan.cuts[sb] ? planeAt(P2, plan.cuts[sb].start, plan.cuts[sb].n ?? ref(sb)) : null;
+  const a = planeAt(p1, plan.startFrame, ref(0));
+  const b = planeAt(P2, plan.chainEnd.frame, ref(k - 1));
+  const c = plan.cChainEnd ? planeAt(plan.split?.cPart2 ? P2 : p1, plan.cChainEnd.frame, plan.cCut ?? null) : null;
   const loose = plan.loose.length ? loosePlacements(spec, plan) : [];
   return (name: string) => {
     // Schieberplatten liegen flach daneben: Schnitt längs durch die Mitte der Platte
-    const sp = /^Schieberplatte (\d+)/.exec(name);
-    if (sp) {
-      const i = plan.loose.findIndex((q) => q.name === `Schieberplatte ${sp[1]}`);
+    const spl = /^Schieberplatte (\d+)/.exec(name);
+    if (spl) {
+      const i = plan.loose.findIndex((q) => q.name === `Schieberplatte ${spl[1]}`);
       return i >= 0 ? { p: loose[i].tr, n: [0, 1, 0] } : null;
     }
     const m = /^Formstück (\d+)/.exec(name);
-    if (m) return blocks[Number(m[1]) - 1] ?? null;
+    if (m) return Number(m[1]) - 1 === sb && name.endsWith(' oben') ? gateUp : (blocks[Number(m[1]) - 1] ?? null);
     if (c && (/^(Geräteanschluss C|Übergang zu Ende C)/.test(name) || / C( \d+)?$/.test(name))) return c;
     if (/^(Geräteanschluss|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(name) || / B( \d+)?$/.test(name)) return b;
     return a;
@@ -2204,47 +2371,17 @@ export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) =>
 }
 
 /**
- * Grundfläche des Adapters auf dem Druckbett (grob, eher zu groß): Mittellinie nach dem Legen aufs Bett plus die
- * größte Ausdehnung quer dazu. Dahinter werden die Schieberplatten abgelegt.
+ * Grundfläche des Adapters auf dem Druckbett (grob, eher zu groß), beide Teile zusammen. Davor werden die
+ * Schieberplatten abgelegt. z0: Höhe des Betts (Endfläche unten).
  */
-export function footprint(spec: FreeSpec, plan: FreePlan): { x0: number; x1: number; y0: number; y1: number; z0: number } {
-  const { R, tr } = bedPlacement(spec, plan);
-  const w = spec.wall;
-  const P = (p: V3) => add(mulMV(R, p), tr);
-  // Außenradius der Enden: Kupplung mit Rändelung, Stecker (auf dem Bett mit dem Rand der Druckhilfe), Gerät bzw. Flansch
-  const endR = (E: EndSpec, onBed: boolean) => {
-    if (E.type === 'female') return E.d / 2 + 12;
-    if (E.type === 'male') return E.d / 2 + (onBed ? 27 : 6);
-    const dv = E.device;
-    const sh = dv.mode === 'flange' ? flangeGeom(dv, w, false).plate : grow(dv.section, w + dv.allowance + 1);
-    return Math.max(...samplePoints(sh, 72, dv.rot).map((q) => Math.hypot(q[0], q[1]))) + 1;
-  };
-  // Bausteine: größte Ausdehnung quer zur Mittellinie
-  let rc = spec.a.d / 2 + w + 1;
-  let cur = spec.a.d;
-  for (const b of spec.blocks) {
-    if (b.type === 'transition' || b.type === 'step') {
-      rc = Math.max(rc, Math.max(b.section.d, b.section.w, b.section.h, b.section.w2) / 2 + w + 1);
-      cur = b.section.shape === 'circle' ? b.section.d : Math.max(b.section.w, b.section.h);
-    }
-    if (b.type === 'gate') rc = Math.max(rc, gateDims(cur / 2, cur / 2 + w, spec.gateGap ?? GATE_GAP).Rc + 1);
-    if (b.type === 'branch') rc = Math.max(rc, b.branchD / 2 + w + 1);
-  }
-  const box = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
-  const take = (p: V3, r: number) => {
-    const q = P(p);
-    box.x0 = Math.min(box.x0, q[0] - r); box.x1 = Math.max(box.x1, q[0] + r);
-    box.y0 = Math.min(box.y0, q[1] - r); box.y1 = Math.max(box.y1, q[1] + r);
-  };
-  for (const p of plan.path) take(p, rc);
-  // Enden je mit eigenem Radius (die Druckhilfe macht nur das Ende auf dem Bett breit)
-  const rA = endR({ ...spec.b, type: spec.a.type, d: spec.a.d }, spec.bed === 'A');
-  for (const p of [[0, 0, 0] as V3, plan.startFrame.o]) take(p, rA);
-  const rB = endR(spec.b, spec.bed === 'B');
-  for (const p of [plan.chainEnd.frame.o, plan.end.o]) take(p, rB);
-  if (plan.cChainEnd && plan.cEnd && spec.c) for (const p of [plan.cChainEnd.frame.o, plan.cEnd.o]) take(p, endR(spec.c, false));
-  // Höhe des Druckbetts: Endfläche des Endes, das unten liegt
-  const z0 = spec.bed === 'A' ? 0 : P(plan.end.o)[2];
+export function footprint(spec: FreeSpec, plan: FreePlan): Box2 & { z0: number } {
+  const { p1, p2 } = partPlacements(spec, plan);
+  const b1 = partBox(p1, partPoints(spec, plan, 1));
+  const box = p2 ? (() => {
+    const b2 = partBox(p2, partPoints(spec, plan, 2));
+    return { x0: Math.min(b1.x0, b2.x0), x1: Math.max(b1.x1, b2.x1), y0: Math.min(b1.y0, b2.y0), y1: Math.max(b1.y1, b2.y1) };
+  })() : b1;
+  const z0 = plan.split || spec.bed === 'A' ? 0 : add(mulMV(p1.R, plan.end.o), p1.tr)[2];
   return { ...box, z0 };
 }
 

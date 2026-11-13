@@ -1,28 +1,20 @@
 /**
- * Absperrschieber (Blast Gate): ein flacher Rahmen um einen Schlitz quer zum Rohr, darin gleitet eine Platte.
- * Die Platte hat ein volles Stück (zu) und ein Fenster in Rohrweite (auf). Zwei Noppen auf der Platte rasten in
- * Mulden im Rahmen, so bleibt sie in beiden Stellungen stehen. Die Platte wird flach daneben gedruckt.
+ * Absperrschieber (Blast Gate): verschraubtes Gehäuse aus zwei Teilen, dazwischen gleitet eine Platte im Kanal. Die
+ * Platte hat ein volles Stück (zu) und ein Fenster in Rohrweite (auf), beide Enden sind dicker (Anschläge). Um die
+ * Bohrung drücken Dichtlippen an Boden und Deckel auf die Platte. Beide Gehäuseteile werden mit der Trennfläche nach
+ * oben gedruckt, nichts hängt über dem Kanal in der Luft; die Platte liegt flach daneben.
  *
- * Lokales System: Rohrachse +Z (z = 0 … Länge), die Platte gleitet entlang X, der Schlitz liegt in der Mitte.
- * Gedruckt wird mit der Achse senkrecht. Rahmen breiter als das Rohr laufen unter 45° aus (ohne Stützen), über dem
- * Schlitz helfen zwei flache Stufen der Brücke (erst ein Streifen, dann ein Quadrat um die Bohrung).
- *
- * Der Schieber einzeln hat statt Kupplung und Stecker zwei Muffen: das Rohr wird beidseitig bis zu einem Anschlag
- * eingesteckt. Dazu optional eine Wandplatte, Schlüssellöcher oder ein eigener Wandhalter für das Rohr.
+ * Schieber einzeln: statt Kupplung und Stecker zwei Muffen, das Rohr wird beidseitig bis zu einem Anschlag
+ * eingesteckt; dazu optional Wandplatte, Schlüssellöcher oder ein eigener Wandhalter. Freiform: dasselbe Gehäuse auf
+ * einem Rohrstück, der Adapter wird dort in zwei Druckteile geteilt (tubeGate…).
  */
-import { makeBox, makeCylinder, makeSphere, draw, type Shape3D } from 'replicad';
+import { makeBox, makeCylinder, draw, type Shape3D } from 'replicad';
 import { revolveProfile, L } from './geom';
 import { textOnFlat } from './text';
 
-/** Dicke der Platte */
-export const GATE_T = 2.4;
-/** Rahmen über und unter dem Schlitz */
-const GATE_FR = 2.4;
-/** Tiefe je Stufe der Brückenhilfe über (und unter) dem Schlitz */
-const POCKET = 0.4;
-/** Nase der Zunge: so weit steht sie seitlich über die Platte (1 mm Anschlag am Rahmen), Länge der Zunge, Höhe des Griffs über der Platte */
-const NUB = 1.3, ZUNGE = 16, GRIP_H = 2.5;
-/** Spiel der Platte im Schlitz (je Seite), Standard */
+/** Griff und Anschlag der Platte: so viel dicker als die Platte */
+const GRIP_H = 2.5;
+/** Spiel der Platte (Standard, Schieber einzeln und Freiform) */
 export const GATE_GAP = 0.3;
 /** Wand der Muffen beim Schieber einzeln */
 export const SOCKET_WALL = 2.4;
@@ -32,104 +24,6 @@ const STOP = 2;
 const box = (x0: number, x1: number, y0: number, y1: number, z0: number, z1: number) =>
   makeBox([Math.min(x0, x1), Math.min(y0, y1), Math.min(z0, z1)], [Math.max(x0, x1), Math.max(y0, y1), Math.max(z0, z1)]) as unknown as Shape3D;
 const cylZ = (r: number, z0: number, z1: number, x = 0, y = 0) => makeCylinder(r, Math.abs(z1 - z0), [x, y, Math.min(z0, z1)], [0, 0, 1]) as unknown as Shape3D;
-
-/**
- * Maße des Schiebers aus der lichten Weite am Schlitz (Rm), dem Außenradius des Rohrs daneben (Ro) und dem Spiel der Platte.
- * Platte: x0 … x1 entlang der Gleitrichtung, Fenster bei −P, Griffloch bei gripX; zu = Platte bei 0, auf = um +P verschoben.
- * Anschläge: der Griff ist dicker als der Schlitz (schlägt bei „zu“ am Rahmen an), am anderen Ende sitzt eine federnde
- * Zunge mit Nase (seitlich, in der Ebene der Platte): sie drückt sich beim Einschieben weg, springt hinter dem Rahmen
- * heraus und schlägt bei „auf“ an. Anschlagfläche der Nase bei xs.
- */
-export function gateDims(Rm: number, Ro: number, gap: number) {
-  const T = GATE_T, fr = GATE_FR;
-  const slot = T + 2 * gap;
-  /** halbe Breite des Schlitzes und der Platte */
-  const yS = Rm + 1.2, pw = yS - 0.3;
-  /** halbe Kantenlänge des Rahmens: mindestens so breit wie das Rohr, damit nichts übersteht */
-  const half = Math.max(yS + fr, Ro);
-  const Hf = slot + 2 * fr;
-  const Rc = half * Math.SQRT2;
-  /** Länge der 45°-Schräge vom Rohr bis zur Ecke des Rahmens */
-  const ch = Math.max(0, Rc - Ro);
-  /**
-   * Rastmulden bei ±pd auf der x-Achse, Noppen der Platte bei +pd und −pd: „zu“ rasten beide, „auf“ (Platte um P = 2 · pd
-   * verschoben) rastet die zweite in der Mulde bei +pd. Das Fenster liegt bei „zu“ außerhalb des Rahmens.
-   * Gleich auf beiden Seiten, so passt die Platte von links wie von rechts. Die Noppe ist etwas höher als das Spiel.
-   */
-  const pd = (Rm + half) / 2, dr = Math.min(1.4, (half - Rm) / 2 - 0.5), hb = 2 * gap + 0.25;
-  const P = 2 * pd;
-  const xs = -half - 0.5 - P;
-  const x0 = xs - ZUNGE - 3, x1 = half + 16, gripX = half + 9.5;
-  /** halbe Breite der Platte mit Nase */
-  const hw = pw + NUB;
-  return { T, gap, slot, fr, yS, pw, hw, half, Hf, Rc, ch, P, pd, dr, hb, xs, x0, x1, gripX, Rm, Ro, minLen: Hf + 2 * ch };
-}
-export type GateDims = ReturnType<typeof gateDims>;
-
-/** Rahmen (voll) um den Schlitz bei zc, mit 45°-Schrägen zum Rohr hin; außen bei z0 … z1 abgeschnitten */
-function frame(g: GateDims, zc: number, z0: number, z1: number): Shape3D {
-  const zb = zc - g.Hf / 2, zt = zc + g.Hf / 2;
-  const a = zb - g.ch, b = zt + g.ch;
-  const rev = revolveProfile([0, a], [L(g.Ro, a), L(g.Rc + 0.02, zb), L(g.Rc + 0.02, zt), L(g.Ro, b), L(0, b)]);
-  return box(-g.half, g.half, -g.half, g.half, Math.max(a, z0), Math.min(b, z1)).intersect(rev) as Shape3D;
-}
-
-/** Achteck (Kanten an x = ±r, y = ±r und diagonal), Inkreis r, zwischen z0 und z1 */
-function octagon(r: number, z0: number, z1: number): Shape3D {
-  const a = r * Math.tan(Math.PI / 8);
-  const pts: [number, number][] = [[r, -a], [r, a], [a, r], [-a, r], [-r, a], [-r, -a], [-a, -r], [a, -r]];
-  let d = draw(pts[0]);
-  for (const q of pts.slice(1)) d = d.lineTo(q);
-  return (d.close().sketchOnPlane('XY', Math.min(z0, z1)).extrude(Math.abs(z1 - z0)) as unknown as Shape3D);
-}
-
-/** Schlitz, Brückenhilfe und Rastmulden aus dem Gehäuse schneiden */
-function cutSlot(h: Shape3D, g: GateDims, zc: number): Shape3D {
-  h = h.cut(box(-g.half - 1, g.half + 1, -g.yS, g.yS, zc - g.slot / 2, zc + g.slot / 2));
-  for (const s of [1, -1]) {
-    const z = zc + (s * g.slot) / 2;
-    // Stufe 1: Streifen quer über den Schlitz (Brücke von Seitenwand zu Seitenwand), Stufe 2: Quadrat um die Bohrung,
-    // Stufe 3: Achteck. Jede Stufe überbrückt nur Ecken, die auf zwei Seiten aufliegen; über dem Achteck bleiben
-    // nur noch schmale Sicheln zur runden Bohrung (beim Quadrat wären es Ecken bis 0,4 × Radius)
-    h = h.cut(box(-g.Rm, g.Rm, -g.yS, g.yS, z - s * 0.01, z + s * POCKET));
-    h = h.cut(box(-g.Rm, g.Rm, -g.Rm, g.Rm, z + s * (POCKET - 0.01), z + s * 2 * POCKET));
-    h = h.cut(octagon(g.Rm, z + s * (2 * POCKET - 0.01), z + s * 3 * POCKET));
-    for (const sx of [1, -1]) h = h.cut(cylZ(g.dr, z - s * 0.01, z + s * (g.hb + 0.1), sx * g.pd, 0));
-  }
-  return h;
-}
-
-/** Gehäuse auf einem Rohr (Freiform): Rohr innen Rm, außen Ro, Länge len, Schlitz in der Mitte */
-export function gateTube(g: GateDims, len: number): Shape3D {
-  const zc = len / 2;
-  let h = cylZ(g.Ro, 0, len).fuse(frame(g, zc, 0, len));
-  h = h.cut(cylZ(g.Rm, -1, len + 1));
-  return cutSlot(h, g, zc);
-}
-
-/** Platte flach (z = 0 … T), Gleitrichtung x, Griff bei +x, Noppen oben */
-export function gatePlate(g: GateDims): Shape3D {
-  const outline = (h: number) => box(g.x0, g.x1, -g.pw, g.pw, 0, h).fillet(Math.min(3, g.pw - 0.5), (e) => e.inDirection('Z')) as Shape3D;
-  let pl = outline(g.T);
-  // Griff dicker als der Schlitz: Anschlag bei „zu“ (0,5 mm Luft, damit die Noppen vorher einrasten)
-  pl = pl.fuse(outline(g.T + GRIP_H).intersect(box(g.half + 0.5, g.x1 + 1, -g.pw - 1, g.pw + 1, -1, g.T + GRIP_H + 1)));
-  pl = pl.cut(cylZ(g.Rm, -1, g.T + 1, -g.P, 0));
-  pl = pl.cut(cylZ(4.5, -1, g.T + GRIP_H + 1, g.gripX, 0));
-  // Zunge an der Kante +y: fest bei xs − ZUNGE, freies Ende kurz hinter der Nase; Schlitz 0,8 mm, Zunge 1,8 mm breit
-  const yz = g.pw - 1.8;
-  pl = pl.cut(box(g.xs - ZUNGE, g.xs + 1.3, yz - 0.8, yz, -1, g.T + 1));
-  pl = pl.cut(box(g.xs + 0.5, g.xs + 1.3, yz - 0.8, g.pw + 1, -1, g.T + 1));
-  // Nase: Schräge zum festen Ende hin (beim Einschieben voran), Anschlagfläche bei xs
-  const nub = draw([g.xs - 5, g.pw - 0.3]).lineTo([g.xs - 0.4, g.pw + NUB]).lineTo([g.xs, g.pw + NUB]).lineTo([g.xs, g.pw - 0.3]).close();
-  pl = pl.fuse(nub.sketchOnPlane('XY').extrude(g.T) as unknown as Shape3D);
-  const a = Math.min(1.1, g.dr - 0.3), rs = (a * a + g.hb * g.hb) / (2 * g.hb);
-  // Kugel um 90° gekippt: ihre Pole liegen seitlich in der Platte (ein Pol oben ergäbe im Netz eine entartete Spitze)
-  for (const x of [g.pd, -g.pd]) pl = pl.fuse(makeSphere(rs).rotate(90, [0, 0, 0], [1, 0, 0]).translate([x, 0, g.T + g.hb - rs]) as unknown as Shape3D);
-  return pl;
-}
-
-/** Lage der Platte im Gehäuse (für Prüfungen): mittig im Schlitz, zu oder auf */
-export const plateInSlot = (g: GateDims, zc: number, open: boolean): [number, number, number] => [open ? g.P : 0, 0, zc - g.T / 2];
 
 // ---------------------------------------------------------------- Schieber einzeln
 
@@ -204,10 +98,17 @@ export function singleDims(Rm: number, Ro: number, gap: number) {
    * Grundriss achteckig: die Ecken sind unter 45° gebrochen (x + y ≤ cut), an den Enden des Kanals bleibt 1,6 mm
    * Seitenwand. Das kürzt die Schräge zur Muffe und spart viel Material.
    */
-  const hx = Ro + 3, sy = yC + 1.2 + HEAD_R, hy = sy + HEAD_R + 1.6;
+  const hx = Ro + 3;
+  let sy = yC + 1.2 + HEAD_R, hy = sy + HEAD_R + 1.6;
   const cut = hx + yC + 1.6;
   // Schrauben: zwischen Kanal und Kopfsenkung bzw. Muttertasche mindestens 1,2 mm Wand, außen und zur Ecke 1,6 mm
-  const sx = Math.max(0, Math.min(hx - 5, cut - sy - (HEAD_R + 1.6) * Math.SQRT2));
+  let sx = Math.max(0, Math.min(hx - 5, cut - sy - (HEAD_R + 1.6) * Math.SQRT2));
+  // Muttertasche und Kopfsenkung dürfen das Rohr nicht anschneiden (Freiform mit dicker Wand): sonst weiter nach außen
+  for (let k = 0; k < 200 && Math.hypot(sx, sy) < Ro + NUT_AF / Math.sqrt(3) + 1; k++) {
+    sy += 0.1;
+    hy = sy + HEAD_R + 1.6;
+    sx = Math.max(0, Math.min(hx - 5, cut - sy - (HEAD_R + 1.6) * Math.SQRT2));
+  }
   /** äußerster Punkt des Grundrisses und Länge der Schräge zur Muffe */
   const Rc = Math.max(Math.hypot(hx, cut - hx), Math.hypot(cut - hy, hy)), cl = Rc - Ro;
   /** halbe Breite der geraden Vorderseite (für die Gravur) */
@@ -424,3 +325,64 @@ export function gateName(s: GateSpec): { code: string; file: string; long: strin
     long: `Rohr Ø ${f(s.d)} mm außen, Muffen ${f(s.depth)} mm tief, ${s.mount === 'none' ? 'ohne Befestigung' : `${MOUNT_LABELS[s.mount]}${s.mount === 'keyhole' ? `, ${ORIENT_LABELS[s.orient]}` : ''}, Rohrmitte ${f(lay.A)} mm vor der Wand`}`,
   };
 }
+
+// ---------------------------------------------------------------- Schieber in der Freiform
+
+/**
+ * Schieber als Baustein der Freiform: dasselbe verschraubte Gehäuse wie beim Schieber einzeln, aber auf einem Rohr
+ * (innen Rm, außen Ro) statt mit Muffen. Der Adapter wird hier in zwei Druckteile geteilt: Unterteil mit Kanal und
+ * Lippe am Boden gehört zum Teil mit Anschluss A, Deckel mit Lippe zum Teil mit Ende B. Beide Teile stehen beim Druck
+ * auf ihrem äußeren Ende, die Trennfläche zeigt nach oben.
+ *
+ * Lokales System des Bausteins: Rohrachse +z (z = 0 … Länge), Platte gleitet entlang +x. Boden bei zF, Deckelfläche
+ * (Trennfläche) bei zF + Kanal.
+ */
+export function tubeGateDims(Rm: number, Ro: number, gap: number) {
+  const g = singleDims(Rm, Ro, snapPlateGap(gap));
+  /** Länge der Schräge vom Gehäuse zum Rohr */
+  const cone = CH_K * (g.Rc + 0.02 - Ro);
+  /** kleinste Länge: Gehäuse mit Schrägen, je 1 mm Rohr, 0,4 mm Spielraum für das Schichtraster */
+  const minLen = g.ch + 2 * (TP + cone) + 2 + 0.4;
+  return { g, cone, minLen };
+}
+export type TubeGateDims = ReturnType<typeof tubeGateDims>;
+
+function tubeHalf(d: TubeGateDims, s: 1 | -1, zFace: number, zEnd: number): Shape3D {
+  const { g, cone } = d;
+  const zOut = zFace + s * TP, zc1 = zOut + s * cone;
+  let h = outline(g, Math.min(zFace, zOut), Math.max(zFace, zOut), 0);
+  const prof = s > 0 ? revolveProfile([0, zOut], [L(g.Rc + 0.02, zOut), L(g.Ro, zc1), L(0, zc1)]) : revolveProfile([0, zc1], [L(g.Ro, zc1), L(g.Rc + 0.02, zOut), L(0, zOut)]);
+  h = h.fuse(outline(g, Math.min(zOut, zc1), Math.max(zOut, zc1), 0).intersect(prof) as Shape3D);
+  h = h.fuse(cylZ(g.Ro, Math.min(zOut, zEnd), Math.max(zOut, zEnd)));
+  return h;
+}
+
+/** Unterteil auf dem Rohr: Rohr 0 … Boden, Kanal, Lippe am Boden, Muttertaschen (von unten) */
+export function tubeGateLower(d: TubeGateDims, zF: number): Shape3D {
+  const { g } = d;
+  const zT = zF + g.ch;
+  let h = tubeHalf(d, -1, zF, 0);
+  h = h.fuse(outline(g, zF - 0.01, zT, 0).cut(box(-g.hx - 1, g.hx + 1, -g.yC, g.yC, zF - 1, zT + 1)));
+  h = h.fuse(lipRing(g.Rm, zF - 0.01, 1));
+  h = h.cut(cylZ(g.Rm, -1, zT + 1));
+  const z0 = zF - TP - d.cone - 1;
+  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, z0, zT + 1, x, y)).cut(hexPrism(NUT_AF, x, y, z0, zF - SEAT));
+  return h;
+}
+
+/** Deckel auf dem Rohr: Trennfläche zT … Länge len, Lippe am Deckel, Kopfsenkungen (von oben) */
+export function tubeGateUpper(d: TubeGateDims, zF: number, len: number): Shape3D {
+  const { g } = d;
+  const zT = zF + g.ch;
+  let h = tubeHalf(d, 1, zT, len);
+  h = h.fuse(lipRing(g.Rm, zT + 0.01, -1));
+  h = h.cut(cylZ(g.Rm, zT - 1, len + 1));
+  const z1 = zT + TP + d.cone + 1;
+  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, zT - 1, z1, x, y)).cut(cylZ(HEAD_R, zT + SEAT, z1, x, y));
+  return h;
+}
+
+/** Länge der Schrauben M3 beim Schieber in der Freiform */
+export const tubeGateScrew = (d: TubeGateDims) => Math.ceil((d.g.ch + 2 * SEAT + 2.4 + 0.5) / 2) * 2;
+/** Schichtraster (für die Lage der Dichtflächen beim Druck) */
+export const GATE_LAYER = LAYER;

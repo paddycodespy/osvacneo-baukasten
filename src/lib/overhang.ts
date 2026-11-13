@@ -99,7 +99,7 @@ export function overhangArea(bodies: OverhangMesh[], counted: RegExp = COUNTED, 
   };
   bodies.forEach((b, bi) => {
     if (b.helper || !counted.test(b.name)) return;
-    const bridges = b.name.startsWith('Geräteanschluss') || b.name.endsWith('· Schieber') || b.name.startsWith('Schieber-');
+    const bridges = b.name.startsWith('Geräteanschluss') || /· Schieber( unten| oben)?$/.test(b.name) || b.name.startsWith('Schieber-');
     const nr = b.normals, ix = b.indices;
     for (let t = 0; t < ix.length; t += 3) {
       const nz = (nr[ix[t] * 3 + 2] + nr[ix[t + 1] * 3 + 2] + nr[ix[t + 2] * 3 + 2]) / 3;
@@ -127,7 +127,13 @@ export function overhangArea(bodies: OverhangMesh[], counted: RegExp = COUNTED, 
  * Wie weit ragt der Adapter unter das Ende, das auf dem Druckbett liegen soll? (0 = alles darüber)
  * Ende B: Geräteanschluss bzw. die Teile von Ende B („… B“); Anschluss A: die übrigen Teile von osVAC neo.
  */
-export function belowBedEnd(bodies: OverhangMesh[], bed: 'A' | 'B'): number {
+export function belowBedEnd(bodies: OverhangMesh[], bed: 'A' | 'B', part2?: (name: string) => boolean): number {
+  // geteilt (Schieber): A-Teil steht auf A, B-Teil auf B, je für sich
+  if (part2)
+    return Math.max(
+      belowBedEnd(bodies.filter((b) => !part2(b.name)), 'A'),
+      belowBedEnd(bodies.filter((b) => part2(b.name)), 'B'),
+    );
   // Ende C (am Abzweig) liegt nie auf dem Bett und zählt wie die Kette
   const isC = (n: string) => n.startsWith('Geräteanschluss C') || / C( \d+)?$/.test(n) || n === 'Übergang zu Ende C';
   const isB = (n: string) => !isC(n) && (n.startsWith('Geräteanschluss') || / B( \d+)?$/.test(n));

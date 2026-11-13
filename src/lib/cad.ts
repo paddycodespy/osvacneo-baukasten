@@ -300,8 +300,15 @@ export async function exportPlate(items: PlateItem[], format: ExportFormat, file
   const totalH = -cy + rowH;
   const ox = boxes.length > 1 ? -maxW / 2 : 0, oy = boxes.length > 1 ? totalH / 2 : 0;
   if (boxes.length === 1) place[0] = { dx: 0, dy: 0 };
-  // eigene Objekte (z. B. Schieberplatte) liegen für sich flach auf dem Bett, unabhängig von einer Druckhilfe darunter
-  const jobs = groups.flatMap((g, gi) => g.map((x, k) => ({ ...x, gi, dx: place[gi].dx + ox, dy: place[gi].dy + oy, dz: x.q.object ? -infos[gi][k].zMin : boxes[gi].dz })));
+  // eigene Objekte (z. B. Schieberplatte, B-Teil mit Schieber) liegen für sich auf dem Bett, unabhängig von einer
+  // Druckhilfe darunter; alle Körper eines Objekts gemeinsam
+  const objMin = new Map<string, number>();
+  groups.forEach((g, gi) => g.forEach((x, k) => {
+    if (!x.q.object) return;
+    const key = `${gi}\u0000${x.q.object}`;
+    objMin.set(key, Math.min(objMin.get(key) ?? Infinity, infos[gi][k].zMin));
+  }));
+  const jobs = groups.flatMap((g, gi) => g.map((x) => ({ ...x, gi, dx: place[gi].dx + ox, dy: place[gi].dy + oy, dz: x.q.object ? -objMin.get(`${gi}\u0000${x.q.object}`)! : boxes[gi].dz })));
   // je Adapter ein Objekt im 3MF, dazu eigene Objekte für Teile, die getrennt gedruckt werden
   const objKey = (x: (typeof jobs)[number]) => `${x.gi}${x.q.object ? `\u0000${x.q.object}` : ''}`;
   const objectIds = new Map<string, number>();

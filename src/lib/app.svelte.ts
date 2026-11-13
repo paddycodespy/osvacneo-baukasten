@@ -268,7 +268,7 @@ class AppState {
     swivel: `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(this.swivelMax, 2)} mm${this.kind.id === 'FH' ? ` bei ${this.input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
     pipeGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als das Rohr außen. Sitzt das Rohr zu stramm: größer. Rutscht es heraus: kleiner, oder das Rohr mit etwas Klebeband umwickeln.',
-    plateGap: this.kind.gate
+    plateGap: this.kind.gate || (!!this.kind.freeform && this.free.blocks.some((b) => b.type === 'gate'))
       ? 'Luft über und unter der Platte im Kanal, in Schritten von 0,1 mm (passend zu 0,2 mm Schichthöhe). Um die Bohrung drücken zwei Dichtlippen (0,4 mm hoch) auf die Platte, beim Standardwert 0,3 mm je Seite 0,1 mm: das dichtet und hält die Platte durch Reibung. Ab 0,4 mm liegen die Lippen nur noch an. Geht die Platte zu schwer: größer. Zieht der Schieber Falschluft oder rutscht die Platte von allein: kleiner.'
       : 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
     wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg, höchstens ${WALL_MORE} mm mehr (${fmt(this.gateLay.maxA)} mm), sonst wird die Halterung wacklig.`,
@@ -325,7 +325,9 @@ class AppState {
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
     if (this.kind.gate) t.push(...this.gateTips);
     if (this.kind.freeform && this.free.blocks.some((x) => x.type === 'gate'))
-      t.push('Über dem Schlitz des Schiebers druckt der Drucker eine Brücke. Bambu Studio meldet dazu eventuell „Fliegender Träger“; keine Stützen in den Schlitz drucken lassen. Die Schieberplatte liegt flach neben dem Adapter. Nach dem Druck mit dem schmalen Ende (der federnden Zunge) voran in den Schlitz schieben, von welcher Seite ist egal, bis die kleine Nase auf der anderen Seite herausspringt. Herausziehen öffnet, hineinschieben schließt; beide Stellungen rasten ein, der dicke Griff und die Nase halten die Platte im Schieber. Zum Herausnehmen die Nase seitlich eindrücken und die Platte am Griff herausziehen.');
+      t.push(
+        `Mit Schieber wird der Adapter in zwei Teilen gedruckt: das Teil mit Anschluss A steht auf A, das Teil mit Ende B auf B, die Trennflächen oben. Die Schieberplatte liegt flach davor. Zusammenbau: vier Muttern M3 von unten in die Sechskant-Taschen am Gehäuse des A-Teils drücken, die Platte mit den dicken Enden nach oben in den Kanal legen, das B-Teil aufsetzen und mit vier Schrauben M3 × ${this.freePlan?.split?.screw ?? 12} (Zylinderkopf) über Kreuz anziehen, nur so fest, dass die Platte noch gleitet. Herausziehen öffnet, hineinschieben schließt; die dicken Enden schlagen an. Die Dichtlippen um die Bohrung halten die Platte durch Reibung und dichten gegen Falschluft.`,
+      );
     const c = this.free.c;
     if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
       t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);
@@ -547,6 +549,7 @@ class AppState {
         this.free = withFreshIds({ ...fresh, ...s.free, a: { ...fresh.a, ...s.free.a }, b: { ...fresh.b, ...s.free.b, device: { ...fresh.b.device, ...s.free.b.device } } });
         // Flansch liegt immer mit Ende B auf dem Bett
         if (this.free.b.type === 'device' && this.free.b.device.mode === 'flange') this.free.bed = 'B';
+        if (typeof this.free.gateGap === 'number') this.free.gateGap = snapPlateGap(this.free.gateGap);
       }
       if (s.gate && typeof s.gate === 'object') {
         // Werte auf die Bereiche der Eingabefelder begrenzen; das Spiel der Platte auf das Raster des Schiebers (ältere
