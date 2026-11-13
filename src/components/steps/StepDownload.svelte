@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isDesktop } from '../../lib/desktop';
   /** Schritt 4: Material, Download, Druckhinweise, mehrere Adapter auf ein Druckbett, Lizenz */
   import { app, FORMATS, LABELS, fmt } from '../../lib/app.svelte';
   import { freeSummary } from '../../lib/osvac/freeform';
@@ -84,7 +85,7 @@
 </p>
 {#if app.files.length}
   <div class="files">
-    <p>Fertige Dateien. Falls der Download nicht von selbst startet, hier klicken:</p>
+    <p>{isDesktop ? 'Gespeichert im Ordner „Downloads“. Noch einmal speichern:' : 'Fertige Dateien. Falls der Download nicht von selbst startet, hier klicken:'}</p>
     <ul>
       {#each app.files as f (f.fileName)}
         <li><a href={f.url} download={f.fileName}>{f.fileName}</a> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span></li>

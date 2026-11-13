@@ -1,0 +1,48 @@
+# Baut den osVAC neo Baukasten für Linux: AppImage (läuft ohne Installation auf den meisten Distributionen)
+# und .deb (Debian, Ubuntu, Linux Mint).
+# Start: auf GitHub unter „Actions“ → „Linux-Installer“ → „Run workflow“, oder automatisch durch einen Tag v*.
+# Ergebnis: Artefakt „osvacneo-baukasten-linux“ mit beiden Dateien.
+# Gebaut auf Ubuntu 22.04: das AppImage läuft dann auch auf älteren Systemen (glibc 2.35 und neuer).
+name: Linux-Installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # WebKitGTK und Werkzeuge für das AppImage
+      - name: Systempakete
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev
+
+      - run: npm ci
+
+      # baut zuerst die Web-Oberfläche (npm run build), dann das Programm, AppImage und .deb
+      - run: npx tauri build --bundles appimage,deb
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: osvacneo-baukasten-linux
+          path: |
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error

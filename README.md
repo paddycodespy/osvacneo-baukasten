@@ -184,7 +184,7 @@ Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stü
 
 Der Baukasten lässt sich als eigenes Windows-Programm installieren (Tauri). Er läuft dann in einem eigenen
 Fenster mit dem in Windows eingebauten WebView2 (Edge), weiterhin vollständig lokal und ohne Internet.
-Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fenster.
+Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fenster. Anleitung für Tester: `docs/installation-windows.md`.
 
 **Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
 Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
@@ -209,6 +209,25 @@ Zum Entwickeln im Programmfenster: `npm run desktop:dev`.
 Unter **Actions → macOS-Installer → Run workflow** entsteht eine DMG (Universal: Apple Silicon und Intel), ebenfalls als Artefakt.
 Auf einem Mac installiert und getestet: läuft. Da die App nicht signiert ist, beim ersten Start im Finder
 Rechtsklick → **Öffnen** (oder Systemeinstellungen → Datenschutz & Sicherheit → **Dennoch öffnen**), Einzelheiten in `docs/installation-mac.md`.
+
+## Linux-Programm
+
+Unter **Actions → Linux-Installer → Run workflow** entstehen ein AppImage (ohne Installation, die meisten
+Distributionen) und ein .deb (Debian, Ubuntu, Mint), gebaut auf Ubuntu 22.04. Anleitung: `docs/installation-linux.md`.
+Selbst bauen (Ubuntu/Debian): `sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev`,
+dann `npx tauri build --bundles appimage,deb`.
+
+## Alle Installer auf einmal
+
+Ein Versions-Tag startet alle drei Installer-Läufe gleichzeitig: `git tag v0.4.0 && git push origin v0.4.0`.
+Die Dateien liegen danach unter **Actions** beim jeweiligen Lauf unter **Artifacts** (Windows, macOS, Linux).
+Anleitungen für Tester: `docs/installation-windows.md`, `docs/installation-mac.md`, `docs/installation-linux.md`.
+
+**Downloads im Programm:** Das Hauptfenster wird in `src-tauri/src/lib.rs` erzeugt (in `tauri.conf.json` mit
+`"create": false`), damit Downloads auf allen Systemen im Ordner „Downloads“ landen: WebView2 (Windows) macht das
+selbst, unter macOS und Linux setzt `on_download` das Ziel (freier Name „… (2)“). Ohne das speichert Linux in den
+Arbeitsordner des Programms; unter macOS kommt ohne Ziel womöglich gar keine Datei an (dort noch ungetestet). Unter Linux schaltet `main.rs` den DMA-BUF-Renderer von
+WebKitGTK ab (sonst bei manchen Grafiktreibern leeres Fenster).
 
 Die Version steht in `src-tauri/tauri.conf.json` (`version`) und sollte mit `package.json` übereinstimmen.
 
