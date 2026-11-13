@@ -80,8 +80,30 @@ export const PLATE_GAP_MIN = 0.2, PLATE_GAP_MAX = 0.5;
 export const snapPlateGap = (v: number) => Math.min(PLATE_GAP_MAX, Math.max(PLATE_GAP_MIN, Math.round(v * 10) / 10));
 /** Einführfase an den Muffen (gegen den breiter gedrückten ersten Layer, das Rohr findet leichter hinein) */
 const SOCKET_CH = 0.6;
-/** Schrauben M3: Loch, Mutter (Schlüsselweite 5,5 + Luft), Kopf; Mutter und Kopf sitzen je 1,5 mm vor dem Kanal */
-const M3_R = 1.7, NUT_AF = 5.8, HEAD_R = 3.2, SEAT = 1.5;
+/**
+ * Schrauben M3: Loch, Mutter (Schlüsselweite 5,5 + Luft), Kopf. Mutter und Kopf sitzen je 2,4 mm vor dem Kanal
+ * (Vielfaches der Schichthöhe, damit die Brückenhilfe genau auf den Schichten liegt).
+ */
+const M3_R = 1.7, NUT_AF = 5.8, HEAD_R = 3.2, SEAT = 2.4;
+
+/**
+ * Brückenhilfe an einer Auflage, die beim Druck über einer Tasche hängt (Kopfsenkung, Muttertasche): in der ersten
+ * Schicht über der Tasche bleibt ein Schlitz so breit wie das Loch (der Drucker überbrückt nur gerade Strecken von Wand
+ * zu Wand), in der zweiten ein Quadrat quer dazu, darüber das runde Loch. So hängt kein Kreis in der Luft.
+ * pocket: Querschnitt der Tasche (für den Schlitz), zSeat: Auflage, s: Richtung von der Tasche ins Material.
+ */
+function seatAid(pocket: Shape3D, x: number, y: number, zSeat: number, s: 1 | -1): Shape3D {
+  const z1 = zSeat + s * LAYER, z2 = zSeat + s * 2 * LAYER;
+  const slot = box(x - 10, x + 10, y - M3_R, y + M3_R, Math.min(zSeat, z1) - 0.01, Math.max(zSeat, z1)).intersect(pocket);
+  const square = box(x - M3_R, x + M3_R, y - M3_R, y + M3_R, Math.min(zSeat, z2) - 0.01, Math.max(zSeat, z2));
+  return slot.fuse(square) as Shape3D;
+}
+/** Muttertasche mit Brückenhilfe über der Auflage (Tasche von unten offen, z0 … zSeat) */
+const nutPocket = (x: number, y: number, z0: number, zSeat: number) =>
+  hexPrism(NUT_AF, x, y, z0, zSeat).fuse(seatAid(hexPrism(NUT_AF, x, y, zSeat - 1, zSeat + 1), x, y, zSeat, 1)) as Shape3D;
+/** Kopfsenkung mit Brückenhilfe unter der Auflage (Senkung nach oben offen, zSeat … z1; gedruckt hängt die Auflage) */
+const headPocket = (x: number, y: number, zSeat: number, z1: number) =>
+  cylZ(HEAD_R, zSeat, z1, x, y).fuse(seatAid(cylZ(HEAD_R, zSeat - 1, zSeat + 1, x, y), x, y, zSeat, -1)) as Shape3D;
 /** Spiel der Platte im Kanal seitlich (je Seite) */
 const SIDE_GAP = 0.3;
 /** Schräge zwischen Gehäuse und Muffe: so viel Höhe je mm Radius (1,2 = 50°) */
@@ -144,7 +166,7 @@ export function gateLayout(s: GateSpec) {
     s.mount === 'plate' ? [2 * holeX, H - 2 * holeZ] : keyTurned ? [0, H - 2 * keyZ] : [2 * holeX, 0];
   /** Länge der Schrauben M3 (Kopf bis Ende der Mutter, aufgerundet) */
   const screwLen = Math.ceil((g.ch + 2 * SEAT + 2.4 + 0.5) / 2) * 2;
-  return { g, Rs, Rm, Ro, H, zL, zF, zT, zc, r1, r2, minA, maxA, A, holeX, holeZ, keyTurned, keyZ, keyX, pitch, screwLen };
+  return { g, Rs, Rm, Ro, H, zL, zF, zT, zc, r1, r2, minA, maxA, A, holeX, holeZ, keyTurned, keyZ, keyX, pitch, screwLen, screwN: gateScrewCount(g) };
 }
 
 /** Senkloch für Ø-4-Senkkopfschrauben, Achse +y, Senkung an der Fläche bei y = yFace (Kopf auf der Seite +y) */
@@ -201,7 +223,14 @@ function half(lay: ReturnType<typeof gateLayout>, s: 1 | -1, zFace: number, dept
 /** Dichtlippe: Ring um die Bohrung auf der Fläche z, ragt um LIP in Richtung s */
 const lipRing = (Rm: number, z: number, s: 1 | -1) => cylZ(Rm + LIP_IN + LIP_W, z, z + s * LIP).cut(cylZ(Rm + LIP_IN, z - 1, z + 1));
 
-const screwPts = (g: SingleDims): [number, number][] => [[g.sx, g.sy], [-g.sx, g.sy], [g.sx, -g.sy], [-g.sx, -g.sy]];
+/**
+ * Lage der Schrauben: vier (je Seite zwei bei ±sx). Bei kleinen Schiebern liegen die beiden einer Seite so nah, dass
+ * sich Muttern bzw. Köpfe berühren würden: dann je Seite eine in der Mitte (zwei Schrauben).
+ */
+const screwPts = (g: SingleDims): [number, number][] =>
+  2 * g.sx < (2 * NUT_AF) / Math.sqrt(3) + 0.8 ? [[0, g.sy], [0, -g.sy]] : [[g.sx, g.sy], [-g.sx, g.sy], [g.sx, -g.sy], [-g.sx, -g.sy]];
+/** Anzahl der Schrauben M3 */
+export const gateScrewCount = (g: SingleDims) => screwPts(g).length;
 
 /** Unterteil (stehend, Muffe unten auf dem Bett) mit Kanal, Dichtlippe, Muttern und Wandplatte oder Schlüssellöchern */
 export function gateLower(s: GateSpec, text = true): Shape3D {
@@ -224,7 +253,7 @@ export function gateLower(s: GateSpec, text = true): Shape3D {
   }
   h = h.cut(cylZ(Rm, -1, H + 1));
   // Schrauben: Loch durch, Mutter von unten eingesetzt (Tasche bis 1,5 mm unter den Kanal)
-  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, -1, zT + 1, x, y)).cut(hexPrism(NUT_AF, x, y, -1, zF - SEAT));
+  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, -1, zT + 1, x, y)).cut(nutPocket(x, y, -1, zF - SEAT));
   if (s.mount === 'plate') for (const sx of [1, -1]) for (const z of [holeZ, H - holeZ]) h = h.cut(sinkHole(sx * holeX, z, -A + WALL_T, WALL_T));
   if (s.mount === 'keyhole') {
     // Schlüsselloch: großes Loch für den Schraubenkopf, Schlitz nach oben (Rohr senkrecht: zum oberen Ende wie gedruckt,
@@ -257,7 +286,7 @@ export function gateUpper(s: GateSpec): Shape3D {
   let h = half(lay, 1, zT, s.depth, 0.4);
   h = h.fuse(lipRing(Rm, zT + 0.01, -1));
   h = h.cut(cylZ(Rm, -1, H + 1));
-  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, zT - 1, H + 1, x, y)).cut(cylZ(HEAD_R, zT + SEAT, H + 1, x, y));
+  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, zT - 1, H + 1, x, y)).cut(headPocket(x, y, zT + SEAT, H + 1));
   return h;
 }
 
@@ -366,7 +395,7 @@ export function tubeGateLower(d: TubeGateDims, zF: number): Shape3D {
   h = h.fuse(lipRing(g.Rm, zF - 0.01, 1));
   h = h.cut(cylZ(g.Rm, -1, zT + 1));
   const z0 = zF - TP - d.cone - 1;
-  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, z0, zT + 1, x, y)).cut(hexPrism(NUT_AF, x, y, z0, zF - SEAT));
+  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, z0, zT + 1, x, y)).cut(nutPocket(x, y, z0, zF - SEAT));
   return h;
 }
 
@@ -378,7 +407,7 @@ export function tubeGateUpper(d: TubeGateDims, zF: number, len: number): Shape3D
   h = h.fuse(lipRing(g.Rm, zT + 0.01, -1));
   h = h.cut(cylZ(g.Rm, zT - 1, len + 1));
   const z1 = zT + TP + d.cone + 1;
-  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, zT - 1, z1, x, y)).cut(cylZ(HEAD_R, zT + SEAT, z1, x, y));
+  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, zT - 1, z1, x, y)).cut(headPocket(x, y, zT + SEAT, z1));
   return h;
 }
 
