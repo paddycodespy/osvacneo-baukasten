@@ -309,6 +309,22 @@ class AppState {
 
   /** Stützen nötig? (nur nach fertiger Berechnung bekannt; die Teile von osVAC neo sind ohne Stützen druckbar) */
   needsSupportMaterial = $derived((!!this.kind.freeform || !!this.kind.machine || !!this.kind.gate) && this.overhang > 40);
+  /**
+   * Freiform: Kupplung steht auf ihrer Öffnung (Ende auf dem Bett, mit Schieber beide Enden). Die Decke der Bajonett-Nut
+   * hängt dann waagerecht in der Luft (etwa 2 mm breit); die Stützen-Prüfung zählt die Teile von osVAC neo nicht mit.
+   */
+  femaleOnBed = $derived.by((): string | null => {
+    if (!this.kind.freeform) return null;
+    const f = this.free;
+    const ends = f.blocks.some((b) => b.type === 'gate') ? (['A', 'B'] as const) : [f.bed];
+    const hit = ends.filter((e) => (e === 'A' ? f.a.type : f.b.type) === 'female');
+    return hit.length ? hit.map((e) => (e === 'A' ? 'Anschluss A' : 'Ende B')).join(' und ') : null;
+  });
+  femaleOnBedText = $derived(
+    this.femaleOnBed
+      ? `Stützen nötig: Die Kupplung an ${this.femaleOnBed} steht beim Drucken auf ihrer Öffnung. Innen hängt dann die Decke der Bajonett-Nut (etwa 2 mm breit) waagerecht in der Luft und wird ohne Stützen unsauber; die Nasen des Steckers rasten dort ein. Im Slicer „Stützen nur auf dem Druckbett“ einschalten (die Stützen stehen in der Öffnung und lassen sich herausziehen) oder dort einen Stecker wählen.`
+      : '',
+  );
 
   /** Druckhinweise je Adaptertyp (die Dateien sind schon so ausgerichtet wie in der Vorschau) */
   printTips = $derived.by(() => {
@@ -319,7 +335,8 @@ class AppState {
       t.push('Stützen nötig: Das schräge Stück zwischen Anschluss und Rohrteil ist steiler als 45°. Im Slicer „Stützen nur auf dem Druckbett“ einschalten, oder in „Größen“ die Übergangslänge erhöhen.');
     else if (this.needsSupportMaterial)
       t.push('Stützen nötig: Ein Teil des Adapters hängt schräg in der Luft, meist unter einem Bogen oder Übergang. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Ein längerer Übergang oder ein anderes Ende auf dem Druckbett kann das vermeiden.');
-    else t.push('Stützen werden nicht gebraucht, im Slicer ausschalten.');
+    else if (!this.femaleOnBed) t.push('Stützen werden nicht gebraucht, im Slicer ausschalten.');
+    if (this.femaleOnBed) t.push(this.femaleOnBedText);
     if (this.hasSwivel)
       t.push(`Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Klemmt er, beim nächsten Mal in „Passung“ das Spiel am Drehring erhöhen.`);
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');

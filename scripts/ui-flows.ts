@@ -328,6 +328,18 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.tips').innerText()).includes('Schieberplatte'), 'Druckhinweis zur Schieberplatte fehlt');
   });
 
+  await test('Kupplung auf dem Bett braucht Stützen', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: 'Freiform' }).click();
+    await step(pg, 'Aufbau');
+    await pickTemplate(pg, 'Gerade auf Stutzen');
+    await pg.getByRole('radio', { name: /Anschluss A \(Kupplung\)/ }).click();
+    await ready(pg);
+    expect((await pg.locator('.print-note').innerText()).includes('Stützen nötig'), 'Kupplung auf der Öffnung ohne Hinweis „Stützen nötig“');
+    await pg.getByRole('radio', { name: /Ende B/ }).click();
+    await ready(pg);
+  });
+
   await test('Stutzen: steiler Übergang mit Vorschlag', pg, async () => {
     await step(pg, 'Verbindung');
     await pg.getByRole('radio', { name: /Kupplung → Stutzen/ }).click();
