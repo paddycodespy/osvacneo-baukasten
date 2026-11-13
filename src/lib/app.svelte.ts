@@ -14,7 +14,7 @@ import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
-import { DEFAULT_GATE, GATE_GAP, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
+import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
   { id: '3mf', label: '3MF', hint: 'Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura' },
@@ -24,6 +24,17 @@ export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
 
 /** Startwerte (auf diese setzt „Zurücksetzen“ zurück) */
 export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36 };
+
+/** Bereiche der Eingabefelder (beim Laden eines gespeicherten Stands) */
+const INPUT_LIMITS: Record<keyof OsvacInput, [number, number]> = {
+  maleDiameterInner: [15, 60],
+  femaleDiameterInner: [15, 60],
+  hoseDiameterInner: [15, 60],
+  generalMaterialWidth: [7, 9],
+  maleFemaleGapSize: [0.1, 0.5],
+  slipRingGapSize: [0.2, 0.8],
+  supportStructureGapSize: [0.1, 1],
+};
 
 export type MachineMode = 'over' | 'into';
 export const MACHINE_DEFAULT = { mode: 'over' as MachineMode, dOpen: 32, dDepth: 33, length: 30, wall: 3, allowance: 0.2, holes: true, transition: 8, ribs: false, slots: false };
@@ -258,7 +269,7 @@ class AppState {
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
     pipeGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als das Rohr außen. Sitzt das Rohr zu stramm: größer. Rutscht es heraus: kleiner, oder das Rohr mit etwas Klebeband umwickeln.',
     plateGap: this.kind.gate
-      ? 'Luft über und unter der Platte im Kanal. Um die Bohrung drücken zwei Dichtlippen (0,3 mm hoch) auf die Platte, beim Standardwert je Seite 0,05 mm: das dichtet und hält die Platte durch Reibung. Geht die Platte zu schwer: größer. Zieht der Schieber Falschluft oder rutscht die Platte von allein: kleiner.'
+      ? 'Luft über und unter der Platte im Kanal, in Schritten von 0,1 mm (passend zu 0,2 mm Schichthöhe). Um die Bohrung drücken zwei Dichtlippen (0,4 mm hoch) auf die Platte, beim Standardwert 0,3 mm je Seite 0,1 mm: das dichtet und hält die Platte durch Reibung. Ab 0,4 mm liegen die Lippen nur noch an. Geht die Platte zu schwer: größer. Zieht der Schieber Falschluft oder rutscht die Platte von allein: kleiner.'
       : 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
     wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg, höchstens ${WALL_MORE} mm mehr (${fmt(this.gateLay.maxA)} mm), sonst wird die Halterung wacklig.`,
     orient: 'Wie das Rohr an der Wand entlangläuft. Der Schlitz der Schlüssellöcher muss nach oben zeigen: bei senkrechtem Rohr zum oberen Ende, bei waagerechtem zur Seite.',
@@ -521,7 +532,8 @@ class AppState {
       const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
       if (typeof s.kindId === 'string' && kindById(s.kindId)?.available) this.kindId = s.kindId;
       if (s.input && typeof s.input === 'object')
-        for (const k of Object.keys(START_INPUT) as (keyof OsvacInput)[]) if (num(s.input[k])) (this.input[k] as number) = s.input[k];
+        for (const k of Object.keys(START_INPUT) as (keyof OsvacInput)[]) if (num(s.input[k])) (this.input[k] as number) = Math.min(INPUT_LIMITS[k][1], Math.max(INPUT_LIMITS[k][0], s.input[k]));
+      if (this.input.generalMaterialWidth !== 7 && this.input.generalMaterialWidth !== 9) this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
       // Beschriftung ist nicht mehr abwählbar: ein gespeichertes „ohne Text“ wird nicht übernommen
       if (s.supportsOff && typeof s.supportsOff === 'object') {
         for (const [k, v] of Object.entries(s.supportsOff)) if (v === true && kindById(k)) this.supportsOff = { ...this.supportsOff, [k]: true };
@@ -537,7 +549,11 @@ class AppState {
         if (this.free.b.type === 'device' && this.free.b.device.mode === 'flange') this.free.bed = 'B';
       }
       if (s.gate && typeof s.gate === 'object') {
-        for (const k of ['d', 'depth', 'wallDist', 'pipeGap', 'plateGap'] as const) if (num(s.gate[k])) this.gate[k] = s.gate[k];
+        // Werte auf die Bereiche der Eingabefelder begrenzen; das Spiel der Platte auf das Raster des Schiebers (ältere
+        // Stände hatten 0,25 oder 0,3 ohne Raster)
+        const lim: Record<'d' | 'depth' | 'wallDist' | 'pipeGap', [number, number]> = { d: [15, 60], depth: [10, 50], wallDist: [0, 500], pipeGap: [0.1, 1] };
+        for (const k of ['d', 'depth', 'wallDist', 'pipeGap'] as const) if (num(s.gate[k])) this.gate[k] = Math.min(lim[k][1], Math.max(lim[k][0], s.gate[k]));
+        if (num(s.gate.plateGap)) this.gate.plateGap = snapPlateGap(s.gate.plateGap);
         if (typeof s.gate.mount === 'string' && s.gate.mount in MOUNT_LABELS) this.gate.mount = s.gate.mount;
         if (typeof s.gate.orient === 'string' && s.gate.orient in ORIENT_LABELS) this.gate.orient = s.gate.orient;
       }

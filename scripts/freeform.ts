@@ -14,7 +14,7 @@ import { partsFree } from '../src/lib/osvac/assemblies';
 import { TEMPLATES, newBlock, sec, planFree, testHooks, flangeGeom, flangeMinRim, flangeDefaults, branchGeom, DEFAULT_DEVICE, type FreeSpec, type SectionShape, type Block, type EndSpec } from '../src/lib/osvac/freeform';
 import { partNotes } from '../src/lib/errors';
 import { weld, meshTolerance } from '../src/lib/worker/threemf';
-import { belowBedEnd } from '../src/lib/overhang';
+import { belowBedEnd, overhangArea, COUNTED_GATE } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
 import { gateLayout, gateLower, gateUpper, gateSlider, gateClip, sliderInGate, DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
@@ -437,7 +437,8 @@ for (const [id, kind, pipe, text] of [
     ['schieber-50-wand-max', { mount: 'plate', orient: 'turned', wallDist: 200 }],
     ['schieber-25-wandhalter', { d: 25, mount: 'clip', wallDist: 30 }],
     ['schieber-60-ohne', { d: 60, mount: 'none', depth: 10 }],
-    ['schieber-40-spiel', { d: 40, pipeGap: 0.8, plateGap: 0.45, wallDist: 80 }],
+    ['schieber-40-spiel', { d: 40, pipeGap: 0.8, plateGap: 0.5, wallDist: 80 }],
+    ['schieber-32-tief', { d: 32, depth: 37.5, plateGap: 0.2 }],
   ];
   for (const [id, v] of variants) {
     if (only && id !== only) continue;
@@ -457,13 +458,15 @@ for (const [id, kind, pipe, text] of [
       // Dichtlippen drücken (Standardspiel) auf die Platte, zu und auf; sonst nichts
       const lipOnly = (dx: number) => {
         const v = touch(dx, lo) + touch(dx, up);
-        const press = 0.3 - s.plateGap;
+        const press = 0.4 - (lay.g.ch - lay.g.T) / 2;
         const ring = 2 * Math.PI * (lay.Rm + 1.6) * 1.2 * Math.max(0, press - 0.01) * 2;
         return v <= ring * 1.3 + 0.01;
       };
       if (!lipOnly(0)) bad.push(`berührt zu ${(touch(0, lo) + touch(0, up)).toFixed(2)}`);
       if (!lipOnly(lay.g.P)) bad.push(`berührt auf ${(touch(lay.g.P, lo) + touch(lay.g.P, up)).toFixed(2)}`);
-      if (s.plateGap < 0.3 && !(touch(0, lo) > 0.01 && touch(0, up) > 0.01)) bad.push('Dichtlippen liegen nicht an');
+      if ((lay.g.ch - lay.g.T) / 2 < 0.39 && !(touch(0, lo) > 0.01 && touch(0, up) > 0.01)) bad.push('Dichtlippen liegen nicht an');
+      // Dichthöhen im Schichtraster 0,2 mm (Boden, Kanal, Lippe; Oberteil wird umgedreht gedruckt)
+      for (const [n, v] of [['Boden', lay.zF], ['Kanal', lay.g.ch], ['Oberteil', lay.H - lay.zT]] as const) if (Math.abs(v / 0.2 - Math.round(v / 0.2)) > 1e-6) bad.push(`${n} ${v} nicht im 0,2-mm-Raster`);
       // Anschläge: Griff bei „zu“, Nase der Zunge bei „auf“
       if (!(touch(-1.2, up) > 0.5)) bad.push('kein Anschlag bei zu');
       if (!(touch(lay.g.P + 1.2, lo) + touch(lay.g.P + 1.2, up) > 0.5)) bad.push('kein Anschlag bei auf');
@@ -476,6 +479,17 @@ for (const [id, kind, pipe, text] of [
         c.delete();
       }
       const parts = kindById('GATE').parts!(p, { gate: s });
+      // Überhang wie in der App (Stützen nötig ab 40 mm²)
+      {
+        const bodies = parts.map((q) => {
+          const sh = q.make();
+          const m = sh.mesh({ tolerance: meshTolerance(q.name), angularTolerance: 0.1 });
+          sh.delete();
+          return { name: q.name, helper: !!q.helper, positions: m.vertices, normals: m.normals, indices: m.triangles };
+        });
+        const ov = overhangArea(bodies, COUNTED_GATE, 25);
+        if (ov > 40) bad.push(`Überhang ${ov.toFixed(0)} mm² (Stützen nötig)`);
+      }
       const bbs = parts.map((q) => { const sh = q.make(); const b = sh.boundingBox.bounds; sh.delete(); return { n: q.name, b }; });
       for (const x of bbs) if (Math.abs(x.b[0][2]) > 0.01) bad.push(`${x.n} nicht auf dem Bett`);
       for (const [i, x] of bbs.entries())
