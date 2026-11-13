@@ -16,7 +16,7 @@ import { partNotes } from '../src/lib/errors';
 import { weld, meshTolerance } from '../src/lib/worker/threemf';
 import { belowBedEnd } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
-import { gateLayout, gateHousing, gatePlate, gateClip, plateInSlot, DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
+import { gateLayout, gateLower, gateUpper, gateSlider, gateClip, sliderInGate, DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -446,16 +446,27 @@ for (const [id, kind, pipe, text] of [
     const bad: string[] = [];
     try {
       const lay = gateLayout(s);
-      const h = gateHousing(s), pl = gatePlate(lay.g);
-      for (const x of [h, pl]) if (!valid(x) || !(measureVolume(x) > 0)) bad.push('ungültig');
-      for (const [n, x, nm] of [['Gehäuse', h, 'Schieber-Gehäuse'], ['Platte', pl, 'Schieberplatte']] as const) if (badEdges(x, nm)) bad.push(`${n}: ${badEdges(x, nm)} Kanten im Netz nicht geschlossen`);
-      const touch = (dx: number) => measureVolume(h.clone().intersect(pl.clone().translate(plateInSlot(lay.g, lay.zc, false).map((c, i) => (i ? c : c + dx)) as [number, number, number])) as Shape3D);
-      if (touch(0) > 0.01) bad.push(`berührt zu ${touch(0).toFixed(2)}`);
-      if (touch(lay.g.P) > 0.01) bad.push(`berührt auf ${touch(lay.g.P).toFixed(2)}`);
-      if (!(touch(3) > 0.01)) bad.push('rastet nicht');
+      const lo = gateLower(s), up = gateUpper(s), pl = gateSlider(lay.g);
+      for (const x of [lo, up, pl]) if (!valid(x) || !(measureVolume(x) > 0)) bad.push('ungültig');
+      for (const [n, x, nm] of [['Unterteil', lo, 'Schieber-Unterteil'], ['Oberteil', up, 'Schieber-Oberteil'], ['Platte', pl, 'Schieberplatte']] as const) if (badEdges(x, nm)) bad.push(`${n}: ${badEdges(x, nm)} Kanten im Netz nicht geschlossen`);
+      // Gehäuseteile berühren sich nur an der Trennfläche (kein Volumen gemeinsam)
+      const both = measureVolume(lo.clone().intersect(up.clone()) as Shape3D);
+      if (both > 0.01) bad.push(`Unter- und Oberteil überlappen ${both.toFixed(2)}`);
+      const at = (dx: number) => sliderInGate(lay, false).map((c, i) => (i ? c : c + dx)) as [number, number, number];
+      const touch = (dx: number, sh: Shape3D) => measureVolume(sh.clone().intersect(pl.clone().translate(at(dx))) as Shape3D);
+      // Dichtlippen drücken (Standardspiel) auf die Platte, zu und auf; sonst nichts
+      const lipOnly = (dx: number) => {
+        const v = touch(dx, lo) + touch(dx, up);
+        const press = 0.3 - s.plateGap;
+        const ring = 2 * Math.PI * (lay.Rm + 1.6) * 1.2 * Math.max(0, press - 0.01) * 2;
+        return v <= ring * 1.3 + 0.01;
+      };
+      if (!lipOnly(0)) bad.push(`berührt zu ${(touch(0, lo) + touch(0, up)).toFixed(2)}`);
+      if (!lipOnly(lay.g.P)) bad.push(`berührt auf ${(touch(lay.g.P, lo) + touch(lay.g.P, up)).toFixed(2)}`);
+      if (s.plateGap < 0.3 && !(touch(0, lo) > 0.01 && touch(0, up) > 0.01)) bad.push('Dichtlippen liegen nicht an');
       // Anschläge: Griff bei „zu“, Nase der Zunge bei „auf“
-      if (!(touch(-1.2) > 0.01)) bad.push('kein Anschlag bei zu');
-      if (!(touch(lay.g.P + 1.2) > 0.01)) bad.push('kein Anschlag bei auf');
+      if (!(touch(-1.2, up) > 0.5)) bad.push('kein Anschlag bei zu');
+      if (!(touch(lay.g.P + 1.2, lo) + touch(lay.g.P + 1.2, up) > 0.5)) bad.push('kein Anschlag bei auf');
       // Rohr passt in die Muffe, Anschlag hält es
       if (!(lay.Rs > s.d / 2 && lay.Rm < s.d / 2)) bad.push('Muffe/Anschlag');
       if (lay.A > lay.minA + 50 + 1e-9) bad.push(`Wandabstand ${lay.A} über dem Höchstwert`);
@@ -474,7 +485,8 @@ for (const [id, kind, pipe, text] of [
         const y0 = bbs[0].b[0][1];
         if (Math.abs(-y0 - lay.A) > 0.01) bad.push(`Wandabstand ${(-y0).toFixed(1)} statt ${lay.A}`);
       }
-      h.delete();
+      lo.delete();
+      up.delete();
       pl.delete();
     } catch (e) {
       bad.push((e as Error).message);

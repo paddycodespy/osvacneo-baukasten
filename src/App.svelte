@@ -126,11 +126,11 @@
   $effect(() => {
     void viewerOn;
     const plan = app.freePlan;
-    // Schieber einzeln: Gehäuse und Wandhalter durch die Achse, Platte längs durch ihre Mitte (die gemeinsame Ebene läge
+    // Schieber einzeln: Unterteil, Oberteil und Wandhalter durch die Achse, Platte längs durch ihre Mitte (die gemeinsame Ebene läge
     // sonst in der Mitte aller Teile und schnitte nur die Platte weg)
     const bed = app.kind.gate ? gateBed($state.snapshot(app.gate)) : null;
     const gateFn = bed
-      ? (name: string) => ({ p: (name === 'Schieberplatte' ? bed.plate : name === 'Wandhalter' ? bed.clip : [0, 0, 0]) as [number, number, number], n: [0, 1, 0] as [number, number, number] })
+      ? (name: string) => ({ p: (name === 'Schieberplatte' ? bed.plate : name === 'Wandhalter' ? bed.clip : name === 'Schieber-Oberteil' ? bed.upper : [0, 0, 0]) as [number, number, number], n: [0, 1, 0] as [number, number, number] })
       : null;
     const fn = app.kind.freeform && plan ? sectionPlanes($state.snapshot(app.free), plan) : gateFn;
     viewer?.setSectionPlanes(fn);

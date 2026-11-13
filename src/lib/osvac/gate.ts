@@ -154,32 +154,74 @@ export interface GateSpec {
   plateGap: number;
 }
 
-export const DEFAULT_GATE: GateSpec = { d: 50, depth: 20, mount: 'plate', orient: 'upright', wallDist: 0, pipeGap: 0.4, plateGap: GATE_GAP };
+/** Spiel der Platte beim Schieber einzeln: die Dichtlippen (0,3 mm) drücken dann je Seite 0,05 mm auf die Platte */
+export const DEFAULT_GATE: GateSpec = { d: 50, depth: 20, mount: 'plate', orient: 'upright', wallDist: 0, pipeGap: 0.4, plateGap: 0.25 };
 /** so viel weiter als der kleinste Wandabstand geht es höchstens */
 export const WALL_MORE = 50;
 
 /** Wandplatte und Wandhalter: Dicke, Höhe des Halters, Lage der Schrauben */
 const WALL_T = 3, CLIP_H = 14, CLIP_W = 3.5;
 
+/**
+ * Schieber einzeln, zweiteilig verschraubt (Sandwich): Unterteil mit Muffe, Kanal für die Platte und Wandplatte,
+ * Oberteil als Deckel mit Muffe. Um die Bohrung läuft oben und unten eine Dichtlippe, die die Platte leicht andrückt:
+ * so zieht der Schieber über die offenen Enden des Kanals keine Falschluft. Beide Teile stehen mit der Muffe auf dem
+ * Bett, nichts hängt über einem Schlitz in der Luft.
+ *
+ * Höhen (z, Rohrachse, z = 0 Ende der unteren Muffe): Muffe 0 … zL, Boden zL … zF, Kanal zF … zT, Deckel zT … zT + TP,
+ * obere Muffe bis H. Die Platte gleitet entlang x, die Wand liegt auf der Seite −y.
+ */
+/** Dicke der Platte, Dicke von Boden und Deckel, Höhe der Dichtlippen, Lage der Lippen (ab der Bohrung) */
+export const SINGLE_T = 4;
+const TP = 3.5, LIP = 0.3, LIP_IN = 1, LIP_W = 1.2;
+/** Schrauben M3: Loch, Mutter (Schlüsselweite 5,5 + Luft), Kopf; Mutter und Kopf sitzen je 1,5 mm vor dem Kanal */
+const M3_R = 1.7, NUT_AF = 5.8, HEAD_R = 3.2, SEAT = 1.5;
+/** Spiel der Platte im Kanal seitlich (je Seite) */
+const SIDE_GAP = 0.3;
+/** Schräge zwischen Gehäuse und Muffe: so viel Höhe je mm Radius (1,2 = 50°) */
+const CH_K = 1.2;
+
+export function singleDims(Rm: number, Ro: number, gap: number) {
+  const T = SINGLE_T;
+  /** Höhe des Kanals */
+  const ch = T + 2 * gap;
+  /** halbe Breite der Platte und des Kanals: Platte deckt die Bohrung 3 mm rundum ab */
+  const pw = Rm + 3, yC = pw + SIDE_GAP;
+  /** Gehäuse: halbe Länge in Gleitrichtung so knapp wie möglich, quer Platz für die Schrauben neben dem Kanal */
+  const hx = Ro + 3, sx = hx - 5, sy = yC + 3.6, hy = sy + 4;
+  /** Ecke des Gehäuses und Länge der 45°-Schräge zur Muffe */
+  const Rc = Math.hypot(hx, hy), cl = Rc - Ro;
+  /** Platte: zu bei x = 0, auf um +P (Fenster bei −P liegt bei „zu“ außerhalb des Gehäuses) */
+  const P = Rm + hx + 2;
+  const xs = -hx - 0.5 - P;
+  const x0 = xs - ZUNGE - 3, x1 = hx + 16, gripX = hx + 9.5;
+  const hw = pw + NUB;
+  return { T, gap, ch, pw, yC, hx, hy, sx, sy, Rc, cl, P, xs, x0, x1, gripX, hw, Rm, Ro };
+}
+export type SingleDims = ReturnType<typeof singleDims>;
+
 export function gateLayout(s: GateSpec) {
   const Rs = s.d / 2 + s.pipeGap, Rm = s.d / 2 - STOP, Ro = Rs + SOCKET_WALL;
-  const g = gateDims(Rm, Ro, s.plateGap);
-  const H = 2 * s.depth + g.Hf, zc = H / 2;
+  const g = singleDims(Rm, Ro, s.plateGap);
+  const zL = s.depth, zF = zL + TP, zT = zF + g.ch, H = zT + TP + s.depth;
+  const zc = (zF + zT) / 2;
   const r1 = s.d / 2 + 0.2, r2 = r1 + CLIP_W;
   /** kleinster Abstand Wand bis Rohrmitte (Teil direkt an der Wand) */
-  const minA = s.mount === 'clip' ? r2 + WALL_T : g.half + WALL_T;
+  const minA = s.mount === 'clip' ? r2 + WALL_T : g.hy + WALL_T;
   const maxA = minA + WALL_MORE;
   const A = Math.min(maxA, Math.max(minA, s.wallDist));
   /** Schrauben neben dem Gehäuse (x = ±holeX); Wandplatte: je Seite unten und oben (z = holeZ, H − holeZ) */
-  const holeX = s.mount === 'clip' ? r2 + 6 : g.half + 6;
+  const holeX = s.mount === 'clip' ? r2 + 6 : g.hx + 6;
   const holeZ = 7;
   /** Schlüssellöcher bei waagerechtem Rohr: beide auf der Seite +x (oben), unten und oben am Gehäuse, Schlitz nach +x */
   const keyTurned = s.mount === 'keyhole' && s.orient === 'turned';
-  const keyZ = 7.5, keyX = g.half + 4.5;
+  const keyZ = 7.5, keyX = g.hx + 4.5;
   /** Abstände der Schrauben (zum Anzeichnen): [quer zum Rohr, entlang dem Rohr] */
   const pitch: [number, number] =
-    s.mount === 'plate' ? [2 * holeX, H - 2 * holeZ] : keyTurned ? [0, H - 2 * keyZ] : s.mount === 'keyhole' ? [2 * holeX, 0] : [2 * holeX, 0];
-  return { g, Rs, Rm, Ro, H, zc, r1, r2, minA, maxA, A, holeX, holeZ, keyTurned, keyZ, keyX, pitch };
+    s.mount === 'plate' ? [2 * holeX, H - 2 * holeZ] : keyTurned ? [0, H - 2 * keyZ] : [2 * holeX, 0];
+  /** Länge der Schrauben M3 (Kopf bis Ende der Mutter, aufgerundet) */
+  const screwLen = Math.ceil((g.ch + 2 * SEAT + 2.4 + 0.5) / 2) * 2;
+  return { g, Rs, Rm, Ro, H, zL, zF, zT, zc, r1, r2, minA, maxA, A, holeX, holeZ, keyTurned, keyZ, keyX, pitch, screwLen };
 }
 
 /** Senkloch für Ø-4-Senkkopfschrauben, Achse +y, Senkung an der Fläche bei y = yFace (Kopf auf der Seite +y) */
@@ -190,26 +232,62 @@ function sinkHole(x: number, z: number, yFace: number, depth: number): Shape3D {
     .translate([x, yFace, z]) as Shape3D;
 }
 
-/** Gehäuse des Schiebers einzeln (stehend, Muffe unten auf dem Bett), mit Wandplatte oder Schlüssellöchern; text: Rohr-Ø vorne eingraviert */
-export function gateHousing(s: GateSpec, text = true): Shape3D {
-  const { g, Rs, Rm, Ro, H, zc, A, holeX, holeZ, keyTurned, keyZ, keyX } = gateLayout(s);
-  let h = cylZ(Ro, 0, H).fuse(frame(g, zc, 0, H));
+/** Sechskant (Schlüsselweite af, Kanten parallel zu x) zwischen z0 und z1 */
+function hexPrism(af: number, x: number, y: number, z0: number, z1: number): Shape3D {
+  const r = af / Math.sqrt(3);
+  const pts: [number, number][] = [0, 1, 2, 3, 4, 5].map((i) => [x + r * Math.cos((i * Math.PI) / 3), y + r * Math.sin((i * Math.PI) / 3)]);
+  let d = draw(pts[0]);
+  for (const q of pts.slice(1)) d = d.lineTo(q);
+  return d.close().sketchOnPlane('XY', Math.min(z0, z1)).extrude(Math.abs(z1 - z0)) as unknown as Shape3D;
+}
+
+/**
+ * Hälfte des Gehäuses: Platte zwischen zFace (innen, zum Kanal) und zOut, davor 45°-Schräge bis zur Muffe, Muffe bis zEnd.
+ * s = Richtung von innen nach außen (−1 unten, +1 oben); backY: Rückseite (−y) etwas zurückgesetzt.
+ */
+function half(lay: ReturnType<typeof gateLayout>, s: 1 | -1, zFace: number, depth: number, backY: number): Shape3D {
+  const { g, Rs, Rm, Ro } = lay;
+  const zOut = zFace + s * TP, zEnd = zOut + s * depth;
+  const zA = Math.min(zFace, zOut), zB = Math.max(zFace, zOut);
+  let h = box(-g.hx, g.hx, -g.hy + backY, g.hy, zA, zB);
+  // Schräge: Kegel von der Ecke zur Muffe (50° zur Waagerechten, sicher ohne Stützen), nicht länger als die Muffe
+  const rEnd = Math.max(Ro, g.Rc + 0.02 - depth / CH_K), zc1 = zOut + s * CH_K * (g.Rc + 0.02 - rEnd);
+  const cone = s > 0 ? revolveProfile([0, zOut], [L(g.Rc + 0.02, zOut), L(rEnd, zc1), L(0, zc1)]) : revolveProfile([0, zc1], [L(rEnd, zc1), L(g.Rc + 0.02, zOut), L(0, zOut)]);
+  h = h.fuse(box(-g.hx, g.hx, -g.hy + backY, g.hy, Math.min(zOut, zc1), Math.max(zOut, zc1)).intersect(cone) as Shape3D);
+  h = h.fuse(cylZ(Ro, zOut, zEnd));
+  // Muffe bis zum Anschlag, der Anschlag läuft unter 45° zur lichten Weite (hängt beim Druck nicht in der Luft)
+  h = h.cut(cylZ(Rs, zEnd + s, zOut + s * 0.01));
+  const k = Rs - Rm;
+  h = h.cut(s > 0 ? revolveProfile([0, zOut - k], [L(Rm, zOut - k), L(Rs, zOut + 0.01), L(0, zOut + 0.01)]) : revolveProfile([0, zOut - 0.01], [L(Rs, zOut - 0.01), L(Rm, zOut + k), L(0, zOut + k)]));
+  return h;
+}
+
+/** Dichtlippe: Ring um die Bohrung auf der Fläche z, ragt um LIP in Richtung s */
+const lipRing = (Rm: number, z: number, s: 1 | -1) => cylZ(Rm + LIP_IN + LIP_W, z, z + s * LIP).cut(cylZ(Rm + LIP_IN, z - 1, z + 1));
+
+const screwPts = (g: SingleDims): [number, number][] => [[g.sx, g.sy], [-g.sx, g.sy], [g.sx, -g.sy], [-g.sx, -g.sy]];
+
+/** Unterteil (stehend, Muffe unten auf dem Bett) mit Kanal, Dichtlippe, Muttern und Wandplatte oder Schlüssellöchern */
+export function gateLower(s: GateSpec, text = true): Shape3D {
+  const lay = gateLayout(s);
+  const { g, Rm, H, zL, zF, zT, A, holeX, holeZ, keyTurned, keyZ, keyX } = lay;
+  let h = half(lay, -1, zF, s.depth, 0);
+  // Seitenwände des Kanals
+  h = h.fuse(box(-g.hx, g.hx, -g.hy, g.hy, zF - 0.01, zT).cut(box(-g.hx - 1, g.hx + 1, -g.yC, g.yC, zF - 1, zT + 1)));
+  h = h.fuse(lipRing(Rm, zF - 0.01, 1));
   if (s.mount === 'plate' || s.mount === 'keyhole') {
-    // Wandplatte über die ganze Höhe, zwei Stege zum Gehäuse (die Bohrung schneidet sie innen frei);
-    // Schlüssellöcher bei waagerechtem Rohr: Platte auf der Seite +x länger
-    const X = g.half + 12, Xp = keyTurned ? keyX + 12.5 : X;
-    h = h.fuse(box(-X, Xp, -A, -A + WALL_T, 0, H));
-    for (const sx of [1, -1]) h = h.fuse(box(sx * (g.half - 3), sx * g.half, -A + WALL_T - 0.01, 0, 0, H));
-    // Klotz an der Stelle, wo die Muffe die Wandplatte berührt: sonst stößt der Zylinder dort nur in einer Linie an
-    // (direkt an der Wand), das gibt im Netz Kanten mit vier Flächen
-    h = h.fuse(box(-6, 6, Math.max(-A + WALL_T - 0.01, -Ro - 1), -Ro + 2, 0, H));
+    // Wandplatte über die ganze Höhe (auch neben dem Deckel), Stege zum Gehäuse: außen bis in die Seitenwand,
+    // in der Mitte bis in die Muffe (nicht in den Kanal)
+    const X = g.hx + 12, Xp = keyTurned ? keyX + 12.5 : X;
+    const yW = -A + WALL_T;
+    h = h.fuse(box(-X, Xp, -A, yW, 0, H));
+    for (const sx of [1, -1]) h = h.fuse(box(sx * (g.hx - 3), sx * g.hx, yW - 0.01, -g.hy + 1, 0, zT));
+    const wc = Math.min(6, lay.Ro * 0.5);
+    h = h.fuse(box(-wc, wc, yW - 0.01, -lay.Ro + 1, 0, zL + 1));
   }
-  // Muffen mit Anschlag; der untere Anschlag läuft unter 45° aus (hängt beim Druck nicht in der Luft)
-  h = h.cut(cylZ(Rs, -1, s.depth));
-  h = h.cut(revolveProfile([0, s.depth - 0.01], [L(Rs, s.depth - 0.01), L(Rm, s.depth + (Rs - Rm)), L(0, s.depth + (Rs - Rm))]));
-  h = h.cut(cylZ(Rs, H - s.depth, H + 1));
   h = h.cut(cylZ(Rm, -1, H + 1));
-  h = cutSlot(h, g, zc);
+  // Schrauben: Loch durch, Mutter von unten eingesetzt (Tasche bis 1,5 mm unter den Kanal)
+  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, -1, zT + 1, x, y)).cut(hexPrism(NUT_AF, x, y, -1, zF - SEAT));
   if (s.mount === 'plate') for (const sx of [1, -1]) for (const z of [holeZ, H - holeZ]) h = h.cut(sinkHole(sx * holeX, z, -A + WALL_T, WALL_T));
   if (s.mount === 'keyhole') {
     // Schlüsselloch: großes Loch für den Schraubenkopf, Schlitz nach oben (Rohr senkrecht: zum oberen Ende wie gedruckt,
@@ -220,19 +298,50 @@ export function gateHousing(s: GateSpec, text = true): Shape3D {
       for (const z of [keyZ, H - keyZ]) h = h.cut(thru(4.5, keyX, z)).cut(slot(keyX, keyX + 8, z - 2.2, z + 2.2)).cut(thru(2.2, keyX + 8, z));
     else
       for (const sx of [1, -1]) {
-        const x = sx * holeX, zh = zc - 4, ze = zc + 5;
+        const x = sx * holeX, zh = H / 2 - 4, ze = H / 2 + 5;
         h = h.cut(thru(4.5, x, zh)).cut(slot(x - 2.2, x + 2.2, zh, ze)).cut(thru(2.2, x, ze));
       }
   }
-  // Rohr-Ø vorne auf dem Rahmen (Seite gegenüber der Wand), 0,4 mm tief, zum Sortieren
+  // Rohr-Ø vorne (Seite gegenüber der Wand), 0,4 mm tief, zum Sortieren
   if (text) {
     const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
-    const size = Math.min(5, g.Hf - 2.4);
-    const tool = textOnFlat(g.half, 90, zc, `Ø${f(s.d)}`, size, 0.4);
+    const size = Math.min(5, zT - zL - 2.4);
+    const tool = textOnFlat(g.hy, 90, (zL + zT) / 2, `Ø${f(s.d)}`, size, 0.4);
     if (tool) h = h.cut(tool);
   }
   return h;
 }
+
+/** Oberteil (Deckel) in Einbaulage: Platte zT … zT + TP, Muffe nach oben; Rückseite 0,4 mm zurückgesetzt (Luft zur Wandplatte) */
+export function gateUpper(s: GateSpec): Shape3D {
+  const lay = gateLayout(s);
+  const { g, Rm, H, zT } = lay;
+  let h = half(lay, 1, zT, s.depth, 0.4);
+  h = h.fuse(lipRing(Rm, zT + 0.01, -1));
+  h = h.cut(cylZ(Rm, -1, H + 1));
+  for (const [x, y] of screwPts(g)) h = h.cut(cylZ(M3_R, zT - 1, H + 1, x, y)).cut(cylZ(HEAD_R, zT + SEAT, H + 1, x, y));
+  return h;
+}
+
+/** Platte des Schiebers einzeln flach (z = 0 … T), Gleitrichtung x, Griff bei +x, Zunge mit Nase bei −x */
+export function gateSlider(g: SingleDims): Shape3D {
+  const outline = (h: number) => box(g.x0, g.x1, -g.pw, g.pw, 0, h).fillet(Math.min(3, g.pw - 0.5), (e) => e.inDirection('Z')) as Shape3D;
+  let pl = outline(g.T);
+  // Griff dicker als der Kanal: Anschlag bei „zu“
+  pl = pl.fuse(outline(g.T + GRIP_H).intersect(box(g.hx + 0.5, g.x1 + 1, -g.pw - 1, g.pw + 1, -1, g.T + GRIP_H + 1)));
+  pl = pl.cut(cylZ(g.Rm, -1, g.T + 1, -g.P, 0));
+  pl = pl.cut(cylZ(4.5, -1, g.T + GRIP_H + 1, g.gripX, 0));
+  // Zunge an der Kante +y: fest bei xs − ZUNGE, freies Ende kurz hinter der Nase
+  const yz = g.pw - 1.8;
+  pl = pl.cut(box(g.xs - ZUNGE, g.xs + 1.3, yz - 0.8, yz, -1, g.T + 1));
+  pl = pl.cut(box(g.xs + 0.5, g.xs + 1.3, yz - 0.8, g.pw + 1, -1, g.T + 1));
+  const nub = draw([g.xs - 5, g.pw - 0.3]).lineTo([g.xs - 0.4, g.pw + NUB]).lineTo([g.xs, g.pw + NUB]).lineTo([g.xs, g.pw - 0.3]).close();
+  pl = pl.fuse(nub.sketchOnPlane('XY').extrude(g.T) as unknown as Shape3D);
+  return pl;
+}
+
+/** Lage der Platte im Gehäuse (für Prüfungen): mittig im Kanal, zu oder auf */
+export const sliderInGate = (lay: ReturnType<typeof gateLayout>, open: boolean): [number, number, number] => [open ? lay.g.P : 0, 0, lay.zc - lay.g.T / 2];
 
 /** Wandhalter (eigenes Teil): Ring um das Rohr mit Öffnung nach vorne, Grundplatte an der Wand bei y = −A */
 export function gateClip(s: GateSpec): Shape3D {
@@ -248,17 +357,23 @@ export function gateClip(s: GateSpec): Shape3D {
 }
 
 /**
- * Lage der Teile auf dem Druckbett: Gehäuse im Ursprung (Wand auf der Seite −y), Platte flach davor, Wandhalter
- * dahinter. Liefert die Verschiebung je Teil.
+ * Lage der Teile auf dem Druckbett: Unterteil im Ursprung (Wand auf der Seite −y), Oberteil umgedreht daneben (+x,
+ * Muffe unten), Platte flach davor, Wandhalter dahinter. Liefert die Verschiebung je Teil; das Oberteil wird vorher
+ * um die x-Achse gedreht (upperFlip).
  */
 export function gateBed(s: GateSpec) {
-  const { g, A, r2 } = gateLayout(s);
-  const front = g.half + 8;
-  const plate: [number, number, number] = [-(g.x0 + g.x1) / 2, front + g.pw, 0];
+  const lay = gateLayout(s);
+  const { g, A, r2, keyTurned, keyX } = lay;
+  const lowerX = s.mount === 'plate' || s.mount === 'keyhole' ? (keyTurned ? keyX + 12.5 : g.hx + 12) : g.hx;
+  const upper: [number, number, number] = [lowerX + 8 + g.hx, 0, lay.H];
+  const front = g.hy + 8;
+  const plate: [number, number, number] = [-(g.x0 + g.x1) / 2 + 4 + g.hx, front + g.pw, 0];
   const clipY = front + g.pw + g.hw + 8 + A;
   const clip: [number, number, number] = [0, clipY, 0];
-  return { plate, clip, clipFront: clipY + r2 };
+  return { upper, plate, clip, clipFront: clipY + r2 };
 }
+/** Oberteil für das Bett: um 180° um die x-Achse gedreht (Muffe nach unten), dann verschoben */
+export const upperOnBed = (sh: Shape3D, at: [number, number, number]) => sh.rotate(180, [0, 0, 0], [1, 0, 0]).translate(at) as Shape3D;
 
 /** Kurztext für Dateiname und Kopfzeile */
 export function gateName(s: GateSpec): { code: string; file: string; long: string } {

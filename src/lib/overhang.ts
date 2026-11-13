@@ -17,7 +17,7 @@ export interface OverhangMesh {
 const COUNTED = /^(Formstück|Übergang zu|Geräteanschluss|Anschlagring)/;
 /** Stutzen-Adapter und Schieber einzeln: eigene Teile (die Teile von osVAC neo sind für den Druck ohne Stützen gebaut) */
 export const COUNTED_MACHINE = /^(Übergang|Rohr|Klemmrippen)$/;
-export const COUNTED_GATE = /^(Schieber-Gehäuse|Wandhalter)$/;
+export const COUNTED_GATE = /^(Schieber-Unterteil|Schieber-Oberteil|Wandhalter)$/;
 const CELL = 3;
 
 type Tri = { a: number[]; b: number[]; c: number[]; n: number[] };
@@ -99,7 +99,7 @@ export function overhangArea(bodies: OverhangMesh[], counted: RegExp = COUNTED, 
   };
   bodies.forEach((b, bi) => {
     if (b.helper || !counted.test(b.name)) return;
-    const bridges = b.name.startsWith('Geräteanschluss') || b.name.endsWith('· Schieber') || b.name === 'Schieber-Gehäuse';
+    const bridges = b.name.startsWith('Geräteanschluss') || b.name.endsWith('· Schieber') || b.name.startsWith('Schieber-');
     const nr = b.normals, ix = b.indices;
     for (let t = 0; t < ix.length; t += 3) {
       const nz = (nr[ix[t] * 3 + 2] + nr[ix[t + 1] * 3 + 2] + nr[ix[t + 2] * 3 + 2]) / 3;
