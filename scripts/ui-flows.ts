@@ -390,9 +390,15 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.step-body').innerText()).includes('Ende B · Düse'), 'Ende B ist keine Düse');
     await ready(pg);
     expect((await pg.locator('.code').innerText()).includes('90 × 8'), 'Freiform hat eine andere Düse');
+    await pg.locator('details.more summary', { hasText: 'Wandstärke' }).click();
+    await fill(pg, 'Wandstärke der Bausteine', '2.5');
     await pg.getByRole('button', { name: 'Zurück zur Düse' }).click();
     await until(pg, async () => (await pg.locator('.step-tab', { hasText: 'Düse' }).count()) > 0, 'nicht zurück bei der Düse');
     expect(await pg.getByRole('radio', { name: /Breitdüse/ }).getAttribute('aria-checked') === 'true', 'Formular der Düse hat sich verändert');
+    await pg.getByRole('button', { name: /In der Freiform weiterbauen/ }).click();
+    await until(pg, async () => (await pg.locator('.confirm', { hasText: 'wird durch die Düse ersetzt' }).count()) > 0, 'keine Rückfrage vor dem Ersetzen der Freiform');
+    await pg.getByRole('button', { name: 'Abbrechen' }).click();
+    expect((await pg.locator('.step-tab', { hasText: 'Düse' }).count()) > 0, 'Abbrechen hat trotzdem gewechselt');
     await ready(pg);
   });
 

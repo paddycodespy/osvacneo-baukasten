@@ -1,4 +1,4 @@
-# Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen, Bedienabläufe und die Geometrie aller Adapter.
+# Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen, Bedienabläufe, Geometrie aller Adapter und Druckbarkeit.
 # Läuft bei jedem Push und jedem Pull Request; Ergebnis unter „Actions“ → „Tests“.
 # Die Gruppen laufen gleichzeitig (Freiform in zwei Hälften).
 name: Tests
@@ -93,3 +93,23 @@ jobs:
       # dauert am längsten: alle Adaptertypen und Größen mit dem CAD-Kern
       - name: Geometrie aller Adapter
         run: npm run test:geometry
+
+  # Druckbarkeit: Netze geschlossen, nichts beginnt frei in der Luft, wo die App „ohne Stützen“ sagt
+  druck:
+    name: Druckbarkeit (Schichten)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: pip install trimesh shapely rtree networkx scipy
+
+      - name: Schichten prüfen
+        run: npm run test:islands

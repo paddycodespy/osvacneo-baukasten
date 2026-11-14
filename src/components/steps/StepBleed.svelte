@@ -36,14 +36,13 @@
 <p class="hint">Hier steckst du die Düse oder das Werkzeug ein.</p>
 
 <p class="hint sum">
-  Drei Fenster mit zusammen etwa {Math.round(ratio * 100)} % des Rohrquerschnitts. Drehring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Ganz dicht ist er auch zu nicht, durch das Spiel am Ring zieht immer etwas Luft.
+  Drei Fenster mit zusammen etwa {Math.round(ratio * 100)} % des Rohrquerschnitts. Drehring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Eine kleine Raste hält ihn bei „auf“ und „zu“; die Kerben am oberen Bund zeigen, wo die Fenster im Rohr sind. Ganz dicht ist er auch zu nicht, durch das Spiel am Ring ({fmt(b.bleedGap, 2)} mm, in „Passung“) zieht immer etwas Luft.
 </p>
 
 {#if issues.length}
   <ul class="issues">{#each issues as x}<li class={x.level}>{x.text}</li>{/each}</ul>
 {/if}
 {#if printNote}<p class="print-note {printNote.level}" role="status">{printNote.text}</p>{/if}
-<p class="hint">Gedruckt wird er stehend mit dem Stecker unten; der Drehring wird gleich mitgedruckt (Spiel {fmt(b.bleedGap, 2)} mm, einstellbar in „Passung“).</p>
 
 <ResetLink show={!isDefault} label="Größen auf Standard zurücksetzen" onclick={() => ((b.m = 32), (b.f = 32))} />
 

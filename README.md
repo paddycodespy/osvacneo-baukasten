@@ -45,6 +45,12 @@ Für Geräte ohne runden Stutzen oder für Winkel und Versätze. Der Adapter wir
 
 Gerade, Bogen, Anschlagring und Muffe/Zapfen ohne Konus sind exakte Extrusionen bzw. Rotationen einer Ringfläche. Übergänge, Absätze, Fase und konische Geräteanschlüsse sind Lofts durch abgetastete Querschnitte (periodische B-Spline-Interpolation, gleiche Startlage und Laufrichtung bei allen Formen, damit sich nichts verwindet). Außenhaut, Innenhaut und die beiden Ringflächen werden direkt zu einem Körper vernäht statt Innen- von Außenkörper abzuziehen: das ist schneller (unter 1 s statt bis zu 70 s) und bei Freiformflächen zuverlässig. `npm run test:freeform` baut alle Vorlagen, alle Querschnitte auf- und eingesteckt und längere Ketten und prüft jeden Körper. Mit `--teil=1/2` bzw. `--teil=2/2` (`npm run test:freeform:1`/`:2`) läuft nur eine Hälfte; auf GitHub laufen beide Hälften gleichzeitig.
 
+**Saugdüse** (`src/lib/osvac/nozzle.ts`): Formular mit Düsenart (Rundrohr, Fugendüse, gebogen, Breitdüse, Polsterdüse), Anschluss, Länge, Biegung bis 45°, Öffnung, Schräge der Spitze bis 60° und Wandstärke; daraus entsteht eine Freiform-Kette mit dem Ende „Düse“ (Spitze an der schrägen Ebene abgeschnitten). Extras: Schutzring (1,2 mm dicker Rand) und Nut für eine Bürstenleiste (2 × 4 mm im Rand). Der Rand ist in Stufen von höchstens 0,6 mm quer zur Düse abgesetzt; bei schräger Spitze folgt er ihr in Streifen. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine, „Zurück zur Düse“ führt zum Formular.
+
+**Nebenluft-Regler** (`src/lib/osvac/bleed.ts`): Rohrstück mit drei Fenstern (je 50°) und mitgedrucktem Drehring (60° = auf bis zu). Ring-Querschnitt trapezförmig, Bunde und Ring mit 45°-Flanken und Spiel (Standard 0,4 mm, in „Passung“ 0,2–0,6), oberer Bund wächst vom Rohr aus. Raste: Noppe innen am Ring, Mulden im Rohr bei „auf“ und „zu“ (Noppe ragt halb so weit über das Rohr wie das Spiel). Kerben am oberen Bund über den Fenstern. Als Verbindung (Stecker unten, Kupplung oben) und als Freiform-Baustein „Nebenluft“.
+
+**Druckbarkeit** (`npm run test:islands`): Düsen, Nebenluft-Regler und Vorlagen werden wie beim Export vernetzt und in 0,2-mm-Schichten geschnitten. Sagt die App „ohne Stützen“, darf nichts frei in der Luft beginnen (außer der untersten Schicht des Drehrings); offene Netzkanten sind immer ein Fehler. Die Stützen-Prüfung der Freiform zählt Kupplungen und Stecker mit, die schräg stehen (nach einem Bogen, am Abzweig).
+
 Wie in Fusion besteht ein Adapter aus mehreren Körpern, die sich berühren oder überlappen. Slicer verschmelzen sie beim Laden. In 3MF liegen sie als Teile eines Objekts vor, in STEP als einzelne Volumenkörper.
 
 ## Lokal starten
@@ -106,6 +112,7 @@ scripts/
   freeform.ts                Freiform-Vorlagen und -Varianten bauen (npm run test:freeform, --stl schreibt out/)
   sketch-overlap.ts          Skizzen auf überlappende Beschriftungen prüfen (npm run build && npm run test:sketches)
   ui-flows.ts                Bedienabläufe im Browser prüfen (npm run build && npm run test:ui)
+  islands.ts                 Druckbarkeit in Schichten prüfen (npm run test:islands, braucht python3 mit trimesh/shapely; tools/druck/islands.py)
   lib/preview.ts             gemeinsam für beide: vite preview + Chrome starten
 .github/workflows/tests.yml  Alle Prüfungen bei jedem Push (Typen, Build, Schlüssel, Freiform, Skizzen, Bedienabläufe, Geometrie)
 ```
@@ -188,8 +195,8 @@ Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fens
 
 **Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
 Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
-`osVAC neo Baukasten_0.4.1_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
-`git tag v0.4.1 && git push --tags`.
+`osVAC neo Baukasten_0.5.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
+`git tag v0.5.0 && git push --tags`.
 
 **Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
 (Startmenü, Deinstallation über „Apps“). Da die Datei nicht signiert ist, meldet Windows beim ersten Start
@@ -219,7 +226,7 @@ dann `npx tauri build --bundles appimage,deb`.
 
 ## Alle Installer auf einmal
 
-Ein Versions-Tag startet alle drei Installer-Läufe gleichzeitig: `git tag v0.4.1 && git push origin v0.4.1`.
+Ein Versions-Tag startet alle drei Installer-Läufe gleichzeitig: `git tag v0.5.0 && git push origin v0.5.0`.
 Die Dateien liegen danach unter **Actions** beim jeweiligen Lauf unter **Artifacts** (Windows, macOS, Linux).
 Anleitungen für Tester: `docs/installation-windows.md`, `docs/installation-mac.md`, `docs/installation-linux.md`.
 

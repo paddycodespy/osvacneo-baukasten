@@ -38,6 +38,12 @@
   function reset() {
     Object.assign(app.nozzle, structuredClone(DEFAULT_NOZZLE));
   }
+  /** Vorhandenen eigenen Freiform-Aufbau nicht stillschweigend ersetzen */
+  let confirmFree = $state(false);
+  function toFree() {
+    if (app.freeModified) confirmFree = true;
+    else app.nozzleToFreeform();
+  }
   /** Bürstennut braucht den dicken Rand: Schutzring mit anhaken */
   function setBrush(on: boolean) {
     n.brush = on;
@@ -56,7 +62,7 @@
       <span><strong>{k.title}</strong><small>{k.hint}</small></span>
     </button>
   {/each}
-  <button type="button" class="tpl-btn" onclick={() => app.nozzleToFreeform()} title="Übernimmt die Düse als Bausteine in die Freiform">
+  <button type="button" class="tpl-btn" onclick={toFree} title="Übernimmt die Düse als Bausteine in die Freiform">
     <svg viewBox="0 0 40 40" aria-hidden="true"><path d={ICONS.free} class="ic" /><rect x="13" y="31" width="14" height="6" rx="1.5" class="ic-m" /></svg>
     <span><strong>Eigene Form</strong><small>Weiter in der Freiform</small></span>
   </button>
@@ -138,9 +144,18 @@
 {#if printNote}<p class="print-note {printNote.level}" role="status">{printNote.text}</p>{/if}
 
 <p class="to-free">
-  <button type="button" class="link" onclick={() => app.nozzleToFreeform()}>In der Freiform weiterbauen ›</button>
+  <button type="button" class="link" onclick={toFree}>In der Freiform weiterbauen ›</button>
   <span class="hint">Übernimmt die Düse als Bausteine (Übergang, Gerade, Bogen, Spitze), z. B. für einen Versatz oder eine eigene Form. Das Formular hier bleibt, wie es ist.</span>
 </p>
+{#if confirmFree}
+  <div class="confirm" role="alertdialog" aria-label="Freiform ersetzen?">
+    <p>In der Freiform liegt schon ein eigener Aufbau. Er wird durch die Düse ersetzt.</p>
+    <div class="confirm-btns">
+      <button type="button" class="btn-sec" onclick={() => (confirmFree = false)}>Abbrechen</button>
+      <button type="button" class="btn-pri" onclick={() => ((confirmFree = false), app.nozzleToFreeform())}>Ersetzen und weiterbauen</button>
+    </div>
+  </div>
+{/if}
 
 <ResetLink show={!isDefault} label="Düse auf Standard zurücksetzen" onclick={reset} />
 
@@ -172,4 +187,10 @@
   .to-free .hint { margin: 0; }
   .link { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--sky); font: inherit; font-weight: 600; cursor: pointer; }
   .link:hover { color: var(--red, #ff4136); }
+  .confirm { margin: 10px 0 0; padding: 12px 14px; border: 1px solid var(--signal); border-radius: 8px; background: #fdf6dc; font-size: 14px; }
+  .confirm p { margin: 0 0 10px; }
+  .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-sec, .btn-pri { padding: 6px 12px; border-radius: 6px; font: inherit; font-size: 14px; cursor: pointer; }
+  .btn-sec { border: 1px solid var(--line); background: #fff; }
+  .btn-pri { border: 1px solid var(--sky); background: var(--sky); color: #fff; font-weight: 600; }
 </style>

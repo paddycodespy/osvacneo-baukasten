@@ -14,8 +14,9 @@ export interface OverhangMesh {
   indices: ArrayLike<number>;
 }
 
-// Düsenrand zählt nicht: er ist in Stufen von höchstens 0,6 mm abgesetzt (wie eine 45°-Schräge), die druckt jeder Drucker
-const COUNTED = /^(Formstück|Übergang zu|Geräteanschluss|Anschlagring)/;
+// Düsenrand: in Stufen von höchstens 0,6 mm abgesetzt (wie eine 45°-Schräge); waagerechte Stufen zählen nicht,
+// schräge (Rand nach einem Bogen) schon
+export const COUNTED = /^(Formstück|Übergang zu|Geräteanschluss|Anschlagring|Düsenrand)/;
 /** Stutzen-Adapter und Schieber einzeln: eigene Teile (die Teile von osVAC neo sind für den Druck ohne Stützen gebaut) */
 export const COUNTED_MACHINE = /^(Übergang|Rohr|Klemmrippen)$/;
 export const COUNTED_GATE = /^(Schieber-Unterteil|Schieber-Oberteil|Wandhalter)$/;
@@ -28,7 +29,8 @@ type Tri = { a: number[]; b: number[]; c: number[]; n: number[] };
  * minRegion: zusammenhängende Überhang-Stellen unter dieser Fläche (mm²) zählen nicht, z. B. die Decke kleiner
  * waagerechter Schraubenlöcher oder eingravierte Buchstaben (die druckt jeder Drucker ohne Stützen).
  */
-export function overhangArea(bodies: OverhangMesh[], counted: RegExp = COUNTED, minRegion = 0): number {
+export function overhangArea(bodies: OverhangMesh[], counted: RegExp | ((name: string) => boolean) = COUNTED, minRegion = 0): number {
+  const isCounted = typeof counted === 'function' ? counted : (n: string) => counted.test(n);
   let zMin = Infinity;
   for (const b of bodies) for (let i = 2; i < b.positions.length; i += 3) zMin = Math.min(zMin, b.positions[i]);
 
@@ -99,9 +101,9 @@ export function overhangArea(bodies: OverhangMesh[], counted: RegExp = COUNTED, 
     }
   };
   bodies.forEach((b, bi) => {
-    if (b.helper || !counted.test(b.name)) return;
+    if (b.helper || !isCounted(b.name)) return;
     // waagerechte Flächen: Brücken (Geräteanschluss, Schieber, Oberkante der Nebenluft-Fenster über 50°)
-    const bridges = b.name.startsWith('Geräteanschluss') || /· Schieber( unten| oben)?$/.test(b.name) || b.name.startsWith('Schieber-') || /· Nebenluft( · Drehring)?$/.test(b.name);
+    const bridges = b.name.startsWith('Geräteanschluss') || /· Schieber( unten| oben)?$/.test(b.name) || b.name.startsWith('Schieber-') || /· Nebenluft( · Drehring)?$/.test(b.name) || b.name === 'Düsenrand';
     const nr = b.normals, ix = b.indices;
     for (let t = 0; t < ix.length; t += 3) {
       const nz = (nr[ix[t] * 3 + 2] + nr[ix[t + 1] * 3 + 2] + nr[ix[t + 2] * 3 + 2]) / 3;
@@ -151,3 +153,4 @@ export function belowBedEnd(bodies: OverhangMesh[], bed: 'A' | 'B', part2?: (nam
   }
   return Number.isFinite(zEnd) ? Math.max(0, zEnd - zAll) : 0;
 }
+

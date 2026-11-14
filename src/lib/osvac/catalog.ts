@@ -158,7 +158,7 @@ export const KINDS: AdapterKind[] = [
     available: true,
     build: asm.buildFree,
     parts: asm.partsFree,
-    fileName: (_p, o) => `osVAC neo ${freeSummary(o?.free ?? DEFAULT_FREE).file.replace(' Freiform', ' Saugduese')}`,
+    fileName: (_p, o) => `osVAC neo ${freeSummary(o?.free ?? DEFAULT_FREE).file.replace(' Freiform', '').replace(' Duese ', ' Saugduese ')}`,
   },
   {
     id: 'BLEED',
