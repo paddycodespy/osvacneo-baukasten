@@ -369,6 +369,30 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
   });
 
+  await test('Saugdüse mit Extras, Vorschlag und Freiform', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: /Saugdüse/ }).click();
+    await step(pg, 'Düse');
+    await pg.getByRole('radio', { name: /Breitdüse/ }).click();
+    await ready(pg);
+    expect((await pg.locator('.code').innerText()).includes('90 × 8'), 'Kopfzeile zeigt nicht die Öffnung der Breitdüse');
+    await pg.getByLabel('Nebenluft-Fenster').check();
+    await pg.getByLabel('Nut für eine Bürstenleiste').check();
+    expect(await pg.getByLabel('Schutzring an der Spitze').isChecked(), 'Bürstennut hakt den Schutzring nicht mit an');
+    await fill(pg, 'Länge der Düse', '40');
+    await until(pg, async () => (await pg.locator('.fix', { hasText: 'Länge auf' }).count()) > 0, 'kein Vorschlag für die Länge');
+    expect(!(await downloadOpen(pg)()), 'Download trotz zu kurzer Düse offen');
+    await pg.locator('.fix', { hasText: 'Länge auf' }).click();
+    await ready(pg);
+    await until(pg, downloadOpen(pg), 'Download nach dem Vorschlag gesperrt');
+    expect((await pg.locator('.dims').innerText()).match(/\d/), 'keine Maße');
+    await pg.getByRole('button', { name: /In der Freiform weiterbauen/ }).click();
+    await until(pg, async () => (await pg.locator('.step-tab', { hasText: 'Aufbau' }).count()) > 0, 'nicht in der Freiform gelandet');
+    expect((await pg.locator('.step-body').innerText()).includes('Ende B · Düse'), 'Ende B ist keine Düse');
+    await ready(pg);
+    expect((await pg.locator('.code').innerText()).includes('90 × 8'), 'Freiform hat eine andere Düse');
+  });
+
   await test('Druckhilfe gilt je Verbindung', pg, async () => {
     const tool = pg.locator('button.tool', { hasText: 'Druckhilfe' });
     const on = async () => (await tool.getAttribute('aria-pressed')) === 'true';

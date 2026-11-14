@@ -309,8 +309,8 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
       if (withSupport) out.push(placedPart(part(`Druckhilfe ${tag}`, 1, dS(pB), () => maleSupport(pB), { helper: true }), pl));
     }
   };
-  if (spec.b.type !== 'device') osvacEnd({ type: spec.b.type, d: spec.b.d }, plan.chainEnd.frame, 'B', support && bedB && spec.b.type === 'male');
-  if (plan.cChainEnd && spec.c && spec.c.type !== 'device') osvacEnd({ type: spec.c.type, d: spec.c.d }, plan.cChainEnd.frame, 'C', false);
+  if (spec.b.type === 'female' || spec.b.type === 'male') osvacEnd({ type: spec.b.type, d: spec.b.d }, plan.chainEnd.frame, 'B', support && bedB && spec.b.type === 'male');
+  if (plan.cChainEnd && spec.c && (spec.c.type === 'female' || spec.c.type === 'male')) osvacEnd({ type: spec.c.type, d: spec.c.d }, plan.cChainEnd.frame, 'C', false);
   // gleiche Anschlüsse an beiden Enden: Namen eindeutig halten (Vorschau ordnet über den Namen zu)
   const seen = new Map<string, number>();
   for (const q of out) {

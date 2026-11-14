@@ -16,6 +16,7 @@
   import FreeformEditor from './components/FreeformEditor.svelte';
   import StepKind from './components/steps/StepKind.svelte';
   import StepSizes from './components/steps/StepSizes.svelte';
+  import StepNozzle from './components/steps/StepNozzle.svelte';
   import StepFit from './components/steps/StepFit.svelte';
   import StepDownload from './components/steps/StepDownload.svelte';
 
@@ -210,7 +211,7 @@
 
     <header class="stage-head">
       <h1 class="code" class:free={app.kind.freeform || app.kind.gate} aria-live="polite">{app.code}</h1>
-      <p class="kind-line">{app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
+      <p class="kind-line">{app.kind.nozzle ? freeSummary(app.free).sub.replace(/^Freiform/, 'Saugdüse') : app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
       {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen…' : busyText}</p>{/if}
     </header>
 
@@ -267,6 +268,8 @@
       {/if}
       {#if app.step === 0}
         <StepKind />
+      {:else if app.step === 1 && app.kind.nozzle}
+        <StepNozzle {printNote} />
       {:else if app.step === 1 && app.kind.freeform}
         <h2>Aufbau</h2>
         <FreeformEditor bind:spec={app.free} bind:open={app.freeOpen} bind:template={app.freeTemplate} issues={[...app.freeIssues, ...app.buildNotes.map((text) => ({ level: 'warn' as const, text }))]} {printNote} />

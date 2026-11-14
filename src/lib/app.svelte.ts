@@ -14,6 +14,7 @@ import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
+import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
 import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
@@ -78,7 +79,31 @@ class AppState {
   }
   machine = $state<Machine>({ ...MACHINE_DEFAULT });
   /** Freiform: Aufbau, zuletzt gewählte Vorlage, aufgeklappte Karte */
-  free = $state<FreeSpec>(TEMPLATES[0].make());
+  freeState = $state<FreeSpec>(TEMPLATES[0].make());
+  /** Saugdüse: Formular; gebaut wird der daraus erzeugte Freiform-Aufbau */
+  nozzle = $state<NozzleSpec>(structuredClone(DEFAULT_NOZZLE));
+  nozzleFree = $derived(nozzleToFree($state.snapshot(this.nozzle)));
+  /** Aufbau, der gerade gilt: bei der Saugdüse der erzeugte (nur lesen), sonst der Freiform-Aufbau */
+  get free(): FreeSpec {
+    return this.kind.nozzle ? this.nozzleFree : this.freeState;
+  }
+  set free(v: FreeSpec) {
+    if (!this.kind.nozzle) this.freeState = v;
+  }
+  /** Saugdüse in die Freiform übernehmen (als Bausteine weiterbearbeiten) */
+  nozzleToFreeform() {
+    this.freeState = withFreshIds(structuredClone($state.snapshot(this.nozzleFree)));
+    this.freeTemplate = '';
+    this.freeOpen = 'B';
+    this.kindId = 'FREE';
+  }
+  /** Düsenart wählen: setzt deren Maße (Anschluss, Wand und Extras bleiben) */
+  setNozzleKind(id: NozzleSpec['kind']) {
+    const k = NOZZLE_KINDS.find((x) => x.id === id)!;
+    Object.assign(this.nozzle, k.values, { kind: id });
+    // mit den gewählten Extras ist manche Düse länger nötig als der Standard der Düsenart
+    this.nozzle.length = Math.max(this.nozzle.length, nozzleLayout($state.snapshot(this.nozzle)).minLength);
+  }
   freeTemplate = $state(TEMPLATES[0].id);
   freeOpen = $state<number | 'A' | 'B' | 'C' | null>(null);
   /** Schieber einzeln */
@@ -110,13 +135,14 @@ class AppState {
 
   // ---------------------------------------------------------------- abgeleitet
   kind = $derived(kindById(this.kindId));
-  steps = $derived(this.kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : (['Verbindung', 'Größen', 'Passung', 'Download'] as const));
+  steps = $derived(this.kind.nozzle ? (['Verbindung', 'Düse', 'Passung', 'Download'] as const) : this.kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : (['Verbindung', 'Größen', 'Passung', 'Download'] as const));
   lastStep = $derived(this.steps.length - 1);
   /** Prüfung des Freiform-Aufbaus (reine Rechnung, ohne CAD-Kern) */
   freePlan = $derived(this.kind.freeform ? planFree($state.snapshot(this.free)) : null);
   freeIssues = $derived(this.freePlan?.issues ?? []);
+  nozzleIssues = $derived(this.kind.nozzle ? nozzleIssues(this.nozzle) : []);
   /** Download gesperrt, solange der Adapter einen Fehler hat (Berechnung gescheitert oder Aufbau fehlerhaft) */
-  blocked = $derived(this.status === 'error' || this.freeIssues.some((x) => x.level === 'error') || !!this.layoutError);
+  blocked = $derived(this.status === 'error' || this.freeIssues.some((x) => x.level === 'error') || this.nozzleIssues.some((x) => x.level === 'error') || !!this.layoutError);
   params = $derived(deriveParams(this.input));
   /** Druckhilfe gibt es nur, wenn der Stecker mit der Spitze nach unten gedruckt wird */
   hasSupport = $derived(this.kind.id === 'M' || this.kind.id === 'MF' || (!!this.kind.freeform && freeMaleOnBed(this.free)));
@@ -234,6 +260,7 @@ class AppState {
       else if (!LABELS[k].presets.includes(v)) sizes(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
     }
     for (const x of this.machineWarnings) sizes(x.text);
+    if (this.kind.nozzle) for (const x of this.nozzleIssues) sizes(x.text);
     if (this.kind.freeform) {
       for (const x of this.freeIssues) sizes(x.text);
       for (const t of this.buildNotes) sizes(t);
@@ -346,6 +373,13 @@ class AppState {
       t.push(
         `Mit Schieber wird der Adapter in zwei Teilen gedruckt: das Teil mit Anschluss A steht auf A, das Teil mit Ende B auf B, die Trennflächen oben. Die Schieberplatte liegt flach davor. Zusammenbau: ${this.freePlan?.split?.screwN === 2 ? 'zwei' : 'vier'} Muttern M3 von unten in die Sechskant-Taschen am Gehäuse des A-Teils drücken, die Platte mit den dicken Enden nach oben in den Kanal legen, das B-Teil aufsetzen und mit ${this.freePlan?.split?.screwN === 2 ? 'zwei' : 'vier'} Schrauben M3 × ${this.freePlan?.split?.screw ?? 14} (Zylinderkopf) gleichmäßig anziehen, nur so fest, dass die Platte noch gleitet. Herausziehen öffnet, hineinschieben schließt; die dicken Enden schlagen an. Die Dichtlippen um die Bohrung halten die Platte durch Reibung und dichten gegen Falschluft. Dafür mit 0,2 mm Schichthöhe drucken (auch die erste Schicht): Boden und Trennfläche liegen genau im 0,2-mm-Raster.`,
       );
+    if (this.kind.freeform && this.free.b.type === 'nozzle') {
+      const tp = this.free.b.tip;
+      t.push('Die Düse steht mit dem Anschluss auf dem Druckbett, die Spitze zeigt nach oben. Für eine stabile Düse im Slicer mindestens 3 Wände einstellen; bei 2 mm Wand ist sie dann durchgehend massiv.');
+      if (tp?.vents) t.push('Die Nebenluft-Fenster kurz vor der Spitze sind oben rund und drucken ohne Stützen.');
+      if (tp?.brush) t.push('In die Nut im Rand passt eine Streifenbürste mit etwa 2 mm breitem Rücken (Meterware, „Streifenbürste“ oder „Leistenbürste“). Mit Sekunden- oder Montagekleber einkleben, die Borsten etwa 5 mm über die Spitze stehen lassen.');
+      else if (tp?.ring) t.push('Der Schutzring macht den Rand dicker und schont Möbel. Er ist zur Wand hin abgestuft und druckt ohne Stützen.');
+    }
     const c = this.free.c;
     if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
       t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);
@@ -485,8 +519,9 @@ class AppState {
       input: this.input,
       supportsOff: this.supportsOff,
       machine: this.machine,
-      free: this.free,
+      free: this.freeState,
       freeTemplate: this.freeTemplate,
+      nozzle: this.nozzle,
       gate: this.gate,
     }),
   );
@@ -506,8 +541,9 @@ class AppState {
     this.input = { ...START_INPUT };
     this.supportsOff = {};
     this.machine = { ...MACHINE_DEFAULT };
-    this.free = TEMPLATES[0].make();
+    this.freeState = TEMPLATES[0].make();
     this.freeTemplate = TEMPLATES[0].id;
+    this.nozzle = structuredClone(DEFAULT_NOZZLE);
     this.gate = { ...DEFAULT_GATE };
     this.freeOpen = null;
     this.helpOpen = {};
@@ -564,10 +600,12 @@ class AppState {
       }
       if (s.free && typeof s.free === 'object' && Array.isArray(s.free.blocks) && s.free.a && s.free.b?.device) {
         const fresh = TEMPLATES[0].make();
-        this.free = withFreshIds({ ...fresh, ...s.free, a: { ...fresh.a, ...s.free.a }, b: { ...fresh.b, ...s.free.b, device: { ...fresh.b.device, ...s.free.b.device } } });
-        // Flansch liegt immer mit Ende B auf dem Bett
-        if (this.free.b.type === 'device' && this.free.b.device.mode === 'flange') this.free.bed = 'B';
-        if (typeof this.free.gateGap === 'number') this.free.gateGap = snapPlateGap(this.free.gateGap);
+        this.freeState = withFreshIds({ ...fresh, ...s.free, a: { ...fresh.a, ...s.free.a }, b: { ...fresh.b, ...s.free.b, device: { ...fresh.b.device, ...s.free.b.device } } });
+        const fs = this.freeState;
+        // Flansch liegt immer mit Ende B auf dem Bett, die Düse mit Anschluss A
+        if (fs.b.type === 'device' && fs.b.device.mode === 'flange') fs.bed = 'B';
+        if (fs.b.type === 'nozzle') fs.bed = 'A';
+        if (typeof fs.gateGap === 'number') fs.gateGap = snapPlateGap(fs.gateGap);
       }
       if (s.gate && typeof s.gate === 'object') {
         // Werte auf die Bereiche der Eingabefelder begrenzen; das Spiel der Platte auf das Raster des Schiebers (ältere
@@ -577,6 +615,14 @@ class AppState {
         if (num(s.gate.plateGap)) this.gate.plateGap = snapPlateGap(s.gate.plateGap);
         if (typeof s.gate.mount === 'string' && s.gate.mount in MOUNT_LABELS) this.gate.mount = s.gate.mount;
         if (typeof s.gate.orient === 'string' && s.gate.orient in ORIENT_LABELS) this.gate.orient = s.gate.orient;
+      }
+      if (s.nozzle && typeof s.nozzle === 'object') {
+        const n = this.nozzle, z = s.nozzle;
+        if (NOZZLE_KINDS.some((k) => k.id === z.kind)) n.kind = z.kind;
+        for (const k of ['d', 'w', 'h', 'length', 'bend', 'tip', 'wall'] as const) if (num(z[k])) n[k] = Math.min(NOZZLE_LIMITS[k][1], Math.max(NOZZLE_LIMITS[k][0], z[k]));
+        for (const k of ['vents', 'ring', 'brush'] as const) if (typeof z[k] === 'boolean') n[k] = z[k];
+        if (z.a && (z.a.type === 'male' || z.a.type === 'female')) n.a.type = z.a.type;
+        if (z.a && num(z.a.d)) n.a.d = Math.min(60, Math.max(15, z.a.d));
       }
       if (typeof s.freeTemplate === 'string' && TEMPLATES.some((t) => t.id === s.freeTemplate)) this.freeTemplate = s.freeTemplate;
       if (num(s.step)) this.step = Math.max(0, Math.min(3, Math.round(s.step)));

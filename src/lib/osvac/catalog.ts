@@ -28,10 +28,12 @@ export interface AdapterKind {
   freeform?: boolean;
   /** Schieber einzeln: eigene Maße (Rohr, Muffen, Befestigung) */
   gate?: boolean;
+  /** Saugdüse: kurzes Formular, gebaut als Freiform (freeform ist dann auch gesetzt) */
+  nozzle?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
-export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate';
+export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle';
 
 function pipeName(o?: asm.BuildOptions): string {
   const s = o?.pipe;
@@ -141,6 +143,20 @@ export const KINDS: AdapterKind[] = [
     build: asm.buildGate,
     parts: asm.partsGate,
     fileName: (_p, o) => `osVAC neo ${gateName({ ...DEFAULT_GATE, ...o?.gate }).file}`,
+  },
+  {
+    id: 'NOZZLE',
+    code: 'Düse',
+    title: 'Saugdüse',
+    description: 'Eigene Düse zum Aufstecken: Fugen-, Breit- oder Polsterdüse, gerade oder gebogen, mit schräger Spitze.',
+    ends: { top: 'nozzle', bottom: 'male' },
+    diameters: [],
+    freeform: true,
+    nozzle: true,
+    available: true,
+    build: asm.buildFree,
+    parts: asm.partsFree,
+    fileName: (_p, o) => `osVAC neo ${freeSummary(o?.free ?? DEFAULT_FREE).file.replace(' Freiform', ' Saugduese')}`,
   },
   {
     id: 'FREE',

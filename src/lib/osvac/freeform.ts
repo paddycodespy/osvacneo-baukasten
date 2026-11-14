@@ -10,7 +10,7 @@
  * Dieses Modul plant die Kette rein rechnerisch (Prüfungen laufen auch in der Oberfläche, ohne OpenCascade);
  * erst make() der einzelnen Körper ruft replicad auf.
  */
-import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, measureVolume, type Shape3D, type Point } from 'replicad';
+import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, makeBox, measureVolume, type Shape3D, type Point } from 'replicad';
 import { UserError, partLabel, partNotes } from '../errors';
 import { tubeGateDims, tubeGateLower, tubeGateUpper, tubeGateScrew, gateScrewCount, gateSlider, snapPlateGap, GATE_GAP, GATE_LAYER } from './gate';
 
@@ -123,12 +123,35 @@ export interface DeviceEnd {
   preview?: boolean;
 }
 
-/** Ende B oder Ende C: Anschluss von osVAC neo oder Gerät, mit Übergangslänge vom letzten Baustein */
+/**
+ * Düsenspitze (nur Ende B): offenes Ende direkt hinter dem letzten Baustein, gerade oder schräg angeschnitten.
+ * Extras: Nebenluft-Fenster kurz vor der Spitze, verstärkter Rand (Schutzring), Nut für eine Bürstenleiste im Rand.
+ */
+export interface NozzleTip {
+  /** Schräge gegen die Querschnittsebene (0 = gerade abgeschnitten, höchstens 60°) */
+  angle: number;
+  /** Richtung, in die die Schräge abfällt (Grad um die Mittellinie, bezogen auf den Querschnitt: 0 = über die Breite, 90 = über die Höhe) */
+  dir: number;
+  vents: boolean;
+  ring: boolean;
+  brush: boolean;
+}
+export const DEFAULT_TIP: NozzleTip = { angle: 45, dir: 0, vents: false, ring: false, brush: false };
+/**
+ * Maße der Düsenspitze: Schutzring 1,2 mm dick und 5 mm hoch (in Stufen von höchstens 0,6 mm, damit die Unterkante
+ * ohne Stützen druckt); Bürstennut 2 mm breit und 4 mm tief mitten im Rand (Rand dafür mindestens 4,4 mm, Ring 6 mm
+ * hoch); Nebenluft-Fenster 12 mm lang, 3–6 mm breit, oben rund, 4 mm hinter dem Rand bzw. der Schräge.
+ */
+export const NOZZLE = { ringE: 1.2, ringH: 5, brushW: 2, brushDepth: 4, brushLip: 1.2, brushH: 6, ventL: 12, ventGap: 4, maxAngle: 60 };
+
+/** Ende B oder Ende C: Anschluss von osVAC neo, Gerät oder (nur B) Düsenspitze, mit Übergangslänge vom letzten Baustein */
 export interface EndSpec {
-  type: 'device' | OsvacEnd;
+  type: 'device' | OsvacEnd | 'nozzle';
   d: number;
   device: DeviceEnd;
   transition: number;
+  /** nur Düse */
+  tip?: NozzleTip;
 }
 
 export interface FreeSpec {
@@ -1357,6 +1380,7 @@ function planEnd(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: numb
   const chainEnd = { ...ce };
   let end: Frame = ce.frame;
   if (spec.b.type === 'device') end = planDevice(spec, chainEnd, bodies, issues, path);
+  else if (spec.b.type === 'nozzle') planNozzle(spec, chainEnd, bodies, issues);
   else {
     // osVAC neo: Querschnitt auf den Kreis des Anschlusses bringen, danach Übergangskonus und Anschluss
     const target = sec('circle', { d: spec.b.d });
@@ -1371,13 +1395,125 @@ function planEnd(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: numb
         path.push(fe.o);
       }
     }
-    end = advance(fe, OSVAC_TRANSITION + OSVAC_HEIGHT[spec.b.type]);
+    end = advance(fe, OSVAC_TRANSITION + OSVAC_HEIGHT[spec.b.type as OsvacEnd]);
     path.push(end.o);
     chainEnd.frame = fe;
     chainEnd.section = target;
     chainEnd.rot = 0;
   }
   return { chainEnd, end };
+}
+
+/**
+ * Maße der Düsenspitze aus dem letzten Querschnitt (rein rechnerisch, auch für das Düsen-Formular):
+ * rim = Randdicke (Wand + Ring), slant = wie weit die Schräge längs der Mittellinie reicht, ringH = Höhe des Rings,
+ * need = so lang muss das letzte gerade Stück mindestens sein (Ring und Fenster sitzen darauf; 0 = egal).
+ */
+export function tipGeom(s: Section, rotDeg: number, w: number, tip: NozzleTip) {
+  const N = NOZZLE;
+  const thick = tip.ring || tip.brush;
+  const rim = thick ? Math.max(w + N.ringE, tip.brush ? 2 * N.brushLip + N.brushW : 0) : w;
+  const outer = grow(s, rim);
+  const th = rad(Math.min(Math.max(tip.angle, 0), N.maxAngle));
+  const dirDeg = rotDeg + tip.dir;
+  const ePlus = extent(outer, rotDeg, dirDeg), eMinus = extent(outer, rotDeg, dirDeg + 180);
+  const slant = (ePlus + eMinus) * Math.tan(th);
+  const ringH = thick ? (tip.brush ? N.brushH : N.ringH) : 0;
+  /** Fenster: quer durch die breiten Seiten (beim Kreis quer zur Schräge); Breite nach der Seite */
+  const throughDeg = s.shape === 'circle' ? dirDeg + 90 : rotDeg + 90;
+  const side = 2 * extent(s, rotDeg, throughDeg - 90);
+  const ventW = Math.min(6, Math.max(3, 0.3 * side));
+  const ventFrom = slant + ringH + N.ventGap;
+  const need = thick || tip.vents ? (tip.vents ? ventFrom + N.ventL + 2 : slant + ringH + 1) : 0;
+  return { rim, outer, th, dirDeg, ePlus, slant, ringH, throughDeg, ventW, ventFrom, need, thick };
+}
+
+/**
+ * Düsenspitze: Kette endet offen. Die Formstücke werden an der (schrägen) Spitzenebene abgeschnitten, dazu kommen
+ * Schutzring/Rand für die Bürstennut (eigener Körper „Düsenrand“) und die Nebenluft-Fenster.
+ */
+function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: number }, bodies: FreeBody[], issues: Issue[]) {
+  const tip: NozzleTip = { ...DEFAULT_TIP, ...spec.b.tip };
+  const N = NOZZLE;
+  const w = spec.wall;
+  const tipFix = (v: number) => [fixTo('Schräge', 'Schräge der Spitze', v, (sp, x) => void (sp.b.tip = { ...DEFAULT_TIP, ...sp.b.tip, angle: x }), '°')];
+  if (!(tip.angle >= 0)) return void issues.push({ level: 'error', text: 'Düse: Die Schräge der Spitze darf nicht negativ sein.', fixes: tipFix(0) });
+  if (tip.angle > N.maxAngle) return void issues.push({ level: 'error', text: `Düse: Die Schräge der Spitze darf höchstens ${N.maxAngle}° betragen, sonst wird die Spitze sehr lang und spitz.`, fixes: tipFix(N.maxAngle) });
+  if (spec.bed !== 'A') issues.push({ level: 'error', text: 'Düse: Beim Drucken steht Anschluss A auf dem Bett, die Spitze zeigt nach oben.', fixes: [{ label: 'Anschluss A nach unten legen', fields: [], set: (sp) => void (sp.bed = 'A') }] });
+  if (hasSplit(spec)) return void issues.push({ level: 'error', text: 'Düse: Mit Schieber geht keine Düsenspitze. Den Schieber entfernen oder an Ende B einen Anschluss wählen.' });
+  if (spec.blocks.some((b) => b.type === 'branch')) return void issues.push({ level: 'error', text: 'Düse: Mit Abzweig geht keine Düsenspitze. Den Abzweig entfernen oder an Ende B einen Anschluss wählen.' });
+  const s = ce.section, rot = ce.rot, f = ce.frame;
+  const g = tipGeom(s, rot, w, tip);
+  const last = spec.blocks[spec.blocks.length - 1];
+  if (g.need > 0 && !(last?.type === 'straight' && last.length >= g.need - 1e-6)) {
+    const L = Math.ceil(g.need);
+    const what = [tip.ring || tip.brush ? (tip.brush ? 'Rand mit Bürstennut' : 'Schutzring') : '', tip.vents ? 'Nebenluft-Fenster' : ''].filter(Boolean).join(' und ');
+    const fix: Fix =
+      last?.type === 'straight'
+        ? fixTo('Länge', 'Länge der Geraden', L, (sp, x) => void (blockById(last.id)(sp).length = x))
+        : { label: `Gerade mit ${L} mm anhängen`, fields: [], set: (sp) => void sp.blocks.push(newBlock('straight', { length: L })) };
+    issues.push({ level: 'error', text: `Düse: ${what} brauchen am Ende ein gerades Stück von mindestens ${fmtV(L)} mm Länge.`, fixes: [fix] });
+    return;
+  }
+  if (issues.some((x) => x.level === 'error')) return;
+
+  const across = inPlane(f, g.dirDeg);
+  const n = add(mul(f.t, Math.cos(g.th)), mul(across, -Math.sin(g.th)));
+  const P0 = add(f.o, mul(across, g.ePlus));
+  const xd = unit(Math.abs(dot(n, f.u)) < 0.9 ? sub(f.u, mul(n, dot(n, f.u))) : sub(f.v, mul(n, dot(n, f.v))));
+  const BIG = 1000;
+  /** Platte in der Spitzenebene: z (entlang n) von z0 bis z1 */
+  const slab = (z0: number, z1: number) => placeShape(makeBox([-BIG, -BIG, z0], [BIG, BIG, z1]) as Shape3D, localPlacement(P0, xd, n));
+  const back = g.slant + g.ringH + 1;
+  const prism = (r0: number, r1: number) => extrudeRing(advance(f, -back), grow(s, r0), grow(s, r1), rot, back + 1);
+  const gi = (g.rim - N.brushW) / 2;
+  const groove = () => prism(gi, gi + N.brushW).intersect(slab(-N.brushDepth * Math.cos(g.th), 1)) as Shape3D;
+  const vents = () => {
+    const thr = inPlane(f, g.throughDeg);
+    const r = g.ventW / 2, L = N.ventL, Z = Math.max(...samplePoints(grow(s, w + 1), 72, rot).map((q) => Math.hypot(q[0], q[1])));
+    const c = add(f.o, mul(f.t, -(g.ventFrom + L / 2)));
+    const pl = localPlacement(c, f.t, thr);
+    let v = makeBox([-L / 2 + r, -r, -Z], [L / 2 - r, r, Z]) as Shape3D;
+    for (const x of [-L / 2 + r, L / 2 - r]) v = v.fuse(makeCylinder(r, 2 * Z, [x, 0, -Z], [0, 0, 1]) as Shape3D) as Shape3D;
+    return placeShape(v, pl);
+  };
+  const zone = g.slant + g.ringH + (tip.vents ? N.ventGap + N.ventL + 2 : 0) + 5;
+  const tipKey = { ...tip, angle: r6(tip.angle), dir: r6(tip.dir), w };
+  for (const b of bodies) {
+    const m0 = b.make;
+    b.dep = { ...(b.dep as object), tip: tipKey };
+    b.cost += 0.3;
+    b.make = () => {
+      let sh = m0();
+      const [lo, hi] = sh.boundingBox.bounds;
+      const corners: V3[] = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [i & 1 ? hi[0] : lo[0], i & 2 ? hi[1] : lo[1], i & 4 ? hi[2] : lo[2]]);
+      if (Math.max(...corners.map((c) => dot(sub(c, f.o), f.t))) < -zone) return sh;
+      if (Math.max(...corners.map((c) => dot(sub(c, P0), n))) > 1e-6) sh = sh.cut(slab(0, BIG)) as Shape3D;
+      if (tip.brush) sh = sh.cut(groove()) as Shape3D;
+      if (tip.vents) sh = sh.cut(vents()) as Shape3D;
+      return sh;
+    };
+  }
+  if (g.thick) {
+    // Rand in Stufen (je höchstens 0,6 mm, 45°): innen 0,3 mm in der Wand, damit der Slicer die Körper verbindet
+    const eR = g.rim - w;
+    const K = Math.max(1, Math.ceil(eR / 0.6 - 1e-9)), step = eR / K;
+    bodies.push({
+      name: 'Düsenrand',
+      cost: 0.6,
+      dep: { kind: 'free', t: 'nozzleRim', f: frameKey(f), s: secKey(s), rot: r6(rot), tip: tipKey },
+      make: () => {
+        let sh: Shape3D | null = null;
+        for (let k = 1; k <= K; k++) {
+          const h = (g.ringH - (k - 1) * step) * Math.cos(g.th);
+          const lvl = prism(w - 0.3, w + step * k).intersect(slab(-h, 0)) as Shape3D;
+          sh = sh ? (sh.fuse(lvl) as Shape3D) : lvl;
+        }
+        if (tip.brush) sh = sh!.cut(groove()) as Shape3D;
+        return sh!;
+      },
+    });
+  }
 }
 
 /** Gerader Loft zwischen zwei Querschnitten (für automatische Übergänge). */
@@ -2249,6 +2385,7 @@ export function inPart2(plan: FreePlan): (name: string) => boolean {
 
 /** Außenradius eines Endes auf dem Bett bzw. frei (Kupplung mit Rändelung, Stecker mit Rand der Druckhilfe, Gerät/Flansch) */
 function endRadius(E: EndSpec, onBed: boolean, w: number) {
+  if (E.type === 'nozzle') return 4; // Spitze: Querschnitt steckt schon im Radius der Kette, dazu Ring/Rand
   if (E.type === 'female') return E.d / 2 + 12;
   if (E.type === 'male') return E.d / 2 + (onBed ? 27 : 6);
   const dv = E.device;
@@ -2362,7 +2499,7 @@ export function sectionPlanes(spec: FreeSpec, plan: FreePlan): (name: string) =>
     const m = /^Formstück (\d+)/.exec(name);
     if (m) return Number(m[1]) - 1 === sb && name.endsWith(' oben') ? gateUp : (blocks[Number(m[1]) - 1] ?? null);
     if (c && (/^(Geräteanschluss C|Übergang zu Ende C)/.test(name) || / C( \d+)?$/.test(name))) return c;
-    if (/^(Geräteanschluss|Übergang zum Gerät|Übergang zu Ende B|Anschlagring)/.test(name) || / B( \d+)?$/.test(name)) return b;
+    if (/^(Geräteanschluss|Übergang zum Gerät|Übergang zu Ende B|Anschlagring|Düsenrand)/.test(name) || / B( \d+)?$/.test(name)) return b;
     return a;
   };
 }
@@ -2400,6 +2537,10 @@ export function loosePlacements(spec: FreeSpec, plan: FreePlan): Placement[] {
 /** Gewählte Extras am Gerät, die auch wirklich gebaut werden (für Dateiname und Druckbett-Liste) */
 export function extrasText(spec: FreeSpec): string[] {
   const dv = spec.b.device;
+  if (spec.b.type === 'nozzle') {
+    const t = { ...DEFAULT_TIP, ...spec.b.tip };
+    return [t.vents && 'Nebenluft', t.ring && !t.brush && 'Ring', t.brush && 'Buerstennut'].filter((x): x is string => !!x);
+  }
   if (spec.b.type !== 'device') return [];
   if (dv.mode === 'flange') return ['Flansch', ...(dv.seal ? ['Dichtung'] : [])];
   const over = dv.mode === 'over';
@@ -2409,6 +2550,18 @@ export function extrasText(spec: FreeSpec): string[] {
     dv.holes && dv.length >= 12 && 'Schrauben',
     over && dv.notch && 'Aussparung',
   ].filter((t): t is string => !!t);
+}
+
+/** Querschnitt nach dem letzten Baustein (ohne Planung) */
+export function lastSection(spec: FreeSpec): Section {
+  let s = sec('circle', { d: spec.a.d });
+  for (const b of spec.blocks) if (b.type === 'transition' || b.type === 'step') s = b.section;
+  return s;
+}
+/** Extras der Düsenspitze in Worten */
+export function extrasLong(spec: FreeSpec): string[] {
+  const t = { ...DEFAULT_TIP, ...spec.b.tip };
+  return [t.vents && 'Nebenluft-Fenster', t.ring && !t.brush && 'Schutzring', t.brush && 'Rand mit Bürstennut'].filter((x): x is string => !!x);
 }
 
 /**
@@ -2421,22 +2574,26 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   const A = end(spec.a.type, spec.a.d);
   const dev = sectionText(spec.b.device.section);
   const isDev = spec.b.type === 'device';
-  const B = isDev ? dev : end(spec.b.type as OsvacEnd, spec.b.d);
+  const isNoz = spec.b.type === 'nozzle';
+  const tip = { ...DEFAULT_TIP, ...spec.b.tip };
+  const tipSec = sectionText(lastSection(spec));
+  const tipText = tip.angle > 0 ? `Spitze schräg ${f(tip.angle)}°` : 'Spitze gerade';
+  const B = isDev ? dev : isNoz ? tipSec : end(spec.b.type as OsvacEnd, spec.b.d);
   const blocks = spec.blocks.map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : b.type === 'branch' ? `Abzweig ${f(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}` : BLOCK_LABELS[b.type])).join(', ');
   const devText = `Gerät ${{ over: 'aufgesteckt', into: 'eingesteckt', flange: 'mit Flansch' }[spec.b.device.mode]}`;
   const split = hasSplit(spec);
-  const sub = ['Freiform', blocks, isDev ? devText : '', split ? '2 Druckteile' : ''].filter(Boolean).join(' · ');
-  const fileB = isDev ? `Geraet ${dev.replace(/ × /g, 'x').replace('Ø ', 'D')}` : B;
+  const sub = ['Freiform', blocks, isDev ? devText : isNoz ? `Düse, ${tipText}` : '', split ? '2 Druckteile' : ''].filter(Boolean).join(' · ');
+  const fileB = isDev ? `Geraet ${dev.replace(/ × /g, 'x').replace('Ø ', 'D')}` : isNoz ? `Duese ${tipSec.replace(/ × /g, 'x').replace('Ø ', 'D')}${tip.angle > 0 ? ` schraeg${f(tip.angle)}` : ''}` : B;
   const fileMid = spec.blocks.filter((b) => b.type === 'bend' || b.type === 'branch' || b.type === 'gate').map((b) => (b.type === 'gate' ? 'Schieber' : `${b.type === 'bend' ? 'Bogen' : 'Abzweig'}${f(b.angle)}`)).join(' ');
   // Ende C am Abzweig
   const hasC = spec.blocks.some((b) => b.type === 'branch') && !!spec.c;
-  const C = hasC ? (spec.c!.type === 'device' ? sectionText(spec.c!.device.section) : end(spec.c!.type, spec.c!.d)) : '';
+  const C = hasC ? (spec.c!.type === 'device' ? sectionText(spec.c!.device.section) : end(spec.c!.type as OsvacEnd, spec.c!.d)) : '';
   const fileC = hasC ? (spec.c!.type === 'device' ? `Geraet ${C.replace(/ × /g, 'x').replace('Ø ', 'D')}` : C) : '';
   const x = extrasText(spec);
   return {
     code: `${A} → ${B}${hasC ? ` + ${C}` : ''}`,
     sub,
-    long: `${A} → ${isDev ? `${devText} ${dev}` : B}${hasC ? `, Abzweig → ${spec.c!.type === 'device' ? `Gerät ${C}` : C}` : ''}${split ? ', 2 Druckteile' : ''}`,
+    long: `${A} → ${isDev ? `${devText} ${dev}` : isNoz ? `Düse ${tipSec}, ${tipText}${x.length ? ` (${extrasLong(spec).join(', ')})` : ''}` : B}${hasC ? `, Abzweig → ${spec.c!.type === 'device' ? `Gerät ${C}` : C}` : ''}${split ? ', 2 Druckteile' : ''}`,
     file: [A, 'Freiform', fileMid, fileB, ...x, hasC ? `und ${fileC}` : '', split ? '2 Teile' : ''].filter(Boolean).join(' '),
     blocks,
   };
