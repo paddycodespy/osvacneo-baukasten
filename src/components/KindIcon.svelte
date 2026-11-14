@@ -26,6 +26,11 @@
     {:else if s === 'nozzle'}
       <!-- schmale Düse mit schräger Spitze -->
       <path d="M15 {y + 24} V{y + 16} L18 {y + 9} V{y + 4} L26 {y - 3} V{y + 9} L29 {y + 16} V{y + 24} Z" class="h" />
+    {:else if s === 'bleed'}
+      <!-- Kupplung mit Drehring und Fenster darunter -->
+      <path d="M12 {y} H32 V{y + 12} L28 {y + 16} V{y + 24} H16 V{y + 16} L12 {y + 12} Z" class="h" />
+      <rect x="11" y={y + 15} width="22" height="7" rx="1.5" class="h" />
+      <rect x="19" y={y + 16.5} width="6" height="4" class="win" />
     {:else if s === 'free'}
       <!-- Rohrbogen, der nach rechts abknickt -->
       <path d="M13 {y} V{y + 9} Q13 {y + 25} 29 {y + 25} H42 V{y + 12} H31 Q27 {y + 12} 27 {y + 8} V{y} Z" class="h" />
@@ -38,5 +43,6 @@
 <style>
   .kind-icon { width: 40px; height: 52px; flex: none; }
   .f, .m, .h { fill: var(--icon-fill, #cfd8dd); stroke: var(--icon-stroke, #1f2a30); stroke-width: 1.4; }
+  .win { fill: #fff; stroke: var(--icon-stroke, #1f2a30); stroke-width: 1; }
   .rib { stroke: var(--icon-stroke, #1f2a30); stroke-width: 1; opacity: 0.45; }
 </style>

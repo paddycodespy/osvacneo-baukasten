@@ -22,7 +22,6 @@ export interface NozzleSpec {
   /** Schräge der Spitze */
   tip: number;
   wall: number;
-  vents: boolean;
   ring: boolean;
   brush: boolean;
 }
@@ -42,7 +41,6 @@ export const DEFAULT_NOZZLE: NozzleSpec = {
   a: { type: 'male', d: 32 },
   ...NOZZLE_KINDS[1].values,
   wall: 2,
-  vents: true,
   ring: false,
   brush: false,
 };
@@ -83,7 +81,7 @@ export function nozzleLayout(n: NozzleSpec) {
   // flache Düsen biegen über die schmale Seite, die Schräge liegt dann in der Biegeebene
   const bendDir = isCircle ? 0 : 90;
   const tipDir = n.bend > 0 ? bendDir : n.kind === 'wide' || n.kind === 'upholstery' ? 90 : 0;
-  const tip = { ...DEFAULT_TIP, angle: n.tip, dir: tipDir, vents: n.vents, ring: n.ring, brush: n.brush };
+  const tip = { ...DEFAULT_TIP, angle: n.tip, dir: tipDir, ring: n.ring, brush: n.brush };
   const g = tipGeom(s, 0, n.wall, tip);
   const across = (isCircle ? n.d : n.h) / 2 + n.wall;
   const radius = n.bend > 0 ? Math.max(50, Math.round(3 * across)) : 0;
@@ -149,7 +147,7 @@ export function nozzleIssues(n: NozzleSpec): NozzleIssue[] {
   if (n.length < L.minLength)
     out.push({
       level: 'error',
-      text: `Für diese Öffnung${n.bend > 0 ? ', die Biegung' : ''}${L.tip.vents || L.tip.ring || L.tip.brush ? ' und die Extras' : ''} muss die Düse mindestens ${f(L.minLength)} mm lang sein.`,
+      text: `Für diese Öffnung${n.bend > 0 ? ', die Biegung' : ''}${L.tip.ring || L.tip.brush ? ' und die Extras' : ''} muss die Düse mindestens ${f(L.minLength)} mm lang sein.`,
       fixes: [fix(`Länge auf ${f(L.minLength)} mm setzen`, 'Länge der Düse', (x) => void (x.length = L.minLength))],
     });
   const area = (s: Section) => (s.shape === 'circle' ? (Math.PI * s.d * s.d) / 4 : s.w * s.h - (4 - Math.PI) * Math.min(s.h / 2, s.shape === 'rect' ? s.r : s.h / 2) ** 2);

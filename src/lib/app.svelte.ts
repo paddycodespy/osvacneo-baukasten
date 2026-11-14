@@ -12,8 +12,9 @@ import type { Dimensions } from './viewer';
 import { slipRingGapMax } from './osvac/hose';
 import { estimateFilament } from './filament';
 import { userMessage } from './errors';
-import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
+import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, newBlock, bleedMinLen, DEFAULT_DEVICE, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
+import { BLEED } from './osvac/bleed';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
 import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
 
@@ -84,19 +85,36 @@ class AppState {
   nozzle = $state<NozzleSpec>(structuredClone(DEFAULT_NOZZLE));
   nozzleFree = $derived(nozzleToFree($state.snapshot(this.nozzle)));
   /** Aufbau, der gerade gilt: bei der Saugdüse der erzeugte (nur lesen), sonst der Freiform-Aufbau */
+  /** Nebenluft-Regler: Stecker unten (Innen-Ø m), Kupplung oben (f), Spiel am Drehring */
+  bleed = $state({ m: 32, f: 32, bleedGap: BLEED.gap });
+  bleedFree = $derived.by((): FreeSpec => {
+    const b = this.bleed, wall = 3;
+    return {
+      a: { type: 'male', d: b.m },
+      wall,
+      blocks: [newBlock('bleed', { length: bleedMinLen(b.m, wall, b.bleedGap) })],
+      b: { type: 'female', d: b.f, device: { ...DEFAULT_DEVICE, section: { ...DEFAULT_DEVICE.section } }, transition: 10 },
+      bed: 'A',
+      bleedGap: b.bleedGap,
+    };
+  });
+  /** Aufbau, der gerade gilt: bei Saugdüse und Nebenluft-Regler der erzeugte (nur lesen), sonst der Freiform-Aufbau */
   get free(): FreeSpec {
-    return this.kind.nozzle ? this.nozzleFree : this.freeState;
+    return this.kind.nozzle ? this.nozzleFree : this.kind.bleed ? this.bleedFree : this.freeState;
   }
   set free(v: FreeSpec) {
-    if (!this.kind.nozzle) this.freeState = v;
+    if (!this.kind.nozzle && !this.kind.bleed) this.freeState = v;
   }
   /** Saugdüse in die Freiform übernehmen (als Bausteine weiterbearbeiten) */
   nozzleToFreeform() {
     this.freeState = withFreshIds(structuredClone($state.snapshot(this.nozzleFree)));
     this.freeTemplate = '';
+    this.fromNozzle = true;
     this.freeOpen = 'B';
     this.kindId = 'FREE';
   }
+  /** Freiform kommt aus der Saugdüse: Link „Zurück zur Düse“, bis eine Vorlage geladen wird */
+  fromNozzle = $state(false);
   /** Düsenart wählen: setzt deren Maße (Anschluss, Wand und Extras bleiben) */
   setNozzleKind(id: NozzleSpec['kind']) {
     const k = NOZZLE_KINDS.find((x) => x.id === id)!;
@@ -135,7 +153,7 @@ class AppState {
 
   // ---------------------------------------------------------------- abgeleitet
   kind = $derived(kindById(this.kindId));
-  steps = $derived(this.kind.nozzle ? (['Verbindung', 'Düse', 'Passung', 'Download'] as const) : this.kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : (['Verbindung', 'Größen', 'Passung', 'Download'] as const));
+  steps = $derived(this.kind.bleed ? (['Verbindung', 'Größen', 'Passung', 'Download'] as const) : this.kind.nozzle ? (['Verbindung', 'Düse', 'Passung', 'Download'] as const) : this.kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : (['Verbindung', 'Größen', 'Passung', 'Download'] as const));
   lastStep = $derived(this.steps.length - 1);
   /** Prüfung des Freiform-Aufbaus (reine Rechnung, ohne CAD-Kern) */
   freePlan = $derived(this.kind.freeform ? planFree($state.snapshot(this.free)) : null);
@@ -300,9 +318,19 @@ class AppState {
       : 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
     wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg, höchstens ${WALL_MORE} mm mehr (${fmt(this.gateLay.maxA)} mm), sonst wird die Halterung wacklig.`,
     orient: 'Wie das Rohr an der Wand entlangläuft. Der Schlitz der Schlüssellöcher muss nach oben zeigen: bei senkrechtem Rohr zum oberen Ende, bei waagerechtem zur Seite.',
+    bleedGap: 'Luft zwischen Drehring und Rohr, auch an den schrägen Flanken oben und unten. Der Ring wird gleich mitgedruckt: Ist das Spiel zu klein, klebt er fest; ist es groß, dreht er sehr leicht und zieht etwas mehr Nebenluft, auch wenn er zu ist. Für PETG eher 0,35–0,4 mm.',
     filament: 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
   });
 
+  /** Nebenluft-Regler (eigene Verbindung oder Baustein in der Freiform): Spiel am Drehring in Passung */
+  hasBleed = $derived(!!this.kind.freeform && this.free.blocks.some((b) => b.type === 'bleed'));
+  get bleedGap(): number {
+    return (this.kind.bleed ? this.bleed.bleedGap : this.freeState.bleedGap) ?? BLEED.gap;
+  }
+  set bleedGap(v: number) {
+    if (this.kind.bleed) this.bleed.bleedGap = v;
+    else this.freeState.bleedGap = v;
+  }
   /** Freiform mit Schieber: Spiel der Platte einstellbar (in Passung) */
   freeHasGate = $derived(!!this.kind.freeform && this.free.blocks.some((b) => b.type === 'gate'));
   /** Druckhinweise zum Schieber einzeln */
@@ -376,10 +404,11 @@ class AppState {
     if (this.kind.freeform && this.free.b.type === 'nozzle') {
       const tp = this.free.b.tip;
       t.push('Die Düse steht mit dem Anschluss auf dem Druckbett, die Spitze zeigt nach oben. Für eine stabile Düse im Slicer mindestens 3 Wände einstellen; bei 2 mm Wand ist sie dann durchgehend massiv.');
-      if (tp?.vents) t.push('Die Nebenluft-Fenster kurz vor der Spitze sind oben rund und drucken ohne Stützen.');
       if (tp?.brush) t.push('In die Nut im Rand passt eine Streifenbürste mit etwa 2 mm breitem Rücken (Meterware, „Streifenbürste“ oder „Leistenbürste“). Mit Sekunden- oder Montagekleber einkleben, die Borsten etwa 5 mm über die Spitze stehen lassen.');
       else if (tp?.ring) t.push('Der Schutzring macht den Rand dicker und schont Möbel. Er ist zur Wand hin abgestuft und druckt ohne Stützen.');
     }
+    if (this.hasBleed)
+      t.push(`Der Drehring wird gleich mitgedruckt. Nach dem Druck den Ring ein paarmal kräftig hin und her drehen, bis er leicht läuft. Um 60° drehen: von ganz auf (Fenster übereinander) bis ganz zu. Dreht er zu schwer oder klebt fest: in „Passung“ mehr Spiel einstellen (jetzt ${fmt(this.bleedGap, 2)} mm).`);
     const c = this.free.c;
     if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
       t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);
@@ -422,7 +451,8 @@ class AppState {
       (!this.hasSwivel || this.input.slipRingGapSize === START_INPUT.slipRingGapSize) &&
       this.input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
       (!this.hasSupport || this.supports) &&
-      (!this.freeHasGate || (this.free.gateGap ?? GATE_GAP) === GATE_GAP),
+      (!this.freeHasGate || (this.free.gateGap ?? GATE_GAP) === GATE_GAP) &&
+      (!this.hasBleed || this.bleedGap === BLEED.gap),
   );
   resetFit() {
     if (this.kind.gate) {
@@ -435,6 +465,7 @@ class AppState {
     this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
     if (this.hasSupport) this.supports = true;
     if (this.freeHasGate) delete this.free.gateGap;
+    if (this.hasBleed) this.bleedGap = BLEED.gap;
   }
   setDia(k: DiameterKey, v: number) {
     this.input[k] = Math.round(v * 10) / 10;
@@ -521,7 +552,9 @@ class AppState {
       machine: this.machine,
       free: this.freeState,
       freeTemplate: this.freeTemplate,
+      fromNozzle: this.fromNozzle,
       nozzle: this.nozzle,
+      bleed: this.bleed,
       gate: this.gate,
     }),
   );
@@ -544,6 +577,8 @@ class AppState {
     this.freeState = TEMPLATES[0].make();
     this.freeTemplate = TEMPLATES[0].id;
     this.nozzle = structuredClone(DEFAULT_NOZZLE);
+    this.bleed = { m: 32, f: 32, bleedGap: BLEED.gap };
+    this.fromNozzle = false;
     this.gate = { ...DEFAULT_GATE };
     this.freeOpen = null;
     this.helpOpen = {};
@@ -616,11 +651,18 @@ class AppState {
         if (typeof s.gate.mount === 'string' && s.gate.mount in MOUNT_LABELS) this.gate.mount = s.gate.mount;
         if (typeof s.gate.orient === 'string' && s.gate.orient in ORIENT_LABELS) this.gate.orient = s.gate.orient;
       }
+      if (typeof s.fromNozzle === 'boolean') this.fromNozzle = s.fromNozzle;
+      if (s.bleed && typeof s.bleed === 'object') {
+        const z = s.bleed;
+        if (num(z.m)) this.bleed.m = Math.min(60, Math.max(15, z.m));
+        if (num(z.f)) this.bleed.f = Math.min(60, Math.max(15, z.f));
+        if (num(z.bleedGap)) this.bleed.bleedGap = Math.min(BLEED.gapMax, Math.max(BLEED.gapMin, Math.round(z.bleedGap * 100) / 100));
+      }
       if (s.nozzle && typeof s.nozzle === 'object') {
         const n = this.nozzle, z = s.nozzle;
         if (NOZZLE_KINDS.some((k) => k.id === z.kind)) n.kind = z.kind;
         for (const k of ['d', 'w', 'h', 'length', 'bend', 'tip', 'wall'] as const) if (num(z[k])) n[k] = Math.min(NOZZLE_LIMITS[k][1], Math.max(NOZZLE_LIMITS[k][0], z[k]));
-        for (const k of ['vents', 'ring', 'brush'] as const) if (typeof z[k] === 'boolean') n[k] = z[k];
+        for (const k of ['ring', 'brush'] as const) if (typeof z[k] === 'boolean') n[k] = z[k];
         if (z.a && (z.a.type === 'male' || z.a.type === 'female')) n.a.type = z.a.type;
         if (z.a && num(z.a.d)) n.a.d = Math.min(60, Math.max(15, z.a.d));
       }

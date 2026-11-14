@@ -7,7 +7,7 @@
   let { type }: { type: BlockType } = $props();
 </script>
 
-<svg class="bfig" viewBox="0 0 280 104" role="img" aria-label="Skizze: {type === 'straight' ? 'Länge der Geraden' : type === 'bend' ? 'Winkel und Radius des Bogens' : type === 'transition' ? 'Länge, Versatz und Knick des Übergangs' : type === 'branch' ? 'Winkel, Durchmesser und Länge des Abzweigs' : type === 'gate' ? 'Länge des Schiebers und Schieberplatte' : 'Absatz mit 45°-Schräge'}">
+<svg class="bfig" viewBox="0 0 280 104" role="img" aria-label="Skizze: {type === 'straight' ? 'Länge der Geraden' : type === 'bend' ? 'Winkel und Radius des Bogens' : type === 'transition' ? 'Länge, Versatz und Knick des Übergangs' : type === 'branch' ? 'Winkel, Durchmesser und Länge des Abzweigs' : type === 'gate' ? 'Länge des Schiebers und Schieberplatte' : type === 'bleed' ? 'Länge des Nebenluft-Reglers mit Drehring' : 'Absatz mit 45°-Schräge'}">
   {#if type === 'straight'}
     <rect x="24" y="30" width="140" height="34" class="part" />
     <line x1="12" y1="47" x2="176" y2="47" class="axis" />
@@ -79,6 +79,24 @@
     <text x="174" y="66" class="mute">Rohrlänge</text>
     <text x="158" y="84" class="key">C</text>
     <text x="174" y="84" class="mute">Ende C</text>
+  {:else if type === 'bleed'}
+    <!-- Rohr waagerecht, Bunde mit 45°-Flanken, Drehring (Parallelogramm) dazwischen, Fenster im Ring -->
+    <path d="M16 34 H40 L48 26 H52 L60 34 H96 L104 26 H108 L116 34 H136 V60 H116 L108 68 H104 L96 60 H60 L52 68 H48 L40 60 H16 Z" class="part" />
+    <path d="M62 33 L68 25 H94 L100 33 Z" class="plate" />
+    <path d="M62 61 L68 69 H94 L100 61 Z" class="plate" />
+    <rect x="74" y="27" width="14" height="5" class="win" />
+    <line x1="8" y1="47" x2="144" y2="47" class="axis" />
+    <line x1="16" y1="84" x2="136" y2="84" class="dim" />
+    <line x1="16" y1="79" x2="16" y2="89" class="dim" />
+    <line x1="136" y1="79" x2="136" y2="89" class="dim" />
+    <text x="76" y="101" class="lt" text-anchor="middle">L</text>
+    <polyline points="81,22 81,12 96,12" class="lead" />
+    <text x="99" y="16" class="lt">R</text>
+    <text x="158" y="30" class="key">L</text>
+    <text x="174" y="30" class="mute">Länge</text>
+    <text x="158" y="50" class="key">R</text>
+    <text x="174" y="50" class="mute">Drehring, wird</text>
+    <text x="174" y="64" class="mute">mitgedruckt</text>
   {:else if type === 'gate'}
     <!-- Rohr waagerecht, Rahmen in der Mitte mit 45°-Schrägen, Platte steht oben heraus (gezogen = auf) -->
     <path d="M16 34 H58 L68 24 H82 L92 34 H136 V70 H92 L82 80 H68 L58 70 H16 Z" class="part" />
@@ -115,4 +133,5 @@
   .lead { fill: none; stroke: var(--sky-d); stroke-width: 0.9; }
   .lt, .key { font-family: var(--body); font-size: 12px; font-weight: 700; fill: var(--sky-d); }
   .mute { font-family: var(--body); font-size: 12px; font-weight: 500; fill: var(--slate); }
+  .win { fill: #fff; stroke: var(--slate-2, #7a7a7a); stroke-width: 1; }
 </style>
