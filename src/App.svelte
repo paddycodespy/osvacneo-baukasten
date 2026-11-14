@@ -9,8 +9,8 @@
   import { build, partNames } from './lib/cad';
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
-  import { overhangArea, belowBedEnd, COUNTED_MACHINE, COUNTED_GATE } from './lib/overhang';
-  import { freeSummary, sectionPlanes, inPart2 } from './lib/osvac/freeform';
+  import { overhangArea, belowBedEnd, COUNTED, COUNTED_MACHINE, COUNTED_GATE } from './lib/overhang';
+  import { freeSummary, sectionPlanes, inPart2, tiltedEnds } from './lib/osvac/freeform';
   import { gateBed } from './lib/osvac/gate';
   import { app, fmt } from './lib/app.svelte';
   import FreeformEditor from './components/FreeformEditor.svelte';
@@ -91,8 +91,10 @@
       if (token !== buildToken) return;
       app.dims = v.setBodies(full.bodies);
       // Überhang: Freiform alle Formstücke; Stutzen und Schieber nur die eigenen Teile, kleine Stellen (Lochdecken, Schrift) zählen nicht
+      // Freiform: alle Formstücke, dazu Anschlüsse von osVAC neo, die schräg stehen
+      const fp = app.kind.freeform ? app.freePlan : null;
       app.overhang = app.kind.freeform
-        ? overhangArea(full.bodies)
+        ? overhangArea(full.bodies, fp && !fp.issues.some((x) => x.level === 'error') ? ((t) => (n: string) => COUNTED.test(n) || t(n))(tiltedEnds($state.snapshot(app.free), fp)) : COUNTED)
         : app.kind.machine
         ? overhangArea(full.bodies, COUNTED_MACHINE, 25)
         : app.kind.gate
@@ -171,11 +173,12 @@
   const printNote = $derived.by((): { text: string; level: 'ok' | 'warn' | 'error' } | null => {
     if (app.layoutError) return { level: 'error', text: app.layoutError };
     if (app.status !== 'ready') return null;
-    if (app.needsSupportMaterial)
-      return { level: 'warn', text: `Ein Teil hängt beim Drucken schräg in der Luft. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Manchmal reicht es auch, das andere Ende nach unten zu legen.${app.femaleOnBed ? ` Auch die Kupplung an ${app.femaleOnBed} steht auf ihrer Öffnung (Decke der Bajonett-Nut hängt in der Luft).` : ''}` };
-    if (app.femaleOnBed) return { level: 'warn', text: app.femaleOnBedText };
-    // Kupplung oder Stecker am Abzweig: Bajonett und Nasen stehen schräg (die Prüfung oben zählt die Teile von osVAC neo nicht mit)
+    // Kupplung oder Stecker am Abzweig: Bajonett und Nasen stehen schräg
     const c = app.free.c;
+    const atC = app.kind.freeform && c && c.type !== 'device' && app.free.blocks.some((b) => b.type === 'branch') ? ` Dazu gehört ${c.type === 'female' ? 'die Kupplung' : 'der Stecker'} an Ende C (am Abzweig).` : '';
+    if (app.needsSupportMaterial)
+      return { level: 'warn', text: `Ein Teil hängt beim Drucken schräg in der Luft. Im Slicer „Stützen nur auf dem Druckbett“ einschalten. Manchmal reicht es auch, das andere Ende nach unten zu legen.${atC}${app.femaleOnBed ? ` Auch die Kupplung an ${app.femaleOnBed} steht auf ihrer Öffnung (Decke der Bajonett-Nut hängt in der Luft).` : ''}` };
+    if (app.femaleOnBed) return { level: 'warn', text: app.femaleOnBedText };
     if (app.kind.freeform && c && c.type !== 'device' && app.free.blocks.some((b) => b.type === 'branch'))
       return { level: 'warn', text: `${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C steht beim Drucken schräg. Im Slicer „Stützen nur auf dem Druckbett“ einschalten.` };
     return { level: 'ok', text: `Druckt so ohne Stützen${app.hasSupport ? ' (nur die Druckhilfe unter dem Stecker wird mitgedruckt)' : ''}.` };

@@ -2,12 +2,16 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
-## Nächste Version
+## 0.5.0
 
 - Neu: Verbindung „Saugdüse“. Düsenart wählen (Rundrohr, Fugendüse, Fugendüse gebogen, Breitdüse, Polsterdüse), Anschluss (Stecker oder Kupplung, Ø), Länge, Biegung bis 45°, Öffnung, Schräge der Spitze und Wandstärke einstellen. Extras: Schutzring, Nut für eine Bürstenleiste. Gedruckt stehend mit dem Anschluss unten, ohne Stützen. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine.
 - Freiform: Ende B kann eine Düsenspitze sein (gerade oder schräg, Schräge über die breite oder schmale Seite, mit denselben Extras).
 - Neu: Verbindung „Nebenluft-Regler“: Zwischenstück mit Stecker unten und Kupplung oben, drei Fenster und ein mitgedruckter Drehring (um 60° drehen = auf bis zu, stufenlos). Für alle Düsen und Werkzeuge. Spiel am Drehring in „Passung“ (0,2–0,6 mm). In der Freiform als Baustein „Nebenluft“.
-- Saugdüse: „Zurück zur Düse“ in der Freiform, wenn sie aus der Saugdüse übernommen wurde.
+- Saugdüse: „Zurück zur Düse“ in der Freiform, wenn sie aus der Saugdüse übernommen wurde; „In der Freiform weiterbauen“ fragt nach, bevor es einen eigenen Freiform-Aufbau ersetzt.
+- Nebenluft-Regler: oberer Bund wächst vom Rohr aus (hing vorher frei über dem Ring), Raste bei „auf“ und „zu“, Kerben über den Fenstern, Spiel am Drehring standardmäßig 0,4 mm, Übergang zur Kupplung passt sich dem Größenunterschied an (keine Stützen mehr bei z. B. M25 → F50).
+- Schutzring an der Düse: Stufen quer zur Düse statt parallel zur schrägen Spitze (hing vorher auf der tiefen Seite frei); nach einem Bogen meldet die App, wenn er Stützen braucht.
+- Stützen-Prüfung der Freiform: Kupplungen und Stecker, die nach einem Bogen oder am Abzweig schräg stehen, zählen jetzt mit.
+- Neue Prüfung `npm run test:islands` (Schichten wie im Slicer, braucht Python mit trimesh/shapely), auch auf GitHub.
 
 ## 0.4.1
 

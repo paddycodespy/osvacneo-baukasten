@@ -131,7 +131,7 @@
   </div>
   <p class="hint">Offenes Ende als Düsenspitze. Beim Drucken steht Anschluss A auf dem Bett, die Spitze zeigt nach oben.</p>
   {#if tp.angle > 0}
-    <div class="grid2">
+    <div class="grid2 top">
       <Field label="Schräge" help={`Winkel der schrägen Spitze gegen einen geraden Schnitt, höchstens ${NOZZLE.maxAngle}°.`}>
         <NumberField bind:value={tp.angle} min={0} max={NOZZLE.maxAngle} step={5} unit="°" label="Schräge der Spitze" />
       </Field>
@@ -364,6 +364,7 @@
   .num-sm :global(.num-in) { width: 100%; }
   .extras { display: flex; flex-direction: column; gap: 12px; }
   .extras.nz { margin: 14px 0 0; }
+  .grid2.top { align-items: start; }
   /* Beschreibung und Felder beginnen dort, wo der Text neben dem Kästchen beginnt (18 px Kästchen + 10 px Abstand) */
   .x-item { --x-indent: 28px; }
   .x-item :global(.inline-check) { margin: 0; }

@@ -1,7 +1,7 @@
 {
   "name": "osvacneo-baukasten",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0",
   "license": "CC-BY-NC-SA-4.0",
   "type": "module",
   "scripts": {
@@ -17,6 +17,7 @@
     "test:freeform:2": "tsx scripts/freeform.ts --teil=2/2",
     "test:sketches": "tsx scripts/sketch-overlap.ts",
     "test:ui": "tsx scripts/ui-flows.ts",
+    "test:islands": "tsx scripts/islands.ts",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build"

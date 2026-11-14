@@ -14,7 +14,7 @@ import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, newBlock, bleedMinLen, DEFAULT_DEVICE, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
 import { freeMaleOnBed } from './osvac/assemblies';
-import { BLEED } from './osvac/bleed';
+import { BLEED, bleedTransition } from './osvac/bleed';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
 import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
 
@@ -93,7 +93,8 @@ class AppState {
       a: { type: 'male', d: b.m },
       wall,
       blocks: [newBlock('bleed', { length: bleedMinLen(b.m, wall, b.bleedGap) })],
-      b: { type: 'female', d: b.f, device: { ...DEFAULT_DEVICE, section: { ...DEFAULT_DEVICE.section } }, transition: 10 },
+      // Übergang zur Kupplung flach genug zum Drucken (auch bei sehr verschiedenen Größen)
+      b: { type: 'female', d: b.f, device: { ...DEFAULT_DEVICE, section: { ...DEFAULT_DEVICE.section } }, transition: bleedTransition(b.m, b.f) },
       bed: 'A',
       bleedGap: b.bleedGap,
     };
@@ -110,11 +111,23 @@ class AppState {
     this.freeState = withFreshIds(structuredClone($state.snapshot(this.nozzleFree)));
     this.freeTemplate = '';
     this.fromNozzle = true;
+    this.freeRef = specKey(this.freeState);
     this.freeOpen = 'B';
     this.kindId = 'FREE';
   }
   /** Freiform kommt aus der Saugdüse: Link „Zurück zur Düse“, bis eine Vorlage geladen wird */
   fromNozzle = $state(false);
+  /** Stand der Freiform beim Übernehmen aus der Saugdüse (für „geändert?“) */
+  freeRef = $state('');
+  /**
+   * Wurde der Freiform-Aufbau gegenüber seiner Vorlage bzw. der übernommenen Düse verändert? Dann fragt
+   * „In der Freiform weiterbauen“ nach, bevor es ihn ersetzt.
+   */
+  get freeModified(): boolean {
+    const k = specKey($state.snapshot(this.freeState));
+    const t = TEMPLATES.find((x) => x.id === this.freeTemplate);
+    return t ? k !== specKey(t.make()) : k !== this.freeRef;
+  }
   /** Düsenart wählen: setzt deren Maße (Anschluss, Wand und Extras bleiben) */
   setNozzleKind(id: NozzleSpec['kind']) {
     const k = NOZZLE_KINDS.find((x) => x.id === id)!;
@@ -408,7 +421,7 @@ class AppState {
       else if (tp?.ring) t.push('Der Schutzring macht den Rand dicker und schont Möbel. Er ist zur Wand hin abgestuft und druckt ohne Stützen.');
     }
     if (this.hasBleed)
-      t.push(`Der Drehring wird gleich mitgedruckt. Nach dem Druck den Ring ein paarmal kräftig hin und her drehen, bis er leicht läuft. Um 60° drehen: von ganz auf (Fenster übereinander) bis ganz zu. Dreht er zu schwer oder klebt fest: in „Passung“ mehr Spiel einstellen (jetzt ${fmt(this.bleedGap, 2)} mm).`);
+      t.push(`Der Drehring wird gleich mitgedruckt. Nach dem Druck den Ring ein paarmal kräftig hin und her drehen, bis er leicht läuft. Um 60° drehen: von ganz auf (Fenster übereinander) bis ganz zu. Dreht er zu schwer oder klebt fest: in „Passung“ mehr Spiel einstellen (jetzt ${fmt(this.bleedGap, 2)} mm). Die unterste Schicht des Rings hängt mit diesem Spiel über dem Bund; meldet der Slicer dort „schwebende Bereiche“, ist das gewollt (keine Stützen einschalten, sonst wächst der Ring fest).`);
     const c = this.free.c;
     if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
       t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);

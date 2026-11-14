@@ -1506,22 +1506,40 @@ function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
     };
   }
   if (g.thick) {
-    // Rand in Stufen (je höchstens 0,6 mm, 45°): innen 0,3 mm in der Wand, damit der Slicer die Körper verbindet
+    // Rand in Stufen (je höchstens 0,6 mm, 45° zur Mittellinie), innen 0,3 mm in der Wand, damit der Slicer die
+    // Körper verbindet. Unterkanten quer zur Mittellinie (nicht schräg wie die Spitze, sonst hinge der Rand auf der
+    // tiefen Seite steil über und finge frei in der Luft an). Bei schräger Spitze folgt der Rand ihr in Streifen
+    // (je höchstens 1,5 mm Höhenunterschied), so ist er überall etwa gleich hoch.
     const eR = g.rim - w;
     const K = Math.max(1, Math.ceil(eR / 0.6 - 1e-9)), step = eR / K;
+    const span = g.ePlus + extent(g.outer, rot, g.dirDeg + 180);
+    const nb = g.th > 1e-6 ? Math.max(1, Math.ceil(g.slant / 1.5)) : 1;
+    const xd2 = unit(cross(f.t, across));
     bodies.push({
       name: 'Düsenrand',
-      cost: 0.6,
-      dep: { kind: 'free', t: 'nozzleRim', f: frameKey(f), s: secKey(s), rot: r6(rot), tip: tipKey },
+      cost: 0.6 + 0.05 * nb * K,
+      dep: { kind: 'free', t: 'nozzleRim2', f: frameKey(f), s: secKey(s), rot: r6(rot), tip: tipKey },
       make: () => {
-        let sh: Shape3D | null = null;
-        for (let k = 1; k <= K; k++) {
-          const h = (g.ringH - (k - 1) * step) * Math.cos(g.th);
-          const lvl = prism(w - 0.3, w + step * k).intersect(slab(-h, 0)) as Shape3D;
-          sh = sh ? (sh.fuse(lvl) as Shape3D) : lvl;
+        const pieces: Shape3D[] = [];
+        for (let j = 0; j < nb; j++) {
+          // Streifen quer zur Schräge: across von x1 (hoch) bis x0 (tiefer); tiefste Stelle der Spitze im Streifen
+          const x1 = g.ePlus - (span * j) / nb, x0 = g.ePlus - (span * (j + 1)) / nb;
+          const dMax = (g.ePlus - x0) * Math.tan(g.th);
+          // Streifen überlappen sich leicht, damit die Vereinigung sauber wird (keine gemeinsamen Flächen)
+          const xa = j === 0 ? x1 + 50 : x1 + 0.05, xb = j === nb - 1 ? x0 - 50 : x0 - 0.05;
+          for (let k = 1; k <= K; k++) {
+            const B = dMax + g.ringH - (k - 1) * step;
+            const ring = extrudeRing(advance(f, -B), grow(s, w - 0.3), grow(s, w + step * k), rot, B + 1);
+            const band = placeShape(makeBox([xb, -BIG, -B], [xa, BIG, 1]) as Shape3D, localPlacement(f.o, across, unit(cross(across, xd2))));
+            pieces.push(nb === 1 ? ring : (ring.intersect(band) as Shape3D));
+          }
         }
-        if (tip.brush) sh = sh!.cut(groove()) as Shape3D;
-        return sh!;
+        let sh = pieces[0];
+        for (const q of pieces.slice(1)) sh = sh.fuse(q) as Shape3D;
+        sh = sh.simplify() as Shape3D;
+        sh = sh.intersect(slab(-BIG, 0)) as Shape3D;
+        if (tip.brush) sh = sh.cut(groove()) as Shape3D;
+        return sh;
       },
     });
   }
@@ -2609,4 +2627,23 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
     file: [A, 'Freiform', fileMid, fileB, ...x, hasC ? `und ${fileC}` : '', split ? '2 Teile' : ''].filter(Boolean).join(' '),
     blocks,
   };
+}
+
+/**
+ * Überhang-Prüfung: Anschlüsse von osVAC neo (Kupplung, Stecker mit Übergang, Rändelung, Textfelder), die beim Druck
+ * schräg stehen, zählen mit. Senkrecht (Achse höchstens 15° geneigt) sind sie für den Druck ohne Stützen gebaut,
+ * schräg nach einem Bogen oder am Abzweig hängen Nut, Rand und Schrift über.
+ */
+export function tiltedEnds(spec: FreeSpec, plan: FreePlan): (name: string) => boolean {
+  const { p1, p2 } = partPlacements(spec, plan);
+  const tilted = (pl: Placement, t: V3) => Math.abs(mulMV(pl.R, t)[2]) < Math.cos(rad(15));
+  const isB = (n: string) => / B( \d+)?$/.test(n) && !n.startsWith('Formstück') && !n.startsWith('Übergang zu') && !n.startsWith('Geräteanschluss');
+  const isC = (n: string) => / C( \d+)?$/.test(n) && !n.startsWith('Formstück') && !n.startsWith('Übergang zu') && !n.startsWith('Geräteanschluss');
+  const chain = /^(Formstück|Übergang zu|Übergang zum Gerät|Geräteanschluss|Anschlagring|Düsenrand|Schieberplatte|Schiebehülse)/;
+  const osB = spec.b.type === 'female' || spec.b.type === 'male';
+  const osC = !!spec.c && (spec.c.type === 'female' || spec.c.type === 'male');
+  const bT = osB && tilted(plan.split ? p2! : p1, plan.end.t);
+  const cT = osC && !!plan.cEnd && tilted(plan.split?.cPart2 ? p2! : p1, plan.cEnd.t);
+  const aT = tilted(p1, plan.startFrame.t);
+  return (n) => (isB(n) ? bT : isC(n) ? cT : !chain.test(n) && !n.startsWith('Druckhilfe') && aT);
 }
