@@ -13,7 +13,7 @@
   import ResetLink from './ResetLink.svelte';
   import NotchFigure from './NotchFigure.svelte';
   import IssueList from './IssueList.svelte';
-  import { SLOT_SHAPES, SEAL, AUTO_HOLE_D, flangeGeom, flangeDefaults, flangeMinRim, flangeExtent, BRIM_FROM, type EndSpec, type Fix, type Issue, type FlangeLayout, type DeviceEnd } from '../lib/osvac/freeform';
+  import { DEFAULT_TIP, NOZZLE, SLOT_SHAPES, SEAL, AUTO_HOLE_D, flangeGeom, flangeDefaults, flangeMinRim, flangeExtent, BRIM_FROM, type EndSpec, type Fix, type Issue, type FlangeLayout, type DeviceEnd } from '../lib/osvac/freeform';
 
   let {
     end = $bindable(),
@@ -22,8 +22,9 @@
     issues = [],
     apply,
     onflange,
+    onnozzle,
     transition = true,
-  }: { end: EndSpec; wall: number; tag: 'B' | 'C'; issues?: Issue[]; apply: (fx: Fix) => void; onflange?: () => void; transition?: boolean } = $props();
+  }: { end: EndSpec; wall: number; tag: 'B' | 'C'; issues?: Issue[]; apply: (fx: Fix) => void; onflange?: () => void; onnozzle?: () => void; transition?: boolean } = $props();
 
   const SIZES = [25, 32, 36, 40, 50];
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
@@ -33,6 +34,12 @@
   let extrasOpen = $state(anyExtra(end.device));
 
   const isFlange = $derived(end.type === 'device' && end.device.mode === 'flange');
+  /** Düse: Spitze mit Standardwerten anlegen; Anschluss A liegt dann unten (onnozzle) */
+  function setNozzle() {
+    end.tip ??= { ...DEFAULT_TIP };
+    end.type = 'nozzle';
+    onnozzle?.();
+  }
   function setDeviceMode(m: DeviceEnd['mode']) {
     end.device.mode = m;
     if (m === 'flange') onflange?.();
@@ -112,7 +119,47 @@
   <button type="button" role="radio" aria-checked={end.type === 'device'} class:sel={end.type === 'device'} onclick={() => (end.type = 'device')}>Gerät</button>
   <button type="button" role="radio" aria-checked={end.type === 'female'} class:sel={end.type === 'female'} onclick={() => (end.type = 'female')}>Kupplung (F)</button>
   <button type="button" role="radio" aria-checked={end.type === 'male'} class:sel={end.type === 'male'} onclick={() => (end.type = 'male')}>Stecker (M)</button>
+  {#if tag === 'B'}
+    <button type="button" role="radio" aria-checked={end.type === 'nozzle'} class:sel={end.type === 'nozzle'} onclick={setNozzle}>Düse</button>
+  {/if}
 </div>
+{#if end.type === 'nozzle' && end.tip}
+  {@const tp = end.tip}
+  <div class="seg wide" role="radiogroup" aria-label="Spitze">
+    <button type="button" role="radio" aria-checked={tp.angle === 0} class:sel={tp.angle === 0} onclick={() => (tp.angle = 0)}>Gerade</button>
+    <button type="button" role="radio" aria-checked={tp.angle > 0} class:sel={tp.angle > 0} onclick={() => (tp.angle = tp.angle > 0 ? tp.angle : 45)}>Schräg</button>
+  </div>
+  <p class="hint">Offenes Ende als Düsenspitze. Beim Drucken steht Anschluss A auf dem Bett, die Spitze zeigt nach oben.</p>
+  {#if tp.angle > 0}
+    <div class="grid2">
+      <Field label="Schräge" help={`Winkel der schrägen Spitze gegen einen geraden Schnitt, höchstens ${NOZZLE.maxAngle}°.`}>
+        <NumberField bind:value={tp.angle} min={0} max={NOZZLE.maxAngle} step={5} unit="°" label="Schräge der Spitze" />
+      </Field>
+      <Field label="Schräge über" help="Über die breite Seite wird die Spitze lang und flach (Fugendüse), über die schmale Seite kurz (Breit- oder Bodendüse). Nach einem Bogen zeigt „andersherum“ die lange Seite nach innen statt nach außen.">
+        <div class="seg wide" role="radiogroup" aria-label="Schräge über">
+          <button type="button" role="radio" aria-checked={tp.dir % 180 === 0} class:sel={tp.dir % 180 === 0} onclick={() => (tp.dir = tp.dir >= 180 ? 180 : 0)}>breite Seite</button>
+          <button type="button" role="radio" aria-checked={tp.dir % 180 !== 0} class:sel={tp.dir % 180 !== 0} onclick={() => (tp.dir = tp.dir >= 180 ? 270 : 90)}>schmale Seite</button>
+        </div>
+      </Field>
+    </div>
+    <label class="inline-check"><input type="checkbox" checked={tp.dir >= 180} onchange={(e) => (tp.dir = (tp.dir % 180) + (e.currentTarget.checked ? 180 : 0))} /> andersherum</label>
+  {/if}
+  <IssueList list={issues} {apply} />
+  <div class="extras nz">
+    <div class="x-item">
+      <label class="inline-check"><input type="checkbox" bind:checked={tp.vents} /> Nebenluft-Fenster</label>
+      <p class="hint">Zwei Fenster kurz vor der Spitze. Damit saugt sich die Düse an Polstern und Folien nicht fest.</p>
+    </div>
+    <div class="x-item">
+      <label class="inline-check"><input type="checkbox" checked={tp.ring} disabled={tp.brush} onchange={(e) => (tp.ring = e.currentTarget.checked)} /> Schutzring an der Spitze</label>
+      <p class="hint">Dickerer Rand an der Spitze, schont Möbel und bricht nicht so leicht ab.</p>
+    </div>
+    <div class="x-item">
+      <label class="inline-check"><input type="checkbox" checked={tp.brush} onchange={(e) => { tp.brush = e.currentTarget.checked; if (tp.brush) tp.ring = true; }} /> Nut für eine Bürstenleiste</label>
+      <p class="hint">Rille rundum im Rand zum Einkleben einer Streifenbürste. Der Rand wird dafür dicker.</p>
+    </div>
+  </div>
+{/if}
 {#if end.type === 'device'}
   <div class="seg wide" role="radiogroup" aria-label="Befestigung am Gerät">
     <button type="button" role="radio" aria-checked={end.device.mode === 'over'} class:sel={end.device.mode === 'over'} onclick={() => setDeviceMode('over')}>Über den Stutzen</button>
@@ -291,7 +338,7 @@
     </div>
   </details>
   {/if}
-{:else}
+{:else if end.type !== 'nozzle'}
   <div class="dia dia-{end.type === 'female' ? 'F' : 'M'}">
     <div class="dia-row">
       {@render sizeChips(() => end.d, (v) => (end.d = v))}
@@ -320,6 +367,7 @@
   .num-sm { width: 130px; }
   .num-sm :global(.num-in) { width: 100%; }
   .extras { display: flex; flex-direction: column; gap: 12px; }
+  .extras.nz { margin: 14px 0 0; }
   /* Beschreibung und Felder beginnen dort, wo der Text neben dem Kästchen beginnt (18 px Kästchen + 10 px Abstand) */
   .x-item { --x-indent: 28px; }
   .x-item :global(.inline-check) { margin: 0; }

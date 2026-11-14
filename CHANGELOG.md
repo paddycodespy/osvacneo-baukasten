@@ -2,6 +2,11 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## Nächste Version
+
+- Neu: Verbindung „Saugdüse“. Düsenart wählen (Rundrohr, Fugendüse, Fugendüse gebogen, Breitdüse, Polsterdüse), Anschluss (Stecker oder Kupplung, Ø), Länge, Biegung bis 45°, Öffnung, Schräge der Spitze und Wandstärke einstellen. Extras: Nebenluft-Fenster, Schutzring, Nut für eine Bürstenleiste. Gedruckt stehend mit dem Anschluss unten, ohne Stützen. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine.
+- Freiform: Ende B kann eine Düsenspitze sein (gerade oder schräg, Schräge über die breite oder schmale Seite, mit denselben Extras).
+
 ## 0.4.1
 
 - Schieber (einzeln und in der Freiform): Auflagen für Schraubenkopf und Mutter 2,4 statt 1,5 mm dick und mit Brückenhilfe gedruckt (gerade Brücken statt Kreise in der Luft), dadurch sauberer und fester; Schrauben M3 × 14 statt × 12. Kleine Schieber (um Ø 15) mit nur einer Schraube je Seite, sonst berühren sich die Muttern.

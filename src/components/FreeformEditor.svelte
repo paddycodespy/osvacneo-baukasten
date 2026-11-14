@@ -14,7 +14,7 @@
   import IssueList from './IssueList.svelte';
   import { reveal } from '../lib/reveal';
   import { tubeGateDims, GATE_GAP } from '../lib/osvac/gate';
-  import { TEMPLATES, planFree, BLOCK_LABELS, newBlock, sec, sectionText, specKey, branchGeom, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
+  import { TEMPLATES, planFree, BLOCK_LABELS, newBlock, sec, sectionText, lastSection, extrasLong, specKey, branchGeom, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | 'C' | null;
   let {
@@ -153,10 +153,12 @@
   });
   setContext('fieldFlag', (label: string) => flagged.get(label) ?? null);
 
-  const endName = (t: FreeSpec['b']['type']) => (t === 'device' ? 'Gerät' : t === 'female' ? 'Kupplung' : 'Stecker');
+  const endName = (t: FreeSpec['b']['type']) => (t === 'device' ? 'Gerät' : t === 'female' ? 'Kupplung' : t === 'nozzle' ? 'Düse' : 'Stecker');
   const aText = $derived(`${spec.a.type === 'female' ? 'Kupplung F' : 'Stecker M'}${fmt(spec.a.d)}`);
   const endText = (E: EndSpec) =>
-    E.type === 'device' && E.device.mode === 'flange'
+    E.type === 'nozzle'
+      ? [`${sectionText(lastSection(spec))}`, E.tip && E.tip.angle > 0 ? `schräg ${fmt(E.tip.angle)}°` : 'gerade', ...extrasLong(spec)].join(', ')
+      : E.type === 'device' && E.device.mode === 'flange'
       ? `Öffnung ${sectionText(E.device.section)}, mit Flansch${E.device.seal ? ' und Dichtung' : ''}`
       : E.type === 'device'
       ? `${sectionText(E.device.section)}${E.device.section.shape === 'circle' && E.device.dDepth !== E.device.section.d ? `/${fmt(E.device.dDepth)}` : ''}, ${E.device.mode === 'over' ? 'über den Stutzen' : 'in die Öffnung'}, ${fmt(E.device.length)} mm tief`
@@ -166,6 +168,11 @@
   const isFlange = $derived(spec.b.type === 'device' && spec.b.device.mode === 'flange');
   $effect(() => {
     if (isFlange && spec.bed !== 'B') spec.bed = 'B';
+  });
+  /** Düse: Anschluss A steht auf dem Bett, die Spitze zeigt nach oben */
+  const isNozzle = $derived(spec.b.type === 'nozzle');
+  $effect(() => {
+    if (isNozzle && spec.bed !== 'A') spec.bed = 'A';
   });
 </script>
 
@@ -374,7 +381,7 @@
     </button>
     {#if open === 'B'}
       <div class="card-body">
-        <EndEditor bind:end={spec.b} wall={spec.wall} tag="B" issues={bIssues} apply={applyFix} onflange={() => (spec.bed = 'B')} transition={hasTransition('B')} />
+        <EndEditor bind:end={spec.b} wall={spec.wall} tag="B" issues={bIssues} apply={applyFix} onflange={() => (spec.bed = 'B')} onnozzle={() => (spec.bed = 'A')} transition={hasTransition('B')} />
       </div>
     {/if}
   </li>
@@ -403,6 +410,8 @@
   <p class="hint">Mit Schieber wird der Adapter am Schieber geteilt und in zwei Teilen gedruckt: das Teil mit Anschluss A steht auf A, das Teil mit Ende B auf B. Die Trennflächen zeigen nach oben.</p>
   {:else if isFlange}
   <p class="hint">Der Flansch (Ende B) liegt flach auf dem Druckbett.</p>
+  {:else if isNozzle}
+  <p class="hint">Anschluss A ({spec.a.type === 'female' ? 'Kupplung' : 'Stecker'}) steht auf dem Druckbett, die Düsenspitze zeigt nach oben.</p>
   {:else}
   <div class="seg wide" role="radiogroup" aria-label="Was liegt beim Drucken unten">
     <button type="button" role="radio" aria-checked={spec.bed === 'B'} class:sel={spec.bed === 'B'} onclick={() => (spec.bed = 'B')}>Ende B ({endName(spec.b.type)})</button>

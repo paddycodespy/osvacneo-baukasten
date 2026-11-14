@@ -14,6 +14,7 @@ export interface OverhangMesh {
   indices: ArrayLike<number>;
 }
 
+// Düsenrand zählt nicht: er ist in Stufen von höchstens 0,6 mm abgesetzt (wie eine 45°-Schräge), die druckt jeder Drucker
 const COUNTED = /^(Formstück|Übergang zu|Geräteanschluss|Anschlagring)/;
 /** Stutzen-Adapter und Schieber einzeln: eigene Teile (die Teile von osVAC neo sind für den Druck ohne Stützen gebaut) */
 export const COUNTED_MACHINE = /^(Übergang|Rohr|Klemmrippen)$/;
@@ -137,7 +138,7 @@ export function belowBedEnd(bodies: OverhangMesh[], bed: 'A' | 'B', part2?: (nam
   // Ende C (am Abzweig) liegt nie auf dem Bett und zählt wie die Kette
   const isC = (n: string) => n.startsWith('Geräteanschluss C') || / C( \d+)?$/.test(n) || n === 'Übergang zu Ende C';
   const isB = (n: string) => !isC(n) && (n.startsWith('Geräteanschluss') || / B( \d+)?$/.test(n));
-  const isChain = (n: string) => isC(n) || /^(Formstück|Übergang zum Gerät|Übergang zu Ende B|Anschlagring|Schieberplatte)/.test(n);
+  const isChain = (n: string) => isC(n) || /^(Formstück|Übergang zum Gerät|Übergang zu Ende B|Anschlagring|Schieberplatte|Düsenrand)/.test(n);
   const isEnd = (n: string) => (bed === 'B' ? isB(n) : !isB(n) && !isChain(n));
   let zAll = Infinity, zEnd = Infinity;
   for (const b of bodies) {

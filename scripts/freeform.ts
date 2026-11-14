@@ -18,6 +18,8 @@ import { belowBedEnd, overhangArea, COUNTED_GATE } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
 import { gateLayout, gateLower, gateUpper, gateSlider, gateClip, sliderInGate, DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
+import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleToFree, nozzleIssues, nozzleLayout, type NozzleSpec } from '../src/lib/osvac/nozzle';
+import { DEFAULT_TIP } from '../src/lib/osvac/freeform';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 setOC(await opencascade({ locateFile: (f: string) => path.join(here, '../node_modules/replicad-opencascadejs/dist/', f) }));
@@ -199,6 +201,26 @@ for (const [i, shape] of shapes.entries()) {
   cases.push(['schieber-nach-abzweig', y]);
 }
 
+// Saugdüse: alle Düsenarten aus dem Formular (abwechselnd mit allen Extras, Kupplung, Biegung), dazu Düsenspitze in der Freiform
+{
+  const nz = (v: Partial<NozzleSpec>): FreeSpec => {
+    const n = { ...structuredClone(DEFAULT_NOZZLE), ...v };
+    n.length = Math.max(n.length, nozzleLayout(n).minLength);
+    return nozzleToFree(n);
+  };
+  for (const k of NOZZLE_KINDS) {
+    cases.push([`duese-${k.id}`, nz({ kind: k.id, ...k.values })]);
+    cases.push([`duese-${k.id}-extras`, nz({ kind: k.id, ...k.values, vents: true, ring: true, brush: true, tip: 30 })]);
+  }
+  cases.push(['duese-kupplung-gebogen', nz({ kind: 'bent', ...NOZZLE_KINDS[2].values, a: { type: 'female', d: 40 }, bend: 45, tip: 60, ring: true, vents: true, wall: 1.6 })]);
+  cases.push(['duese-rund-gebogen', nz({ kind: 'round', d: 32, length: 180, bend: 30, tip: 30, vents: true })]);
+  const f = TEMPLATES[2].make();
+  f.blocks.push(newBlock('straight', { length: 60 }));
+  f.b = { ...f.b, type: 'nozzle', tip: { ...DEFAULT_TIP, angle: 40, dir: 270, vents: true, ring: true } };
+  f.bed = 'A';
+  cases.push(['duese-freiform-versatz', f]);
+}
+
 let fail = 0;
 const meshNotes: string[] = [];
 const p = deriveParams({});
@@ -230,7 +252,7 @@ for (const [ci, [id, spec]] of cases.entries()) {
       // eigene Formstücke: Netz geschlossen (die Teile von osVAC neo sind nachgebaut und geprüft, das spart Zeit).
       // Lofts (Übergang, Absatz, Fase) zerlegt OpenCascade bei starker Krümmung gelegentlich in winzige Splitter, die eine
       // Kante mit vier Dreiecken ergeben; Slicer reparieren das selbst. Dort nur Hinweis, sonst Fehler.
-      if (/^(Formstück|Übergang zu|Übergang zum|Geräteanschluss|Anschlagring|Schieberplatte)/.test(q.name)) {
+      if (/^(Formstück|Übergang zu|Übergang zum|Geräteanschluss|Anschlagring|Schieberplatte|Düsenrand)/.test(q.name)) {
         const n = badEdges(sh, q.name);
         if (n && /Übergang|Absatz|Fase|konisch/.test(q.name)) meshNotes.push(`${id}: ${q.name} ${n}`);
         else if (n) bad.push(`${q.name}: ${n} Kanten im Netz nicht geschlossen`);
@@ -397,6 +419,13 @@ if ((!only && sectionIn(1)) || only === 'vorschlaege') {
   broken.push(['Löcher am Plattenrand rechteckig', flange({ flangeLayout: 'rect', plateW: 110, plateH: 110, holeX: 106, holeY: 106 })]);
   broken.push(['Dreieck zu klein', flange({ flangeLayout: 'tri', triCircle: 60 })]);
   broken.push(['Löcher zu dicht rechteckig', flange({ section: sec('circle', { d: 20 }), flangeLayout: 'rect', plateW: 80, plateH: 80, holeX: 40, holeY: 40, holeNX: 6, holeNY: 6 })]);
+    const nb = TEMPLATES[3].make();
+    nb.b = { ...nb.b, type: 'nozzle', tip: { ...DEFAULT_TIP, vents: true, brush: true } };
+    broken.push(['Düse: B unten, Gerade zu kurz', nb]);
+    const nt = TEMPLATES[0].make();
+    nt.b = { ...nt.b, type: 'nozzle', tip: { ...DEFAULT_TIP, angle: 75, ring: true } };
+    nt.bed = 'A';
+    broken.push(['Düse: zu schräg, nach Bogen', nt]);
   for (const [name, s] of broken) {
     const issues = planFree(s).issues.filter((x) => x.fixes?.length);
     if (!issues.length) wrong.push(`${name}: keine Meldung mit Vorschlag`);
@@ -427,6 +456,27 @@ if ((!only && sectionIn(1)) || only === 'vorschlaege') {
     const c = TEMPLATES.find((x) => x.id === 'y')!.make();
     c.c = { ...c.c!, type: 'device', device: { ...DEFAULT_DEVICE, length: 3 } };
     if (!planFree(c).issues.some((x) => x.text.startsWith('Ende C:'))) wrong.push('Meldung von Ende C nicht als „Ende C“ benannt');
+  }
+  {
+    // Düse: mit Schieber oder Abzweig nicht möglich; Formular: Vorschläge beheben ihre Meldung
+    const g = TEMPLATES.find((x) => x.id === 'gate')!.make();
+    g.b = { ...g.b, type: 'nozzle', tip: { ...DEFAULT_TIP } };
+    if (!planFree(g).issues.some((x) => x.level === 'error' && x.text.includes('Schieber'))) wrong.push('Düse mit Schieber nicht abgefangen');
+    const short = { ...structuredClone(DEFAULT_NOZZLE), length: 40, brush: true, ring: true, h: 40, w: 20 };
+    const iss = nozzleIssues(short);
+    if (!iss.some((x) => x.level === 'error')) wrong.push('Düse zu kurz nicht abgefangen');
+    for (const x of iss)
+      for (const fx of x.fixes ?? []) {
+        n++;
+        const c = structuredClone(short);
+        fx.set(c);
+        if (nozzleIssues(c).some((y) => y.text === x.text)) wrong.push(`Düse: „${fx.label}“ behebt „${x.text}“ nicht`);
+      }
+    for (const k of NOZZLE_KINDS) {
+      const c = { ...structuredClone(DEFAULT_NOZZLE), kind: k.id, ...k.values };
+      const errs = [...nozzleIssues(c), ...planFree(nozzleToFree(c)).issues].filter((x) => x.level === 'error');
+      if (errs.length) wrong.push(`Düsenart ${k.title}: ${errs.map((x) => x.text).join(' / ')}`);
+    }
   }
   if (wrong.length) fail++;
   console.log(`${wrong.length ? 'FEHLER' : 'ok    '} vorschlaege                ${wrong.length ? wrong.join(' | ') : `${n} Vorschläge in ${broken.length} Fällen`}`);
