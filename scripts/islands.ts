@@ -16,7 +16,10 @@ import { TEMPLATES, newBlock, planFree, tiltedEnds, bleedMinLen, DEFAULT_DEVICE,
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleLayout, nozzleToFree, type NozzleSpec } from '../src/lib/osvac/nozzle';
 import { bleedTransition } from '../src/lib/osvac/bleed';
 import { weld, meshTolerance } from '../src/lib/worker/threemf';
-import { overhangArea, COUNTED } from '../src/lib/overhang';
+import { overhangArea, COUNTED, COUNTED_MACHINE, COUNTED_GATE } from '../src/lib/overhang';
+import { kindById } from '../src/lib/osvac/catalog';
+import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
+import { DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
 
 const root = path.resolve(import.meta.dirname, '..');
 setOC(await opencascade({ locateFile: (f: string) => path.join(root, 'node_modules/replicad-opencascadejs/dist/', f) }));
@@ -45,6 +48,13 @@ const cases: [string, FreeSpec][] = [
   ['nebenluft-25-50', bl(25, 50, 0.6)],
   ...TEMPLATES.filter((t) => !['gate'].includes(t.id)).map((t) => [`vorlage-${t.id}`, t.make()] as [string, FreeSpec]),
 ];
+/** Stutzen-Adapter und Schieber einzeln (keine Freiform): Teile und die Überhang-Regel der App */
+const others: [string, string, object, RegExp][] = [
+  ['stutzen-F-auf', 'MACHINE_F', { pipe: { ...DEFAULT_PIPE, d1Inner: 32.2, d2Inner: 33.2, mode: 'over', screwHoles: true, slots: true, ribs: true } as PipeSpec }, COUNTED_MACHINE],
+  ['stutzen-M-ein', 'MACHINE_M', { pipe: { ...DEFAULT_PIPE, d1Inner: 26.8, d2Inner: 25.8, mode: 'into', screwHoles: true, ribs: true } as PipeSpec }, COUNTED_MACHINE],
+  ['schieber-50-wandplatte', 'GATE', { gate: { ...DEFAULT_GATE, d: 50, mount: 'plate' } as GateSpec }, COUNTED_GATE],
+  ['schieber-32-wandhalter', 'GATE', { gate: { ...DEFAULT_GATE, d: 32, mount: 'clip' } as GateSpec }, COUNTED_GATE],
+];
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const dir = path.join(root, 'out/islands');
 fs.rmSync(dir, { recursive: true, force: true });
@@ -67,6 +77,22 @@ for (const [id, spec] of cases) {
   }
   claim.set(id, overhangArea(meshes, (n) => COUNTED.test(n) || tilted(n)));
   fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify({ id, allow: ['Drehring'], bodies }));
+}
+for (const [id, kind, o, counted] of others) {
+  if (only.length && !only.some((x) => id.startsWith(x))) continue;
+  const parts = kindById(kind).parts!(p, { text: true, knurl: true, supports: true, ...o });
+  const bodies: { name: string; helper: boolean; v: number[]; t: number[] }[] = [];
+  const meshes = [];
+  for (const q of parts) {
+    const sh = q.make() as Shape3D;
+    const m = sh.mesh({ tolerance: meshTolerance(q.name), angularTolerance: 0.1 });
+    const w = weld({ name: q.name, vertices: new Float32Array(m.vertices), triangles: new Uint32Array(m.triangles) });
+    const helper = !!q.helper || q.name.startsWith('Druckhilfe');
+    bodies.push({ name: q.name, helper, v: Array.from(w.vertices), t: Array.from(w.triangles) });
+    meshes.push({ name: q.name, helper, positions: m.vertices, normals: m.normals, indices: m.triangles });
+  }
+  claim.set(id, overhangArea(meshes, counted, 25));
+  fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify({ id, allow: [], bodies }));
 }
 const py = spawnSync('python3', [path.join(root, 'tools/druck/islands.py'), dir], { encoding: 'utf8', maxBuffer: 1 << 26 });
 if (py.status !== 0) {

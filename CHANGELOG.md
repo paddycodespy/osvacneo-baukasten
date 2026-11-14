@@ -4,6 +4,11 @@
 
 ## 0.5.0
 
+- Nebenluft-Regler: „In der Freiform weiterbauen“ (mit Rückfrage) und „Zurück zum Nebenluft-Regler“; in der Freiform muss er beim Drucken senkrecht stehen (Fehler mit Vorschlag „anderes Ende nach unten“), schräg würden Stützen den Ring festschweißen.
+- Dateinamen enthalten auch das Spiel am Nebenluft-Ring („Ring 0,5“) und der Schieberplatte in der Freiform („Platte 0,4“), wenn es vom Standard abweicht.
+- Drehring am Schlauchadapter: Standard bleibt 0,3 mm wie im Original, mit deutlichem Hinweis für PETG (0,35–0,5 mm) in „Passung“ und in den Druckhinweisen.
+- Vorschau: vor dem ersten Modell ganzes Druckbett mit „Vorschau wird berechnet…“; Web-App startet schneller (Hauptdatei ohne CAD-Bibliothek, 1,26 → 0,93 MB).
+- test:islands prüft auch Stutzen-Adapter und Schieber einzeln.
 - Schritt 1: Verbindungen in Gruppen (osVAC neo untereinander, An den Schlauch, An ein Gerät, Zubehör, Eigener Aufbau).
 - Neu: Verbindung „Saugdüse“. Düsenart wählen (Rundrohr, Fugendüse, Fugendüse gebogen, Breitdüse, Polsterdüse), Anschluss (Stecker oder Kupplung, Ø), Länge, Biegung bis 45°, Öffnung, Schräge der Spitze und Wandstärke einstellen. Extras: Schutzring, Nut für eine Bürstenleiste. Gedruckt stehend mit dem Anschluss unten, ohne Stützen. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine.
 - Freiform: Ende B kann eine Düsenspitze sein (gerade oder schräg, Schräge über die breite oder schmale Seite, mit denselben Extras).

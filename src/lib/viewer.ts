@@ -153,6 +153,11 @@ export class PartViewer {
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    // noch kein Modell: leeres Druckbett ganz ins Bild (sonst füllt es bei schmalem Fenster die Bühne wie ein Fehler)
+    if (!this.framed && !this.model.children.length) {
+      this.frame(new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 40)));
+      this.framed = false;
+    }
     this.needsRender = true;
   }
 

@@ -417,8 +417,20 @@ await withPreview(4180, async (url, browser) => {
     await until(pg, downloadOpen(pg), 'Download gesperrt');
     await step(pg, 'Download');
     expect((await pg.locator('.step-body').innerText()).includes('Drehring'), 'kein Druckhinweis zum Drehring');
+    expect((await pg.locator('.stage-head .code').innerText()).length > 0, 'kein Kopf');
     await step(pg, 'Passung');
     await pg.getByRole('button', { name: /Passung auf Standard/ }).click();
+    // in die Freiform übernehmen (eigener Aufbau liegt dort schon: Rückfrage) und zurück
+    await step(pg, 'Größen');
+    await pg.getByRole('button', { name: /In der Freiform weiterbauen/ }).click();
+    const replace = pg.getByRole('button', { name: 'Ersetzen und weiterbauen' });
+    if (await replace.count()) await replace.click();
+    await until(pg, async () => (await pg.locator('.step-tab', { hasText: 'Aufbau' }).count()) > 0, 'nicht in der Freiform gelandet');
+    expect((await pg.locator('.step-body').innerText()).includes('Nebenluft'), 'Freiform ohne Baustein Nebenluft');
+    await ready(pg);
+    await pg.getByRole('button', { name: 'Zurück zum Nebenluft-Regler' }).click();
+    await until(pg, async () => (await pg.locator('.code').innerText()).includes('F40'), 'nicht zurück beim Nebenluft-Regler');
+    await ready(pg);
   });
 
   await test('Druckhilfe gilt je Verbindung', pg, async () => {

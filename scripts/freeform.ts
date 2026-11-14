@@ -436,7 +436,9 @@ if ((!only && sectionIn(1)) || only === 'vorschlaege') {
   broken.push(['Löcher am Plattenrand rechteckig', flange({ flangeLayout: 'rect', plateW: 110, plateH: 110, holeX: 106, holeY: 106 })]);
   broken.push(['Dreieck zu klein', flange({ flangeLayout: 'tri', triCircle: 60 })]);
   broken.push(['Löcher zu dicht rechteckig', flange({ section: sec('circle', { d: 20 }), flangeLayout: 'rect', plateW: 80, plateH: 80, holeX: 40, holeY: 40, holeNX: 6, holeNY: 6 })]);
-    const nl = TEMPLATES[3].make();
+    const nt2: FreeSpec = { a: { type: 'male', d: 32 }, wall: 3, blocks: [newBlock('bend', { angle: 45, radius: 40 }), newBlock('bleed', { length: bleedMinLen(32, 3, 0.4) })], b: { type: 'female', d: 32, device: { ...DEFAULT_DEVICE }, transition: 10 }, bed: 'A' };
+    broken.push(['Nebenluft schräg', nt2]);
+        const nl = TEMPLATES[3].make();
     nl.blocks.push(newBlock('bleed', { length: 10 }));
     broken.push(['Nebenluft zu kurz', nl]);
     const nb = TEMPLATES[3].make();
