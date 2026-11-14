@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Schritt 1: Adaptertyp wählen */
   import { app } from '../../lib/app.svelte';
-  import { KINDS } from '../../lib/osvac/catalog';
+  import { KINDS, KIND_GROUPS } from '../../lib/osvac/catalog';
   import KindIcon from '../KindIcon.svelte';
   import ResetLink from '../ResetLink.svelte';
   import { reveal } from '../../lib/reveal';
@@ -15,7 +15,10 @@
 
 <h2>Verbindung</h2>
 <div class="kinds" role="radiogroup" aria-label="Adaptertyp">
-  {#each KINDS as k}
+  {#each KINDS as k, i}
+    {#if i === 0 || KINDS[i - 1].group !== k.group}
+      <div class="kind-group" role="presentation">{KIND_GROUPS.find((g) => g.id === k.group)?.title}</div>
+    {/if}
     <button class="kind" class:sel={k.id === app.kindId} role="radio" aria-checked={k.id === app.kindId} disabled={!k.available} onclick={() => (app.kindId = k.id)}>
       <KindIcon top={k.ends.top} bottom={k.ends.bottom} />
       <span class="kind-text">
@@ -43,3 +46,8 @@
 {:else}
   <ResetLink show={app.changed} label="Neu anfangen: alle Eingaben auf den Anfang" onclick={() => (asking = true)} />
 {/if}
+
+<style>
+  .kind-group { margin: 14px 0 0; font-size: 14px; font-weight: 600; color: var(--slate-2, #7a7a7a); }
+  .kind-group:first-child { margin-top: 0; }
+</style>

@@ -15,6 +15,8 @@ export interface AdapterKind {
   code: string;
   title: string;
   description: string;
+  /** Gruppe in Schritt 1 (Überschrift über den Karten) */
+  group: KindGroup;
   /** Oben → unten, wie gedruckt */
   ends: { top: EndType; bottom: EndType | null };
   diameters: DiameterKey[];
@@ -35,6 +37,16 @@ export interface AdapterKind {
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
+export type KindGroup = 'osvac' | 'hose' | 'machine' | 'accessory' | 'custom';
+/** Überschriften der Gruppen in Schritt 1, in dieser Reihenfolge */
+export const KIND_GROUPS: { id: KindGroup; title: string }[] = [
+  { id: 'osvac', title: 'osVAC neo untereinander' },
+  { id: 'hose', title: 'An den Schlauch' },
+  { id: 'machine', title: 'An ein Gerät' },
+  { id: 'accessory', title: 'Zubehör' },
+  { id: 'custom', title: 'Eigener Aufbau' },
+];
+
 export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle' | 'bleed';
 
 function pipeName(o?: asm.BuildOptions): string {
@@ -49,6 +61,7 @@ const n = (v: number) => (Number.isInteger(v) ? String(v) : String(v).replace('.
 export const KINDS: AdapterKind[] = [
   {
     id: 'MF',
+    group: 'osvac',
     code: 'MxxFyy',
     title: 'Stecker ↔ Kupplung',
     description: 'Verbindet zwei Größen von osVAC neo, z. B. M25 auf F32.',
@@ -61,6 +74,7 @@ export const KINDS: AdapterKind[] = [
   },
   {
     id: 'F',
+    group: 'osvac',
     code: 'Fxx',
     title: 'Kupplung einzeln',
     description: 'Nur der Bajonett-Ring, zum Einbau in eigene Konstruktionen.',
@@ -73,6 +87,7 @@ export const KINDS: AdapterKind[] = [
   },
   {
     id: 'M',
+    group: 'osvac',
     code: 'Mxx',
     title: 'Stecker einzeln',
     description: 'Nur der Stecker mit Bajonettnasen und Druckhilfe.',
@@ -85,6 +100,7 @@ export const KINDS: AdapterKind[] = [
   },
   {
     id: 'FH',
+    group: 'hose',
     code: 'FxxHyy',
     title: 'Kupplung ↔ Schlauch',
     description: 'Kupplung mit Drehring und Schlauchgewinde, z. B. für den Saugschlauch.',
@@ -97,6 +113,7 @@ export const KINDS: AdapterKind[] = [
   },
   {
     id: 'MH',
+    group: 'hose',
     code: 'MxxHyy',
     title: 'Stecker ↔ Schlauch',
     description: 'Stecker mit Drehring und Schlauchgewinde.',
@@ -109,6 +126,7 @@ export const KINDS: AdapterKind[] = [
   },
   {
     id: 'MACHINE_F',
+    group: 'machine',
     code: 'Fxx-Rohr',
     title: 'Kupplung → Stutzen',
     description: 'Kupplung auf einen gemessenen Stutzen, gerade oder konisch.',
@@ -122,6 +140,7 @@ export const KINDS: AdapterKind[] = [
   },
   {
     id: 'MACHINE_M',
+    group: 'machine',
     code: 'Mxx-Rohr',
     title: 'Stecker → Stutzen',
     description: 'Stecker auf einen gemessenen Stutzen, gerade oder konisch.',
@@ -134,20 +153,8 @@ export const KINDS: AdapterKind[] = [
     fileName: (p, o) => `osVAC neo M${n(p.maleDiameterInner)}-Rohr${pipeName(o)}`,
   },
   {
-    id: 'GATE',
-    code: 'Schieber',
-    title: 'Schieber einzeln',
-    description: 'Absperrschieber für Rohre, zwei Teile zum Verschrauben: das Rohr wird beidseitig eingesteckt. Mit Wandbefestigung.',
-    ends: { top: 'gate', bottom: null },
-    diameters: [],
-    gate: true,
-    available: true,
-    build: asm.buildGate,
-    parts: asm.partsGate,
-    fileName: (_p, o) => `osVAC neo ${gateName({ ...DEFAULT_GATE, ...o?.gate }).file}`,
-  },
-  {
     id: 'NOZZLE',
+    group: 'accessory',
     code: 'Düse',
     title: 'Saugdüse',
     description: 'Eigene Düse zum Aufstecken: Fugen-, Breit- oder Polsterdüse, gerade oder gebogen, mit schräger Spitze.',
@@ -162,6 +169,7 @@ export const KINDS: AdapterKind[] = [
   },
   {
     id: 'BLEED',
+    group: 'accessory',
     code: 'NL',
     title: 'Nebenluft-Regler',
     description: 'Zwischenstück mit Drehring: Nebenluft stufenlos auf und zu, z. B. zwischen Schlauch und Düse.',
@@ -178,7 +186,22 @@ export const KINDS: AdapterKind[] = [
     },
   },
   {
+    id: 'GATE',
+    group: 'accessory',
+    code: 'Schieber',
+    title: 'Schieber einzeln',
+    description: 'Absperrschieber für Rohre, zwei Teile zum Verschrauben: das Rohr wird beidseitig eingesteckt. Mit Wandbefestigung.',
+    ends: { top: 'gate', bottom: null },
+    diameters: [],
+    gate: true,
+    available: true,
+    build: asm.buildGate,
+    parts: asm.partsGate,
+    fileName: (_p, o) => `osVAC neo ${gateName({ ...DEFAULT_GATE, ...o?.gate }).file}`,
+  },
+  {
     id: 'FREE',
+    group: 'custom',
     code: 'Freiform',
     title: 'Freiform',
     description: 'Eigener Adapter aus Bausteinen: Bogen, Übergang, eckige Haube, Versatz. Für Geräte ohne runden Stutzen.',
