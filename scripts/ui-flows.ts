@@ -376,7 +376,6 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('radio', { name: /Breitdüse/ }).click();
     await ready(pg);
     expect((await pg.locator('.code').innerText()).includes('90 × 8'), 'Kopfzeile zeigt nicht die Öffnung der Breitdüse');
-    await pg.getByLabel('Nebenluft-Fenster').check();
     await pg.getByLabel('Nut für eine Bürstenleiste').check();
     expect(await pg.getByLabel('Schutzring an der Spitze').isChecked(), 'Bürstennut hakt den Schutzring nicht mit an');
     await fill(pg, 'Länge der Düse', '40');
@@ -391,6 +390,29 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.step-body').innerText()).includes('Ende B · Düse'), 'Ende B ist keine Düse');
     await ready(pg);
     expect((await pg.locator('.code').innerText()).includes('90 × 8'), 'Freiform hat eine andere Düse');
+    await pg.getByRole('button', { name: 'Zurück zur Düse' }).click();
+    await until(pg, async () => (await pg.locator('.step-tab', { hasText: 'Düse' }).count()) > 0, 'nicht zurück bei der Düse');
+    expect(await pg.getByRole('radio', { name: /Breitdüse/ }).getAttribute('aria-checked') === 'true', 'Formular der Düse hat sich verändert');
+    await ready(pg);
+  });
+
+  await test('Nebenluft-Regler mit Spiel am Drehring', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: /Nebenluft-Regler/ }).click();
+    await step(pg, 'Größen');
+    await ready(pg);
+    expect((await pg.locator('.code').innerText()).includes('F32'), 'Kopfzeile ohne Kupplung');
+    await pg.locator('.chip', { hasText: '40' }).nth(1).click();
+    await ready(pg);
+    expect((await pg.locator('.code').innerText()).includes('F40'), 'Kupplung 40 nicht übernommen');
+    await step(pg, 'Passung');
+    await pg.getByLabel('Spiel am Drehring').fill('0.45');
+    await ready(pg);
+    await until(pg, downloadOpen(pg), 'Download gesperrt');
+    await step(pg, 'Download');
+    expect((await pg.locator('.step-body').innerText()).includes('Drehring'), 'kein Druckhinweis zum Drehring');
+    await step(pg, 'Passung');
+    await pg.getByRole('button', { name: /Passung auf Standard/ }).click();
   });
 
   await test('Druckhilfe gilt je Verbindung', pg, async () => {

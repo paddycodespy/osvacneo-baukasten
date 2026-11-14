@@ -147,10 +147,6 @@
   <IssueList list={issues} {apply} />
   <div class="extras nz">
     <div class="x-item">
-      <label class="inline-check"><input type="checkbox" bind:checked={tp.vents} /> Nebenluft-Fenster</label>
-      <p class="hint">Zwei Fenster kurz vor der Spitze. Damit saugt sich die Düse an Polstern und Folien nicht fest.</p>
-    </div>
-    <div class="x-item">
       <label class="inline-check"><input type="checkbox" checked={tp.ring} disabled={tp.brush} onchange={(e) => (tp.ring = e.currentTarget.checked)} /> Schutzring an der Spitze</label>
       <p class="hint">Dickerer Rand an der Spitze, schont Möbel und bricht nicht so leicht ab.</p>
     </div>

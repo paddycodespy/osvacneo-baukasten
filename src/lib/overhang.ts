@@ -100,7 +100,8 @@ export function overhangArea(bodies: OverhangMesh[], counted: RegExp = COUNTED, 
   };
   bodies.forEach((b, bi) => {
     if (b.helper || !counted.test(b.name)) return;
-    const bridges = b.name.startsWith('Geräteanschluss') || /· Schieber( unten| oben)?$/.test(b.name) || b.name.startsWith('Schieber-');
+    // waagerechte Flächen: Brücken (Geräteanschluss, Schieber, Oberkante der Nebenluft-Fenster über 50°)
+    const bridges = b.name.startsWith('Geräteanschluss') || /· Schieber( unten| oben)?$/.test(b.name) || b.name.startsWith('Schieber-') || /· Nebenluft( · Drehring)?$/.test(b.name);
     const nr = b.normals, ix = b.indices;
     for (let t = 0; t < ix.length; t += 3) {
       const nz = (nr[ix[t] * 3 + 2] + nr[ix[t + 1] * 3 + 2] + nr[ix[t + 2] * 3 + 2]) / 3;

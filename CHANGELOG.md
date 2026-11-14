@@ -4,8 +4,10 @@
 
 ## Nächste Version
 
-- Neu: Verbindung „Saugdüse“. Düsenart wählen (Rundrohr, Fugendüse, Fugendüse gebogen, Breitdüse, Polsterdüse), Anschluss (Stecker oder Kupplung, Ø), Länge, Biegung bis 45°, Öffnung, Schräge der Spitze und Wandstärke einstellen. Extras: Nebenluft-Fenster, Schutzring, Nut für eine Bürstenleiste. Gedruckt stehend mit dem Anschluss unten, ohne Stützen. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine.
+- Neu: Verbindung „Saugdüse“. Düsenart wählen (Rundrohr, Fugendüse, Fugendüse gebogen, Breitdüse, Polsterdüse), Anschluss (Stecker oder Kupplung, Ø), Länge, Biegung bis 45°, Öffnung, Schräge der Spitze und Wandstärke einstellen. Extras: Schutzring, Nut für eine Bürstenleiste. Gedruckt stehend mit dem Anschluss unten, ohne Stützen. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine.
 - Freiform: Ende B kann eine Düsenspitze sein (gerade oder schräg, Schräge über die breite oder schmale Seite, mit denselben Extras).
+- Neu: Verbindung „Nebenluft-Regler“: Zwischenstück mit Stecker unten und Kupplung oben, drei Fenster und ein mitgedruckter Drehring (um 60° drehen = auf bis zu, stufenlos). Für alle Düsen und Werkzeuge. Spiel am Drehring in „Passung“ (0,2–0,6 mm). In der Freiform als Baustein „Nebenluft“.
+- Saugdüse: „Zurück zur Düse“ in der Freiform, wenn sie aus der Saugdüse übernommen wurde.
 
 ## 0.4.1
 

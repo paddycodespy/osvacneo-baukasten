@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Schritt 3: Passung (Spiel, Materialstärke, Extras) */
   import { app, fmt } from '../../lib/app.svelte';
+  import { BLEED } from '../../lib/osvac/bleed';
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
   import ResetLink from '../ResetLink.svelte';
@@ -60,6 +61,18 @@
   </div>
   <p class="hint">9 mm macht die Kupplung stabiler. Sie wird dann außen 4 mm dicker.</p>
 </fieldset>
+
+{#if app.hasBleed}
+  <fieldset class="opt">
+    <legend class="field-label">Spiel am Drehring (Nebenluft) <HelpToggle id="bleedGap" /></legend>
+    <div class="slider">
+      <input type="range" min={BLEED.gapMin} max={BLEED.gapMax} step="0.05" value={app.bleedGap} oninput={(e) => (app.bleedGap = Number(e.currentTarget.value))} aria-label="Spiel am Drehring" aria-describedby="bleed-hint" />
+      <output>{fmt(app.bleedGap, 2)} mm</output>
+    </div>
+    <HelpText id="bleedGap" />
+    <p class="hint" id="bleed-hint">Klebt der Ring fest oder dreht schwer: größer. Standard: {fmt(BLEED.gap, 2)} mm.</p>
+  </fieldset>
+{/if}
 
 {#if app.freeHasGate}
   <fieldset class="opt">

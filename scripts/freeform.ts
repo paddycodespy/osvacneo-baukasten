@@ -19,7 +19,7 @@ import { kindById } from '../src/lib/osvac/catalog';
 import { gateLayout, gateLower, gateUpper, gateSlider, gateClip, sliderInGate, DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleToFree, nozzleIssues, nozzleLayout, type NozzleSpec } from '../src/lib/osvac/nozzle';
-import { DEFAULT_TIP } from '../src/lib/osvac/freeform';
+import { DEFAULT_TIP, bleedMinLen } from '../src/lib/osvac/freeform';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 setOC(await opencascade({ locateFile: (f: string) => path.join(here, '../node_modules/replicad-opencascadejs/dist/', f) }));
@@ -210,15 +210,32 @@ for (const [i, shape] of shapes.entries()) {
   };
   for (const k of NOZZLE_KINDS) {
     cases.push([`duese-${k.id}`, nz({ kind: k.id, ...k.values })]);
-    cases.push([`duese-${k.id}-extras`, nz({ kind: k.id, ...k.values, vents: true, ring: true, brush: true, tip: 30 })]);
+    cases.push([`duese-${k.id}-extras`, nz({ kind: k.id, ...k.values, ring: true, brush: true, tip: 30 })]);
   }
-  cases.push(['duese-kupplung-gebogen', nz({ kind: 'bent', ...NOZZLE_KINDS[2].values, a: { type: 'female', d: 40 }, bend: 45, tip: 60, ring: true, vents: true, wall: 1.6 })]);
-  cases.push(['duese-rund-gebogen', nz({ kind: 'round', d: 32, length: 180, bend: 30, tip: 30, vents: true })]);
+  cases.push(['duese-kupplung-gebogen', nz({ kind: 'bent', ...NOZZLE_KINDS[2].values, a: { type: 'female', d: 40 }, bend: 45, tip: 60, ring: true, wall: 1.6 })]);
+  cases.push(['duese-rund-gebogen', nz({ kind: 'round', d: 32, length: 180, bend: 30, tip: 30, brush: true })]);
   const f = TEMPLATES[2].make();
   f.blocks.push(newBlock('straight', { length: 60 }));
-  f.b = { ...f.b, type: 'nozzle', tip: { ...DEFAULT_TIP, angle: 40, dir: 270, vents: true, ring: true } };
+  f.b = { ...f.b, type: 'nozzle', tip: { ...DEFAULT_TIP, angle: 40, dir: 270, ring: true } };
   f.bed = 'A';
   cases.push(['duese-freiform-versatz', f]);
+}
+
+// Nebenluft-Regler: als Verbindung (Stecker unten, Kupplung oben, gleich und verschieden groß), in der Freiform
+{
+  const bl = (m: number, f: number, gap = 0.3, extra: Block[] = []): FreeSpec => ({
+    a: { type: 'male', d: m },
+    wall: 3,
+    blocks: [newBlock('bleed', { length: bleedMinLen(m, 3, gap) }), ...extra],
+    b: { type: 'female', d: f, device: { ...DEFAULT_DEVICE }, transition: 10 },
+    bed: 'A',
+    bleedGap: gap,
+  });
+  cases.push(['nebenluft-32', bl(32, 32)]);
+  cases.push(['nebenluft-25-40', bl(25, 40)]);
+  cases.push(['nebenluft-50-spiel-0,5', bl(50, 50, 0.5)]);
+  cases.push(['nebenluft-15', bl(15, 15, 0.2)]);
+  cases.push(['nebenluft-freiform-bogen', bl(32, 32, 0.3, [newBlock('bend', { angle: 45, radius: 40 })])]);
 }
 
 let fail = 0;
@@ -419,8 +436,11 @@ if ((!only && sectionIn(1)) || only === 'vorschlaege') {
   broken.push(['Löcher am Plattenrand rechteckig', flange({ flangeLayout: 'rect', plateW: 110, plateH: 110, holeX: 106, holeY: 106 })]);
   broken.push(['Dreieck zu klein', flange({ flangeLayout: 'tri', triCircle: 60 })]);
   broken.push(['Löcher zu dicht rechteckig', flange({ section: sec('circle', { d: 20 }), flangeLayout: 'rect', plateW: 80, plateH: 80, holeX: 40, holeY: 40, holeNX: 6, holeNY: 6 })]);
+    const nl = TEMPLATES[3].make();
+    nl.blocks.push(newBlock('bleed', { length: 10 }));
+    broken.push(['Nebenluft zu kurz', nl]);
     const nb = TEMPLATES[3].make();
-    nb.b = { ...nb.b, type: 'nozzle', tip: { ...DEFAULT_TIP, vents: true, brush: true } };
+    nb.b = { ...nb.b, type: 'nozzle', tip: { ...DEFAULT_TIP, brush: true } };
     broken.push(['Düse: B unten, Gerade zu kurz', nb]);
     const nt = TEMPLATES[0].make();
     nt.b = { ...nt.b, type: 'nozzle', tip: { ...DEFAULT_TIP, angle: 75, ring: true } };

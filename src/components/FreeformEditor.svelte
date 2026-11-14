@@ -13,8 +13,9 @@
   import EndEditor from './EndEditor.svelte';
   import IssueList from './IssueList.svelte';
   import { reveal } from '../lib/reveal';
+  import { app } from '../lib/app.svelte';
   import { tubeGateDims, GATE_GAP } from '../lib/osvac/gate';
-  import { TEMPLATES, planFree, BLOCK_LABELS, newBlock, sec, sectionText, lastSection, extrasLong, specKey, branchGeom, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
+  import { TEMPLATES, planFree, BLOCK_LABELS, newBlock, sec, sectionText, lastSection, extrasLong, specKey, branchGeom, bleedMinLen, bleedGapOf, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | 'C' | null;
   let {
@@ -73,6 +74,7 @@
     { type: 'step', title: 'Absatz: wechselt die Form auf kurzem Weg' },
     { type: 'branch', title: 'Abzweig: zweiter Abgang (Y oder T) mit eigenem Ende C' },
     { type: 'gate', title: 'Schieber: Platte zum Auf- und Zumachen (Absperrschieber)' },
+    { type: 'bleed', title: 'Nebenluft: Fenster mit Drehring, regelt den Sog' },
   ];
   const hasBranch = $derived(spec.blocks.some((b) => b.type === 'branch'));
   /**
@@ -99,6 +101,8 @@
     }
     // Schieber: lang genug für das Gehäuse mit seinen Schrägen
     if (type === 'gate' && cur.shape === 'circle') v = { length: Math.max(40, Math.ceil(tubeGateDims(cur.d / 2, cur.d / 2 + spec.wall, spec.gateGap ?? GATE_GAP).minLen)) };
+    // Nebenluft: so kurz wie möglich
+    if (type === 'bleed' && cur.shape === 'circle') v = { length: bleedMinLen(cur.d, spec.wall, bleedGapOf(spec)) };
     const b = newBlock(type, v, cur);
     spec.blocks = [...spec.blocks, b];
     open = b.id;
@@ -125,6 +129,7 @@
       parts.push(`${fmt(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}`, `Ø ${fmt(b.branchD)}`, `zu Ende C`);
       if (b.dir) parts.push(`Richtung ${fmt(b.dir)}°`);
     }
+    if (b.type === 'bleed') parts.push(`${fmt(b.length)} mm lang`, 'Drehring');
     if (b.type === 'gate') {
       parts.push(`${fmt(b.length)} mm lang`);
       if (b.dir) parts.push(`Richtung ${fmt(b.dir)}°`);
@@ -198,6 +203,9 @@
 {/snippet}
 
 <p class="lead">Setze deinen Adapter aus Bausteinen zusammen, vom Anschluss A bis zum Ende B{hasBranch ? ', mit dem Abzweig zu Ende C' : ''}. {hasGate ? 'Mit Schieber wird er in zwei Teilen gedruckt, in der Vorschau stehen sie nebeneinander.' : `In der Vorschau liegt ${spec.bed === 'A' ? 'A' : 'B'} unten auf dem Druckbett.`} Jede Änderung ist sofort zu sehen.</p>
+{#if app.fromNozzle && !app.freeTemplate}
+  <p class="from-nozzle">Aus der Saugdüse übernommen · <button type="button" class="back-link" onclick={() => (app.kindId = 'NOZZLE')}>Zurück zur Düse</button></p>
+{/if}
 
 <div class="tpl-label">Vorlage als Startpunkt</div>
 <div class="tpl" role="radiogroup" aria-label="Vorlage">
@@ -337,6 +345,13 @@
             </Field>
             <p class="hint">Der Sauger gehört an Anschluss A. Nur dann biegt die Luft aus Ende C {b.sweep && b.angle >= SWEEP_FROM ? 'sanft im Bogen' : `um ${fmt(b.angle)}°`} in den Hauptstrom ein; hängt er an B, müsste sie fast umkehren. Die Kante an der Einmündung wird innen ausgerundet.</p>
             <p class="hint">Rohr und Abzweig sind rund. Den Anschluss am Abzweig stellst du unten bei „Ende C“ ein. Am besten druckt sich der Abzweig, wenn er beim Drucken nach oben zeigt.</p>
+          {:else if b.type === 'bleed'}
+            <div class="grid2">
+              <Field label="L · Länge" help="Länge des Rohrstücks mit Drehring und den beiden Bunden. Kürzer als die Mindestlänge geht nicht, länger macht nur das Rohr länger.">
+                <NumberField bind:value={b.length} min={10} max={300} step={0.5} label="Länge des Nebenluft-Reglers" />
+              </Field>
+            </div>
+            <p class="hint">Drei Fenster im Rohr, darüber ein Drehring mit drei gleichen Fenstern: um 60° drehen = von ganz auf bis ganz zu. Der Ring wird gleich mitgedruckt; das Spiel stellst du in „Passung“ ein. Vor dem Nebenluft-Regler muss das Rohr rund sein, am besten druckt er sich mit senkrechtem Rohr.</p>
           {:else if b.type === 'gate'}
             <div class="grid2">
               <Field label="L · Länge" help="Länge des Rohrs mit dem Rahmen in der Mitte. Der Rahmen braucht je nach Ø eine Mindestlänge.">
@@ -507,4 +522,7 @@
   @media (max-width: 560px) {
     .add-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
+  .from-nozzle { margin: -4px 0 16px; padding: 8px 12px; border-radius: 8px; background: var(--sky-l); font-size: 14px; }
+  .back-link { padding: 0; border: 0; background: none; color: var(--sky); font: inherit; font-weight: 600; cursor: pointer; }
+  .back-link:hover { color: var(--red, #ff4136); }
 </style>
