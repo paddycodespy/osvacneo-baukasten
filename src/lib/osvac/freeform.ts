@@ -970,6 +970,44 @@ type GateAdj = { delta: number; eps: number };
  * verschoben (Boden im A-Teil) und das Rohr hinter dem Deckel um eps verlängert (Trennfläche im B-Teil).
  */
 export function planFree(spec: FreeSpec): FreePlan {
+  const plan = planFreeRaw(spec);
+  if (!plan.issues.some((x) => x.level === 'error')) bleedUpright(spec, plan);
+  return plan;
+}
+
+/**
+ * Nebenluft-Regler: Der Drehring wird mitgedruckt und braucht ein senkrechtes Rohr. Schräg hängt er über und
+ * „Stützen“ würden im Spalt den Ring festschweißen. Daher Fehler, mit Vorschlag „anderes Ende nach unten“, wenn das hilft.
+ */
+function bleedUpright(spec: FreeSpec, plan: FreePlan) {
+  const tilted = (sp: FreeSpec, pl: FreePlan) => {
+    const { p1, p2 } = partPlacements(sp, pl);
+    return sp.blocks.map((b, i) => {
+      if (b.type !== 'bleed' || !pl.cuts[i]) return false;
+      const P = pl.split && i > pl.split.block ? p2! : p1;
+      return Math.abs(mulMV(P.R, pl.cuts[i].start.t)[2]) < Math.cos(rad(3));
+    });
+  };
+  const t = tilted(spec, plan);
+  if (!t.some(Boolean)) return;
+  let fixes: Fix[] = [];
+  if (!plan.split && spec.b.type !== 'nozzle' && !(spec.b.type === 'device' && spec.b.device.mode === 'flange')) {
+    const other: FreeSpec = { ...spec, bed: spec.bed === 'A' ? 'B' : 'A' };
+    const po = planRaw(other, { delta: 0, eps: 0 });
+    if (!po.issues.some((x) => x.level === 'error') && !tilted(other, po).some(Boolean))
+      fixes = [{ label: `${other.bed === 'A' ? 'Anschluss A' : 'Ende B'} nach unten legen`, fields: [], set: (sp) => void (sp.bed = other.bed) }];
+  }
+  t.forEach((x, i) => {
+    if (x)
+      plan.issues.push({
+        level: 'error',
+        text: `Nebenluft (Baustein ${i + 1}): Der Nebenluft-Regler steht beim Drucken schräg. Sein Drehring wird mitgedruckt und braucht ein senkrechtes Rohr; schräg hinge er über, und Stützen würden ihn im Spalt festschweißen. Ihn in ein gerades Stück setzen, das beim Drucken senkrecht steht (z. B. direkt an das Ende, das unten liegt)${fixes.length ? ', oder das andere Ende nach unten legen' : ''}.`,
+        fixes,
+      });
+  });
+}
+
+function planFreeRaw(spec: FreeSpec): FreePlan {
   const p0 = planRaw(spec, { delta: 0, eps: 0 });
   if (!p0.split || p0.issues.some((x) => x.level === 'error')) return p0;
   const up = (pl: Placement, v: V3) => mulMV(pl.R, v)[2];

@@ -203,8 +203,8 @@
 {/snippet}
 
 <p class="lead">Setze deinen Adapter aus Bausteinen zusammen, vom Anschluss A bis zum Ende B{hasBranch ? ', mit dem Abzweig zu Ende C' : ''}. {hasGate ? 'Mit Schieber wird er in zwei Teilen gedruckt, in der Vorschau stehen sie nebeneinander.' : `In der Vorschau liegt ${spec.bed === 'A' ? 'A' : 'B'} unten auf dem Druckbett.`} Jede Änderung ist sofort zu sehen.</p>
-{#if app.fromNozzle && !app.freeTemplate}
-  <p class="from-nozzle">Aus der Saugdüse übernommen · <button type="button" class="back-link" onclick={() => (app.kindId = 'NOZZLE')}>Zurück zur Düse</button></p>
+{#if app.fromKind && !app.freeTemplate}
+  <p class="from-nozzle">{app.fromKind === 'NOZZLE' ? 'Aus der Saugdüse übernommen' : 'Aus dem Nebenluft-Regler übernommen'} · <button type="button" class="back-link" onclick={() => (app.kindId = app.fromKind)}>{app.fromKind === 'NOZZLE' ? 'Zurück zur Düse' : 'Zurück zum Nebenluft-Regler'}</button></p>
 {/if}
 
 <div class="tpl-label">Vorlage als Startpunkt</div>

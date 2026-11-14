@@ -211,6 +211,8 @@
     <div class="viewport" bind:this={host}></div>
     {#if app.status === 'error' && !everShown}
       <div class="stage-empty"><p>Noch keine Vorschau. Sobald die rot markierten Punkte behoben sind, erscheint hier der Adapter.</p></div>
+    {:else if !everShown}
+      <div class="stage-empty"><p>{app.status === 'start' ? 'CAD-Kern wird geladen…' : 'Vorschau wird berechnet…'}</p></div>
     {/if}
 
     <header class="stage-head">

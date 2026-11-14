@@ -106,18 +106,19 @@ class AppState {
   set free(v: FreeSpec) {
     if (!this.kind.nozzle && !this.kind.bleed) this.freeState = v;
   }
-  /** Saugdüse in die Freiform übernehmen (als Bausteine weiterbearbeiten) */
-  nozzleToFreeform() {
-    this.freeState = withFreshIds(structuredClone($state.snapshot(this.nozzleFree)));
+  /** Saugdüse bzw. Nebenluft-Regler in die Freiform übernehmen (als Bausteine weiterbearbeiten) */
+  toFreeform() {
+    const from = this.kind.nozzle ? 'NOZZLE' : 'BLEED';
+    this.freeState = withFreshIds(structuredClone($state.snapshot(from === 'NOZZLE' ? this.nozzleFree : this.bleedFree)));
     this.freeTemplate = '';
-    this.fromNozzle = true;
+    this.fromKind = from;
     this.freeRef = specKey(this.freeState);
-    this.freeOpen = 'B';
+    this.freeOpen = from === 'NOZZLE' ? 'B' : (this.freeState.blocks.find((b) => b.type === 'bleed')?.id ?? null);
     this.kindId = 'FREE';
   }
-  /** Freiform kommt aus der Saugdüse: Link „Zurück zur Düse“, bis eine Vorlage geladen wird */
-  fromNozzle = $state(false);
-  /** Stand der Freiform beim Übernehmen aus der Saugdüse (für „geändert?“) */
+  /** Freiform kommt aus Saugdüse oder Nebenluft-Regler: Link „Zurück zu …“, bis eine Vorlage geladen wird */
+  fromKind = $state<'' | 'NOZZLE' | 'BLEED'>('');
+  /** Stand der Freiform beim Übernehmen (für „geändert?“) */
   freeRef = $state('');
   /**
    * Wurde der Freiform-Aufbau gegenüber seiner Vorlage bzw. der übernommenen Düse verändert? Dann fragt
@@ -220,6 +221,9 @@ class AppState {
     if (i.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${i.generalMaterialWidth} mm`);
     if (this.kind.machine && this.machine.ribs) extra.push('Rippen');
     if (this.kind.machine && this.machine.slots && this.machine.mode === 'over') extra.push('Schlitze');
+    // Freiform: Spiel der Schieberplatte und am Nebenluft-Ring, wenn nicht Standard
+    if (this.freeHasGate && (this.free.gateGap ?? GATE_GAP) !== GATE_GAP) extra.push(`Platte ${fmt(this.free.gateGap ?? GATE_GAP, 2)}`);
+    if (this.hasBleed && this.bleedGap !== BLEED.gap) extra.push(`Ring ${fmt(this.bleedGap, 2)}`);
     return [this.baseName, ...extra].join(' ');
   });
   code = $derived.by(() => {
@@ -420,6 +424,8 @@ class AppState {
       if (tp?.brush) t.push('In die Nut im Rand passt eine Streifenbürste mit etwa 2 mm breitem Rücken (Meterware, „Streifenbürste“ oder „Leistenbürste“). Mit Sekunden- oder Montagekleber einkleben, die Borsten etwa 5 mm über die Spitze stehen lassen.');
       else if (tp?.ring) t.push('Der Schutzring macht den Rand dicker und schont Möbel. Er ist zur Wand hin abgestuft und druckt ohne Stützen.');
     }
+    if (this.hasSwivel && this.input.slipRingGapSize <= 0.3)
+      t.push('Drehring: Das Spiel ist auf 0,3 mm (wie im Original). Beim Druck mit PETG kann der Ring damit festsitzen; für PETG in „Passung“ 0,35–0,5 mm einstellen.');
     if (this.hasBleed)
       t.push(`Der Drehring wird gleich mitgedruckt. Nach dem Druck den Ring ein paarmal kräftig hin und her drehen, bis er leicht läuft. Um 60° drehen: von ganz auf (Fenster übereinander) bis ganz zu. Dreht er zu schwer oder klebt fest: in „Passung“ mehr Spiel einstellen (jetzt ${fmt(this.bleedGap, 2)} mm). Die unterste Schicht des Rings hängt mit diesem Spiel über dem Bund; meldet der Slicer dort „schwebende Bereiche“, ist das gewollt (keine Stützen einschalten, sonst wächst der Ring fest).`);
     const c = this.free.c;
@@ -565,7 +571,7 @@ class AppState {
       machine: this.machine,
       free: this.freeState,
       freeTemplate: this.freeTemplate,
-      fromNozzle: this.fromNozzle,
+      fromKind: this.fromKind,
       nozzle: this.nozzle,
       bleed: this.bleed,
       gate: this.gate,
@@ -591,7 +597,7 @@ class AppState {
     this.freeTemplate = TEMPLATES[0].id;
     this.nozzle = structuredClone(DEFAULT_NOZZLE);
     this.bleed = { m: 32, f: 32, bleedGap: BLEED.gap };
-    this.fromNozzle = false;
+    this.fromKind = '';
     this.gate = { ...DEFAULT_GATE };
     this.freeOpen = null;
     this.helpOpen = {};
@@ -664,7 +670,8 @@ class AppState {
         if (typeof s.gate.mount === 'string' && s.gate.mount in MOUNT_LABELS) this.gate.mount = s.gate.mount;
         if (typeof s.gate.orient === 'string' && s.gate.orient in ORIENT_LABELS) this.gate.orient = s.gate.orient;
       }
-      if (typeof s.fromNozzle === 'boolean') this.fromNozzle = s.fromNozzle;
+      if (s.fromKind === 'NOZZLE' || s.fromKind === 'BLEED') this.fromKind = s.fromKind;
+      else if (s.fromNozzle === true) this.fromKind = 'NOZZLE';
       if (s.bleed && typeof s.bleed === 'object') {
         const z = s.bleed;
         if (num(z.m)) this.bleed.m = Math.min(60, Math.max(15, z.m));

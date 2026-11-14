@@ -42,7 +42,7 @@
   let confirmFree = $state(false);
   function toFree() {
     if (app.freeModified) confirmFree = true;
-    else app.nozzleToFreeform();
+    else app.toFreeform();
   }
   /** Bürstennut braucht den dicken Rand: Schutzring mit anhaken */
   function setBrush(on: boolean) {
@@ -55,13 +55,16 @@
 <p class="lead">Wähle eine Düsenart und passe die Maße an. Gedruckt wird die Düse stehend, mit dem Anschluss unten.</p>
 
 <div class="tpl-label">Düsenart</div>
-<div class="tpl" role="radiogroup" aria-label="Düsenart">
+<div class="tpl">
+  <!-- Radiogruppe nur mit den Düsenarten; „Eigene Form“ ist ein Knopf (wechselt in die Freiform) -->
+  <div class="tpl-group" role="radiogroup" aria-label="Düsenart">
   {#each NOZZLE_KINDS as k}
     <button type="button" role="radio" class="tpl-btn" class:sel={n.kind === k.id} aria-checked={n.kind === k.id} onclick={() => app.setNozzleKind(k.id)}>
       <svg viewBox="0 0 40 40" aria-hidden="true"><path d={ICONS[k.id]} class="ic" /><rect x="13" y="31" width="14" height="6" rx="1.5" class="ic-m" /></svg>
       <span><strong>{k.title}</strong><small>{k.hint}</small></span>
     </button>
   {/each}
+  </div>
   <button type="button" class="tpl-btn" onclick={toFree} title="Übernimmt die Düse als Bausteine in die Freiform">
     <svg viewBox="0 0 40 40" aria-hidden="true"><path d={ICONS.free} class="ic" /><rect x="13" y="31" width="14" height="6" rx="1.5" class="ic-m" /></svg>
     <span><strong>Eigene Form</strong><small>Weiter in der Freiform</small></span>
@@ -152,7 +155,7 @@
     <p>In der Freiform liegt schon ein eigener Aufbau. Er wird durch die Düse ersetzt.</p>
     <div class="confirm-btns">
       <button type="button" class="btn-sec" onclick={() => (confirmFree = false)}>Abbrechen</button>
-      <button type="button" class="btn-pri" onclick={() => ((confirmFree = false), app.nozzleToFreeform())}>Ersetzen und weiterbauen</button>
+      <button type="button" class="btn-pri" onclick={() => ((confirmFree = false), app.toFreeform())}>Ersetzen und weiterbauen</button>
     </div>
   </div>
 {/if}
@@ -160,6 +163,7 @@
 <ResetLink show={!isDefault} label="Düse auf Standard zurücksetzen" onclick={reset} />
 
 <style>
+  .tpl-group { display: contents; }
   .tpl-label { font-weight: 600; font-size: 14px; margin: 0 0 8px; }
   .tpl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 8px; }
   .tpl-btn { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; font: inherit; color: inherit; }
