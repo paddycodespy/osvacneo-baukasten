@@ -436,11 +436,12 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
     expect((await pg.locator('.code').innerText()).includes('M40H32'), 'Stecker/Schlauch nicht übernommen: ' + (await pg.locator('.code').innerText()));
     await step(pg, 'Passung');
-    await pg.getByLabel('Spiel am Drehring').fill('0.45');
+    await pg.getByLabel('Spiel am Nebenluft-Ring').fill('0.45');
+    expect((await pg.locator('.step-body').innerText()).includes('Spiel am Drehring'), 'Spiel am Drehring für den Schlauch fehlt');
     await ready(pg);
     await until(pg, downloadOpen(pg), 'Download gesperrt');
     await step(pg, 'Download');
-    expect((await pg.locator('.step-body').innerText()).includes('Drehring'), 'kein Druckhinweis zum Drehring');
+    expect((await pg.locator('.step-body').innerText()).includes('das Rohr des Reglers'), 'kein Druckhinweis zum Drehring am Schlauch');
     await step(pg, 'Passung');
     await pg.getByRole('button', { name: /Passung auf Standard/ }).click();
     await step(pg, 'Größen');

@@ -64,9 +64,9 @@
 
 {#if app.hasBleed}
   <fieldset class="opt">
-    <legend class="field-label">Spiel am Drehring (Nebenluft) <HelpToggle id="bleedGap" /></legend>
+    <legend class="field-label">Spiel am Nebenluft-Ring <HelpToggle id="bleedGap" /></legend>
     <div class="slider">
-      <input type="range" min={BLEED.gapMin} max={BLEED.gapMax} step="0.05" value={app.bleedGap} oninput={(e) => (app.bleedGap = Number(e.currentTarget.value))} aria-label="Spiel am Drehring" aria-describedby="bleed-hint" />
+      <input type="range" min={BLEED.gapMin} max={BLEED.gapMax} step="0.05" value={app.bleedGap} oninput={(e) => (app.bleedGap = Number(e.currentTarget.value))} aria-label="Spiel am Nebenluft-Ring" aria-describedby="bleed-hint" />
       <output>{fmt(app.bleedGap, 2)} mm</output>
     </div>
     <HelpText id="bleedGap" />

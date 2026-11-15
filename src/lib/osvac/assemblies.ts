@@ -388,8 +388,8 @@ export function partsHelper(p: OsvacParams, o: BuildOptions = {}): Part[] {
 // ---------------------------------------------------------------- Nebenluft-Regler
 
 /**
- * Nebenluft-Regler, kompakt: oben Kupplung oder Stecker, darunter das Rohr mit drei Fenstern und Drehring, unten der
- * Schlauchteil mit Gewinde (wie beim Schlauchadapter, aber ohne Drehring für den Schlauch). Rohr innen wie der
+ * Nebenluft-Regler, kompakt: oben Kupplung oder Stecker, darunter das Rohr mit drei Fenstern und Drehring, unten wie
+ * beim Schlauchadapter Drehring für den Schlauch und Schlauchteil mit Gewinde. Rohr innen wie der
  * Schlauch, außen wie der Schlauchteil. Oberkante bei z = 0, gedruckt mit dem Schlauchteil unten.
  */
 export function partsBleed(p: OsvacParams, o: BuildOptions = {}): Part[] {
@@ -408,20 +408,18 @@ export function partsBleed(p: OsvacParams, o: BuildOptions = {}): Part[] {
     out.push(part('Übergang', 0.1, { ...dAll(p, o), kind: 'MBleed' }, () => revolveProfile([rMi, -p.maleHeight], [L_(rMo, -p.maleHeight), L_(rO, zT), L_(rH, zT)])));
   }
   void hC;
+  // darunter wie beim Schlauchadapter FxxHyy: Drehring (außen fest am Rohr, innen fest am Schlauchteil), Schlauchteil
+  const zO = zB, zI = zO - SWIVEL.innerBelowOuter, zH = zO - SWIVEL.hoseBelowOuter;
   out.push(
     part('Nebenluft · Rohr', 1, { ...dB, L, z: zB }, () => t(bleedBody(D, L), zB)),
     part('Nebenluft · Drehring', 1, { ...dB, z: zB }, () => t(bleedRing(D), zB)),
-    // Schulter oben am Schlauchteil auffüllen (dort säße sonst der Drehring für den Schlauch)
-    part('Schlauchteil · Auflage', 0.1, { ...dH(p), z: zB }, () => {
-      const cone = 5.257 / 3.681;
-      const zs = -(rO - rH - 1.743) / cone;
-      return t(revolveProfile([rH + 1.6, 0.05], [L_(rO, 0.05), L_(rO, zs - 0.05)]), zB);
-    }),
-    part('Schlauchteil', 0.5, { ...dHK(p), z: zB, variant: 'plain' }, () => t(hoseBody(p, 'plain'), zB)),
-    ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p), z: zB, variant: 'plain' }, () => t(hoseKnurl(p, 'plain'), zB), hoseKnurlOverlap(p, 'plain')),
-    part('Textfeld Schlauchteil', 7, { ...dHK(p), text: o.text, z: zB, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zB), { volumeOffset: hoseFieldsOverlap(p, 'plain') }),
-    part('Gewinde', 8, { ...dH(p), z: zB, variant: 'runout' }, () => t(hoseThreadBody(p, true), zB)),
-    part('Knickschutz', 0.1, { ...dH(p), z: zB }, () => t(hoseSkirt(p), zB)),
+    part('Drehring außen', 0.1, { ...dH(p), z: zO }, () => t(swivelOuter(p, false), zO)),
+    part('Drehring innen', 0.1, { ...dH(p), z: zI }, () => t(swivelInner(p, false), zI)),
+    part('Schlauchteil', 0.5, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseBody(p, 'plain'), zH)),
+    ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseKnurl(p, 'plain'), zH), hoseKnurlOverlap(p, 'plain')),
+    part('Textfeld Schlauchteil', 7, { ...dHK(p), text: o.text, z: zH, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zH), { volumeOffset: hoseFieldsOverlap(p, 'plain') }),
+    part('Gewinde', 8, { ...dH(p), z: zH, variant: 'runout' }, () => t(hoseThreadBody(p, true), zH)),
+    part('Knickschutz', 0.1, { ...dH(p), z: zH }, () => t(hoseSkirt(p), zH)),
   );
   return out;
 }
