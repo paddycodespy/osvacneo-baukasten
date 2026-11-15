@@ -82,7 +82,7 @@
 {:else}
 <p class="lead">Die Zahl ist der Innendurchmesser in Millimetern. Die meisten Geräte und Schläuche nutzen 32.</p>
 {/if}
-{#each app.kind.diameters.filter((k) => !app.kind.helper || (k === 'femaleDiameterInner' ? app.helper.forF : app.helper.forM)) as k}
+{#each app.sizeKeys as k}
   <fieldset class="dia">
     <legend>{LABELS[k].word} ({LABELS[k].letter})</legend>
     <div class="dia-row">

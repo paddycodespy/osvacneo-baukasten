@@ -149,6 +149,12 @@ for (const [id, shape] of [['schlitze-kreis', 'circle'], ['schlitze-rechteck', '
   st.b.type = 'male';
   st.b.d = 32;
   cases.push(['kontur-absatz', st]);
+  // Düsenspitze am Ende einer eigenen Kontur: schräg mit Schutzring und Bürstennut
+  const dz = TEMPLATES[0].make();
+  dz.blocks = [newBlock('transition', { length: 40, section: kontur() }), newBlock('straight', { length: 50 })];
+  dz.b = { ...dz.b, type: 'nozzle', tip: { ...DEFAULT_TIP, angle: 30, ring: true, brush: true } };
+  dz.bed = 'A';
+  cases.push(['kontur-duese', dz]);
 }
 // Flansch am Gerät: alle Formen mit automatischem Lochbild (abwechselnd mit Dichtung und gedreht), Lochbild nach Maß rechteckig und rund
 for (const [i, shape] of shapes.entries()) {
