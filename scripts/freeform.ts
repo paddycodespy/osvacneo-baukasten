@@ -21,6 +21,7 @@ import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleToFree, nozzleIssues, nozzleLayout, type NozzleSpec } from '../src/lib/osvac/nozzle';
 import { DEFAULT_TIP, bleedMinLen } from '../src/lib/osvac/freeform';
 import { prepare as prepareContour, bbox as contourBox } from '../src/lib/osvac/contour';
+import { grow as growSection, samplePoints } from '../src/lib/osvac/freeform';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 setOC(await opencascade({ locateFile: (f: string) => path.join(here, '../node_modules/replicad-opencascadejs/dist/', f) }));
@@ -142,6 +143,12 @@ for (const [id, shape] of [['schlitze-kreis', 'circle'], ['schlitze-rechteck', '
   k.b.type = 'female';
   k.b.d = 32;
   cases.push(['kontur-uebergang-bogen', k]);
+  // Absatz nach eigener Kontur (rundum 3 mm größer), danach Stecker
+  const st = TEMPLATES[0].make();
+  st.blocks = [newBlock('transition', { length: 40, section: kontur() }), newBlock('step', { section: growSection(kontur(), 3) }), newBlock('straight', { length: 8 })];
+  st.b.type = 'male';
+  st.b.d = 32;
+  cases.push(['kontur-absatz', st]);
 }
 // Flansch am Gerät: alle Formen mit automatischem Lochbild (abwechselnd mit Dichtung und gedreht), Lochbild nach Maß rechteckig und rund
 for (const [i, shape] of shapes.entries()) {
@@ -686,6 +693,32 @@ if ((!only && sectionIn(2)) || only === 'rippen-hinweis') {
     console.log(`FEHLER rippen-hinweis             ${(e as Error).message}`);
   } finally {
     testHooks.ribFail = null;
+  }
+}
+// Eigene Kontur: schmale Stelle beim Einstecken wird gemeldet, eine breite nicht; Spiegelung: Nase rechts (Blick auf
+// den Stutzen) liegt in der Ebene der Kette bei −u
+if ((!only && sectionIn(2)) || only === 'kontur-pruefungen') {
+  try {
+    const mk = (noseW: number) => {
+      const raw: [number, number][] = [[-25, -15], [25, -15], [25, -noseW / 2], [33, -noseW / 2], [33, noseW / 2], [25, noseW / 2], [25, 15], [-25, 15]];
+      const pts = prepareContour(raw).pts, b = contourBox(pts);
+      const s = TEMPLATES[3].make();
+      s.b.device = { ...s.b.device, mode: 'into', section: { ...sec('contour'), pts, w: b.w, h: b.h, d: Math.max(b.w, b.h) } };
+      return s;
+    };
+    const warned = (sp: FreeSpec) => planFree(sp).issues.some((x) => x.text.includes('schmaler sind als Wand'));
+    if (!warned(mk(4))) throw new Error('schmale Nase (4 mm) nicht gemeldet');
+    if (warned(mk(12))) throw new Error('breite Nase (12 mm) fälschlich gemeldet');
+    const sp = mk(12);
+    sp.b.device.mode = 'over';
+    const pts = samplePoints(sp.b.device.section, 360, 0);
+    // Körper ohne Nase (|y| > 8): ungespiegelt −29 … 21, gespiegelt −21 … 29
+    const xs = pts.filter((p) => Math.abs(p[1]) > 8).map((p) => p[0]);
+    if (!(Math.max(...xs) > 28 && Math.min(...xs) > -22)) throw new Error(`Nase nicht gespiegelt (Körper x ${Math.min(...xs).toFixed(1)} … ${Math.max(...xs).toFixed(1)})`);
+    console.log('ok     kontur-pruefungen          schmale Stelle gemeldet, Spiegelung stimmt');
+  } catch (e) {
+    fail++;
+    console.log(`FEHLER kontur-pruefungen          ${(e as Error).message}`);
   }
 }
 if (meshNotes.length) console.log(`Hinweis: offene Netzkanten in Lofts (Slicer repariert sie): ${meshNotes.join(', ')}`);

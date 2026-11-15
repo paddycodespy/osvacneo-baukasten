@@ -4,7 +4,7 @@
 
 ## 0.5.0
 
-- Freiform: Form „Eigene“ für Stutzen, die zu keiner Grundform passen. Kontur aus SVG- oder DXF-Datei laden, am Foto nachzeichnen (mit Lineal als Maßstab) oder selbst zeichnen; drehen, spiegeln, auf das gemessene Maß bringen, mit Prüfliste. Geht überall, wo es eine Form gibt (Gerät aufgesteckt, eingesteckt, Flansch, Übergang, Absatz).
+- Freiform: Form „Eigene“ für Stutzen, die zu keiner Grundform passen. Kontur aus SVG- oder DXF-Datei laden, am Foto nachzeichnen (mit Lineal als Maßstab) oder selbst zeichnen; drehen, spiegeln, auf das gemessene Maß bringen, mit Prüfliste. Geht überall, wo es eine Form gibt (Gerät aufgesteckt, eingesteckt, Flansch, Übergang, Absatz). Die Kontur gilt mit Blick auf den Stutzen (von vorne). Zeichnen: Rückgängig (Strg+Z), Zoom mit zwei Fingern und Knöpfen, Rückfrage vor dem Verwerfen. Eingesteckt: Hinweis, wenn schmale Stellen in der Wand verschwinden. SVG mit <use> wird gelesen.
 - Neu unter Zubehör: „Drehring-Lösehilfe“ nach Odul. Halter für Kupplungen (FxxHyy) und/oder für Stecker (MxxHyy), beschriftet wie im Original (M32 bzw. F32), Größen frei, stehend ohne Stützen gedruckt (15–20 % Füllung reicht).
 - Download: Ordner wählbar („Speichern in … Ordner wählen…“, Standard bleibt „Downloads“, wird gemerkt). Im Programm auf allen Systemen, dazu „Im Ordner zeigen“; im Browser in Chrome und Edge (dort speichert „Speichern“ in der Liste wieder in den gewählten Ordner), sonst legt der Browser den Ordner fest.
 - Freiform: Was nicht geht, ist ausgegraut (Grund im Tooltip): zweiter Schieber, zweiter Abzweig, Schieber oder Abzweig bei Düse an Ende B und „Düse“ bei Schieber oder Abzweig.

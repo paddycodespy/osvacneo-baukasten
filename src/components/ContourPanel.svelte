@@ -149,7 +149,7 @@
     </div>
   </div>
   <p class="note">
-    Die Kontur ist hier <b>{what}</b>, wie bei den anderen Formen. {measure === 'inner' ? 'Die Wand kommt außen dazu.' : 'Zugabe und Wand rechnet der Baukasten selbst dazu.'}
+    Die Kontur ist hier <b>{what}</b>, gesehen mit Blick auf den Stutzen (von vorne), wie bei den anderen Formen. {measure === 'inner' ? 'Die Wand kommt außen dazu.' : 'Zugabe und Wand rechnet der Baukasten selbst dazu.'}
     Ohne Datei oder Foto: <button type="button" class="link" onclick={() => (draw = 'grid')}>Umriss selbst zeichnen</button> (Punkte auf Millimeterraster).
   </p>
 {:else}
