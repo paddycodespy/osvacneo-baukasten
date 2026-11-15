@@ -70,6 +70,32 @@ function finish(loops: P2[][], notes: string[]): ImportResult {
 
 const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, pt: 25.4 / 72, pc: 25.4 / 6, px: 25.4 / 96, '': 25.4 / 96 };
 
+/**
+ * <use>-Verweise durch Kopien der Vorlage ersetzen (mit Lage x/y und eigener Transformation), damit wiederholte
+ * Formen mitgezählt werden; <symbol> wird dabei zur Gruppe. Verschachtelt bis zu 5 Ebenen.
+ */
+function expandUse(svg: SVGSVGElement) {
+  const XL = 'http://www.w3.org/1999/xlink';
+  for (let pass = 0; pass < 5; pass++) {
+    const uses = [...svg.querySelectorAll('use')];
+    if (!uses.length) return;
+    for (const u of uses) {
+      const ref = u.getAttribute('href') ?? u.getAttributeNS(XL, 'href') ?? '';
+      const t = ref.startsWith('#') ? svg.querySelector(`[id="${CSS.escape(ref.slice(1))}"]`) : null;
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      const tr = [u.getAttribute('transform') ?? '', `translate(${parseFloat(u.getAttribute('x') ?? '0') || 0} ${parseFloat(u.getAttribute('y') ?? '0') || 0})`].join(' ').trim();
+      g.setAttribute('transform', tr);
+      if (t) {
+        const c = t.cloneNode(true) as Element;
+        c.removeAttribute('id');
+        if (c.nodeName.toLowerCase() === 'symbol') for (const ch of [...c.childNodes]) g.appendChild(ch);
+        else g.appendChild(c);
+      }
+      u.replaceWith(g);
+    }
+  }
+}
+
 /** SVG lesen (nur im Browser) */
 export function readSvg(text: string): ImportResult {
   const notes: string[] = [];
@@ -95,6 +121,7 @@ export function readSvg(text: string): ImportResult {
   const svg = document.importNode(src, true) as unknown as SVGSVGElement;
   host.appendChild(svg);
   document.body.appendChild(host);
+  expandUse(svg);
   const loops: P2[][] = [];
   let open = 0;
   try {
@@ -102,6 +129,8 @@ export function readSvg(text: string): ImportResult {
     const els = svg.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, line');
     els.forEach((el) => {
       const g = el as SVGGeometryElement;
+      // Vorlagen (defs, symbol, Masken …) werden nicht gezeichnet
+      if (el.closest('defs, symbol, clipPath, mask, pattern, marker')) return;
       if (typeof g.getTotalLength !== 'function') return;
       const ctm = g.getCTM();
       if (!ctm || !root) return;

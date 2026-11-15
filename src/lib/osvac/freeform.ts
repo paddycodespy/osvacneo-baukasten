@@ -12,7 +12,7 @@
  */
 import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, makeBSplineApproximation, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, makeBox, measureVolume, type Shape3D, type Point } from 'replicad';
 import { UserError, partLabel, partNotes } from '../errors';
-import { offset as offsetContour, bbox as bboxOf, runs as contourRuns, denseAll, contourKey, selfIntersects, CONTOUR_MIN, CONTOUR_MAX } from './contour';
+import { offset as offsetContour, bbox as bboxOf, runs as contourRuns, denseAll, contourKey, selfIntersects, mirrorX, narrowLoss, CONTOUR_MIN, CONTOUR_MAX } from './contour';
 import { bleedDims, bleedBody, bleedRing, BLEED } from './bleed';
 import { tubeGateDims, tubeGateLower, tubeGateUpper, tubeGateScrew, gateScrewCount, gateSlider, snapPlateGap, GATE_GAP, GATE_LAYER } from './gate';
 
@@ -565,6 +565,13 @@ export function grow(s: Section, delta: number): Section {
   }
 }
 
+/**
+ * Eigene Kontur in der Querschnittsebene: Die Punkte gelten mit Blick auf den Stutzen (von außen, so wie man ihn
+ * fotografiert oder zeichnet). Die Ebene (u, v) wird dagegen in Richtung der Kette gesehen, also von der anderen
+ * Seite: deshalb links und rechts getauscht.
+ */
+const geomPts = (s: Section): P2[] => mirrorX(s.pts ?? []);
+
 /** Polygon (gegen den Uhrzeigersinn) mit gerundeten Ecken als Konturstücke. Zu große Radien werden verkleinert. */
 function roundedPoly(V: P2[], radii: number[]): Prim[] {
   const n = V.length;
@@ -610,7 +617,7 @@ function roundedPoly(V: P2[], radii: number[]): Prim[] {
 function contour(s: Section): Prim[] {
   switch (s.shape) {
     case 'contour': {
-      const p = s.pts ?? [];
+      const p = geomPts(s);
       return p.map((a, i) => ({ k: 'L', a, b: p[(i + 1) % p.length] }) as Prim);
     }
     case 'circle':
@@ -684,7 +691,7 @@ const rot2 = (p: P2, deg: number): P2 => {
 };
 
 /** Dichte Punktfolge des Querschnitts */
-const densePts = (s: Section): P2[] => (s.shape === 'contour' ? denseAll(s.pts ?? [], 0.25) : dense(contour(s)));
+const densePts = (s: Section): P2[] => (s.shape === 'contour' ? denseAll(geomPts(s), 0.25) : dense(contour(s)));
 
 export function perimeter(s: Section): number {
   const d = densePts(s);
@@ -746,7 +753,7 @@ function exactWire(f: Frame, s: Section, rotDeg: number) {
   }
   if (s.shape === 'contour') {
     // gerade Stücke als Linien, Rundungen als glatte Kurven; Stoßpunkte exakt gemeinsam
-    const edges = contourRuns(s.pts ?? []).map((r) =>
+    const edges = contourRuns(geomPts(s)).map((r) =>
       r.k === 'L' ? makeLine(P(r.pts[0]), P(r.pts[1])) : makeBSplineApproximation(r.pts.map(P), { tolerance: 0.002, degMax: 3, degMin: 1, smoothing: null }),
     );
     return assembleWire(edges);
@@ -1671,6 +1678,15 @@ function planDevice(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
     return { inn: grow(out, -w), out };
   };
   const F = ring(front), B = ring(back);
+  // eigene Kontur eingesteckt: Wand und Luft gehen nach innen, schmale Stellen (Nase, Schlitz) verschwinden dabei
+  if (front.shape === 'contour' && dv.mode === 'into' && (front.pts?.length ?? 0) > 2) {
+    const nl = narrowLoss(front.pts!, a + w);
+    if (nl.pieces !== 1 || nl.loss > 0.02)
+      issues.push({
+        level: 'warn',
+        text: `Gerät: Die Kontur hat Stellen, die schmaler sind als Wand und Luft zusammen (${fmtV(a + w)} mm)${nl.pieces > 1 ? '; innen zerfällt sie in mehrere Teile' : ''}. Dort füllt die Wand die Öffnung ganz aus, innen bleibt nur der breite Teil frei. Wenn möglich den Adapter über den Stutzen stecken oder die Wand dünner machen.`,
+      });
+  }
   if ((F.inn.shape === 'circle' ? F.inn.d : Math.min(F.inn.w, F.inn.h)) < 4)
     issues.push({ level: 'error', text: 'Gerät: Innen bleiben weniger als 4 mm frei. Maße, Luft oder Wandstärke prüfen.' });
   if (issues.some((x) => x.level === 'error')) return ce.frame;

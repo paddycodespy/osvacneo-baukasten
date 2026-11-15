@@ -474,6 +474,10 @@ await withPreview(4180, async (url, browser) => {
     // Breite auf gemessenes Maß
     await fill(pg, 'Form des Stutzens: Breite', '60');
     expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 60 ×'), 'Breite nicht übernommen');
+    // SVG mit <use> (Vorlage in defs, gedreht): genau ein Umriss, 30 × 44
+    await pg.getByLabel('Form des Stutzens: Kontur-Datei').setInputFiles(fixture('kontur-use.svg'));
+    await pg.waitForTimeout(500);
+    expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 30 × 44'), 'SVG mit use: ' + (await pg.locator('.card.open .card-head').innerText()));
     // DXF in mm mit drei Umrissen
     await pg.getByLabel('Form des Stutzens: Kontur-Datei').setInputFiles(fixture('kontur-haube.dxf'));
     await pg.locator('.card.open .th').first().waitFor();
@@ -500,8 +504,18 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 58,5 × 34'), 'Foto-Kontur nicht übernommen');
     // gezeichnet: bearbeiten, einen Punkt löschen
     await pg.getByRole('button', { name: 'Bearbeiten' }).click();
+    // Rückgängig nach dem Löschen, Rückfrage vor dem Schließen
+    const n0 = await pg.locator('.dlg .pt').count();
     await pg.locator('.dlg .pt').nth(3).dispatchEvent('pointerdown');
     await pg.getByRole('button', { name: 'Punkt löschen' }).click();
+    expect((await pg.locator('.dlg .pt').count()) === n0 - 1, 'Punkt nicht gelöscht');
+    await pg.getByRole('button', { name: 'Rückgängig' }).click();
+    expect((await pg.locator('.dlg .pt').count()) === n0, 'Rückgängig stellt den Punkt nicht wieder her');
+    await pg.locator('.dlg .pt').nth(3).dispatchEvent('pointerdown');
+    await pg.getByRole('button', { name: 'Punkt löschen' }).click();
+    await pg.keyboard.press('Escape');
+    expect(await pg.locator('.dlg .ask').isVisible(), 'keine Rückfrage vor dem Schließen');
+    await pg.getByRole('button', { name: 'Weiter zeichnen' }).click();
     await pg.getByRole('button', { name: /Weiter: Prüfen/ }).click();
     await pg.getByRole('button', { name: 'Übernehmen' }).click();
     await ready(pg);

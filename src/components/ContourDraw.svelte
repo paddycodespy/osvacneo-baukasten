@@ -36,6 +36,25 @@
   let svg: SVGSVGElement | undefined = $state();
   let fileIn: HTMLInputElement | undefined = $state();
   let measured = $state(0);
+  /** Verlauf für Rückgängig (Strg+Z) */
+  let history = $state<V[][]>([]);
+  const snap0 = () => {
+    history.push(verts.map((v) => [...v] as V));
+    if (history.length > 100) history.shift();
+  };
+  function undo() {
+    const h = history.pop();
+    if (!h) return;
+    verts = h;
+    sel = verts.length ? Math.min(sel ?? 0, verts.length - 1) : null;
+  }
+  /** Rückfrage vor dem Schließen, wenn schon gezeichnet wurde */
+  let askClose = $state(false);
+  const startKey = JSON.stringify(untrack(() => verts));
+  function close() {
+    if (verts.length && JSON.stringify(verts) !== startKey) askClose = true;
+    else oncancel();
+  }
 
   const fmt = (v: number, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toLocaleString('de-DE');
 
@@ -66,6 +85,13 @@
       img = { url, w: im.naturalWidth, h: im.naturalHeight };
       step = 'scale';
       s1 = s2 = null;
+      // Punkte zum alten Foto passen nicht mehr
+      if (verts.length) {
+        snap0();
+        verts = [];
+        sel = null;
+      }
+      ppmUsed = 0;
       fit(0, 0, img.w, img.h, 0.02);
     };
     im.src = url;
@@ -82,9 +108,20 @@
   const snap = (v: number) => (img ? Math.round(v * 10) / 10 : Math.round(v * 2) / 2);
 
   // ---- Zeiger
-  let drag: { kind: 'pt' | 'pan' | 's1' | 's2'; i?: number; x: number; y: number; moved: boolean; vx: number; vy: number } | null = null;
+  let drag: { kind: 'pt' | 'pan' | 's1' | 's2'; i?: number; x: number; y: number; moved: boolean; vx: number; vy: number; started?: boolean } | null = null;
+  /** aktive Finger (für Zoom mit zwei Fingern) */
+  const touches = new Map<number, [number, number]>();
+  let pinch: { d: number; view: typeof view; mid: [number, number] } | null = null;
   function down(e: PointerEvent, kind: 'pt' | 'pan' | 's1' | 's2' = 'pan', i?: number) {
     e.stopPropagation();
+    touches.set(e.pointerId, [e.clientX, e.clientY]);
+    if (touches.size === 2) {
+      // zweiter Finger: Zoomen statt Ziehen
+      const [a, b] = [...touches.values()];
+      pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), view: { ...view }, mid: toWorld({ clientX: (a[0] + b[0]) / 2, clientY: (a[1] + b[1]) / 2 }) };
+      drag = null;
+      return;
+    }
     try {
       (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     } catch {
@@ -94,6 +131,13 @@
     if (kind === 'pt') sel = i!;
   }
   function move(e: PointerEvent) {
+    if (touches.has(e.pointerId)) touches.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && touches.size === 2) {
+      const [a, b] = [...touches.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      zoomAt(pinch.mid, pinch.d / Math.max(d, 1), pinch.view);
+      return;
+    }
     if (!drag) return;
     if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 3) drag.moved = true;
     if (!drag.moved) return;
@@ -101,6 +145,10 @@
       const k = px();
       view = { ...view, x: drag.vx - (e.clientX - drag.x) * k, y: drag.vy - (e.clientY - drag.y) * k };
     } else if (drag.kind === 'pt') {
+      if (!drag.started) {
+        snap0();
+        drag.started = true;
+      }
       const [x, y] = toWorld(e);
       verts[drag.i!] = [snap(x), snap(y), verts[drag.i!][2]];
     } else {
@@ -110,6 +158,12 @@
     }
   }
   function up(e: PointerEvent) {
+    touches.delete(e.pointerId);
+    if (pinch) {
+      if (touches.size < 2) pinch = null;
+      drag = null;
+      return;
+    }
     const d = drag;
     drag = null;
     if (!d || d.moved || d.kind !== 'pan') return;
@@ -118,31 +172,55 @@
       if (!s1) s1 = [x, y];
       else if (!s2) s2 = [x, y];
     } else if (step === 'outline') {
+      snap0();
       verts.push([snap(x), snap(y), 0]);
       sel = verts.length - 1;
     }
   }
+  /** um Punkt p zoomen (f > 1: weiter weg), ausgehend von Ansicht v0 */
+  function zoomAt(p: [number, number], f: number, v0 = view) {
+    const w = Math.min(Math.max(v0.w * f, 5), 5000), k = w / v0.w;
+    view = { x: p[0] - (p[0] - v0.x) * k, y: p[1] - (p[1] - v0.y) * k, w, h: v0.h * k };
+  }
   function wheel(e: WheelEvent) {
     e.preventDefault();
-    const [x, y] = toWorld(e);
-    const f = Math.exp(e.deltaY * 0.0015);
-    const w = Math.min(Math.max(view.w * f, 5), 5000), k = w / view.w;
-    view = { x: x - (x - view.x) * k, y: y - (y - view.y) * k, w, h: view.h * k };
+    zoomAt(toWorld(e), Math.exp(e.deltaY * 0.0015));
+  }
+  const zoomBtn = (f: number) => zoomAt([view.x + view.w / 2, view.y + view.h / 2], f);
+  /** alles zeigen: Punkte bzw. Foto */
+  function showAll() {
+    if (img && (step === 'scale' || !ppm)) return fit(0, 0, img.w, img.h, 0.02);
+    const pts: [number, number][] = verts.map(([x, y]) => [x, y]);
+    if (img && ppm) pts.push([0, 0], [img.w / ppm, img.h / ppm]);
+    if (pts.length < 2) return fit(-50, -30, 50, 30, 0);
+    const b = bbox(pts);
+    fit(b.x0, b.y0, b.x1, b.y1);
   }
   /** Doppelklick auf eine Linie: Punkt dazwischen einfügen */
   function insert(e: MouseEvent, i: number) {
     e.stopPropagation();
     const [x, y] = toWorld(e);
+    snap0();
     verts.splice(i + 1, 0, [snap(x), snap(y), 0]);
     sel = i + 1;
   }
   function remove() {
     if (sel === null) return;
+    snap0();
     verts.splice(sel, 1);
     sel = verts.length ? Math.min(sel, verts.length - 1) : null;
   }
   function keys(e: KeyboardEvent) {
-    if (e.key === 'Escape') oncancel();
+    if (e.key === 'Escape') {
+      if (askClose) askClose = false;
+      else close();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !(e.target instanceof HTMLInputElement)) {
+      e.preventDefault();
+      undo();
+      return;
+    }
     if ((e.key === 'Delete' || e.key === 'Backspace') && sel !== null && !(e.target instanceof HTMLInputElement)) remove();
   }
 
@@ -212,14 +290,22 @@
   <div class="dlg" role="dialog" aria-modal="true" aria-label={photo ? 'Stutzen am Foto nachzeichnen' : 'Umriss zeichnen'}>
     <div class="head">
       <h3>{photo ? 'Stutzen am Foto nachzeichnen' : 'Umriss zeichnen'}</h3>
-      <button type="button" class="x" aria-label="Schließen" onclick={oncancel}>✕</button>
+      <button type="button" class="x" aria-label="Schließen" onclick={close}>✕</button>
     </div>
     <div class="steps">
       {#if photo}<span class:on={step === 'scale'} class:done={step !== 'scale'}>{step !== 'scale' ? '✓ ' : ''}1 Maßstab</span>{/if}
       <span class:on={step === 'outline'} class:done={step === 'check'}>{step === 'check' ? '✓ ' : ''}{photo ? '2' : '1'} Umriss anklicken</span>
       <span class:on={step === 'check'}>{photo ? '3' : '2'} Prüfen</span>
     </div>
+    {#if askClose}
+      <div class="ask" role="alertdialog" aria-label="Zeichnung verwerfen?">
+        <span>Die gesetzten Punkte gehen verloren. Wirklich schließen?</span>
+        <button type="button" class="ghost sm" onclick={() => (askClose = false)}>Weiter zeichnen</button>
+        <button type="button" class="ghost sm danger" onclick={oncancel}>Verwerfen</button>
+      </div>
+    {/if}
     <div class="body">
+      <div class="canvas-wrap">
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <svg
         bind:this={svg}
@@ -230,6 +316,7 @@
         onpointerdown={(e) => down(e)}
         onpointermove={move}
         onpointerup={up}
+        onpointercancel={up}
         onwheel={wheel}
       >
         {#if img}
@@ -264,15 +351,23 @@
           <path d={prevPath} class="res" stroke-width={k * 2.4} />
         {/if}
       </svg>
+      <div class="zoom">
+        <button type="button" aria-label="Vergrößern" onclick={() => zoomBtn(1 / 1.4)}>+</button>
+        <button type="button" aria-label="Verkleinern" onclick={() => zoomBtn(1.4)}>−</button>
+        <button type="button" aria-label="Alles zeigen" title="Alles zeigen" onclick={showAll}>⤢</button>
+        {#if step === 'outline'}<button type="button" aria-label="Rückgängig" title="Rückgängig (Strg+Z)" disabled={!history.length} onclick={undo}>↶</button>{/if}
+      </div>
+      </div>
 
       <div class="side">
         {#if step === 'scale'}
           <div class="tip">
             {#if !img}
-              <b>Foto wählen</b><br />Den Stutzen genau von oben fotografieren, ein Lineal auf Höhe der Stutzenkante daneben legen.
+              <b>Foto wählen</b><br />Von vorne auf den Stutzen fotografieren (Blick auf die Öffnung), genau gerade, ein Lineal auf Höhe der Stutzenkante daneben legen.
               <button type="button" class="ghost sm" onclick={() => fileIn?.click()}>Foto wählen …</button>
             {:else}
-              <b>Maßstab</b><br />Auf zwei Marken des Lineals klicken (z. B. 0 und 5 cm). Die Punkte lassen sich verschieben; Mausrad zoomt.
+              <b>Maßstab</b><br />Auf zwei Marken des Lineals klicken (z. B. 0 und 5 cm). Die Punkte lassen sich verschieben; Mausrad oder zwei Finger zoomen.
+              <button type="button" class="link" onclick={() => fileIn?.click()}>Anderes Foto …</button>
             {/if}
           </div>
           {#if img}
@@ -283,7 +378,7 @@
           {/if}
         {:else if step === 'outline'}
           <div class="tip">
-            <b>So geht's</b><br />Rund um den Stutzen auf jede Ecke klicken. Punkte lassen sich ziehen, Doppelklick auf eine Linie fügt einen Punkt ein. Runde Stellen: mehrere Punkte setzen oder einer Ecke einen Radius geben. Leere Fläche ziehen verschiebt, Mausrad zoomt.
+            <b>So geht's</b><br />Rund um den Stutzen auf jede Ecke klicken. Punkte lassen sich ziehen, Doppelklick auf eine Linie fügt einen Punkt ein. Runde Stellen: mehrere Punkte setzen oder einer Ecke einen Radius geben. Leere Fläche ziehen verschiebt, Mausrad oder zwei Finger zoomen. Strg+Z macht den letzten Schritt rückgängig.
           </div>
           {#if sel !== null && verts[sel]}
             <div class="selbox">
@@ -297,7 +392,7 @@
             </div>
           {/if}
           <p class="small">{verts.length} Punkte{resB ? ` · ${fmt(resB.w)} × ${fmt(resB.h)} mm` : ''}</p>
-          {#if verts.length}<button type="button" class="link" onclick={() => ((verts = []), (sel = null))}>Alle Punkte löschen</button>{/if}
+          {#if verts.length}<button type="button" class="link" onclick={() => (snap0(), (verts = []), (sel = null))}>Alle Punkte löschen</button>{/if}
         {:else}
           <div class="tip">
             <b>Gemessen:</b> {resB ? `${fmt(resB.w)} × ${fmt(resB.h)} mm` : '–'}<br />
@@ -336,6 +431,14 @@
   .steps .on { color: var(--sky-d); font-weight: 700; border-bottom: 2px solid var(--sky); }
   .steps .done { color: #1d7a46; font-weight: 600; }
   .body { display: flex; gap: 20px; min-height: 0; }
+  .canvas-wrap { position: relative; flex: 1 1 auto; min-width: 0; display: flex; }
+  .zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .zoom button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-size: 17px; line-height: 1; padding: 0; }
+  .zoom button:hover:not(:disabled) { border-color: var(--sky); }
+  .zoom button:disabled { opacity: 0.4; }
+  .ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px; border-radius: 8px; border-left: 4px solid var(--signal, #e8b400); background: #fdf6dc; font-size: 14px; }
+  .ask .ghost.sm { margin-top: 0; }
+  .ask .danger { border-color: var(--red); color: var(--red); }
   .canvas { flex: 1 1 auto; min-width: 0; height: min(64vh, 560px); background: #fbfcfd; border: 1px solid var(--line); border-radius: 10px; touch-action: none; cursor: crosshair; user-select: none; }
   .canvas.photo { background: #222; }
   .g1 { stroke: #e3e9ee; fill: none; }

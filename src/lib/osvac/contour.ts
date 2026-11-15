@@ -167,27 +167,42 @@ export function roundCorners(pts: P2[], r = CONTOUR_MIN_R): { pts: P2[]; n: numb
   return { pts: clean(out, 1e-5), n };
 }
 
-/** Kontur um delta nach außen versetzen (negativ: nach innen), Ecken außen rund. Größtes Teilstück. */
-export function offset(pts: P2[], delta: number): P2[] {
-  if (Math.abs(delta) < 1e-9) return pts;
+/** Alle Teilstücke nach dem Versatz (Clipper, runde Ecken), gegen den Uhrzeigersinn */
+function offsetAll(pts: P2[], delta: number): P2[][] {
   const path = pts.map(([x, y]) => ({ X: Math.round(x * SCALE), Y: Math.round(y * SCALE) }));
   const co = new ClipperLib.ClipperOffset(2, 0.01 * SCALE);
   co.AddPath(path, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
   const sol: { X: number; Y: number }[][] = [];
   co.Execute(sol, delta * SCALE);
-  if (!sol.length) return pts;
-  let best = sol[0], ba = 0;
-  for (const s of sol) {
-    const a = Math.abs(area(s.map((q) => [q.X, q.Y] as P2)));
-    if (a > ba) {
-      ba = a;
-      best = s;
-    }
-  }
-  let out = best.map((q) => [q.X / SCALE, q.Y / SCALE] as P2);
-  if (area(out) < 0) out = out.reverse();
-  return densify(clean(out, 0.003));
+  return sol.map((q) => {
+    const o = q.map((v) => [v.X / SCALE, v.Y / SCALE] as P2);
+    return area(o) < 0 ? o.reverse() : o;
+  });
 }
+
+/** Kontur um delta nach außen versetzen (negativ: nach innen), Ecken außen rund. Größtes Teilstück. */
+export function offset(pts: P2[], delta: number): P2[] {
+  if (Math.abs(delta) < 1e-9) return pts;
+  const sol = offsetAll(pts, delta).filter((q) => area(q) > 0);
+  if (!sol.length) return pts;
+  let best = sol[0];
+  for (const q of sol) if (area(q) > area(best)) best = q;
+  return densify(clean(best, 0.003));
+}
+
+/**
+ * Schmale Stellen: Was geht verloren, wenn die Kontur um d nach innen und wieder zurück versetzt wird?
+ * Anteil der verlorenen Fläche (0 … 1) und Anzahl der Teilstücke innen.
+ */
+export function narrowLoss(pts: P2[], d: number): { loss: number; pieces: number } {
+  const inner = offsetAll(pts, -d).filter((q) => area(q) > 0.01);
+  if (!inner.length) return { loss: 1, pieces: 0 };
+  const back = inner.reduce((sum, q) => sum + area(offsetAll(q, d).reduce((m, r) => (area(r) > area(m) ? r : m), [] as P2[]) || []), 0);
+  return { loss: Math.max(0, 1 - back / area(pts)), pieces: inner.length };
+}
+
+/** Links und rechts tauschen (Blick von der anderen Seite), wieder gegen den Uhrzeigersinn */
+export const mirrorX = (pts: P2[]): P2[] => pts.map(([x, y]) => [-x, y] as P2).reverse();
 
 /** Schneiden sich Kanten der Kontur? */
 export function selfIntersects(pts: P2[]): boolean {
