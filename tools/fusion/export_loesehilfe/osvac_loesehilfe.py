@@ -123,9 +123,20 @@ def run(context):
                 for i in range(params.count):
                     p = params.item(i)
                     art = "user" if adsk.fusion.UserParameter.cast(p) else "model"
-                    val = p.value * 10 if p.unit in LENGTH else p.value
-                    f.write("%s;%s;%s;%.4f;%s;%s\n" % (p.name, art, p.expression.replace(";", ","), val, p.unit,
-                                                        (p.comment or "").replace(";", ",")))
+                    try:
+                        val = "%.4f" % (p.value * 10 if p.unit in LENGTH else p.value)
+                    except Exception:
+                        # Text- oder Ja/Nein-Parameter haben keinen Zahlenwert
+                        try:
+                            val = str(p.textValue)
+                        except Exception:
+                            val = ""
+                    try:
+                        expr = p.expression
+                    except Exception:
+                        expr = ""
+                    f.write("%s;%s;%s;%s;%s;%s\n" % (p.name, art, expr.replace(";", ","), val.replace(";", ","), p.unit,
+                                                      (p.comment or "").replace(";", ",")))
 
             comps = [(design.rootComponent, None)] + [(o.component, o) for o in design.rootComponent.allOccurrences]
             seen = set()
