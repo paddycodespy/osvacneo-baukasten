@@ -1,12 +1,31 @@
 <script lang="ts">
   import { isDesktop } from '../../lib/desktop';
+  import { saveTarget, canPickWeb } from '../../lib/save.svelte';
   /** Schritt 4: Material, Download, Druckhinweise, mehrere Adapter auf ein Druckbett, Lizenz */
-  import { app, FORMATS, LABELS, fmt } from '../../lib/app.svelte';
+  import { app, FORMATS, LABELS, fmt, type FileEntry } from '../../lib/app.svelte';
   import { freeSummary } from '../../lib/osvac/freeform';
   import { gateName } from '../../lib/osvac/gate';
   import { CHANGES } from '../../lib/credits';
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
+
+  const canPick = isDesktop || canPickWeb;
+  /** Programm: Datei noch einmal speichern (in den jetzt gewählten Ordner) */
+  async function resave(f: FileEntry) {
+    try {
+      const where = await saveTarget.save(await (await fetch(f.url)).blob(), f.fileName, f.url);
+      app.files = app.files.map((x) => (x === f ? { ...x, where } : x));
+    } catch (e) {
+      app.errorMsg = e instanceof Error ? e.message : String(e);
+    }
+  }
+  /** Ordner, in dem die Dateien liegen (alle im selben Ordner: Name, sonst leer) */
+  const savedIn = $derived.by(() => {
+    const dirs = new Set(app.files.map((f) => f.where.replace(/[\\/][^\\/]*$/, '')));
+    if (dirs.size !== 1) return '';
+    const d = [...dirs][0];
+    return d.split(/[\\/]/).pop() || d;
+  });
 
   const lead = $derived.by(() => {
     const k = app.kind;
@@ -47,6 +66,21 @@
   </ul>
 {/if}
 
+<div class="target">
+  <span class="t-label">Speichern in</span>
+  <span class="t-dir" title={saveTarget.path || undefined}>
+    <svg viewBox="0 0 20 16" aria-hidden="true"><path d="M1.5 3.5a1.5 1.5 0 0 1 1.5-1.5h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v7.5a1.5 1.5 0 0 1-1.5 1.5H3a1.5 1.5 0 0 1-1.5-1.5Z" /></svg>
+    <strong>{saveTarget.name}</strong>{#if canPick && !saveTarget.custom}<span class="t-std">(Standard)</span>{/if}
+  </span>
+  {#if canPick}
+    <button type="button" class="ghost sm" onclick={() => saveTarget.pick()}>Ordner wählen…</button>
+    {#if saveTarget.custom}<button type="button" class="t-reset" onclick={() => saveTarget.reset()}>Standard</button>{/if}
+  {/if}
+  {#if isDesktop && saveTarget.path}<span class="t-path">{saveTarget.path}</span>{/if}
+  {#if !canPick}<span class="t-path">Den Ordner legt der Browser fest. In seinen Einstellungen lässt sich einschalten, dass er jedes Mal fragt, wo gespeichert werden soll.</span>{/if}
+  {#if !isDesktop && saveTarget.custom && saveTarget.denied}<span class="t-path">Kein Zugriff auf den Ordner erlaubt, deshalb normaler Download. Beim nächsten Download fragt der Browser wieder.</span>{/if}
+</div>
+
 <div class="downloads">
   {#each FORMATS as f (f.id)}
     <button class="dl" class:active={app.activeFormat === f.id} disabled={app.status !== 'ready' || !!app.exporting} onclick={() => app.download(f.id)}>
@@ -85,12 +119,25 @@
 </p>
 {#if app.files.length}
   <div class="files">
-    <p>{isDesktop ? 'Gespeichert im Ordner „Downloads“. Noch einmal speichern:' : 'Fertige Dateien. Falls der Download nicht von selbst startet, hier klicken:'}</p>
-    <ul>
-      {#each app.files as f (f.fileName)}
-        <li><a href={f.url} download={f.fileName}>{f.fileName}</a> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span></li>
-      {/each}
-    </ul>
+    {#if isDesktop}
+      <p>{savedIn ? `Gespeichert im Ordner „${savedIn}“.` : 'Gespeichert.'} Mit „Speichern“ noch einmal in den gewählten Ordner:</p>
+      <ul>
+        {#each app.files as f (f.fileName)}
+          <li>
+            <span class="f-name" title={f.where}>{f.fileName}</span> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span>
+            {#if f.where}<button type="button" class="f-act" onclick={() => saveTarget.reveal(f.where)}>Im Ordner zeigen</button>{/if}
+            <button type="button" class="f-act" onclick={() => resave(f)}>Speichern</button>
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <p>{app.files.every((f) => f.where) && savedIn ? `Gespeichert im Ordner „${savedIn}“. Noch einmal herunterladen:` : 'Fertige Dateien. Falls der Download nicht von selbst startet, hier klicken:'}</p>
+      <ul>
+        {#each app.files as f (f.fileName)}
+          <li><a href={f.url} download={f.fileName}>{f.fileName}</a> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span></li>
+        {/each}
+      </ul>
+    {/if}
     <button type="button" class="ghost sm" onclick={() => app.clearFiles()}>Liste leeren</button>
   </div>
 {/if}

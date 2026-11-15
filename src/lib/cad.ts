@@ -238,16 +238,9 @@ function stlBlob(meshes: { vertices: Float32Array; triangles: Uint32Array }[]): 
   return new Blob([buf], { type: 'model/stl' });
 }
 
-/** Datei im Browser speichern; die URL bleibt gültig, damit sie über den Link erneut gespeichert werden kann */
-function saveBlob(blob: Blob, name: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  return { fileName: name, url, size: blob.size };
+/** fertige Datei: URL (bleibt gültig, damit sie über den Link erneut gespeichert werden kann) und Inhalt; gespeichert wird in save.svelte.ts */
+function fileOf(blob: Blob, name: string) {
+  return { fileName: name, url: URL.createObjectURL(blob), size: blob.size, blob };
 }
 
 /** Ein Adapter auf dem Druckbett: Berechnung, Druckhilfe ja/nein, Name im 3MF */
@@ -335,7 +328,7 @@ export async function exportPlate(items: PlateItem[], format: ExportFormat, file
             objectNames,
           );
   }
-  return saveBlob(blob, `${fileName}.${format}`);
+  return fileOf(blob, `${fileName}.${format}`);
 }
 
 export function exportFile(req: BuildRequest, format: ExportFormat, fileName: string, includeHelpers: boolean) {

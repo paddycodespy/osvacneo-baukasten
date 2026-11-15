@@ -230,10 +230,13 @@ Ein Versions-Tag startet alle drei Installer-Läufe gleichzeitig: `git tag v0.5.
 Die Dateien liegen danach unter **Actions** beim jeweiligen Lauf unter **Artifacts** (Windows, macOS, Linux).
 Anleitungen für Tester: `docs/installation-windows.md`, `docs/installation-mac.md`, `docs/installation-linux.md`.
 
-**Downloads im Programm:** Das Hauptfenster wird in `src-tauri/src/lib.rs` erzeugt (in `tauri.conf.json` mit
-`"create": false`), damit Downloads auf allen Systemen im Ordner „Downloads“ landen: WebView2 (Windows) macht das
-selbst, unter macOS und Linux setzt `on_download` das Ziel (freier Name „… (2)“). Ohne das speichert Linux in den
-Arbeitsordner des Programms; unter macOS kommt ohne Ziel womöglich gar keine Datei an (dort noch ungetestet). Unter Linux schaltet `main.rs` den DMA-BUF-Renderer von
+**Downloads im Programm:** Die Oberfläche speichert über den Befehl `save_file` (`src-tauri/src/lib.rs`, Inhalt roh,
+Name und Ordner in Kopfzeilen) in den Ordner, der im Schritt Download unter „Speichern in“ gewählt ist (Plugin
+„dialog“; gemerkt im localStorage, Standard „Downloads“, freier Name „… (2)“). „Im Ordner zeigen“ nutzt
+`revealItemInDir` (Plugin „opener“). Das Hauptfenster wird weiterhin in `lib.rs` erzeugt (`"create": false`), damit
+auch Downloads über Links ankommen: unter macOS und Linux setzt `on_download` das Ziel. Im Browser (Chrome, Edge)
+lässt sich ein Ordner über `showDirectoryPicker` wählen (gemerkt in IndexedDB), sonst bestimmt der Browser den Ordner.
+Unter Linux schaltet `main.rs` den DMA-BUF-Renderer von
 WebKitGTK ab (sonst bei manchen Grafiktreibern leeres Fenster).
 
 Die Version steht in `src-tauri/tauri.conf.json` (`version`) und sollte mit `package.json` übereinstimmen.
