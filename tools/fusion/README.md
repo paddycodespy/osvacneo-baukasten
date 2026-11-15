@@ -40,3 +40,10 @@ Bekannte Scheinabweichungen:
   der Rippen, die Außenkontur ist deckungsgleich.
 
 `surfcmp.py` kann auch einzeln aufgerufen werden, die Parameter stehen im Kopf der Datei.
+
+## Drehring-Lösehilfe (Design „osVACneo SlipRingHelper“)
+
+`export_loesehilfe/osvac_loesehilfe.py` schreibt alle Parameter des Designs auf und exportiert die Komponenten als
+STEP und STL: wie geöffnet („Standard“) und, soweit sich die Parameter im Design setzen lassen, in den Größen
+25/27, 40, 50, mit Materialstärke 9 mm und mit Spaltmaß Drehring 0,5. Ausgabe in `Dokumente/osvac_loesehilfe`,
+dazu `protokoll.txt` (welche Parameter gefunden und gesetzt wurden). Bedienung wie oben, Design danach nicht speichern.
