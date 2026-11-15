@@ -70,10 +70,16 @@
     <p class="hint">Die Rohrmitte liegt {fmt(app.gateLay.A)} mm vor der Wand{g.wallDist ? '' : `, ${g.mount === 'clip' ? 'der Wandhalter sitzt' : 'der Schieber sitzt'} direkt an der Wand`}. {app.gatePitch}.</p>
   {/if}
   <ResetLink show={!app.gateIsDefault} label="Schieber auf Standard zurücksetzen" onclick={() => app.resetGate()} />
+{:else if app.kind.helper}
+  <p class="lead">Die Lösehilfe hält die Kupplung oder den Stecker eines Schlauchadapters fest, damit man den Schlauchteil kräftig drehen kann. Die Zahl ist der Innendurchmesser in Millimetern.</p>
+  <div class="checks helper-parts">
+    <label><input type="checkbox" checked={app.helper.forF} disabled={app.helper.forF && !app.helper.forM} onchange={() => app.toggleHelper('forF')} /> Für Kupplungen (FxxHyy): Block mit Stutzen</label>
+    <label><input type="checkbox" checked={app.helper.forM} disabled={app.helper.forM && !app.helper.forF} onchange={() => app.toggleHelper('forM')} /> Für Stecker (MxxHyy): Block mit Bohrung</label>
+  </div>
 {:else}
 <p class="lead">Die Zahl ist der Innendurchmesser in Millimetern. Die meisten Geräte und Schläuche nutzen 32.</p>
 {/if}
-{#each app.kind.diameters as k}
+{#each app.kind.diameters.filter((k) => !app.kind.helper || (k === 'femaleDiameterInner' ? app.helper.forF : app.helper.forM)) as k}
   <fieldset class="dia">
     <legend>{LABELS[k].word} ({LABELS[k].letter})</legend>
     <div class="dia-row">

@@ -1,5 +1,5 @@
 /**
- * Druckbarkeit der Saugdüsen, des Nebenluft-Reglers und der Freiform-Vorlagen: Netze wie beim Export
+ * Druckbarkeit der Saugdüsen, des Nebenluft-Reglers, der Freiform-Vorlagen, Stutzen, Schieber und Lösehilfe: Netze wie beim Export
  * (zusammengeführte Ecken) in Schichten schneiden (tools/druck/islands.py, braucht python3 mit trimesh und shapely).
  * Geprüft wird, ob die App recht hat: sagt sie „ohne Stützen“ (Überhang ≤ 40 mm²), darf nichts frei in der Luft
  * beginnen; erlaubt ist nur die unterste Schicht des mitgedruckten Drehrings. Offene Netzkanten sind immer ein Fehler.
@@ -49,11 +49,13 @@ const cases: [string, FreeSpec][] = [
   ...TEMPLATES.filter((t) => !['gate'].includes(t.id)).map((t) => [`vorlage-${t.id}`, t.make()] as [string, FreeSpec]),
 ];
 /** Stutzen-Adapter und Schieber einzeln (keine Freiform): Teile und die Überhang-Regel der App */
-const others: [string, string, object, RegExp][] = [
+const others: [string, string, object, RegExp, object?][] = [
   ['stutzen-F-auf', 'MACHINE_F', { pipe: { ...DEFAULT_PIPE, d1Inner: 32.2, d2Inner: 33.2, mode: 'over', screwHoles: true, slots: true, ribs: true } as PipeSpec }, COUNTED_MACHINE],
   ['stutzen-M-ein', 'MACHINE_M', { pipe: { ...DEFAULT_PIPE, d1Inner: 26.8, d2Inner: 25.8, mode: 'into', screwHoles: true, ribs: true } as PipeSpec }, COUNTED_MACHINE],
   ['schieber-50-wandplatte', 'GATE', { gate: { ...DEFAULT_GATE, d: 50, mount: 'plate' } as GateSpec }, COUNTED_GATE],
   ['schieber-32-wandhalter', 'GATE', { gate: { ...DEFAULT_GATE, d: 32, mount: 'clip' } as GateSpec }, COUNTED_GATE],
+  ['loesehilfe-32', 'HELPER', {}, /^Lösehilfe/],
+  ['loesehilfe-F25-M50-W9', 'HELPER', {}, /^Lösehilfe/, { femaleDiameterInner: 25, maleDiameterInner: 50, generalMaterialWidth: 9, maleFemaleGapSize: 0.3 }],
 ];
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const dir = path.join(root, 'out/islands');
@@ -78,9 +80,9 @@ for (const [id, spec] of cases) {
   claim.set(id, overhangArea(meshes, (n) => COUNTED.test(n) || tilted(n)));
   fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify({ id, allow: ['Drehring'], bodies }));
 }
-for (const [id, kind, o, counted] of others) {
+for (const [id, kind, o, counted, input] of others) {
   if (only.length && !only.some((x) => id.startsWith(x))) continue;
-  const parts = kindById(kind).parts!(p, { text: true, knurl: true, supports: true, ...o });
+  const parts = kindById(kind).parts!(input ? deriveParams(input) : p, { text: true, knurl: true, supports: true, ...o });
   const bodies: { name: string; helper: boolean; v: number[]; t: number[] }[] = [];
   const meshes = [];
   for (const q of parts) {

@@ -34,6 +34,8 @@ export interface AdapterKind {
   nozzle?: boolean;
   /** Nebenluft-Regler: kurzes Formular, gebaut als Freiform (freeform ist dann auch gesetzt) */
   bleed?: boolean;
+  /** Drehring-Lösehilfe: Halter für Kupplung und/oder Stecker */
+  helper?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
@@ -47,7 +49,7 @@ export const KIND_GROUPS: { id: KindGroup; title: string }[] = [
   { id: 'custom', title: 'Eigener Aufbau' },
 ];
 
-export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle' | 'bleed';
+export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle' | 'bleed' | 'helper';
 
 function pipeName(o?: asm.BuildOptions): string {
   const s = o?.pipe;
@@ -198,6 +200,24 @@ export const KINDS: AdapterKind[] = [
     build: asm.buildGate,
     parts: asm.partsGate,
     fileName: (_p, o) => `osVAC neo ${gateName({ ...DEFAULT_GATE, ...o?.gate }).file}`,
+  },
+  {
+    id: 'HELPER',
+    group: 'accessory',
+    code: 'Lösehilfe',
+    title: 'Drehring-Lösehilfe',
+    description: 'Hält Kupplung oder Stecker fest, damit sich ein festsitzender Drehring am Schlauchadapter lösen lässt. Nach Odul.',
+    ends: { top: 'helper', bottom: null },
+    diameters: ['femaleDiameterInner', 'maleDiameterInner'],
+    helper: true,
+    available: true,
+    build: asm.buildHelper,
+    parts: asm.partsHelper,
+    fileName: (p, o) => {
+      const s = { ...asm.DEFAULT_HELPER, ...o?.helper };
+      const both = s.forF === s.forM;
+      return `osVAC neo Loesehilfe${both || s.forF ? ` F${n(p.femaleDiameterInner)}` : ''}${both || s.forM ? ` M${n(p.maleDiameterInner)}` : ''}`;
+    },
   },
   {
     id: 'FREE',

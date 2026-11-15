@@ -14,7 +14,7 @@ import { slipRingGapMax } from './osvac/hose';
 import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, newBlock, bleedMinLen, DEFAULT_DEVICE, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
-import { freeMaleOnBed } from './osvac/assemblies';
+import { freeMaleOnBed, DEFAULT_HELPER, type HelperSpec } from './osvac/assemblies';
 import { BLEED, bleedTransition } from './osvac/bleed';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
 import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
@@ -142,6 +142,14 @@ class AppState {
   freeOpen = $state<number | 'A' | 'B' | 'C' | null>(null);
   /** Schieber einzeln */
   gate = $state<GateSpec>({ ...DEFAULT_GATE });
+  /** Drehring-Lösehilfe: welche Halter */
+  helper = $state<HelperSpec>({ ...DEFAULT_HELPER });
+  /** Lösehilfe: Halter an- oder abwählen (einer bleibt immer) */
+  toggleHelper(k: 'forF' | 'forM') {
+    const o = k === 'forF' ? 'forM' : 'forF';
+    if (this.helper[k] && !this.helper[o]) return;
+    this.helper[k] = !this.helper[k];
+  }
   /** aufgeklappte Erklärungen (Passung, Download) */
   helpOpen = $state<Record<string, boolean>>({});
 
@@ -204,7 +212,7 @@ class AppState {
     { label: 'innen Ø', a: this.pipe.d1Inner, b: this.pipe.d2Inner },
     { label: 'außen Ø', a: this.pipe.d1Inner + 2 * this.pipe.wall, b: this.pipe.d2Inner + 2 * this.pipe.wall },
   ]);
-  buildOpts = $derived(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : {});
+  buildOpts = $derived(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : this.kind.helper ? { helper: $state.snapshot(this.helper) } : {});
   /** Schieber einzeln: abgeleitete Maße (kleinster Wandabstand, Lochabstand, …) */
   gateLay = $derived(gateLayout(this.gate));
 
@@ -232,6 +240,7 @@ class AppState {
     const k = this.kind;
     if (k.freeform) return freeSummary(this.free).code;
     if (k.gate) return gateName(this.gate).code;
+    if (k.helper) return [this.helper.forF ? `F${fmt(this.input.femaleDiameterInner)}` : '', this.helper.forM ? `M${fmt(this.input.maleDiameterInner)}` : ''].filter(Boolean).join(' · ');
     if (k.machine) return `${k.ends.top === 'female' ? 'F' : 'M'}${fmt(k.ends.top === 'female' ? this.input.femaleDiameterInner : this.input.maleDiameterInner)}/${fmt(this.machine.dOpen)}`;
     return this.baseName.replace('osVAC neo ', '');
   });
@@ -416,6 +425,10 @@ class AppState {
       t.push(`Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Klemmt er, beim nächsten Mal in „Passung“ das Spiel am Drehring erhöhen.`);
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
     if (this.kind.gate) t.push(...this.gateTips);
+    if (this.kind.helper)
+      t.push(
+        'So wird ein festsitzender Drehring gelöst: Die Kupplung eines Schlauchadapters (FxxHyy) auf den Stutzen der Lösehilfe stecken, den Stecker eines Schlauchadapters (MxxHyy) in die Bohrung. Die Rippen bzw. Taschen halten ihn fest. Den Block festhalten (z. B. im Schraubstock) und den Schlauchteil kräftig drehen, bis der Ring frei läuft.',
+      );
     if (this.kind.freeform && this.free.blocks.some((x) => x.type === 'gate'))
       t.push(
         `Mit Schieber wird der Adapter in zwei Teilen gedruckt: das Teil mit Anschluss A steht auf A, das Teil mit Ende B auf B, die Trennflächen oben. Die Schieberplatte liegt flach davor. Zusammenbau: ${this.freePlan?.split?.screwN === 2 ? 'zwei' : 'vier'} Muttern M3 von unten in die Sechskant-Taschen am Gehäuse des A-Teils drücken, die Platte mit den dicken Enden nach oben in den Kanal legen, das B-Teil aufsetzen und mit ${this.freePlan?.split?.screwN === 2 ? 'zwei' : 'vier'} Schrauben M3 × ${this.freePlan?.split?.screw ?? 14} (Zylinderkopf) gleichmäßig anziehen, nur so fest, dass die Platte noch gleitet. Herausziehen öffnet, hineinschieben schließt; die dicken Enden schlagen an. Die Dichtlippen um die Bohrung halten die Platte durch Reibung und dichten gegen Falschluft. Dafür mit 0,2 mm Schichthöhe drucken (auch die erste Schicht): Boden und Trennfläche liegen genau im 0,2-mm-Raster.`,
@@ -515,7 +528,7 @@ class AppState {
   }
   /** alles, was eine neue Berechnung auslöst */
   buildKey = $derived(
-    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null]),
+    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null, this.kind.helper ? this.helper : null]),
   );
 
   // ---------------------------------------------------------------- Export und Druckbett
@@ -542,7 +555,7 @@ class AppState {
     this.files = [];
   }
   plateKey() {
-    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null, this.kind.gate ? $state.snapshot(this.gate) : null]);
+    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null, this.kind.gate ? $state.snapshot(this.gate) : null, this.kind.helper ? $state.snapshot(this.helper) : null]);
   }
   onPlate = $derived(this.plate.some((p) => p.key === this.plateKey()));
   addToPlate() {
@@ -582,6 +595,7 @@ class AppState {
       nozzle: this.nozzle,
       bleed: this.bleed,
       gate: this.gate,
+      helper: this.helper,
     }),
   );
   /** Stand beim ersten Start (zum Vergleich für „Neu anfangen“; ohne Schritt, Freiform ohne IDs) */
@@ -606,6 +620,7 @@ class AppState {
     this.bleed = { m: 32, f: 32, bleedGap: BLEED.gap };
     this.fromKind = '';
     this.gate = { ...DEFAULT_GATE };
+    this.helper = { ...DEFAULT_HELPER };
     this.freeOpen = null;
     this.helpOpen = {};
     this.errorMsg = '';
@@ -677,6 +692,8 @@ class AppState {
         if (typeof s.gate.mount === 'string' && s.gate.mount in MOUNT_LABELS) this.gate.mount = s.gate.mount;
         if (typeof s.gate.orient === 'string' && s.gate.orient in ORIENT_LABELS) this.gate.orient = s.gate.orient;
       }
+      if (s.helper && typeof s.helper === 'object' && typeof s.helper.forF === 'boolean' && typeof s.helper.forM === 'boolean' && (s.helper.forF || s.helper.forM))
+        this.helper = { forF: s.helper.forF, forM: s.helper.forM };
       if (s.fromKind === 'NOZZLE' || s.fromKind === 'BLEED') this.fromKind = s.fromKind;
       else if (s.fromNozzle === true) this.fromKind = 'NOZZLE';
       if (s.bleed && typeof s.bleed === 'object') {

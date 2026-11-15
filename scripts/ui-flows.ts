@@ -450,6 +450,25 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
   });
 
+  await test('Drehring-Lösehilfe: Halter wählen', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: /Drehring-Lösehilfe/ }).click();
+    await step(pg, 'Größen');
+    expect((await pg.locator('fieldset.dia').count()) === 2, 'Kupplung und Stecker sollten abgefragt werden');
+    await pg.getByLabel(/Für Stecker/).uncheck();
+    expect((await pg.locator('fieldset.dia').count()) === 1, 'Stecker-Größe bleibt sichtbar');
+    expect(await pg.getByLabel(/Für Kupplungen/).isDisabled(), 'letzter Halter abwählbar');
+    await ready(pg);
+    expect((await pg.locator('.stage-head .code').innerText()).trim() === 'F32', 'Kopfzeile: ' + (await pg.locator('.stage-head .code').innerText()));
+    await step(pg, 'Download');
+    expect((await pg.locator('.tips').innerText()).includes('Drehring gelöst'), 'Druckhinweis zur Lösehilfe fehlt');
+    expect((await pg.locator('.tips').innerText()).includes('Stützen werden nicht gebraucht'), 'Lösehilfe braucht Stützen?');
+    await step(pg, 'Größen');
+    await pg.getByLabel(/Für Stecker/).check();
+    await ready(pg);
+    expect((await pg.locator('.stage-head .code').innerText()).includes('M32'), 'Stecker-Halter fehlt in der Kopfzeile');
+  });
+
   await test('Druckhilfe gilt je Verbindung', pg, async () => {
     const tool = pg.locator('button.tool', { hasText: 'Druckhilfe' });
     const on = async () => (await tool.getAttribute('aria-pressed')) === 'true';
