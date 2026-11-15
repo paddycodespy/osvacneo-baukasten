@@ -32,7 +32,7 @@ export interface AdapterKind {
   gate?: boolean;
   /** Saugdüse: kurzes Formular, gebaut als Freiform (freeform ist dann auch gesetzt) */
   nozzle?: boolean;
-  /** Nebenluft-Regler: kurzes Formular, gebaut als Freiform (freeform ist dann auch gesetzt) */
+  /** Nebenluft-Regler: unten Schlauch, oben Kupplung oder Stecker (eigenes Formular) */
   bleed?: boolean;
   /** Drehring-Lösehilfe: Halter für Kupplung und/oder Stecker */
   helper?: boolean;
@@ -174,17 +174,16 @@ export const KINDS: AdapterKind[] = [
     group: 'accessory',
     code: 'NL',
     title: 'Nebenluft-Regler',
-    description: 'Zwischenstück mit Drehring: Nebenluft stufenlos auf und zu, z. B. zwischen Schlauch und Düse.',
-    ends: { top: 'bleed', bottom: 'male' },
+    description: 'Kommt direkt auf den Schlauch: unten Schlauchgewinde, oben Kupplung oder Stecker. Am Drehring Nebenluft stufenlos auf und zu.',
+    ends: { top: 'bleed', bottom: 'hose' },
     diameters: [],
-    freeform: true,
     bleed: true,
     available: true,
-    build: asm.buildFree,
-    parts: asm.partsFree,
-    fileName: (_p, o) => {
-      const s = o?.free ?? DEFAULT_FREE;
-      return `osVAC neo Nebenluft M${String(s.a.d).replace('.', ',')} F${String(s.b.d).replace('.', ',')}`;
+    build: asm.buildBleed,
+    parts: asm.partsBleed,
+    fileName: (p, o) => {
+      const s = { ...asm.DEFAULT_BLEED, ...o?.bleed };
+      return `osVAC neo Nebenluft ${s.top === 'female' ? `F${n(p.femaleDiameterInner)}` : `M${n(p.maleDiameterInner)}`}H${n(p.hoseDiameterInner)}`;
     },
   },
   {

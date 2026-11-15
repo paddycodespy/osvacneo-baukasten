@@ -74,7 +74,6 @@
     { type: 'step', title: 'Absatz: wechselt die Form auf kurzem Weg' },
     { type: 'branch', title: 'Abzweig: zweiter Abgang (Y oder T) mit eigenem Ende C' },
     { type: 'gate', title: 'Schieber: Platte zum Auf- und Zumachen (Absperrschieber)' },
-    { type: 'bleed', title: 'Nebenluft: Fenster mit Drehring, regelt den Sog' },
   ];
   const hasBranch = $derived(spec.blocks.some((b) => b.type === 'branch'));
   const hasGate = $derived(spec.blocks.some((b) => b.type === 'gate'));
@@ -213,8 +212,8 @@
 {/snippet}
 
 <p class="lead">Setze deinen Adapter aus Bausteinen zusammen, vom Anschluss A bis zum Ende B{hasBranch ? ', mit dem Abzweig zu Ende C' : ''}. {hasGate ? 'Mit Schieber wird er in zwei Teilen gedruckt, in der Vorschau stehen sie nebeneinander.' : `In der Vorschau liegt ${spec.bed === 'A' ? 'A' : 'B'} unten auf dem Druckbett.`} Jede Änderung ist sofort zu sehen.</p>
-{#if app.fromKind && !app.freeTemplate}
-  <p class="from-nozzle">{app.fromKind === 'NOZZLE' ? 'Aus der Saugdüse übernommen' : 'Aus dem Nebenluft-Regler übernommen'} · <button type="button" class="back-link" onclick={() => (app.kindId = app.fromKind)}>{app.fromKind === 'NOZZLE' ? 'Zurück zur Düse' : 'Zurück zum Nebenluft-Regler'}</button></p>
+{#if app.fromKind === 'NOZZLE' && !app.freeTemplate}
+  <p class="from-nozzle">Aus der Saugdüse übernommen · <button type="button" class="back-link" onclick={() => (app.kindId = 'NOZZLE')}>Zurück zur Düse</button></p>
 {/if}
 
 <div class="tpl-label">Vorlage als Startpunkt</div>

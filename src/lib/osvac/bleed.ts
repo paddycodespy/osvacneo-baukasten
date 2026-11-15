@@ -10,6 +10,7 @@
  *
  * Eigenes System: Achse +z, Rohr von z = 0 bis L (Anfang des Bausteins bei z = 0).
  */
+import type { OsvacParams } from './params';
 import { draw, makePolygon, makeCompound, makeSphere, makeBox, basicFaceExtrusion, Vector, type Shape3D } from 'replicad';
 
 export const BLEED = {
@@ -146,6 +147,29 @@ export function bleedRing(D: BleedDims): Shape3D {
   ring = ring.fuse(makeSphere(B.bumpR).translate(at(DETENT_DEG, bumpCenterR(D), D.zDet)) as Shape3D) as Shape3D;
   return ring;
 }
+
+/**
+ * Nebenluft-Regler als eigene Verbindung (kompakt): oben Kupplung oder Stecker, darunter Rohr mit Fenstern und
+ * Drehring, unten Schlauchteil. Rohr innen wie der Schlauch, außen wie der Schlauchteil. z = 0 oben.
+ */
+export function bleedLayout(p: OsvacParams, top: 'female' | 'male', gap: number) {
+  const rH = p.hoseDiameterInner / 2, rO = rH + p.generalMaterialWidth;
+  const D = bleedDims(rH, rO, gap);
+  const L = D.minLen;
+  let zT: number, hC: number;
+  if (top === 'female') {
+    hC = p.hoseFemaleTransitionConeHeight + p.generalMiniValue * 5;
+    zT = -p.femaleHeight - hC;
+  } else {
+    // Stecker → Rohr: innen höchstens 45° über (enger nach oben), außen ebenso, mindestens 1 mm
+    const rMi = p.maleDiameterInner / 2, rMo = p.maleDiameterOuter / 2;
+    hC = Math.max(1, rH - rMi, rMo - rO);
+    zT = -p.maleHeight - hC;
+  }
+  const zB = zT - L;
+  return { rH, rO, D, L, zT, zB, hC };
+}
+
 
 /** Länge des Übergangs vom Rohr (Ø m) zur Kupplung (Ø f): steil höchstens etwa 45° (der Übergang ist in der Mitte steiler) */
 export const bleedTransition = (m: number, f: number) => Math.max(10, Math.ceil(1.7 * (Math.abs(f - m) / 2)));

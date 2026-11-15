@@ -427,30 +427,31 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('radio', { name: /Nebenluft-Regler/ }).click();
     await step(pg, 'Größen');
     await ready(pg);
-    expect((await pg.locator('.code').innerText()).includes('F32'), 'Kopfzeile ohne Kupplung');
-    await pg.locator('.chip', { hasText: '40' }).nth(1).click();
+    expect((await pg.locator('.code').innerText()).includes('F32H36'), 'Kopfzeile: ' + (await pg.locator('.code').innerText()));
+    expect((await pg.getByRole('button', { name: /In der Freiform weiterbauen/ }).count()) === 0, 'Weg in die Freiform noch da');
+    // oben Stecker 40, unten Schlauch 32
+    await pg.getByRole('radio', { name: 'Stecker (M)' }).click();
+    await pg.locator('.dia-row').first().locator('.chip', { hasText: '40' }).click();
+    await pg.locator('.dia-row').nth(1).locator('.chip', { hasText: '32' }).click();
     await ready(pg);
-    expect((await pg.locator('.code').innerText()).includes('F40'), 'Kupplung 40 nicht übernommen');
+    expect((await pg.locator('.code').innerText()).includes('M40H32'), 'Stecker/Schlauch nicht übernommen: ' + (await pg.locator('.code').innerText()));
     await step(pg, 'Passung');
     await pg.getByLabel('Spiel am Drehring').fill('0.45');
     await ready(pg);
     await until(pg, downloadOpen(pg), 'Download gesperrt');
     await step(pg, 'Download');
     expect((await pg.locator('.step-body').innerText()).includes('Drehring'), 'kein Druckhinweis zum Drehring');
-    expect((await pg.locator('.stage-head .code').innerText()).length > 0, 'kein Kopf');
     await step(pg, 'Passung');
     await pg.getByRole('button', { name: /Passung auf Standard/ }).click();
-    // in die Freiform übernehmen (eigener Aufbau liegt dort schon: Rückfrage) und zurück
     await step(pg, 'Größen');
-    await pg.getByRole('button', { name: /In der Freiform weiterbauen/ }).click();
-    const replace = pg.getByRole('button', { name: 'Ersetzen und weiterbauen' });
-    if (await replace.count()) await replace.click();
-    await until(pg, async () => (await pg.locator('.step-tab', { hasText: 'Aufbau' }).count()) > 0, 'nicht in der Freiform gelandet');
-    expect((await pg.locator('.step-body').innerText()).includes('Nebenluft'), 'Freiform ohne Baustein Nebenluft');
+    await pg.getByRole('button', { name: /Größen auf Standard/ }).click();
     await ready(pg);
-    await pg.getByRole('button', { name: 'Zurück zum Nebenluft-Regler' }).click();
-    await until(pg, async () => (await pg.locator('.code').innerText()).includes('F40'), 'nicht zurück beim Nebenluft-Regler');
-    await ready(pg);
+    expect((await pg.locator('.code').innerText()).includes('F32H36'), 'Standard nicht wiederhergestellt');
+    // Freiform hat keinen Baustein „Nebenluft“ mehr
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: 'Freiform' }).click();
+    await step(pg, 'Aufbau');
+    expect((await pg.locator('.add-btn', { hasText: 'Nebenluft' }).count()) === 0, 'Baustein Nebenluft noch wählbar');
   });
 
   await test('Eigene Kontur: Datei, Foto, Zeichnen', pg, async () => {
