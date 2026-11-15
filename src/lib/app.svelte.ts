@@ -285,15 +285,27 @@ class AppState {
     return w;
   });
 
+  /** Größen, die gerade gelten (Nebenluft-Regler und Lösehilfe wählen sie selbst) */
+  sizeKeys = $derived.by((): DiameterKey[] => {
+    if (this.kind.bleed) return [this.bleed.top === 'female' ? 'femaleDiameterInner' : 'maleDiameterInner', 'hoseDiameterInner'];
+    if (this.kind.helper) return [...(this.helper.forF ? (['femaleDiameterInner'] as const) : []), ...(this.helper.forM ? (['maleDiameterInner'] as const) : [])];
+    return this.kind.diameters;
+  });
+  /** Größen außerhalb des Bereichs oder ohne Standardmaß */
+  sizeWarnings = $derived(
+    this.sizeKeys.flatMap((k) => {
+      const v = this.input[k];
+      if (!(v >= 15 && v <= 60)) return [`${LABELS[k].name}: ${fmt(v)} mm liegt außerhalb von 15 bis 60 mm.`];
+      if (!LABELS[k].presets.includes(v)) return [`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`];
+      return [];
+    }),
+  );
+
   /** Hinweise im Download; step: in welchem Schritt man es ändert (Link „Zu …“) */
   warnings = $derived.by(() => {
     const w: { text: string; step?: number }[] = [];
     const sizes = (text: string) => w.push({ text, step: 1 });
-    for (const k of this.kind.diameters) {
-      const v = this.input[k];
-      if (!(v >= 15 && v <= 60)) sizes(`${LABELS[k].name}: ${fmt(v)} mm liegt außerhalb von 15 bis 60 mm.`);
-      else if (!LABELS[k].presets.includes(v)) sizes(`${LABELS[k].name}: ${fmt(v)} mm ist kein Standardmaß von osVAC neo. Passt nur zu Teilen derselben Größe.`);
-    }
+    for (const t of this.sizeWarnings) sizes(t);
     for (const x of this.machineWarnings) sizes(x.text);
     if (this.kind.nozzle) for (const x of this.nozzleIssues) sizes(x.text);
     if (this.kind.freeform) {
@@ -634,7 +646,7 @@ class AppState {
       const list = JSON.parse(raw);
       if (!Array.isArray(list)) return;
       this.plate = list
-        .filter((x) => x && typeof x.kind === 'string' && kindById(x.kind)?.available && x.input && typeof x.input === 'object' && x.options && typeof x.options === 'object' && typeof x.label === 'string' && typeof x.key === 'string')
+        .filter((x) => x && typeof x.kind === 'string' && kindById(x.kind)?.available && (x.kind !== 'BLEED' || (x.options && typeof x.options === 'object' && 'bleed' in x.options)) && x.input && typeof x.input === 'object' && x.options && typeof x.options === 'object' && typeof x.label === 'string' && typeof x.key === 'string')
         .map((x) => ({ req: makeBuild(x.kind, { ...START_INPUT, ...x.input }, x.options), includeHelpers: x.includeHelpers === true, label: x.label, key: x.key }));
     } catch {
       /* beschädigt: leeres Druckbett */

@@ -49,8 +49,8 @@
   Drei Fenster mit zusammen etwa {Math.round(ratio * 100)} % des Schlauchquerschnitts. Nebenluft-Ring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Eine kleine Raste hält ihn bei „auf“ und „zu“; die Kerben am oberen Bund zeigen, wo die Fenster im Rohr sind. Ganz dicht ist er auch zu nicht, durch das Spiel am Nebenluft-Ring ({fmt(b.bleedGap, 2)} mm, in „Passung“) zieht immer etwas Luft.
 </p>
 
-{#if app.buildNotes.length}
-  <ul class="issues">{#each app.buildNotes as x}<li class="warn">{x}</li>{/each}</ul>
+{#if app.sizeWarnings.length || app.buildNotes.length}
+  <ul class="issues">{#each [...app.sizeWarnings, ...app.buildNotes] as x}<li class="warn">{x}</li>{/each}</ul>
 {/if}
 {#if printNote}<p class="print-note {printNote.level}" role="status">{printNote.text}</p>{/if}
 

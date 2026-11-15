@@ -442,9 +442,13 @@ await withPreview(4180, async (url, browser) => {
     await until(pg, downloadOpen(pg), 'Download gesperrt');
     await step(pg, 'Download');
     expect((await pg.locator('.step-body').innerText()).includes('das Rohr des Reglers'), 'kein Druckhinweis zum Drehring am Schlauch');
+    expect((await pg.locator('.lead').first().innerText()).includes('oben Stecker M40, unten Schlauch H32'), 'Download-Text: ' + (await pg.locator('.lead').first().innerText()));
     await step(pg, 'Passung');
     await pg.getByRole('button', { name: /Passung auf Standard/ }).click();
     await step(pg, 'Größen');
+    // Schlauch 33 ist kein Standardmaß: Hinweis im Schritt
+    await fill(pg, 'Innendurchmesser des Schlauchs', '33');
+    expect((await pg.locator('.issues').innerText()).includes('kein Standardmaß'), 'Hinweis zum Maß fehlt');
     await pg.getByRole('button', { name: /Größen auf Standard/ }).click();
     await ready(pg);
     expect((await pg.locator('.code').innerText()).includes('F32H36'), 'Standard nicht wiederhergestellt');
