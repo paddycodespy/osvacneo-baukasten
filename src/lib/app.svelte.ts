@@ -240,7 +240,8 @@ class AppState {
     const k = this.kind;
     if (k.freeform) return freeSummary(this.free).code;
     if (k.gate) return gateName(this.gate).code;
-    if (k.helper) return [this.helper.forF ? `F${fmt(this.input.femaleDiameterInner)}` : '', this.helper.forM ? `M${fmt(this.input.maleDiameterInner)}` : ''].filter(Boolean).join(' · ');
+    // wie die Beschriftung: Halter für Kupplungen = Stecker (M), für Stecker = Kupplung (F)
+    if (k.helper) return [this.helper.forF ? `M${fmt(this.input.femaleDiameterInner)}` : '', this.helper.forM ? `F${fmt(this.input.maleDiameterInner)}` : ''].filter(Boolean).join(' · ');
     if (k.machine) return `${k.ends.top === 'female' ? 'F' : 'M'}${fmt(k.ends.top === 'female' ? this.input.femaleDiameterInner : this.input.maleDiameterInner)}/${fmt(this.machine.dOpen)}`;
     return this.baseName.replace('osVAC neo ', '');
   });

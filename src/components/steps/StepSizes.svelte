@@ -71,7 +71,7 @@
   {/if}
   <ResetLink show={!app.gateIsDefault} label="Schieber auf Standard zurücksetzen" onclick={() => app.resetGate()} />
 {:else if app.kind.helper}
-  <p class="lead">Die Lösehilfe hält die Kupplung oder den Stecker eines Schlauchadapters fest, damit man den Schlauchteil kräftig drehen kann. Die Zahl ist der Innendurchmesser in Millimetern.</p>
+  <p class="lead">Die Lösehilfe hält die Kupplung oder den Stecker eines Schlauchadapters fest, damit man den Schlauchteil kräftig drehen kann. Die Zahl ist der Innendurchmesser in Millimetern. Beschriftet wie im Original: Der Halter für Kupplungen ist selbst ein Stecker (M), der für Stecker eine Kupplung (F).</p>
   <div class="checks helper-parts">
     <label><input type="checkbox" checked={app.helper.forF} disabled={app.helper.forF && !app.helper.forM} onchange={() => app.toggleHelper('forF')} /> Für Kupplungen (FxxHyy): Block mit Stutzen</label>
     <label><input type="checkbox" checked={app.helper.forM} disabled={app.helper.forM && !app.helper.forF} onchange={() => app.toggleHelper('forM')} /> Für Stecker (MxxHyy): Block mit Bohrung</label>
