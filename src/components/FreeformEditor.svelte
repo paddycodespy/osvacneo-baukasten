@@ -77,6 +77,17 @@
     { type: 'bleed', title: 'Nebenluft: Fenster mit Drehring, regelt den Sog' },
   ];
   const hasBranch = $derived(spec.blocks.some((b) => b.type === 'branch'));
+  const hasGate = $derived(spec.blocks.some((b) => b.type === 'gate'));
+  /** Warum ein Baustein gerade nicht geht (Knopf ausgegraut, Grund im Tooltip); '' = geht */
+  function blocked(t: BlockType): string {
+    const noz = spec.b.type === 'nozzle';
+    if (t === 'branch' && hasBranch) return 'Es geht nur ein Abzweig je Adapter';
+    if (t === 'gate' && hasGate) return 'Es geht nur ein Schieber je Adapter';
+    if ((t === 'branch' || t === 'gate') && noz) return `Mit Düse an Ende B geht kein ${t === 'gate' ? 'Schieber' : 'Abzweig'}`;
+    return '';
+  }
+  /** Düse an Ende B geht nicht mit Schieber oder Abzweig */
+  const nozzleBlocked = $derived(hasGate ? 'Mit Schieber geht keine Düse' : hasBranch ? 'Mit Abzweig geht keine Düse' : '');
   /**
    * Gibt es an Ende B bzw. C einen Übergang? (Nur wenn der Baustein davor eine andere Form hat als das Ende; sonst
    * ändert die Übergangslänge nichts und das Feld bleibt weg.) Bei Fehlern im Plan lieber anzeigen.
@@ -88,7 +99,6 @@
     return plan.bodies.some((b) => names.includes(b.name));
   };
   /** Schieber: Adapter wird in zwei Teilen gedruckt, jedes steht auf seinem Ende */
-  const hasGate = $derived(spec.blocks.some((b) => b.type === 'gate'));
   function add(type: BlockType) {
     const cur = sectionBefore(spec.blocks.length);
     let v: Partial<Block> = {};
@@ -379,7 +389,7 @@
     <span class="add-label">Baustein hinzufügen</span>
     <div class="add-btns">
       {#each ADD as a}
-        <button type="button" class="add-btn" title={a.type === 'branch' && hasBranch ? 'Es geht nur ein Abzweig je Adapter' : a.title} disabled={a.type === 'branch' && hasBranch} onclick={() => add(a.type)}>
+        <button type="button" class="add-btn" title={blocked(a.type) || a.title} disabled={!!blocked(a.type)} onclick={() => add(a.type)}>
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>{BLOCK_LABELS[a.type]}
         </button>
       {/each}
@@ -396,7 +406,7 @@
     </button>
     {#if open === 'B'}
       <div class="card-body">
-        <EndEditor bind:end={spec.b} wall={spec.wall} tag="B" issues={bIssues} apply={applyFix} onflange={() => (spec.bed = 'B')} onnozzle={() => (spec.bed = 'A')} transition={hasTransition('B')} />
+        <EndEditor bind:end={spec.b} wall={spec.wall} tag="B" issues={bIssues} apply={applyFix} onflange={() => (spec.bed = 'B')} onnozzle={() => (spec.bed = 'A')} {nozzleBlocked} transition={hasTransition('B')} />
       </div>
     {/if}
   </li>

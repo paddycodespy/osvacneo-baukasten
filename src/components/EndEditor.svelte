@@ -24,7 +24,8 @@
     onflange,
     onnozzle,
     transition = true,
-  }: { end: EndSpec; wall: number; tag: 'B' | 'C'; issues?: Issue[]; apply: (fx: Fix) => void; onflange?: () => void; onnozzle?: () => void; transition?: boolean } = $props();
+    nozzleBlocked = '',
+  }: { end: EndSpec; wall: number; tag: 'B' | 'C'; issues?: Issue[]; apply: (fx: Fix) => void; onflange?: () => void; onnozzle?: () => void; transition?: boolean; /** Grund, warum Düse nicht geht ('' = geht) */ nozzleBlocked?: string } = $props();
 
   const SIZES = [25, 32, 36, 40, 50];
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
@@ -120,7 +121,7 @@
   <button type="button" role="radio" aria-checked={end.type === 'female'} class:sel={end.type === 'female'} onclick={() => (end.type = 'female')}>Kupplung (F)</button>
   <button type="button" role="radio" aria-checked={end.type === 'male'} class:sel={end.type === 'male'} onclick={() => (end.type = 'male')}>Stecker (M)</button>
   {#if tag === 'B'}
-    <button type="button" role="radio" aria-checked={end.type === 'nozzle'} class:sel={end.type === 'nozzle'} onclick={setNozzle}>Düse</button>
+    <button type="button" role="radio" aria-checked={end.type === 'nozzle'} class:sel={end.type === 'nozzle'} disabled={!!nozzleBlocked && end.type !== 'nozzle'} title={nozzleBlocked || undefined} onclick={setNozzle}>Düse</button>
   {/if}
 </div>
 {#if end.type === 'nozzle' && end.tip}
