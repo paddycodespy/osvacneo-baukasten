@@ -318,6 +318,11 @@ await withPreview(4180, async (url, browser) => {
     await pickTemplate(pg, 'Absperrschieber');
     await ready(pg);
     expect((await pg.locator('.print-note').innerText()).includes('ohne Stützen'), 'Schieber in der Freiform braucht Stützen');
+    // nur ein Schieber je Adapter; mit Schieber keine Düse an Ende B
+    expect(await pg.locator('.add-btn', { hasText: 'Schieber' }).isDisabled(), 'zweiter Schieber möglich');
+    await pg.locator('.card-head', { hasText: 'Ende B' }).click();
+    await pg.waitForTimeout(200);
+    expect(await pg.locator('.card.open .seg button', { hasText: 'Düse' }).isDisabled(), 'Düse mit Schieber wählbar');
     await pg.locator('.card-head', { hasText: 'Schieber' }).first().click();
     await fill(pg, 'Länge des Schiebers', '15');
     expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'zu kurzer Schieber nicht gesperrt');
