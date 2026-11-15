@@ -15,7 +15,7 @@
   import { reveal } from '../lib/reveal';
   import { app } from '../lib/app.svelte';
   import { tubeGateDims, GATE_GAP } from '../lib/osvac/gate';
-  import { TEMPLATES, planFree, BLOCK_LABELS, newBlock, sec, sectionText, lastSection, extrasLong, specKey, branchGeom, bleedMinLen, bleedGapOf, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
+  import { TEMPLATES, planFree, grow, BLOCK_LABELS, newBlock, sec, sectionText, lastSection, extrasLong, specKey, branchGeom, bleedMinLen, bleedGapOf, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | 'C' | null;
   let {
@@ -102,7 +102,7 @@
   function add(type: BlockType) {
     const cur = sectionBefore(spec.blocks.length);
     let v: Partial<Block> = {};
-    if (type === 'step') v = { section: { ...cur, d: cur.d + 6, w: cur.w + 6, h: cur.h + 6 } };
+    if (type === 'step') v = { section: cur.shape === 'contour' ? grow(cur, 3) : { ...cur, d: cur.d + 6, w: cur.w + 6, h: cur.h + 6 } };
     if (type === 'branch') {
       // Rohr gerade so lang, dass der Abzweig darauf passt; Ende C anlegen, falls noch keins da ist
       const d = cur.shape === 'circle' ? cur.d : 32;

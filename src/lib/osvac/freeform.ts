@@ -10,15 +10,16 @@
  * Dieses Modul plant die Kette rein rechnerisch (Prüfungen laufen auch in der Oberfläche, ohne OpenCascade);
  * erst make() der einzelnen Körper ruft replicad auf.
  */
-import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, makeBox, measureVolume, type Shape3D, type Point } from 'replicad';
+import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, makeBSplineApproximation, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, makeBox, measureVolume, type Shape3D, type Point } from 'replicad';
 import { UserError, partLabel, partNotes } from '../errors';
+import { offset as offsetContour, bbox as bboxOf, runs as contourRuns, denseAll, contourKey, selfIntersects, CONTOUR_MIN, CONTOUR_MAX } from './contour';
 import { bleedDims, bleedBody, bleedRing, BLEED } from './bleed';
 import { tubeGateDims, tubeGateLower, tubeGateUpper, tubeGateScrew, gateScrewCount, gateSlider, snapPlateGap, GATE_GAP, GATE_LAYER } from './gate';
 
 // ---------------------------------------------------------------- Datenmodell
 
 /** 'tri' nur intern für die dreieckige Flanschplatte (d = Lochkreis durch die Eckmitten, r = Eckradius) */
-export type SectionShape = 'circle' | 'ellipse' | 'slot' | 'rect' | 'dshape' | 'trapezoid' | 'tri';
+export type SectionShape = 'circle' | 'ellipse' | 'slot' | 'rect' | 'dshape' | 'trapezoid' | 'tri' | 'contour';
 
 /** Querschnitt. Je nach Form werden nur einige Felder benutzt (siehe SECTION_FIELDS). */
 export interface Section {
@@ -35,6 +36,14 @@ export interface Section {
   r2: number;
   /** Breite oben (Trapez) */
   w2: number;
+  /** Eigene Kontur: Punkte in mm (gegen den Uhrzeigersinn, Mitte im Ursprung, siehe contour.ts); w/h = Breite/Höhe */
+  pts?: P2[];
+  /** Eigene Kontur: Herkunft (Dateiname, „gezeichnet“, „Foto“) */
+  src?: string;
+  /** Eigene Kontur, gezeichnet: Ecken (x, y, Eckradius) zum Weiterbearbeiten */
+  draw?: [number, number, number][];
+  /** Eigene Kontur: Anzahl der beim Aufbereiten gerundeten spitzen Ecken */
+  rounded?: number;
 }
 
 export type BlockType = 'straight' | 'bend' | 'transition' | 'step' | 'branch' | 'gate' | 'bleed';
@@ -178,10 +187,13 @@ export const SECTION_LABELS: Record<SectionShape, string> = {
   dshape: 'D-Form',
   trapezoid: 'Trapez',
   tri: 'Dreieck',
+  contour: 'Eigene',
 };
 
 /** Welche Felder eine Form braucht (Reihenfolge = Reihenfolge in der Oberfläche). */
-export const SECTION_FIELDS: Record<SectionShape, (keyof Omit<Section, 'shape'>)[]> = {
+/** Zahlenfelder eines Querschnitts */
+export type SecNum = 'd' | 'w' | 'h' | 'r' | 'r2' | 'w2';
+export const SECTION_FIELDS: Record<SectionShape, SecNum[]> = {
   circle: ['d'],
   ellipse: ['w', 'h'],
   slot: ['w', 'h'],
@@ -189,6 +201,7 @@ export const SECTION_FIELDS: Record<SectionShape, (keyof Omit<Section, 'shape'>)
   dshape: ['d', 'h', 'r'],
   trapezoid: ['w', 'w2', 'h', 'r'],
   tri: ['d', 'r'],
+  contour: [],
 };
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
@@ -542,6 +555,11 @@ export function grow(s: Section, delta: number): Section {
     case 'tri':
       // gleiche Eckmitten, größerer Eckradius
       return { ...s, r: rr(s.r) };
+    case 'contour': {
+      const pts = offsetContour(s.pts ?? [], delta);
+      const b = bboxOf(pts);
+      return { ...s, pts, w: b.w, h: b.h, d: Math.max(b.w, b.h) };
+    }
     default:
       return { ...s, d: s.d + 2 * delta, w: s.w + 2 * delta, h: s.h + 2 * delta, r: rr(s.r), r2: rr(s.r2) };
   }
@@ -591,6 +609,10 @@ function roundedPoly(V: P2[], radii: number[]): Prim[] {
 
 function contour(s: Section): Prim[] {
   switch (s.shape) {
+    case 'contour': {
+      const p = s.pts ?? [];
+      return p.map((a, i) => ({ k: 'L', a, b: p[(i + 1) % p.length] }) as Prim);
+    }
     case 'circle':
       return [{ k: 'A', c: [0, 0], r: s.d / 2, a0: 0, a1: 2 * Math.PI }];
     case 'ellipse':
@@ -661,8 +683,11 @@ const rot2 = (p: P2, deg: number): P2 => {
   return [p[0] * c - p[1] * s, p[0] * s + p[1] * c];
 };
 
+/** Dichte Punktfolge des Querschnitts */
+const densePts = (s: Section): P2[] => (s.shape === 'contour' ? denseAll(s.pts ?? [], 0.25) : dense(contour(s)));
+
 export function perimeter(s: Section): number {
-  const d = dense(contour(s));
+  const d = densePts(s);
   let L = 0;
   for (let i = 0; i < d.length; i++) {
     const a = d[i], b = d[(i + 1) % d.length];
@@ -676,7 +701,7 @@ export function perimeter(s: Section): number {
  * gegen den Uhrzeigersinn. Gleiche Startlage und Richtung bei allen Formen → Lofts verwinden sich nicht.
  */
 export function samplePoints(s: Section, N: number, rotDeg = 0): P2[] {
-  const d = dense(contour(s));
+  const d = densePts(s);
   // Start: Punkt rechts der Mitte, der der +u-Achse am nächsten liegt
   let i0 = 0, best = Infinity;
   for (let i = 0; i < d.length; i++) {
@@ -719,6 +744,13 @@ function exactWire(f: Frame, s: Section, rotDeg: number) {
     const xd = sub(P3([1, 0]), f.o), yd = sub(P3([0, 1]), f.o);
     return assembleWire([s.w >= s.h ? makeEllipse(s.w / 2, s.h / 2, f.o as Point, f.t as Point, xd as Point) : makeEllipse(s.h / 2, s.w / 2, f.o as Point, f.t as Point, yd as Point)]);
   }
+  if (s.shape === 'contour') {
+    // gerade Stücke als Linien, Rundungen als glatte Kurven; Stoßpunkte exakt gemeinsam
+    const edges = contourRuns(s.pts ?? []).map((r) =>
+      r.k === 'L' ? makeLine(P(r.pts[0]), P(r.pts[1])) : makeBSplineApproximation(r.pts.map(P), { tolerance: 0.002, degMax: 3, degMin: 1, smoothing: null }),
+    );
+    return assembleWire(edges);
+  }
   const prims = contour(s);
   // Stoßpunkte einmal berechnen, damit benachbarte Kanten exakt dieselben Endpunkte haben
   const J = prims.map(startOf);
@@ -755,16 +787,18 @@ export function sectionText(s: Section): string {
   if (s.shape === 'dshape') return `D ${f(s.d)}/${f(s.h)}`;
   if (s.shape === 'trapezoid') return `${f(s.w)}/${f(s.w2)} × ${f(s.h)}`;
   if (s.shape === 'tri') return `Dreieck ${f(s.d)}`;
+  if (s.shape === 'contour') return `Kontur ${f(s.w)} × ${f(s.h)}`;
   return `${f(s.w)} × ${f(s.h)}`;
 }
 
 const sameSection = (a: Section, b: Section) => {
+  if (a.shape === 'contour' || b.shape === 'contour') return a.shape === b.shape && contourKey(a.pts ?? []) === contourKey(b.pts ?? []);
   const ks = ['shape', ...SECTION_FIELDS[a.shape]] as (keyof Section)[];
   return a.shape === b.shape && ks.every((k) => Math.abs((a[k] as number) - (b[k] as number)) < 1e-9 || a[k] === b[k]);
 };
 
 /** Nur die Felder, die die Form benutzt (für Schlüssel und Vergleiche). */
-const secKey = (s: Section) => [s.shape, ...SECTION_FIELDS[s.shape].map((k) => r6(s[k]))];
+const secKey = (s: Section) => (s.shape === 'contour' ? [s.shape, contourKey(s.pts ?? [])] : [s.shape, ...SECTION_FIELDS[s.shape].map((k) => r6(s[k]))]);
 
 // ---------------------------------------------------------------- Prüfungen
 
@@ -801,14 +835,23 @@ interface SecAt {
   /** Kreis mit „Ø vorne“/„Ø in der Tiefe“ (Gerät aufgesteckt/eingesteckt) */
   front?: boolean;
 }
-const SEC_NAMES: Partial<Record<keyof Omit<Section, 'shape'>, string>> = { d: 'Durchmesser', w: 'Breite', h: 'Höhe', w2: 'Breite oben' };
+const SEC_NAMES: Partial<Record<SecNum, string>> = { d: 'Durchmesser', w: 'Breite', h: 'Höhe', w2: 'Breite oben' };
 
 function checkSection(s: Section, what: string, out: Issue[], at?: SecAt) {
   const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
   const fields = SECTION_FIELDS[s.shape];
-  const name = (k: keyof Omit<Section, 'shape'>) => (k === 'd' && at?.front ? 'Ø vorne' : k === 'w' && s.shape === 'trapezoid' ? 'Breite unten' : SEC_NAMES[k]!);
-  const fx = (k: keyof Omit<Section, 'shape'>, v: number): Fix[] | undefined =>
+  const name = (k: SecNum) => (k === 'd' && at?.front ? 'Ø vorne' : k === 'w' && s.shape === 'trapezoid' ? 'Breite unten' : SEC_NAMES[k]!);
+  const fx = (k: SecNum, v: number): Fix[] | undefined =>
     at ? [fixTo(name(k), `${at.label}: ${name(k)}`, v, (sp, x) => void (at.get(sp)[k] = x))] : undefined;
+  if (s.shape === 'contour') {
+    const p = s.pts ?? [];
+    if (p.length < 3) return void out.push({ level: 'error', text: `${what}: Noch keine Kontur. Bitte eine Datei laden, am Foto nachzeichnen oder selbst zeichnen.` });
+    const b = bboxOf(p);
+    if (Math.min(b.w, b.h) < CONTOUR_MIN) out.push({ level: 'error', text: `${what}: Die Kontur muss mindestens ${CONTOUR_MIN} mm breit und hoch sein (jetzt ${f(b.w)} × ${f(b.h)} mm).` });
+    if (Math.max(b.w, b.h) > CONTOUR_MAX) out.push({ level: 'error', text: `${what}: Die Kontur darf höchstens ${CONTOUR_MAX} mm groß sein (jetzt ${f(b.w)} × ${f(b.h)} mm).` });
+    if (selfIntersects(p)) out.push({ level: 'error', text: `${what}: Die Kontur überschneidet sich selbst. Bitte die Punkte prüfen.` });
+    return;
+  }
   for (const k of fields) if (!(s[k] >= 0) || !Number.isFinite(s[k])) out.push({ level: 'error', text: `${what}: Bitte alle Maße eingeben.` });
   if (fields.includes('d') && s.d < 6) out.push({ level: 'error', text: `${what}: Der Durchmesser muss mindestens 6 mm betragen.`, fixes: fx('d', 6) });
   if (fields.includes('w') && s.w < 6) out.push({ level: 'error', text: `${what}: Die Breite muss mindestens 6 mm betragen.`, fixes: fx('w', 6) });
@@ -2659,7 +2702,7 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   const fileC = hasC ? (spec.c!.type === 'device' ? `Geraet ${C.replace(/ × /g, 'x').replace('Ø ', 'D')}` : C) : '';
   const x = extrasText(spec);
   return {
-    code: `${A} → ${B}${hasC ? ` + ${C}` : ''}`,
+    code: `${A} → ${B.replace(/^Kontur /, '')}${hasC ? ` + ${C.replace(/^Kontur /, '')}` : ''}`,
     sub,
     long: `${A} → ${isDev ? `${devText} ${dev}` : isNoz ? `Düse ${tipSec}, ${tipText}${x.length ? ` (${extrasLong(spec).join(', ')})` : ''}` : B}${hasC ? `, Abzweig → ${spec.c!.type === 'device' ? `Gerät ${C}` : C}` : ''}${split ? ', 2 Druckteile' : ''}`,
     file: [A, 'Freiform', fileMid, fileB, ...x, hasC ? `und ${fileC}` : '', split ? '2 Teile' : ''].filter(Boolean).join(' '),

@@ -7,6 +7,9 @@
  */
 import type { Page } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+
+const fixture = (n: string) => path.join(import.meta.dirname, 'fixtures', n);
 import { withPreview } from './lib/preview';
 
 mkdirSync('out', { recursive: true });
@@ -448,6 +451,61 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('button', { name: 'Zurück zum Nebenluft-Regler' }).click();
     await until(pg, async () => (await pg.locator('.code').innerText()).includes('F40'), 'nicht zurück beim Nebenluft-Regler');
     await ready(pg);
+  });
+
+  await test('Eigene Kontur: Datei, Foto, Zeichnen', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: 'Freiform' }).click();
+    await step(pg, 'Aufbau');
+    await pickTemplate(pg, 'Rechteckige Haube');
+    await pg.locator('.card-head', { hasText: 'Ende B' }).click();
+    await pg.locator('.card.open .shape', { hasText: 'Eigene' }).click();
+    expect((await pg.locator('.card.open').innerText()).includes('Noch keine Kontur'), 'Hinweis ohne Kontur fehlt');
+    // SVG mit Stutzen, Loch und offener Linie: Auswahl, Hinweis zur offenen Linie
+    await pg.getByLabel('Form des Stutzens: Kontur-Datei').setInputFiles(fixture('kontur-stutzen.svg'));
+    await pg.locator('.card.open .th').first().waitFor();
+    expect((await pg.locator('.card.open .th').count()) === 2, 'zwei Umrisse erwartet');
+    expect((await pg.locator('.card.open .notes').innerText()).includes('offene Linie'), 'Hinweis zur offenen Linie fehlt');
+    await pg.locator('.card.open .th').first().click();
+    expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 56,5 × 33,6'), 'Maße der Kontur: ' + (await pg.locator('.card.open .card-head').innerText()));
+    await ready(pg);
+    expect((await pg.locator('.stage-head .code').innerText()).includes('56,5 × 33,6'), 'Kopfzeile ohne Kontur');
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Kontur nicht druckbar');
+    // Breite auf gemessenes Maß
+    await fill(pg, 'Form des Stutzens: Breite', '60');
+    expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 60 ×'), 'Breite nicht übernommen');
+    // DXF in mm mit drei Umrissen
+    await pg.getByLabel('Form des Stutzens: Kontur-Datei').setInputFiles(fixture('kontur-haube.dxf'));
+    await pg.locator('.card.open .th').first().waitFor();
+    await pg.locator('.card.open .th').first().click();
+    expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 50 × 40'), 'DXF: ' + (await pg.locator('.card.open .card-head').innerText()));
+    // Foto nachzeichnen: Maßstab 50 mm (6 Pixel je mm), acht Ecken
+    const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.getByRole('button', { name: 'Nachzeichnen …' }).click()]);
+    await fc.setFiles(fixture('kontur-foto.png'));
+    await pg.getByRole('button', { name: /Weiter: Umriss/ }).waitFor();
+    await pg.waitForTimeout(300);
+    const at = async (x: number, y: number) => {
+      const q = await pg.evaluate(([x, y]) => new DOMPoint(x, y).matrixTransform((document.querySelector('.canvas') as SVGSVGElement).getScreenCTM()!), [x, y]);
+      await pg.mouse.click(q.x, q.y);
+      await pg.waitForTimeout(40);
+    };
+    await at(120, 505);
+    await at(420, 505);
+    await pg.getByRole('button', { name: /Weiter: Umriss/ }).click();
+    await pg.waitForTimeout(200);
+    for (const [x, y] of [[262, 362], [598, 362], [598, 296], [613, 290], [613, 254], [598, 248], [598, 158], [262, 158]]) await at(x / 6, y / 6);
+    await pg.getByRole('button', { name: /Weiter: Prüfen/ }).click();
+    expect((await pg.locator('.dlg').innerText()).includes('58,5 × 34 mm'), 'Foto: Maße falsch');
+    await pg.getByRole('button', { name: 'Übernehmen' }).click();
+    expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 58,5 × 34'), 'Foto-Kontur nicht übernommen');
+    // gezeichnet: bearbeiten, einen Punkt löschen
+    await pg.getByRole('button', { name: 'Bearbeiten' }).click();
+    await pg.locator('.dlg .pt').nth(3).dispatchEvent('pointerdown');
+    await pg.getByRole('button', { name: 'Punkt löschen' }).click();
+    await pg.getByRole('button', { name: /Weiter: Prüfen/ }).click();
+    await pg.getByRole('button', { name: 'Übernehmen' }).click();
+    await ready(pg);
+    expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'gezeichnete Kontur nicht druckbar');
   });
 
   await test('Drehring-Lösehilfe: Halter wählen', pg, async () => {
