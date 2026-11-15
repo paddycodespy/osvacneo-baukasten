@@ -31,6 +31,12 @@
       <path d="M12 {y} H32 V{y + 12} L28 {y + 16} V{y + 24} H16 V{y + 16} L12 {y + 12} Z" class="h" />
       <rect x="11" y={y + 15} width="22" height="7" rx="1.5" class="h" />
       <rect x="19" y={y + 16.5} width="6" height="4" class="win" />
+    {:else if s === 'helper'}
+      <!-- Block mit Stutzen und Rippe -->
+      <rect x="13" y="2" width="18" height="27" rx="1.5" class="m" />
+      <rect x="9" y="7" width="4" height="22" rx="1" class="m" />
+      <rect x="31" y="7" width="4" height="22" rx="1" class="m" />
+      <rect x="3" y="29" width="38" height="24" rx="2" class="h" />
     {:else if s === 'free'}
       <!-- Rohrbogen, der nach rechts abknickt -->
       <path d="M13 {y} V{y + 9} Q13 {y + 25} 29 {y + 25} H42 V{y + 12} H31 Q27 {y + 12} 27 {y + 8} V{y} Z" class="h" />

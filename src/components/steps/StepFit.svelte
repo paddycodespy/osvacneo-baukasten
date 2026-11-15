@@ -59,7 +59,7 @@
       <button role="radio" aria-checked={app.input.generalMaterialWidth === v} class:sel={app.input.generalMaterialWidth === v} onclick={() => (app.input.generalMaterialWidth = v)}>{v} mm</button>
     {/each}
   </div>
-  <p class="hint">9 mm macht die Kupplung stabiler. Sie wird dann außen 4 mm dicker.</p>
+  <p class="hint">{app.kind.helper ? 'Bei der Lösehilfe ändert das nur die Größe des Blocks (9 mm: 4 mm breiter, wie die Kupplung).' : '9 mm macht die Kupplung stabiler. Sie wird dann außen 4 mm dicker.'}</p>
 </fieldset>
 
 {#if app.hasBleed}

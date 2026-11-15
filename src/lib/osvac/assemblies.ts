@@ -13,6 +13,7 @@ import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type 
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, partPlacements, inPart2, hasSplit, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
 import { DEFAULT_GATE, gateLayout, gateLower, gateUpper, gateSlider, gateClip, gateBed, upperOnBed, type GateSpec } from './gate';
+import { helperForFemale, helperForMale, helperSide } from './helper';
 import { UserError } from '../errors';
 
 export interface Body {
@@ -52,7 +53,16 @@ export interface BuildOptions {
   free?: FreeSpec;
   /** Schieber einzeln */
   gate?: GateSpec;
+  /** Drehring-Lösehilfe: welche Halter */
+  helper?: HelperSpec;
 }
+
+/** Drehring-Lösehilfe: Halter für Kupplungen (Größe = Kupplung) und/oder für Stecker (Größe = Stecker) */
+export interface HelperSpec {
+  forF: boolean;
+  forM: boolean;
+}
+export const DEFAULT_HELPER: HelperSpec = { forF: true, forM: true };
 
 /** Male mit Spitze nach oben (Anschluss unten bei z = -maleHeight); Nasen wie im Original bei 30/150/270°. */
 function flippedMale(p: OsvacParams, o: BuildOptions): Shape3D {
@@ -344,6 +354,27 @@ export function partsGate(_p: OsvacParams, o: BuildOptions = {}): Part[] {
   return out;
 }
 
+// ---------------------------------------------------------------- Drehring-Lösehilfe
+
+/**
+ * Halter nebeneinander (6 mm Abstand): links der für Kupplungen (Größe der Kupplung), rechts der für Stecker
+ * (Größe des Steckers). Spalt und Materialstärke wie eingestellt.
+ */
+export function partsHelper(p: OsvacParams, o: BuildOptions = {}): Part[] {
+  const s = { ...DEFAULT_HELPER, ...o.helper };
+  if (!s.forF && !s.forM) s.forF = s.forM = true;
+  const base = { generalMaterialWidth: p.generalMaterialWidth, maleFemaleGapSize: p.maleFemaleGapSize };
+  const pF = deriveParams({ ...base, maleDiameterInner: p.femaleDiameterInner, femaleDiameterInner: p.femaleDiameterInner });
+  const pM = deriveParams({ ...base, maleDiameterInner: p.maleDiameterInner, femaleDiameterInner: p.maleDiameterInner });
+  const both = s.forF && s.forM;
+  const xF = both ? -(helperSide(pF) / 2 + 3) : 0, xM = both ? helperSide(pM) / 2 + 3 : 0;
+  const text = o.text !== false;
+  const out: Part[] = [];
+  if (s.forF) out.push(part('Lösehilfe für Kupplung', 1.5, { kind: 'helperF', d: p.femaleDiameterInner, ...base, text, x: xF }, () => helperForFemale(pF, text).translate([xF, 0, 0]) as Shape3D));
+  if (s.forM) out.push(part('Lösehilfe für Stecker', 1.5, { kind: 'helperM', d: p.maleDiameterInner, ...base, text, x: xM }, () => helperForMale(pM, text).translate([xM, 0, 0]) as Shape3D, both ? { object: 'Lösehilfe für Stecker' } : {}));
+  return out;
+}
+
 // Kompatible Bau-Funktionen (alle Körper sofort)
 export const buildFemale = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFemale(p, o));
 export const buildMale = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMale(p, o));
@@ -355,3 +386,4 @@ export const buildFxxHyy = (p: OsvacParams, o: BuildOptions = {}) => buildAll(pa
 export const buildMxxHyy = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMxxHyy(p, o));
 export const buildFree = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFree(p, o));
 export const buildGate = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsGate(p, o));
+export const buildHelper = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsHelper(p, o));

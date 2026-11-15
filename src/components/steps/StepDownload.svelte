@@ -34,6 +34,7 @@
       return `Freiform: ${s.long}${app.free.blocks.length ? `, dazwischen ${s.blocks}` : ''}.`;
     }
     if (k.gate) return `Schieber einzeln: ${gateName(app.gate).long}.`;
+    if (k.helper) return `Drehring-Lösehilfe ${[app.helper.forF ? `für Kupplungen F${fmt(app.input.femaleDiameterInner)}` : '', app.helper.forM ? `für Stecker M${fmt(app.input.maleDiameterInner)}` : ''].filter(Boolean).join(' und ')}.`;
     const sizes = k.diameters.map((d) => `${LABELS[d].name} ${fmt(app.input[d])} mm`).join(', ');
     const stutzen = k.machine ? `, Stutzen Ø ${fmt(app.machine.dOpen)} / ${fmt(app.machine.dDepth)} mm, ${app.machine.length} mm tief` : '';
     return `${k.title}, ${sizes}${stutzen}.`;
