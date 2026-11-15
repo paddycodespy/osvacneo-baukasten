@@ -7,13 +7,14 @@ import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
 import { femaleRing, femaleFields, femaleFieldsOverlap, femaleKnurl, femaleKnurlOverlap } from './female';
 import { maleTube, maleSupport } from './male';
-import { revolveProfile, L } from './geom';
+import { revolveProfile, L, L as L_ } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, partPlacements, inPart2, hasSplit, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
 import { DEFAULT_GATE, gateLayout, gateLower, gateUpper, gateSlider, gateClip, gateBed, upperOnBed, type GateSpec } from './gate';
 import { helperForFemale, helperForMale, helperSide } from './helper';
+import { BLEED, bleedLayout, bleedBody, bleedRing } from './bleed';
 import { UserError } from '../errors';
 
 export interface Body {
@@ -55,7 +56,16 @@ export interface BuildOptions {
   gate?: GateSpec;
   /** Drehring-Lösehilfe: welche Halter */
   helper?: HelperSpec;
+  /** Nebenluft-Regler: Anschluss oben, Spiel am Drehring */
+  bleed?: BleedSpec;
 }
+
+/** Nebenluft-Regler: unten Schlauch (H), oben Kupplung (F, Standard) oder Stecker (M) */
+export interface BleedSpec {
+  top: 'female' | 'male';
+  gap: number;
+}
+export const DEFAULT_BLEED: BleedSpec = { top: 'female', gap: BLEED.gap };
 
 /** Drehring-Lösehilfe: Halter für Kupplungen (Größe = Kupplung) und/oder für Stecker (Größe = Stecker) */
 export interface HelperSpec {
@@ -375,6 +385,47 @@ export function partsHelper(p: OsvacParams, o: BuildOptions = {}): Part[] {
   return out;
 }
 
+// ---------------------------------------------------------------- Nebenluft-Regler
+
+/**
+ * Nebenluft-Regler, kompakt: oben Kupplung oder Stecker, darunter das Rohr mit drei Fenstern und Drehring, unten der
+ * Schlauchteil mit Gewinde (wie beim Schlauchadapter, aber ohne Drehring für den Schlauch). Rohr innen wie der
+ * Schlauch, außen wie der Schlauchteil. Oberkante bei z = 0, gedruckt mit dem Schlauchteil unten.
+ */
+export function partsBleed(p: OsvacParams, o: BuildOptions = {}): Part[] {
+  const s = { ...DEFAULT_BLEED, ...o.bleed };
+  const lay = bleedLayout(p, s.top, s.gap);
+  const { rH, rO, D, L, zT, zB, hC } = lay;
+  const t = (sh: Shape3D, z: number) => sh.translate([0, 0, z]);
+  const dB = { ...dH(p), gap: s.gap, top: s.top, kind: 'bleedH' };
+  const out: Part[] = [];
+  if (s.top === 'female') {
+    out.push(...female(p, o));
+    out.push(part('Übergang', 0.1, { ...dAll(p, o), kind: 'FH' }, () => t(transitionConeFH(p).shape, -p.femaleHeight)));
+  } else {
+    const rMi = p.maleDiameterInner / 2, rMo = p.maleDiameterOuter / 2;
+    out.push(part('Male', 9, { ...dM(p, o), rot: 'flip' }, () => flippedMale(p, o)));
+    out.push(part('Übergang', 0.1, { ...dAll(p, o), kind: 'MBleed' }, () => revolveProfile([rMi, -p.maleHeight], [L_(rMo, -p.maleHeight), L_(rO, zT), L_(rH, zT)])));
+  }
+  void hC;
+  out.push(
+    part('Nebenluft · Rohr', 1, { ...dB, L, z: zB }, () => t(bleedBody(D, L), zB)),
+    part('Nebenluft · Drehring', 1, { ...dB, z: zB }, () => t(bleedRing(D), zB)),
+    // Schulter oben am Schlauchteil auffüllen (dort säße sonst der Drehring für den Schlauch)
+    part('Schlauchteil · Auflage', 0.1, { ...dH(p), z: zB }, () => {
+      const cone = 5.257 / 3.681;
+      const zs = -(rO - rH - 1.743) / cone;
+      return t(revolveProfile([rH + 1.6, 0.05], [L_(rO, 0.05), L_(rO, zs - 0.05)]), zB);
+    }),
+    part('Schlauchteil', 0.5, { ...dHK(p), z: zB, variant: 'plain' }, () => t(hoseBody(p, 'plain'), zB)),
+    ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p), z: zB, variant: 'plain' }, () => t(hoseKnurl(p, 'plain'), zB), hoseKnurlOverlap(p, 'plain')),
+    part('Textfeld Schlauchteil', 7, { ...dHK(p), text: o.text, z: zB, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zB), { volumeOffset: hoseFieldsOverlap(p, 'plain') }),
+    part('Gewinde', 8, { ...dH(p), z: zB, variant: 'runout' }, () => t(hoseThreadBody(p, true), zB)),
+    part('Knickschutz', 0.1, { ...dH(p), z: zB }, () => t(hoseSkirt(p), zB)),
+  );
+  return out;
+}
+
 // Kompatible Bau-Funktionen (alle Körper sofort)
 export const buildFemale = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFemale(p, o));
 export const buildMale = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMale(p, o));
@@ -387,3 +438,4 @@ export const buildMxxHyy = (p: OsvacParams, o: BuildOptions = {}) => buildAll(pa
 export const buildFree = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFree(p, o));
 export const buildGate = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsGate(p, o));
 export const buildHelper = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsHelper(p, o));
+export const buildBleed = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsBleed(p, o));
