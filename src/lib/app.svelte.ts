@@ -338,6 +338,7 @@ class AppState {
   });
 
   helpTexts: Record<string, string> = $derived({
+    helperLabel: 'Beschriftet wie im Original nach dem Teil selbst: Der Halter für Kupplungen ist ein Stecker und trägt „M“ (z. B. M32), der Halter für Stecker ist eine Kupplung und trägt „F“ (z. B. F32).',
     gap: 'Der Wert gilt für Stecker und Kupplung zusammen. Steckt ein neues Teil in einem älteren mit 0,2 mm, wirkt nur die Hälfte: eingestellte 0,4 mm wirken dann wie 0,3 mm.',
     swivel: `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(this.swivelMax, 2)} mm${this.kind.id === 'FH' ? ` bei ${this.input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
@@ -429,6 +430,7 @@ class AppState {
     if (this.kind.helper)
       t.push(
         'So wird ein festsitzender Drehring gelöst: Die Kupplung eines Schlauchadapters (FxxHyy) auf den Stutzen der Lösehilfe stecken, den Stecker eines Schlauchadapters (MxxHyy) in die Bohrung. Die Rippen bzw. Taschen halten ihn fest. Den Block festhalten (z. B. im Schraubstock) und den Schlauchteil kräftig drehen, bis der Ring frei läuft.',
+        'Die Blöcke werden nur gehalten, nicht stark belastet: 15–20 % Füllung reicht und spart Material und Zeit.',
       );
     if (this.kind.freeform && this.free.blocks.some((x) => x.type === 'gate'))
       t.push(
