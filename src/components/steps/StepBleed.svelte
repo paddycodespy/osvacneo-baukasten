@@ -24,7 +24,7 @@
 
 <h2>Größen</h2>
 <p class="lead">
-  Der Nebenluft-Regler kommt direkt auf den Schlauch, oben steckst du die Düse oder das Werkzeug an. Am Drehring regelst du, wie viel Luft seitlich mit angesaugt wird: weniger Sog an der Düse, z. B. für Vorhänge, Polster oder lose Teile.
+  Der Nebenluft-Regler kommt direkt auf den Schlauch, oben steckst du die Düse oder das Werkzeug an. Am oberen Drehring (Nebenluft-Ring) regelst du, wie viel Luft seitlich mit angesaugt wird: weniger Sog an der Düse, z. B. für Vorhänge, Polster oder lose Teile.
 </p>
 
 <h3 class="sub">Oben</h3>
@@ -43,10 +43,10 @@
   <div class="chips">{#each LABELS.hoseDiameterInner.presets as v}<button type="button" class="chip" class:sel={app.input.hoseDiameterInner === v} onclick={() => app.setDia('hoseDiameterInner', v)}>{v}</button>{/each}</div>
   <NumberField value={app.input.hoseDiameterInner} min={15} max={60} step={0.1} label={LABELS.hoseDiameterInner.hint} oncommit={(v) => app.setDia('hoseDiameterInner', v)} />
 </div>
-<p class="hint">Der Schlauch wird unten eingedreht, wie beim Schlauchadapter.</p>
+<p class="hint">Wie beim Schlauchadapter: Der Schlauch wird unten eingedreht und kann sich mit dem Drehring drehen.</p>
 
 <p class="hint sum">
-  Drei Fenster mit zusammen etwa {Math.round(ratio * 100)} % des Schlauchquerschnitts. Drehring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Eine kleine Raste hält ihn bei „auf“ und „zu“; die Kerben am oberen Bund zeigen, wo die Fenster im Rohr sind. Ganz dicht ist er auch zu nicht, durch das Spiel am Ring ({fmt(b.bleedGap, 2)} mm, in „Passung“) zieht immer etwas Luft.
+  Drei Fenster mit zusammen etwa {Math.round(ratio * 100)} % des Schlauchquerschnitts. Nebenluft-Ring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Eine kleine Raste hält ihn bei „auf“ und „zu“; die Kerben am oberen Bund zeigen, wo die Fenster im Rohr sind. Ganz dicht ist er auch zu nicht, durch das Spiel am Nebenluft-Ring ({fmt(b.bleedGap, 2)} mm, in „Passung“) zieht immer etwas Luft.
 </p>
 
 {#if app.buildNotes.length}
