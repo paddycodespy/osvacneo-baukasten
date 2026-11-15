@@ -206,7 +206,7 @@ export const KINDS: AdapterKind[] = [
     group: 'accessory',
     code: 'Lösehilfe',
     title: 'Drehring-Lösehilfe',
-    description: 'Hält Kupplung oder Stecker fest, damit sich ein festsitzender Drehring am Schlauchadapter lösen lässt. Nach Odul.',
+    description: 'Hält Kupplung oder Stecker fest, damit sich ein festsitzender Drehring am Schlauchadapter lösen lässt.',
     ends: { top: 'helper', bottom: null },
     diameters: ['femaleDiameterInner', 'maleDiameterInner'],
     helper: true,
@@ -216,7 +216,8 @@ export const KINDS: AdapterKind[] = [
     fileName: (p, o) => {
       const s = { ...asm.DEFAULT_HELPER, ...o?.helper };
       const both = s.forF === s.forM;
-      return `osVAC neo Loesehilfe${both || s.forF ? ` F${n(p.femaleDiameterInner)}` : ''}${both || s.forM ? ` M${n(p.maleDiameterInner)}` : ''}`;
+      // wie die Beschriftung: Halter für Kupplungen = Stecker (M), für Stecker = Kupplung (F)
+      return `osVAC neo Loesehilfe${both || s.forF ? ` M${n(p.femaleDiameterInner)}` : ''}${both || s.forM ? ` F${n(p.maleDiameterInner)}` : ''}`;
     },
   },
   {

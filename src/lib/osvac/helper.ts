@@ -9,7 +9,9 @@
  * Maße wie im Original (Fusion-Export, Parameter mit _Ref aus dem Master):
  * Block (FemaleDiameterOuter + 2) im Quadrat, FemaleHeight hoch; Taschen FemaleBayonetNoseWidth breit, 2 tief, R 1;
  * Bohrung oben R 1; Rippen (FemaleBayonetNoseWidth − 2 · Spalt) breit, BajonettNaseDicke hoch, bis MaleHeight −
- * BajonettNaseMaleRandAbstand, R 1; Stutzen oben innen R 0,725, außen Fase 0,725. Schrift 0,5 tief auf der Vorderseite.
+ * BajonettNaseMaleRandAbstand, R 1; Stutzen oben innen R 0,725, außen Fase 0,725. Schrift 0,5 tief auf der Vorderseite,
+ * beschriftet wie im Original nach dem Teil selbst: Halter für Kupplungen ist ein Stecker (M32), der für Stecker eine
+ * Kupplung (F32).
  * Lokales System: Unterseite bei z = 0, Mitte auf der Achse.
  */
 import { draw, drawCircle, makeBox, type Drawing, type Shape3D } from 'replicad';
@@ -74,7 +76,7 @@ export function helperForFemale(p: OsvacParams, text = true): Shape3D {
     .sketchOnPlane('XY', H - 0.5)
     .extrude(zRib - H + 0.5) as Shape3D;
   let body = box(S, H).fuse(tube).fuse(ribs) as Shape3D;
-  if (text) body = frontText(body, S, H, `F${num(p.maleDiameterInner)}`);
+  if (text) body = frontText(body, S, H, `M${num(p.maleDiameterInner)}`);
   return body;
 }
 
@@ -91,7 +93,7 @@ export function helperForMale(p: OsvacParams, text = true): Shape3D {
     const a = e.startPoint, b = e.endPoint;
     return Math.abs(a.z - H) < 1e-4 && Math.abs(b.z - H) < 1e-4 && Math.hypot(a.x, a.y) < lim ? R_BORE : 0;
   });
-  if (text) body = frontText(body, S, H, `M${num(p.femaleDiameterInner)}`);
+  if (text) body = frontText(body, S, H, `F${num(p.femaleDiameterInner)}`);
   return body;
 }
 
