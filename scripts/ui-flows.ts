@@ -333,6 +333,18 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.tips').innerText()).includes('Schieberplatte'), 'Druckhinweis zur Schieberplatte fehlt');
   });
 
+  await test('Speicherort und Download', pg, async () => {
+    await step(pg, 'Download');
+    const t = await pg.locator('.target').innerText();
+    expect(t.includes('Speichern in') && t.includes('(Standard)'), 'Speicherort fehlt: ' + t);
+    expect((await pg.getByRole('button', { name: 'Ordner wählen…' }).count()) === 1, 'Knopf „Ordner wählen…“ fehlt (Chrome kann Ordner wählen)');
+    // ohne gewählten Ordner: normaler Download des Browsers
+    const [d] = await Promise.all([pg.waitForEvent('download', { timeout: 120000 }), pg.locator('.dl', { hasText: 'STL' }).click()]);
+    expect(d.suggestedFilename().endsWith('.stl'), 'Dateiname ' + d.suggestedFilename());
+    await pg.locator('.files li').first().waitFor();
+    expect((await pg.locator('.files').innerText()).includes(d.suggestedFilename()), 'Datei nicht in der Liste');
+  });
+
   await test('Kupplung auf dem Bett braucht Stützen', pg, async () => {
     await step(pg, 'Verbindung');
     await pg.getByRole('radio', { name: 'Freiform' }).click();

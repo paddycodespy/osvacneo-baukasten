@@ -4,6 +4,7 @@
  * Der Stand wird im Browser gespeichert und beim nächsten Start wiederhergestellt.
  */
 import { exportFile, exportPlate, makeBuild, type PlateItem } from './cad';
+import { saveTarget } from './save.svelte';
 import { kindById, type DiameterKey } from './osvac/catalog';
 import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './osvac/params';
 import type { ExportFormat } from './worker/protocol';
@@ -51,7 +52,8 @@ export const LABELS: Record<DiameterKey, { name: string; word: string; letter: '
 };
 
 export type Status = 'start' | 'preview' | 'detail' | 'ready' | 'error';
-export type FileEntry = { fileName: string; url: string; size: number; key: string };
+/** where: wo die Datei liegt (voller Pfad im Programm, „Ordner/Name“ im Browser), '' = normaler Download */
+export type FileEntry = { fileName: string; url: string; size: number; key: string; where: string };
 
 export const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
 const round2 = (v: number) => Math.round(v * 100) / 100;
@@ -521,11 +523,13 @@ class AppState {
     this.activeFormat = f;
     this.exporting = f;
     try {
+      await saveTarget.prepare();
       const withHelpers = this.supports && this.hasSupport;
-      const r = await exportFile(this.spec(), f, this.fileName, withHelpers);
+      const { blob, ...r } = await exportFile(this.spec(), f, this.fileName, withHelpers);
+      const where = await saveTarget.save(blob, r.fileName, r.url);
       const key = JSON.stringify(this.spec().input) + f + withHelpers;
       for (const old of this.files.filter((x) => x.fileName === r.fileName)) URL.revokeObjectURL(old.url);
-      this.files = [{ ...r, key }, ...this.files.filter((x) => x.fileName !== r.fileName)];
+      this.files = [{ ...r, key, where }, ...this.files.filter((x) => x.fileName !== r.fileName)];
     } catch (e) {
       this.errorMsg = userMessage(e);
     } finally {
@@ -551,8 +555,11 @@ class AppState {
   async downloadPlate(f: ExportFormat) {
     this.plateBusy = f;
     try {
-      const r = await exportPlate(this.plate.map(({ req, includeHelpers, label }) => ({ req, includeHelpers, label })), f, `osVAC neo Druckbett ${this.plate.length} Adapter`);
-      this.files = [{ ...r, key: 'plate' + f }, ...this.files.filter((x) => x.fileName !== r.fileName)];
+      await saveTarget.prepare();
+      const { blob, ...r } = await exportPlate(this.plate.map(({ req, includeHelpers, label }) => ({ req, includeHelpers, label })), f, `osVAC neo Druckbett ${this.plate.length} Adapter`);
+      const where = await saveTarget.save(blob, r.fileName, r.url);
+      for (const old of this.files.filter((x) => x.fileName === r.fileName)) URL.revokeObjectURL(old.url);
+      this.files = [{ ...r, key: 'plate' + f, where }, ...this.files.filter((x) => x.fileName !== r.fileName)];
     } catch (e) {
       this.errorMsg = userMessage(e);
     } finally {
