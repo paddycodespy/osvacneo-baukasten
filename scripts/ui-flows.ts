@@ -455,6 +455,8 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('radio', { name: /Drehring-Lösehilfe/ }).click();
     await step(pg, 'Größen');
     expect((await pg.locator('fieldset.dia').count()) === 2, 'Kupplung und Stecker sollten abgefragt werden');
+    await pg.locator('.lead .help-btn').click();
+    expect((await pg.locator('.help-text').innerText()).includes('trägt „M“'), 'Erklärung zur Beschriftung fehlt');
     await pg.getByLabel(/Für Stecker/).uncheck();
     expect((await pg.locator('fieldset.dia').count()) === 1, 'Stecker-Größe bleibt sichtbar');
     expect(await pg.getByLabel(/Für Kupplungen/).isDisabled(), 'letzter Halter abwählbar');
@@ -463,6 +465,7 @@ await withPreview(4180, async (url, browser) => {
     await step(pg, 'Download');
     expect((await pg.locator('.tips').innerText()).includes('Drehring gelöst'), 'Druckhinweis zur Lösehilfe fehlt');
     expect((await pg.locator('.tips').innerText()).includes('Stützen werden nicht gebraucht'), 'Lösehilfe braucht Stützen?');
+    expect((await pg.locator('.tips').innerText()).includes('Füllung reicht'), 'Hinweis zur Füllung fehlt');
     await step(pg, 'Größen');
     await pg.getByLabel(/Für Stecker/).check();
     await ready(pg);

@@ -10,9 +10,10 @@
   import HelpText from '../HelpText.svelte';
 
   const canPick = isDesktop || canPickWeb;
-  /** Programm: Datei noch einmal speichern (in den jetzt gewählten Ordner) */
+  /** Datei noch einmal speichern (in den jetzt gewählten Ordner; im Browser ohne Ordner: normaler Download) */
   async function resave(f: FileEntry) {
     try {
+      await saveTarget.prepare();
       const where = await saveTarget.save(await (await fetch(f.url)).blob(), f.fileName, f.url);
       app.files = app.files.map((x) => (x === f ? { ...x, where } : x));
     } catch (e) {
@@ -131,8 +132,19 @@
           </li>
         {/each}
       </ul>
+    {:else if saveTarget.custom}
+      <!-- Browser mit gewähltem Ordner: noch einmal dorthin speichern statt in den Download-Ordner des Browsers -->
+      <p>{app.files.every((f) => f.where) && savedIn ? `Gespeichert im Ordner „${savedIn}“.` : 'Fertige Dateien.'} Mit „Speichern“ noch einmal in den gewählten Ordner:</p>
+      <ul>
+        {#each app.files as f (f.fileName)}
+          <li>
+            <span class="f-name">{f.fileName}</span> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span>
+            <button type="button" class="f-act" onclick={() => resave(f)}>Speichern</button>
+          </li>
+        {/each}
+      </ul>
     {:else}
-      <p>{app.files.every((f) => f.where) && savedIn ? `Gespeichert im Ordner „${savedIn}“. Noch einmal herunterladen:` : 'Fertige Dateien. Falls der Download nicht von selbst startet, hier klicken:'}</p>
+      <p>Fertige Dateien. Falls der Download nicht von selbst startet, hier klicken:</p>
       <ul>
         {#each app.files as f (f.fileName)}
           <li><a href={f.url} download={f.fileName}>{f.fileName}</a> <span>{fmt(f.size / 1024 / 1024, 1)} MB</span></li>
