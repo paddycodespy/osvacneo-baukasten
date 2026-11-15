@@ -15,6 +15,7 @@ import { partsFree } from '../src/lib/osvac/assemblies';
 import { TEMPLATES, newBlock, planFree, tiltedEnds, bleedMinLen, DEFAULT_DEVICE, type FreeSpec } from '../src/lib/osvac/freeform';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleLayout, nozzleToFree, type NozzleSpec } from '../src/lib/osvac/nozzle';
 import { bleedTransition } from '../src/lib/osvac/bleed';
+import { prepare as prepareContour, bbox as contourBox } from '../src/lib/osvac/contour';
 import { weld, meshTolerance } from '../src/lib/worker/threemf';
 import { overhangArea, COUNTED, COUNTED_MACHINE, COUNTED_GATE } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
@@ -39,6 +40,17 @@ const bl = (m: number, f: number, gap = 0.4): FreeSpec => ({
   bed: 'A',
   bleedGap: gap,
 });
+/** Haube mit eigener Kontur (Nase, gewölbte Oberseite), Übergang lang genug für den Druck ohne Stützen */
+function konturHaube(): FreeSpec {
+  const raw: [number, number][] = [[-27, -17], [27, -17], [27, -6], [29.5, -5], [29.5, 1], [27, 2], [27, 8]];
+  const half = 27, sag = 7, R = (half * half + sag * sag) / (2 * sag), cy = 15 - R, a0 = Math.atan2(8 - cy, 27);
+  for (let i = 0; i <= 40; i++) raw.push([R * Math.cos(a0 + ((Math.PI - 2 * a0) * i) / 40), cy + R * Math.sin(a0 + ((Math.PI - 2 * a0) * i) / 40)]);
+  const pts = prepareContour(raw).pts, b = contourBox(pts);
+  const s = TEMPLATES.find((t) => t.id === 'hood')!.make();
+  s.b.device = { ...s.b.device, section: { ...s.b.device.section, shape: 'contour', pts, w: b.w, h: b.h, d: Math.max(b.w, b.h) } };
+  s.b.transition = 34;
+  return s;
+}
 const cases: [string, FreeSpec][] = [
   ...NOZZLE_KINDS.map((k) => [`duese-${k.id}`, nz({ kind: k.id, ...k.values })] as [string, FreeSpec]),
   ...NOZZLE_KINDS.map((k) => [`duese-${k.id}-ring-buerste`, nz({ kind: k.id, ...k.values, ring: true, brush: true, tip: 30 })] as [string, FreeSpec]),
@@ -47,6 +59,7 @@ const cases: [string, FreeSpec][] = [
   ['nebenluft-15', bl(15, 15, 0.2)],
   ['nebenluft-25-50', bl(25, 50, 0.6)],
   ...TEMPLATES.filter((t) => !['gate'].includes(t.id)).map((t) => [`vorlage-${t.id}`, t.make()] as [string, FreeSpec]),
+  ['kontur-haube', konturHaube()],
 ];
 /** Stutzen-Adapter und Schieber einzeln (keine Freiform): Teile und die Überhang-Regel der App */
 const others: [string, string, object, RegExp, object?][] = [

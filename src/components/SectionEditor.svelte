@@ -5,7 +5,8 @@
    */
   import NumberField from './NumberField.svelte';
   import Field from './Field.svelte';
-  import { SECTION_FIELDS, SECTION_LABELS, samplePoints, type Section, type SectionShape } from '../lib/osvac/freeform';
+  import ContourPanel from './ContourPanel.svelte';
+  import { SECTION_FIELDS, SECTION_LABELS, samplePoints, type Section, type SectionShape, type SecNum } from '../lib/osvac/freeform';
 
   let {
     section = $bindable(),
@@ -25,8 +26,8 @@
     frontLabel?: string;
   } = $props();
 
-  const SHAPES: SectionShape[] = ['circle', 'ellipse', 'slot', 'rect', 'dshape', 'trapezoid'];
-  type Key = keyof Omit<Section, 'shape'>;
+  const SHAPES: SectionShape[] = ['circle', 'ellipse', 'slot', 'rect', 'dshape', 'trapezoid', 'contour'];
+  type Key = SecNum;
 
   type Name = { name: string; letter: string; help?: string };
   const CORNER = 'Wie stark die Ecke gerundet ist. Klein = fast eckig, groß = stark gerundet. Mit einer Münze oder einem Radiuslehrensatz abschätzen; ungefähr genügt.';
@@ -39,6 +40,7 @@
     trapezoid: { w: { name: 'Breite unten', letter: 'B' }, w2: { name: 'Breite oben', letter: 'b' }, h: { name: 'Höhe', letter: 'H' }, r: { name: 'Ecken', letter: 'R', help: CORNER } },
     // nur intern (Flanschplatte), nicht wählbar
     tri: {},
+    contour: {},
   };
   const LIMITS: Record<Key, { min: number; max: number; step: number }> = {
     d: { min: 6, max: 200, step: 0.1 },
@@ -58,6 +60,11 @@
   function setShape(shape: SectionShape) {
     if (shape === section.shape) return;
     const s = section;
+    // eigene Kontur: Punkte bleiben erhalten (zurückwechseln ohne neu laden); Maße kommen aus der Kontur
+    if (shape === 'contour') {
+      s.shape = shape;
+      return;
+    }
     const big = s.shape === 'circle' || s.shape === 'dshape' ? s.d : Math.max(s.w, s.h);
     const small = s.shape === 'circle' ? s.d : s.shape === 'dshape' ? s.h : Math.min(s.w, s.h);
     if (shape === 'circle') s.d = big;
@@ -126,13 +133,19 @@
           {:else if sh === 'slot'}<rect x="3" y="4" width="26" height="14" rx="7" />
           {:else if sh === 'rect'}<rect x="3" y="3" width="26" height="16" rx="3" />
           {:else if sh === 'dshape'}<path d="M8.5 17.5 H23.5 A9.2 9.2 0 1 0 8.5 17.5 Z" />
-          {:else}<path d="M3 18.5 H29 L24 3.5 H8 Z" stroke-linejoin="round" />{/if}
+          {:else if sh === 'trapezoid'}<path d="M3 18.5 H29 L24 3.5 H8 Z" stroke-linejoin="round" />
+          {:else}<path d="M5 18.5 H27 Q28.5 18.5 28.5 17 V13 L30.5 12.5 V9.5 L28.5 9 V7 Q28.5 5.5 26 5 Q16 1 6 5 Q3.5 5.5 3.5 7 V17 Q3.5 18.5 5 18.5 Z" stroke-linejoin="round" />{/if}
         </svg>
         <span>{SECTION_LABELS[sh]}</span>
       </button>
     {/each}
   </div>
 
+  {#if section.shape === 'contour'}
+  <div class="sec-body">
+    <ContourPanel bind:section {label} {measure} />
+  </div>
+  {:else}
   <div class="sec-body">
     <svg class="fig" viewBox="0 0 {VW} {VH}" role="img" aria-label="Skizze {SECTION_LABELS[section.shape]} mit Maßen">
       <path d={fig.d} class="outline" />
@@ -183,12 +196,13 @@
       {/if}
     </div>
   </div>
+  {/if}
 </div>
 
 <style>
   .sec { margin: 10px 0 4px; }
   .sec-label { font-weight: 600; font-size: 14px; }
-  .shapes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 8px 0 10px; }
+  .shapes { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin: 8px 0 10px; }
   .shape {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
     padding: 6px 2px 5px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
@@ -208,6 +222,6 @@
   .lead { fill: none; stroke: var(--sky-d); stroke-width: 1; }
   .sec-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 14px; align-items: end; }
   @media (max-width: 520px) {
-    .shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .shapes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 </style>

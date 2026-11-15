@@ -20,6 +20,7 @@ import { gateLayout, gateLower, gateUpper, gateSlider, gateClip, sliderInGate, D
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleToFree, nozzleIssues, nozzleLayout, type NozzleSpec } from '../src/lib/osvac/nozzle';
 import { DEFAULT_TIP, bleedMinLen } from '../src/lib/osvac/freeform';
+import { prepare as prepareContour, bbox as contourBox } from '../src/lib/osvac/contour';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 setOC(await opencascade({ locateFile: (f: string) => path.join(here, '../node_modules/replicad-opencascadejs/dist/', f) }));
@@ -115,6 +116,33 @@ for (const [id, shape] of [['schlitze-kreis', 'circle'], ['schlitze-rechteck', '
   cases.push(['u-bogen-stecker-unten', s]);
 }
 
+// Eigene Kontur (Stutzen mit Nase und gewölbter Oberseite): auf-/eingesteckt mit Extras, Flansch, Übergang und Bogen
+{
+  const raw: [number, number][] = [[-27, -17], [27, -17], [27, -6], [29.5, -5], [29.5, 1], [27, 2], [27, 8]];
+  const half = 27, sag = 7, R = (half * half + sag * sag) / (2 * sag), cy = 15 - R, a0 = Math.atan2(8 - cy, 27);
+  for (let i = 0; i <= 40; i++) {
+    const a = a0 + ((Math.PI - 2 * a0) * i) / 40;
+    raw.push([R * Math.cos(a), cy + R * Math.sin(a)]);
+  }
+  const pts = prepareContour(raw).pts;
+  const b = contourBox(pts);
+  const kontur = () => ({ ...sec('contour'), pts: structuredClone(pts), w: b.w, h: b.h, d: Math.max(b.w, b.h), src: 'test' });
+  for (const mode of ['over', 'into'] as const) {
+    const s = TEMPLATES[3].make();
+    s.b.device = { ...s.b.device, mode, section: kontur(), length: 28, rot: 10, ribs: true, slots: true, holes: true, notch: mode === 'over', notchW: 14, notchH: 9, notchDir: 90, collar: mode === 'into' };
+    cases.push([`kontur-${mode}-extras`, s]);
+  }
+  const f = TEMPLATES[3].make();
+  f.b.transition = 18;
+  f.b.device = { ...f.b.device, mode: 'flange', section: kontur(), seal: true, sealW: 6, flangeRim: flangeMinRim(3, true, 6) };
+  f.bed = 'B';
+  cases.push(['kontur-flansch', f]);
+  const k = TEMPLATES[0].make();
+  k.blocks = [newBlock('transition', { length: 40, section: kontur(), twist: 20 }), newBlock('bend', { angle: 45, radius: 70, dir: 90 }), newBlock('straight', { length: 10 })];
+  k.b.type = 'female';
+  k.b.d = 32;
+  cases.push(['kontur-uebergang-bogen', k]);
+}
 // Flansch am Gerät: alle Formen mit automatischem Lochbild (abwechselnd mit Dichtung und gedreht), Lochbild nach Maß rechteckig und rund
 for (const [i, shape] of shapes.entries()) {
   const s = TEMPLATES[3].make();

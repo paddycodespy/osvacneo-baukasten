@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80mm" height="60mm" viewBox="0 0 80 60">
+  <!-- Stutzen mit Nase rechts und gewölbter Oberseite (y nach unten), dazu ein Loch und eine Hilfslinie -->
+  <path d="M 13 47 H 67 V 36 L 69.5 35 V 29 L 67 28 V 22 A 46.7 46.7 0 0 0 13 22 Z" fill="none" stroke="black" stroke-width="0.2"/>
+  <circle cx="40" cy="38" r="4" fill="none" stroke="black" stroke-width="0.2"/>
+  <line x1="0" y1="55" x2="80" y2="55" stroke="black" stroke-width="0.2"/>
+</svg>
