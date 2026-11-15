@@ -6,7 +6,7 @@
    */
   import { onMount } from 'svelte';
   import { PartViewer } from './lib/viewer';
-  import { build, partNames } from './lib/cad';
+  import { build, partNames, measureBodies } from './lib/cad';
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
   import { overhangArea, belowBedEnd, COUNTED, COUNTED_MACHINE, COUNTED_GATE } from './lib/overhang';
@@ -110,7 +110,12 @@
             ? `Ein Teil des Adapters liegt ${fmt(below, 0)} mm tiefer als das Ende, auf dem es steht (mit Schieber steht das Teil mit A auf Anschluss A, das Teil mit B auf Ende B). So lässt es sich nicht drucken. Bitte einen Bogen oder Abzweig in eine andere Richtung zeigen lassen.`
             : `Ein Teil des Adapters liegt ${fmt(below, 0)} mm tiefer als ${app.free.bed === 'B' ? 'Ende B' : 'Anschluss A'}. So liegt das Ende nicht auf dem Druckbett und der Adapter lässt sich nicht drucken. Bitte das andere Ende nach unten legen oder einen Bogen oder Abzweig in eine andere Richtung zeigen lassen.`
           : '';
-      app.measures = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
+      // Filament: alle Körper vereinigt messen (Stoßflächen innen zählen nicht als Außenwand); kommt kurz danach,
+      // geht das nicht (z. B. offenes Netz), gilt die Summe der Körper
+      const sums = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
+      void measureBodies(full.bodies).then((u) => {
+        if (token === buildToken) app.measures = u ?? sums;
+      });
       app.progress = null;
       app.status = 'ready';
     } catch (e) {

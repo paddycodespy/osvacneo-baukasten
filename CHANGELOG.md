@@ -4,6 +4,7 @@
 
 ## 0.5.0
 
+- Filamentangabe genauer: Volumen und Außenfläche des ganzen Teils (alle Körper vereinigt, manifold-3d) statt der Summe der Einzelkörper; vorher bis zu 25 % zu hoch.
 - Druckhinweis bei mitgedruckten Ringen (Schlauchadapter, Nebenluft-Regler): Slicer-Meldung „schwebende Bereiche“ bzw. „fliegender Träger“ ist gewollt, keine Stützen einschalten.
 - Freiform: Form „Eigene“ für Stutzen, die zu keiner Grundform passen. Kontur aus SVG- oder DXF-Datei laden, am Foto nachzeichnen (mit Lineal als Maßstab) oder selbst zeichnen; drehen, spiegeln, auf das gemessene Maß bringen, mit Prüfliste. Geht überall, wo es eine Form gibt (Gerät aufgesteckt, eingesteckt, Flansch, Übergang, Absatz). Die Kontur gilt mit Blick auf den Stutzen (von vorne). Zeichnen: Rückgängig (Strg+Z), Zoom mit zwei Fingern und Knöpfen, Rückfrage vor dem Verwerfen. Eingesteckt: Hinweis, wenn schmale Stellen in der Wand verschwinden. SVG mit <use> wird gelesen.
 - Neu unter Zubehör: „Drehring-Lösehilfe“ nach Odul. Halter für Kupplungen (FxxHyy) und/oder für Stecker (MxxHyy), beschriftet wie im Original (M32 bzw. F32), Größen frei, stehend ohne Stützen gedruckt (15–20 % Füllung reicht).

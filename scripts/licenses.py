@@ -25,6 +25,7 @@ for title, name, lic, note in [
     ('three.js', 'three', 'LICENSE', 'https://threejs.org'),
     ('Svelte', 'svelte', 'LICENSE.md', 'https://svelte.dev'),
     ('fflate', 'fflate', 'LICENSE', 'https://github.com/101arrowz/fflate'),
+    ('Manifold', 'manifold-3d', 'LICENSE', 'Vereinigt die Netze für die Filamentschätzung. https://github.com/elalish/manifold'),
     ('Poppins', '@fontsource/poppins', 'LICENSE', 'Schrift der Oberfläche. https://fonts.google.com/specimen/Poppins'),
 ]:
     ver, spdx, text = pkg(name, lic)

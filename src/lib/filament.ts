@@ -1,7 +1,8 @@
 /**
  * Filamentschätzung für PETG (1,27 g/cm³, 1,75 mm).
  * Untergrenze: 3 Wände à 0,4 mm (≈ 1,2 mm Hülle an jeder Oberfläche) + 15 % Infill.
- * Obergrenze: massiv gedruckt. Die Teile von osVAC neo sind dünnwandig, beides liegt daher nah beieinander.
+ * Obergrenze: massiv gedruckt. Volumen und Fläche kommen aus der Vereinigung aller Körper (unionMeasure.ts), sonst
+ * zählten die Stoßflächen zwischen den Körpern als Außenwand.
  */
 export const PETG = { density: 1.27, diameter: 1.75 };
 

@@ -5,6 +5,8 @@
  * Jeder Worker hält fertige Körper vor; ein Auftrag geht bevorzugt an den Worker, der den Körper schon kennt.
  */
 import CadWorker from './worker/cad.worker?worker';
+import MeasureWorker from './worker/measure.worker?worker';
+import type { UnionMeasures } from './unionMeasure';
 import wasmUrl from 'replicad-opencascadejs/wasm?url';
 import { STL_HEADER } from './credits';
 import type { BuildRequest, ExportFormat, MeshBody, WorkerReply, WorkerRequest, PartRef } from './worker/protocol';
@@ -333,4 +335,34 @@ export async function exportPlate(items: PlateItem[], format: ExportFormat, file
 
 export function exportFile(req: BuildRequest, format: ExportFormat, fileName: string, includeHelpers: boolean) {
   return exportPlate([{ req, includeHelpers, label: fileName }], format, fileName);
+}
+
+// ---------------------------------------------------------------- Filament: Volumen und Außenfläche des ganzen Teils
+
+
+let measureWorker: Worker | null = null;
+let measureSeq = 0;
+const measureWaiting = new Map<number, (r: UnionMeasures | null) => void>();
+/**
+ * Alle Körper vereinigt messen (eigener Worker mit manifold-3d). null, wenn es nicht geht (z. B. offenes Netz):
+ * dann bleibt die einfache Summe der Körper.
+ */
+export function measureBodies(bodies: MeshBody[]): Promise<UnionMeasures | null> {
+  if (!measureWorker) {
+    measureWorker = new MeasureWorker();
+    measureWorker.onmessage = (e: MessageEvent<{ id: number; ok: boolean } & UnionMeasures>) => {
+      const done = measureWaiting.get(e.data.id);
+      measureWaiting.delete(e.data.id);
+      done?.(e.data.ok ? { volume: e.data.volume, area: e.data.area, helperVolume: e.data.helperVolume, helperArea: e.data.helperArea } : null);
+    };
+    measureWorker.onerror = () => {
+      for (const done of measureWaiting.values()) done(null);
+      measureWaiting.clear();
+    };
+  }
+  const id = ++measureSeq;
+  return new Promise((resolve) => {
+    measureWaiting.set(id, resolve);
+    measureWorker!.postMessage({ id, bodies: bodies.map((b) => ({ helper: b.helper, positions: b.positions, indices: b.indices })) });
+  });
 }
