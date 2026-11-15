@@ -442,6 +442,7 @@ await withPreview(4180, async (url, browser) => {
     await until(pg, downloadOpen(pg), 'Download gesperrt');
     await step(pg, 'Download');
     expect((await pg.locator('.step-body').innerText()).includes('das Rohr des Reglers'), 'kein Druckhinweis zum Drehring am Schlauch');
+    expect((await pg.locator('.tips').innerText()).includes('„fliegender Träger“'), 'Hinweis zur Slicer-Meldung fehlt');
     expect((await pg.locator('.lead').first().innerText()).includes('oben Stecker M40, unten Schlauch H32'), 'Download-Text: ' + (await pg.locator('.lead').first().innerText()));
     await step(pg, 'Passung');
     await pg.getByRole('button', { name: /Passung auf Standard/ }).click();

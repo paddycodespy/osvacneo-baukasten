@@ -442,10 +442,16 @@ class AppState {
       if (tp?.brush) t.push('In die Nut im Rand passt eine Streifenbürste mit etwa 2 mm breitem Rücken (Meterware, „Streifenbürste“ oder „Leistenbürste“). Mit Sekunden- oder Montagekleber einkleben, die Borsten etwa 5 mm über die Spitze stehen lassen.');
       else if (tp?.ring) t.push('Der Schutzring macht den Rand dicker und schont Möbel. Er ist zur Wand hin abgestuft und druckt ohne Stützen.');
     }
+    if (this.hasSwivel || this.hasBleed) {
+      const two = this.hasSwivel && this.hasBleed;
+      t.push(
+        `Slicer-Meldung: ${two ? 'Die beiden Ringe werden' : 'Der Ring wird'} gleich mitgedruckt und ${two ? 'liegen' : 'liegt'} mit dem eingestellten Spiel über dem Teil darunter; die unterste Schicht hängt kurz in der Luft. Bambu Studio meldet das je nach Version als „schwebende Bereiche“ oder „fliegender Träger“ (andere Slicer z. B. „floating regions“ oder „floating cantilever“). Das ist gewollt: Meldung wegklicken und keine Stützen einschalten, sonst ${two ? 'wachsen die Ringe' : 'wächst der Ring'} fest.`,
+      );
+    }
     if (this.hasSwivel && this.input.slipRingGapSize <= 0.3)
       t.push('Drehring: Das Spiel ist auf 0,3 mm (wie im Original). Beim Druck mit PETG kann der Ring damit festsitzen; für PETG in „Passung“ 0,35–0,5 mm einstellen.');
     if (this.hasBleed)
-      t.push(`Der Drehring wird gleich mitgedruckt. Nach dem Druck den Ring ein paarmal kräftig hin und her drehen, bis er leicht läuft. Um 60° drehen: von ganz auf (Fenster übereinander) bis ganz zu. Dreht er zu schwer oder klebt fest: in „Passung“ mehr Spiel einstellen (jetzt ${fmt(this.bleedGap, 2)} mm). Die unterste Schicht des Rings hängt mit diesem Spiel über dem Bund; meldet der Slicer dort „schwebende Bereiche“, ist das gewollt (keine Stützen einschalten, sonst wächst der Ring fest).`);
+      t.push(`Der Nebenluft-Ring wird gleich mitgedruckt. Nach dem Druck den Ring ein paarmal kräftig hin und her drehen, bis er leicht läuft. Um 60° drehen: von ganz auf (Fenster übereinander) bis ganz zu. Dreht er zu schwer oder klebt fest: in „Passung“ mehr Spiel am Nebenluft-Ring einstellen (jetzt ${fmt(this.bleedGap, 2)} mm).`);
     const c = this.free.c;
     if (this.kind.freeform && c && c.type !== 'device' && this.free.blocks.some((x) => x.type === 'branch'))
       t.push(`${c.type === 'female' ? 'Die Kupplung' : 'Der Stecker'} an Ende C (am Abzweig) steht schräg: im Slicer „Stützen nur auf dem Druckbett“ einschalten.`);
