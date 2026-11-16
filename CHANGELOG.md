@@ -4,6 +4,7 @@
 
 ## 0.5.0
 
+- Freiform: „Düse“ an Ende B ist nicht mehr wählbar (von Hand ließ sie sich nicht sinnvoll formen). Sie erscheint nur noch, wenn eine Saugdüse mit „In der Freiform weiterbauen“ übernommen wurde.
 - Eigene Kontur: „Selbst zeichnen“ als dritte Möglichkeit neben „Datei laden“ und „Am Foto nachzeichnen“. „Datei wählen …“ im Browser ohne Dateifilter (manche Browser unter Linux öffneten sonst kein Fenster; die Endung wird beim Lesen geprüft). Beim Nachzeichnen stehen „Foto wählen …“ und „Anderes Foto …“ unter dem Hilfetext.
 - Filamentangabe wie im Slicer: Das Teil wird in 0,2-mm-Schichten geschnitten (3 Wände, 5 Lagen oben, 3 unten, 15 % Füllung). Statt einer Spanne steht jetzt eine Zahl, abgeglichen mit Bambu Studio (Nebenluft 78 g, M36F36 40 g, Flansch D63 64 g; Abweichung unter 1 %). Die Meter Filament passen jetzt zur Grammzahl.
 - Freiform, Form „Eigene“: Solange noch keine Kontur da ist, kein „Fehler beim Berechnen“ mehr. Stattdessen blauer Hinweis an der Karte, Status „Kontur fehlt noch“, in der Vorschau „Sobald die Kontur angelegt ist, erscheint hier der Adapter“. Download bleibt bis dahin gesperrt.

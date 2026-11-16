@@ -13,7 +13,7 @@
   import ResetLink from './ResetLink.svelte';
   import NotchFigure from './NotchFigure.svelte';
   import IssueList from './IssueList.svelte';
-  import { DEFAULT_TIP, NOZZLE, SLOT_SHAPES, SEAL, AUTO_HOLE_D, flangeGeom, flangeDefaults, flangeMinRim, flangeExtent, BRIM_FROM, type EndSpec, type Fix, type Issue, type FlangeLayout, type DeviceEnd } from '../lib/osvac/freeform';
+  import { NOZZLE, SLOT_SHAPES, SEAL, AUTO_HOLE_D, flangeGeom, flangeDefaults, flangeMinRim, flangeExtent, BRIM_FROM, type EndSpec, type Fix, type Issue, type FlangeLayout, type DeviceEnd } from '../lib/osvac/freeform';
 
   let {
     end = $bindable(),
@@ -22,10 +22,8 @@
     issues = [],
     apply,
     onflange,
-    onnozzle,
     transition = true,
-    nozzleBlocked = '',
-  }: { end: EndSpec; wall: number; tag: 'B' | 'C'; issues?: Issue[]; apply: (fx: Fix) => void; onflange?: () => void; onnozzle?: () => void; transition?: boolean; /** Grund, warum Düse nicht geht ('' = geht) */ nozzleBlocked?: string } = $props();
+  }: { end: EndSpec; wall: number; tag: 'B' | 'C'; issues?: Issue[]; apply: (fx: Fix) => void; onflange?: () => void; transition?: boolean } = $props();
 
   const SIZES = [25, 32, 36, 40, 50];
   const fmt = (v: number, d = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: d });
@@ -35,12 +33,6 @@
   let extrasOpen = $state(anyExtra(end.device));
 
   const isFlange = $derived(end.type === 'device' && end.device.mode === 'flange');
-  /** Düse: Spitze mit Standardwerten anlegen; Anschluss A liegt dann unten (onnozzle) */
-  function setNozzle() {
-    end.tip ??= { ...DEFAULT_TIP };
-    end.type = 'nozzle';
-    onnozzle?.();
-  }
   function setDeviceMode(m: DeviceEnd['mode']) {
     end.device.mode = m;
     if (m === 'flange') onflange?.();
@@ -120,8 +112,9 @@
   <button type="button" role="radio" aria-checked={end.type === 'device'} class:sel={end.type === 'device'} onclick={() => (end.type = 'device')}>Gerät</button>
   <button type="button" role="radio" aria-checked={end.type === 'female'} class:sel={end.type === 'female'} onclick={() => (end.type = 'female')}>Kupplung (F)</button>
   <button type="button" role="radio" aria-checked={end.type === 'male'} class:sel={end.type === 'male'} onclick={() => (end.type = 'male')}>Stecker (M)</button>
-  {#if tag === 'B'}
-    <button type="button" role="radio" aria-checked={end.type === 'nozzle'} class:sel={end.type === 'nozzle'} disabled={!!nozzleBlocked && end.type !== 'nozzle'} title={nozzleBlocked || undefined} onclick={setNozzle}>Düse</button>
+  <!-- „Düse“ nur, wenn die Kette aus der Saugdüse übernommen wurde: von Hand lässt sich eine Düse hier nicht sinnvoll formen -->
+  {#if tag === 'B' && end.type === 'nozzle'}
+    <button type="button" role="radio" aria-checked="true" class="sel">Düse</button>
   {/if}
 </div>
 {#if end.type === 'nozzle' && end.tip}
