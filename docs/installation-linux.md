@@ -2,9 +2,9 @@
 
 Es gibt zwei Dateien, eine davon reicht:
 
-- **AppImage** (`osVAC neo Baukasten_…_amd64.AppImage`): läuft ohne Installation auf den meisten Distributionen
+- **AppImage** (`osVAC-neo-Baukasten-…-Linux.AppImage`): läuft ohne Installation auf den meisten Distributionen
   (64 Bit, ab etwa Ubuntu 22.04 bzw. gleich alten Systemen).
-- **.deb** (`osVAC neo Baukasten_…_amd64.deb`): für Debian, Ubuntu und Linux Mint, mit Eintrag im Startmenü.
+- **.deb** (`osVAC-neo-Baukasten-…-Linux.deb`): für Debian, Ubuntu und Linux Mint, mit Eintrag im Startmenü.
 
 ## AppImage
 
@@ -12,7 +12,7 @@ Es gibt zwei Dateien, eine davon reicht:
 2. Ausführbar machen: Rechtsklick → *Eigenschaften* → *Als Programm ausführen erlauben*, oder im Terminal
 
    ```
-   chmod +x "osVAC neo Baukasten_0.4.1_amd64.AppImage"
+   chmod +x osVAC-neo-Baukasten-0.5.0-Linux.AppImage
    ```
 
 3. Doppelklick startet das Programm.
@@ -21,13 +21,13 @@ Startet es nicht und meldet etwas mit `libfuse.so.2`: unter Ubuntu 22.04 `sudo a
 `sudo apt install libfuse2t64`. Ohne FUSE geht es auch so:
 
 ```
-"./osVAC neo Baukasten_0.4.1_amd64.AppImage" --appimage-extract-and-run
+./osVAC-neo-Baukasten-0.5.0-Linux.AppImage --appimage-extract-and-run
 ```
 
 ## .deb
 
 ```
-sudo apt install "./osVAC neo Baukasten_0.4.1_amd64.deb"
+sudo apt install ./osVAC-neo-Baukasten-0.5.0-Linux.deb
 ```
 
 Danach steht „osVAC neo Baukasten“ im Startmenü. Deinstallieren: `sudo apt remove os-vac-neo-baukasten`.

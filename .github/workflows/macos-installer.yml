@@ -2,7 +2,8 @@ name: macOS-Installer
 
 # Baut ein DMG für macOS (Universal: Apple Silicon und Intel).
 # Start über „Run workflow“ oder durch einen Tag v*.
-# Ergebnis: Artefakt „osvacneo-baukasten-macos“ mit der .dmg-Datei.
+# Ergebnis: Artefakt „osVAC-neo-Baukasten-<Version>-macOS“ mit osVAC-neo-Baukasten-<Version>-macOS.dmg
+# (gleiches Schema wie Windows und Linux).
 
 on:
   workflow_dispatch:
@@ -13,9 +14,9 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -34,8 +35,18 @@ jobs:
       - name: App und DMG bauen
         run: npx tauri build --target universal-apple-darwin
 
-      - uses: actions/upload-artifact@v4
+      # einheitliche Dateinamen für alle Systeme: osVAC-neo-Baukasten-<Version>-<System>.<Endung>
+      - name: Dateien benennen
+        shell: bash
+        run: |
+          v=$(node -p "require('./package.json').version")
+          mkdir -p out
+          mv src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg "out/osVAC-neo-Baukasten-$v-macOS.dmg"
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          ls -l out
+
+      - uses: actions/upload-artifact@v6
         with:
-          name: osvacneo-baukasten-macos
-          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          name: osVAC-neo-Baukasten-${{ env.VERSION }}-macOS
+          path: out/*
           if-no-files-found: error

@@ -1,7 +1,8 @@
 # Baut den Windows-Installer (NSIS, .exe) des osVAC neo Baukastens.
 # Start: auf GitHub unter „Actions“ → „Windows-Installer“ → „Run workflow“,
 # oder automatisch beim Hochladen eines Versions-Tags (z. B. git tag v0.1.0 && git push --tags).
-# Ergebnis: unter dem Lauf bei „Artifacts“ als ZIP mit der Setup-Datei.
+# Ergebnis: unter dem Lauf bei „Artifacts“ das ZIP „osVAC-neo-Baukasten-<Version>-Windows“ mit
+# osVAC-neo-Baukasten-<Version>-Windows-Setup.exe (gleiches Schema wie macOS und Linux).
 name: Windows-Installer
 
 on:
@@ -32,8 +33,18 @@ jobs:
       # baut zuerst die Web-Oberfläche (npm run build), dann das Programm und den Installer
       - run: npx tauri build --bundles nsis
 
+      # einheitliche Dateinamen für alle Systeme: osVAC-neo-Baukasten-<Version>-<System>.<Endung>
+      - name: Dateien benennen
+        shell: bash
+        run: |
+          v=$(node -p "require('./package.json').version")
+          mkdir -p out
+          mv src-tauri/target/release/bundle/nsis/*.exe "out/osVAC-neo-Baukasten-$v-Windows-Setup.exe"
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          ls -l out
+
       - uses: actions/upload-artifact@v6
         with:
-          name: osVAC-neo-Baukasten-Windows
-          path: src-tauri/target/release/bundle/nsis/*.exe
+          name: osVAC-neo-Baukasten-${{ env.VERSION }}-Windows
+          path: out/*
           if-no-files-found: error

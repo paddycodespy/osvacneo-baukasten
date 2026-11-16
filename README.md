@@ -118,7 +118,7 @@ scripts/
   ui-flows.ts                Bedienabläufe im Browser prüfen (npm run build && npm run test:ui)
   islands.ts                 Druckbarkeit in Schichten prüfen (npm run test:islands, braucht python3 mit trimesh/shapely; tools/druck/islands.py)
   lib/preview.ts             gemeinsam für beide: vite preview + Chrome starten
-.github/workflows/tests.yml  Alle Prüfungen bei jedem Push (Typen, Build, Schlüssel, Freiform, Skizzen, Bedienabläufe, Geometrie)
+.github/workflows/tests.yml  Alle Prüfungen von Hand und bei jedem Versions-Tag (Typen, Build, Schlüssel, Freiform, Skizzen, Bedienabläufe, Geometrie)
 ```
 
 ### Prüfungen
@@ -132,7 +132,7 @@ scripts/
 | `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern und bei Teilen unter dem Druckbett, Stand und Druckbett nach dem Neuladen, Extras im Namen, Flansch, Druckhilfe je Verbindung, Link aus den Download-Hinweisen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 1 min |
 | `npm run test:geometry` | alle Adaptertypen mit Grenzwerten | ca. 10–15 min |
 
-Auf GitHub laufen alle bei jedem Push (Actions → Tests), in drei gleichzeitigen Gruppen (Oberfläche, Freiform, Geometrie), zusammen etwa 10 Minuten. Kommt ein neuer Push, während ein Lauf noch wartet, ersetzt der neue den wartenden.
+Auf GitHub laufen alle von Hand (Actions → Tests → Run workflow) und bei jedem Versions-Tag, in mehreren gleichzeitigen Gruppen, zusammen etwa 15 Minuten (rund 50 Actions-Minuten). Nicht mehr bei jedem Push: auf dem privaten Repository waren die Freiminuten sonst nach wenigen Tagen aufgebraucht; vor jedem Patch laufen die Tests lokal.
 
 ### Rechenzeit
 
@@ -209,7 +209,7 @@ Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fens
 
 **Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
 Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
-`osVAC neo Baukasten_0.5.0_x64-setup.exe`. Alternativ startet ein Versions-Tag den Bau:
+`osVAC-neo-Baukasten-0.5.0-Windows-Setup.exe`. Alternativ startet ein Versions-Tag den Bau:
 `git tag v0.5.0 && git push --tags`.
 
 **Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
@@ -240,8 +240,11 @@ dann `npx tauri build --bundles appimage,deb`.
 
 ## Alle Installer auf einmal
 
-Ein Versions-Tag startet alle drei Installer-Läufe gleichzeitig: `git tag v0.5.0 && git push origin v0.5.0`.
-Die Dateien liegen danach unter **Actions** beim jeweiligen Lauf unter **Artifacts** (Windows, macOS, Linux).
+Ein Versions-Tag startet alle drei Installer-Läufe und die Tests gleichzeitig: `git tag v0.5.0 && git push origin v0.5.0`.
+Die Dateien liegen danach unter **Actions** beim jeweiligen Lauf unter **Artifacts**, einheitlich benannt:
+`osVAC-neo-Baukasten-<Version>-Windows-Setup.exe`, `osVAC-neo-Baukasten-<Version>-macOS.dmg`,
+`osVAC-neo-Baukasten-<Version>-Linux.AppImage` und `osVAC-neo-Baukasten-<Version>-Linux.deb`
+(Artefakte `osVAC-neo-Baukasten-<Version>-Windows`, `-macOS`, `-Linux`).
 Anleitungen für Tester: `docs/installation-windows.md`, `docs/installation-mac.md`, `docs/installation-linux.md`.
 
 **Downloads im Programm:** Die Oberfläche speichert über den Befehl `save_file` (`src-tauri/src/lib.rs`, Inhalt roh,

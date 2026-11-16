@@ -2,7 +2,7 @@
 
 Voraussetzung: macOS 11 (Big Sur) oder neuer. Die App läuft auf Apple-Silicon- und Intel-Macs.
 
-1. Die Datei `osVAC neo Baukasten_…_universal.dmg` doppelklicken.
+1. Die Datei `osVAC-neo-Baukasten-…-macOS.dmg` doppelklicken.
 2. Im Fenster das App-Symbol auf den Ordner „Programme“ ziehen.
 3. Die App ist nicht bei Apple beglaubigt. Beim ersten Start deshalb:
    - **macOS 15 (Sequoia) und neuer:** App einmal normal öffnen, die Meldung mit „Fertig“ schließen. Dann *Systemeinstellungen → Datenschutz & Sicherheit*, ganz unten bei „osVAC neo Baukasten wurde blockiert“ auf **Dennoch öffnen** klicken und mit dem Passwort bestätigen.

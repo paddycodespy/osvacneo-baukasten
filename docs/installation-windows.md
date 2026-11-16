@@ -2,7 +2,7 @@
 
 Voraussetzung: Windows 10 oder 11 (64 Bit).
 
-1. Die Datei `osVAC neo Baukasten_…_x64-setup.exe` starten. Sie installiert ohne Administratorrechte nur für dich.
+1. Die Datei `osVAC-neo-Baukasten-…-Windows-Setup.exe` starten. Sie installiert ohne Administratorrechte nur für dich.
 2. Die Datei ist nicht signiert. Windows meldet deshalb „Der Computer wurde durch Windows geschützt“:
    auf **Weitere Informationen** klicken, dann **Trotzdem ausführen**.
 3. Danach steht „osVAC neo Baukasten“ im Startmenü. Deinstallieren über *Einstellungen → Apps*.
