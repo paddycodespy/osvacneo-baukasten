@@ -4,6 +4,7 @@
 
 ## 0.5.0
 
+- Installer einheitlich benannt: `osVAC-neo-Baukasten-0.5.0-Windows-Setup.exe`, `…-macOS.dmg`, `…-Linux.AppImage`, `…-Linux.deb`. Tests auf GitHub nur noch von Hand und bei Versions-Tags.
 - Standard-Spiel nach Testdruck (Nebenluft F32H36, PETG): Drehring am Schlauch 0,45 mm statt 0,3 mm (bei 9 mm Materialstärke an der Kupplung 0,35 mm, mehr geht dort nicht), Nebenluft-Ring 0,35 mm statt 0,4 mm. Einstellbereiche unverändert.
 - Anleitung: Bilder öffnen groß in der Seite (Klick oder Esc schließt), auch im Programmfenster. `npm run build` erzeugt die Anleitung jedes Mal mit.
 - Kopfzeile: Knöpfe beim Darüberfahren mit weißem Rahmen und leicht aufgehellter Fläche statt Rot. Kein Pfeil mehr hinter „osVAC neo“ im Download.
