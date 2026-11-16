@@ -254,12 +254,12 @@
   <!-- Bausteine -->
   {#each spec.blocks as b, i (b.id)}
     {@const bi = blockIssues(i)}
-    <li class="card" class:open={open === b.id} class:has-error={bi.some((x) => x.level === 'error')}>
+    <li class="card" class:open={open === b.id} class:has-error={bi.some((x) => x.level === 'error' && !x.todo)}>
       <div class="card-head-row">
         <button type="button" class="card-head" aria-expanded={open === b.id} onclick={() => toggle(b.id)}>
           <span class="badge">{i + 1}</span>
           <span class="card-title"><strong>{BLOCK_LABELS[b.type]}</strong><small>{summary(b, i)}</small></span>
-          {#if bi.length}<span class="flag" class:err={bi.some((x) => x.level === 'error')} aria-label="Hinweis">!</span>{/if}
+          {#if bi.length}<span class="flag" class:err={bi.some((x) => x.level === 'error' && !x.todo)} class:todo={bi.every((x) => x.todo)} aria-label="Hinweis">!</span>{/if}
           <span class="chev" aria-hidden="true"></span>
         </button>
         <span class="card-tools">
@@ -396,11 +396,11 @@
   </li>
 
   <!-- Ende B -->
-  <li class="card end" class:open={open === 'B'} class:has-error={bIssues.some((x) => x.level === 'error')}>
+  <li class="card end" class:open={open === 'B'} class:has-error={bIssues.some((x) => x.level === 'error' && !x.todo)}>
     <button type="button" class="card-head" aria-expanded={open === 'B'} onclick={() => toggle('B')}>
       <span class="badge b">B</span>
       <span class="card-title"><strong>Ende B · {endName(spec.b.type)}</strong><small>{bText}</small></span>
-      {#if bIssues.length}<span class="flag" class:err={bIssues.some((x) => x.level === 'error')} aria-label="Hinweis">!</span>{/if}
+      {#if bIssues.length}<span class="flag" class:err={bIssues.some((x) => x.level === 'error' && !x.todo)} class:todo={bIssues.every((x) => x.todo)} aria-label="Hinweis">!</span>{/if}
       <span class="chev" aria-hidden="true"></span>
     </button>
     {#if open === 'B'}
@@ -412,11 +412,11 @@
 
   <!-- Ende C am Abzweig -->
   {#if hasBranch && spec.c}
-    <li class="card end" class:open={open === 'C'} class:has-error={cIssues.some((x) => x.level === 'error')}>
+    <li class="card end" class:open={open === 'C'} class:has-error={cIssues.some((x) => x.level === 'error' && !x.todo)}>
       <button type="button" class="card-head" aria-expanded={open === 'C'} onclick={() => toggle('C')}>
         <span class="badge b">C</span>
         <span class="card-title"><strong>Ende C · {endName(spec.c.type)}</strong><small>am Abzweig · {endText(spec.c)}</small></span>
-        {#if cIssues.length}<span class="flag" class:err={cIssues.some((x) => x.level === 'error')} aria-label="Hinweis">!</span>{/if}
+        {#if cIssues.length}<span class="flag" class:err={cIssues.some((x) => x.level === 'error' && !x.todo)} class:todo={cIssues.every((x) => x.todo)} aria-label="Hinweis">!</span>{/if}
         <span class="chev" aria-hidden="true"></span>
       </button>
       {#if open === 'C'}
@@ -505,6 +505,7 @@
   .open > .card-head .chev, .open .card-head-row .chev { transform: rotate(-135deg); margin-bottom: -3px; }
   .flag { flex: none; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--signal); color: #fff; font-weight: 700; font-size: 12px; }
   .flag.err { background: #d93a2b; }
+  .flag.todo { background: var(--sky); color: var(--on-sky); }
   .card-tools { display: flex; align-items: center; gap: 2px; padding-right: 6px; }
   .icon { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--grey); cursor: pointer; font-size: 18px; line-height: 1; padding: 0; }
   .icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }

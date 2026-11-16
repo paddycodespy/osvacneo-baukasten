@@ -468,6 +468,11 @@ await withPreview(4180, async (url, browser) => {
     await pg.locator('.card-head', { hasText: 'Ende B' }).click();
     await pg.locator('.card.open .shape', { hasText: 'Eigene' }).click();
     expect((await pg.locator('.card.open').innerText()).includes('Noch keine Kontur'), 'Hinweis ohne Kontur fehlt');
+    // fehlende Kontur ist kein Fehler: nicht rot, Hinweis „Kontur fehlt noch“, Download gesperrt
+    await until(pg, async () => (await pg.locator('.stage-foot .status').innerText()).includes('Kontur fehlt noch'), 'Status ohne Kontur nicht „Kontur fehlt noch“');
+    expect(!(await pg.locator('.card.open.has-error').count()), 'Karte ohne Kontur rot markiert');
+    expect(await pg.locator('.card.open .fi-issues li.todo').count(), 'Hinweis ohne Kontur nicht blau');
+    expect(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled(), 'Download ohne Kontur offen');
     // SVG mit Stutzen, Loch und offener Linie: Auswahl, Hinweis zur offenen Linie
     await pg.getByLabel('Form des Stutzens: Kontur-Datei').setInputFiles(fixture('kontur-stutzen.svg'));
     await pg.locator('.card.open .th').first().waitFor();

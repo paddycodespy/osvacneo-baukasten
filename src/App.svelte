@@ -58,6 +58,12 @@
     app.progress = null;
     app.buildNotes = [];
     app.layoutError = '';
+    // es fehlt noch eine Eingabe (z. B. Kontur): nicht rechnen, kein Fehler zeigen
+    if (app.waiting) {
+      app.status = 'todo';
+      v.setDimmed(true);
+      return;
+    }
     try {
       app.status = 'preview';
       if (shownKind && shownKind !== kindId) {
@@ -224,7 +230,9 @@
 <div class="app">
   <section class="stage" aria-label="3D-Vorschau">
     <div class="viewport" bind:this={host}></div>
-    {#if app.status === 'error' && !everShown}
+    {#if app.status === 'todo' && !everShown}
+      <div class="stage-empty"><p>Noch keine Vorschau. Sobald die Kontur angelegt ist, erscheint hier der Adapter.</p></div>
+    {:else if app.status === 'error' && !everShown}
       <div class="stage-empty"><p>Noch keine Vorschau. Sobald die rot markierten Punkte behoben sind, erscheint hier der Adapter.</p></div>
     {:else if !everShown}
       <div class="stage-empty"><p>{app.status === 'start' ? 'CAD-Kern wird geladen\u00a0…' : 'Vorschau wird berechnet\u00a0…'}</p></div>
@@ -233,7 +241,7 @@
     <header class="stage-head">
       <h1 class="code" class:free={app.kind.freeform || app.kind.gate} aria-live="polite">{app.code}</h1>
       <p class="kind-line">{app.kind.bleed ? app.kind.title : app.kind.nozzle ? freeSummary(app.free).sub.replace(/^Freiform/, 'Saugdüse') : app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
-      {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen\u00a0…' : busyText}</p>{/if}
+      {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'todo' ? 'Kontur fehlt noch' : app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen\u00a0…' : busyText}</p>{/if}
     </header>
 
     <div class="stage-tools">
@@ -259,6 +267,7 @@
         {:else if app.status === 'preview' || app.status === 'detail'}{busyText}
         {:else if app.status === 'ready' && app.layoutError}So nicht druckbar, Hinweis rechts
         {:else if app.status === 'ready'}Bereit zum Download
+        {:else if app.status === 'todo'}Kontur fehlt noch, Hinweis rechts
         {:else}Fehler beim Berechnen, Hinweis rechts{/if}
       </p>
     </footer>
@@ -274,7 +283,7 @@
             class:done={i < app.step}
             aria-current={app.step === i ? 'step' : undefined}
             disabled={i === app.lastStep && app.blocked}
-            title={i === app.lastStep && app.blocked ? 'Erst die rot markierten Punkte beheben' : undefined}
+            title={i === app.lastStep && app.blocked ? (app.waiting ? 'Erst die Kontur anlegen' : 'Erst die rot markierten Punkte beheben') : undefined}
             onclick={() => (app.step = i)}
           >
             <span class="num">{i + 1}</span><span class="label">{s}</span>
@@ -306,7 +315,7 @@
     </div>
 
     {#if app.blocked && app.step === app.lastStep - 1}
-      <p class="nav-hint" role="status">Bitte zuerst die rot markierten Punkte beheben. Danach geht es zum Download.</p>
+      <p class="nav-hint" role="status">{app.waiting ? 'Bitte zuerst die Kontur anlegen.' : 'Bitte zuerst die rot markierten Punkte beheben.'} Danach geht es zum Download.</p>
     {/if}
     <nav class="step-nav">
       <!-- Beschriftung = Ziel-Schritt mit Pfeil; im ersten Schritt bleibt der Platz des Zurück-Knopfs frei -->

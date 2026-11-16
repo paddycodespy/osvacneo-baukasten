@@ -51,7 +51,8 @@ export const LABELS: Record<DiameterKey, { name: string; word: string; letter: '
   hoseDiameterInner: { name: 'Schlauch (H)', word: 'Schlauch', letter: 'H', hint: 'Innendurchmesser des Schlauchs', presets: [27, 32, 36, 40, 50] },
 };
 
-export type Status = 'start' | 'preview' | 'detail' | 'ready' | 'error';
+/** todo: es fehlt noch eine Eingabe (z. B. Kontur), daher wird nicht gerechnet */
+export type Status = 'start' | 'preview' | 'detail' | 'ready' | 'error' | 'todo';
 /** where: wo die Datei liegt (voller Pfad im Programm, „Ordner/Name“ im Browser), '' = normaler Download */
 export type FileEntry = { fileName: string; url: string; size: number; key: string; where: string };
 
@@ -169,6 +170,8 @@ class AppState {
   /** Prüfung des Freiform-Aufbaus (reine Rechnung, ohne CAD-Kern) */
   freePlan = $derived(this.kind.freeform ? planFree($state.snapshot(this.free)) : null);
   freeIssues = $derived(this.freePlan?.issues ?? []);
+  /** es fehlt nur noch eine Eingabe (z. B. Kontur), sonst kein Fehler */
+  waiting = $derived(this.kind.freeform && this.freeIssues.some((x) => x.todo) && !this.freeIssues.some((x) => x.level === 'error' && !x.todo));
   nozzleIssues = $derived(this.kind.nozzle ? nozzleIssues(this.nozzle) : []);
   /** Download gesperrt, solange der Adapter einen Fehler hat (Berechnung gescheitert oder Aufbau fehlerhaft) */
   blocked = $derived(this.status === 'error' || this.freeIssues.some((x) => x.level === 'error') || this.nozzleIssues.some((x) => x.level === 'error') || !!this.layoutError);
@@ -309,7 +312,7 @@ class AppState {
     for (const x of this.machineWarnings) sizes(x.text);
     if (this.kind.nozzle) for (const x of this.nozzleIssues) sizes(x.text);
     if (this.kind.freeform) {
-      for (const x of this.freeIssues) sizes(x.text);
+      for (const x of this.freeIssues) if (!x.todo) sizes(x.text);
       for (const t of this.buildNotes) sizes(t);
     }
     // übliche Druckbetten: 220–256 mm Kantenlänge, Bauhöhe ab 250 mm
