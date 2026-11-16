@@ -27,7 +27,11 @@ export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
 ];
 
 /** Startwerte (auf diese setzt „Zurücksetzen“ zurück) */
-export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36 };
+/**
+ * Startwerte der App. Drehring am Schlauch 0,45 mm statt 0,3 mm wie im Original (DEFAULT_INPUT, bleibt für den Abgleich
+ * mit Fusion): mit PETG und 0,2-mm-Schichten saß der Ring bei 0,35 mm noch fest (Testdruck Nebenluft F32H36, 16.11.).
+ */
+export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: 0.45 };
 
 /** Bereiche der Eingabefelder (beim Laden eines gespeicherten Stands) */
 const INPUT_LIMITS: Record<keyof OsvacInput, [number, number]> = {
@@ -188,6 +192,8 @@ class AppState {
   hasSwivel = $derived(this.kind.id === 'FH' || this.kind.id === 'MH' || this.kind.id === 'BLEED');
   /** Beim Drehring an der Kupplung (FxxHyy) begrenzt die Geometrie des Originals das Spaltmaß (7 mm: 0,5, 9 mm: 0,35) */
   swivelMax = $derived(slipRingGapMax(this.input.generalMaterialWidth, this.kind.id === 'MH'));
+  /** Standard am Drehring; bei 9 mm Materialstärke an der Kupplung höchstens das zulässige Maß (0,35) */
+  swivelDefault = $derived(Math.min(START_INPUT.slipRingGapSize, this.swivelMax));
 
   pipe = $derived.by((): PipeSpec => {
     const m = this.machine;
@@ -224,7 +230,7 @@ class AppState {
       return [this.baseName, ...extra].join(' ');
     }
     if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
-    if (this.hasSwivel && i.slipRingGapSize !== START_INPUT.slipRingGapSize) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
+    if (this.hasSwivel && i.slipRingGapSize !== this.swivelDefault) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
     if (i.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${i.generalMaterialWidth} mm`);
     if (this.kind.machine && this.machine.ribs) extra.push('Rippen');
     if (this.kind.machine && this.machine.slots && this.machine.mode === 'over') extra.push('Schlitze');
@@ -504,7 +510,7 @@ class AppState {
     this.kind.gate
       ? this.gate.pipeGap === DEFAULT_GATE.pipeGap && this.gate.plateGap === DEFAULT_GATE.plateGap
       : this.input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
-      (!this.hasSwivel || this.input.slipRingGapSize === START_INPUT.slipRingGapSize) &&
+      (!this.hasSwivel || this.input.slipRingGapSize === this.swivelDefault) &&
       this.input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
       (!this.hasSupport || this.supports) &&
       (!this.freeHasGate || (this.free.gateGap ?? GATE_GAP) === GATE_GAP) &&
@@ -517,7 +523,7 @@ class AppState {
       return;
     }
     this.input.maleFemaleGapSize = START_INPUT.maleFemaleGapSize;
-    if (this.hasSwivel) this.input.slipRingGapSize = START_INPUT.slipRingGapSize;
+    if (this.hasSwivel) this.input.slipRingGapSize = this.swivelDefault;
     this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
     if (this.hasSupport) this.supports = true;
     if (this.freeHasGate) delete this.free.gateGap;

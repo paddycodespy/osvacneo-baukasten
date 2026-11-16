@@ -28,7 +28,7 @@ export const BLEED = {
   /** Kugel der Noppe; Mulde = Kugel um das Spiel größer */
   bumpR: 1,
   /** Spiel am Ring (Passung): Standard und Bereich */
-  gap: 0.4,
+  gap: 0.35,
   gapMin: 0.2,
   gapMax: 0.6,
 };
