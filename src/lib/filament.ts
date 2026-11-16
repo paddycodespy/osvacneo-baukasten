@@ -1,8 +1,7 @@
 /**
  * Filamentschätzung für PETG (1,27 g/cm³, 1,75 mm).
- * Untergrenze: 3 Wände à 0,4 mm (≈ 1,2 mm Hülle an jeder Oberfläche) + 15 % Infill.
- * Obergrenze: massiv gedruckt. Volumen und Fläche kommen aus der Vereinigung aller Körper (unionMeasure.ts), sonst
- * zählten die Stoßflächen zwischen den Körpern als Außenwand.
+ * Normalfall: Materialvolumen wie im Slicer (unionMeasure.ts, printedVolume: 3 Wände, 15 % Füllung), eine Zahl.
+ * Ersatz, wenn das nicht geht: Spanne von 1,2 mm Hülle an jeder Oberfläche + 15 % Füllung bis massiv.
  */
 export const PETG = { density: 1.27, diameter: 1.75 };
 
@@ -13,7 +12,12 @@ export interface FilamentEstimate {
   metersMax: number;
 }
 
-export function estimateFilament(volumeMm3: number, areaMm2: number, shell = 1.2, infill = 0.15): FilamentEstimate {
+export function estimateFilament(volumeMm3: number, areaMm2: number, printed?: number, shell = 1.2, infill = 0.15): FilamentEstimate {
+  if (printed !== undefined && printed > 0) {
+    const g = (printed / 1000) * PETG.density;
+    const m = printed / (Math.PI * (PETG.diameter / 2) ** 2) / 1000;
+    return { gramsMin: g, gramsMax: g, metersMin: m, metersMax: m };
+  }
   const vShell = Math.min(volumeMm3, areaMm2 * shell);
   const vMin = vShell + Math.max(0, volumeMm3 - vShell) * infill;
   const g = (v: number) => (v / 1000) * PETG.density;

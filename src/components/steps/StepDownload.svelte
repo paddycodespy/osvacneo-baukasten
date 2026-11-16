@@ -49,8 +49,8 @@
 {#if app.filament}
   <div class="filament">
     <p>
-      Material: ca. <strong>{app.gramsText} g PETG</strong>, rund {fmt(app.filament.metersMax)} m Filament (1,75 mm){app.supports && app.hasSupport ? ', mit Druckhilfe' : ''}.
-      {#if Math.round(app.filament.gramsMin) !== Math.round(app.filament.gramsMax)}<HelpToggle id="filament" />{/if}
+      Material: ca. <strong>{app.gramsText} g PETG</strong>, rund {fmt(app.filament.metersMin)}{Math.round(app.filament.metersMin) !== Math.round(app.filament.metersMax) ? `–${fmt(app.filament.metersMax)}` : ''} m Filament (1,75 mm){app.supports && app.hasSupport ? ', mit Druckhilfe' : ''}.
+      <HelpToggle id="filament" />
     </p>
     <HelpText id="filament" />
   </div>
