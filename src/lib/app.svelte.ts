@@ -169,21 +169,6 @@ class AppState {
   kind = $derived(kindById(this.kindId));
   steps = $derived(this.kind.bleed ? (['Verbindung', 'Größen', 'Passung', 'Download'] as const) : this.kind.nozzle ? (['Verbindung', 'Düse', 'Passung', 'Download'] as const) : this.kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : (['Verbindung', 'Größen', 'Passung', 'Download'] as const));
   lastStep = $derived(this.steps.length - 1);
-  /** Kapitel der Anleitung (docs/anleitung.md) zum aktuellen Schritt und Adapter */
-  docAnchor = $derived.by(() => {
-    const k = this.kind;
-    if (this.step === 0) return 'verbindung';
-    if (this.step === this.lastStep) return 'download';
-    if (this.step === 2) return k.bleed ? 'nebenluft' : k.gate ? 'schieber' : 'passung';
-    if (k.nozzle) return 'duese';
-    if (k.freeform) return 'freiform';
-    if (k.bleed) return 'nebenluft';
-    if (k.gate) return 'schieber';
-    if (k.helper) return 'loesehilfe';
-    if (k.machine) return 'stutzen';
-    if (k.id === 'FH' || k.id === 'MH') return 'schlauch';
-    return 'stecker-kupplung';
-  });
   /** Prüfung des Freiform-Aufbaus (reine Rechnung, ohne CAD-Kern) */
   /** Clipper für eigene Konturen geladen (siehe contour.ts); bis dahin gilt die Planung nur vorläufig */
   clipperOk = $state(clipperLoaded());
