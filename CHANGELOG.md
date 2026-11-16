@@ -4,6 +4,7 @@
 
 ## 0.5.0
 
+- Filamentangabe wie im Slicer: Das Teil wird in 0,2-mm-Schichten geschnitten (3 Wände, 5 Lagen oben, 3 unten, 15 % Füllung). Statt einer Spanne steht jetzt eine Zahl, abgeglichen mit Bambu Studio (Nebenluft 78 g, M36F36 40 g, Flansch D63 64 g; Abweichung unter 1 %). Die Meter Filament passen jetzt zur Grammzahl.
 - Freiform, Form „Eigene“: Solange noch keine Kontur da ist, kein „Fehler beim Berechnen“ mehr. Stattdessen blauer Hinweis an der Karte, Status „Kontur fehlt noch“, in der Vorschau „Sobald die Kontur angelegt ist, erscheint hier der Adapter“. Download bleibt bis dahin gesperrt.
 - Helle und dunkle Ansicht: Umschalter (Mond/Sonne) rechts neben „osvacneo.de“ in der Kopfzeile. Start immer hell, die Wahl wird gemerkt.
 - Texte: Auslassungspunkte einheitlich mit (geschütztem) Leerzeichen, z. B. „Ordner wählen …“, „Wird berechnet …“.

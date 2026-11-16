@@ -144,7 +144,7 @@ class AppState {
   // ---------------------------------------------------------------- Berechnung (setzt App.svelte)
   status = $state<Status>('start');
   errorMsg = $state('');
-  measures = $state<{ volume: number; area: number; helperVolume: number; helperArea: number } | null>(null);
+  measures = $state<{ volume: number; area: number; helperVolume: number; helperArea: number; printed?: number; printedHelper?: number } | null>(null);
   dims = $state<Dimensions | null>(null);
   /** Fortschritt der vollen Berechnung */
   progress = $state<{ done: number; total: number } | null>(null);
@@ -331,7 +331,8 @@ class AppState {
     const m = this.measures;
     if (!m) return null;
     const withHelper = this.supports && this.hasSupport;
-    return estimateFilament(m.volume + (withHelper ? m.helperVolume : 0), m.area + (withHelper ? m.helperArea : 0));
+    const printed = m.printed === undefined ? undefined : m.printed + (withHelper ? (m.printedHelper ?? 0) : 0);
+    return estimateFilament(m.volume + (withHelper ? m.helperVolume : 0), m.area + (withHelper ? m.helperArea : 0), printed);
   });
   gramsText = $derived.by(() => {
     const f = this.filament;
@@ -352,7 +353,9 @@ class AppState {
     wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg, höchstens ${WALL_MORE} mm mehr (${fmt(this.gateLay.maxA)} mm), sonst wird die Halterung wacklig.`,
     orient: 'Wie das Rohr an der Wand entlangläuft. Der Schlitz der Schlüssellöcher muss nach oben zeigen: bei senkrechtem Rohr zum oberen Ende, bei waagerechtem zur Seite.',
     bleedGap: 'Luft zwischen Drehring und Rohr, auch an den schrägen Flanken oben und unten. Der Ring wird gleich mitgedruckt: Ist das Spiel zu klein, klebt er fest; ist es groß, dreht er sehr leicht und zieht etwas mehr Nebenluft, auch wenn er zu ist. Für PETG eher 0,35–0,4 mm.',
-    filament: 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
+    filament: this.filament && Math.round(this.filament.gramsMin) === Math.round(this.filament.gramsMax)
+      ? 'Gerechnet wie im Slicer: 0,2 mm Schichthöhe, 3 Wände, 15 % Füllung (abgeglichen mit Bambu Studio, meist auf 1 bis 2 % genau). Mehr Wände oder mehr Füllung brauchen mehr Material.'
+      : 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
   });
 
   /** Nebenluft-Regler (eigene Verbindung oder Baustein in der Freiform): Spiel am Drehring in Passung */

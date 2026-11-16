@@ -353,7 +353,7 @@ export function measureBodies(bodies: MeshBody[]): Promise<UnionMeasures | null>
     measureWorker.onmessage = (e: MessageEvent<{ id: number; ok: boolean } & UnionMeasures>) => {
       const done = measureWaiting.get(e.data.id);
       measureWaiting.delete(e.data.id);
-      done?.(e.data.ok ? { volume: e.data.volume, area: e.data.area, helperVolume: e.data.helperVolume, helperArea: e.data.helperArea } : null);
+      done?.(e.data.ok ? { volume: e.data.volume, area: e.data.area, helperVolume: e.data.helperVolume, helperArea: e.data.helperArea, printed: e.data.printed, printedHelper: e.data.printedHelper } : null);
     };
     measureWorker.onerror = () => {
       for (const done of measureWaiting.values()) done(null);
