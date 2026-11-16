@@ -125,6 +125,8 @@ html, body { margin: 0; height: 100%; }
 /* Verweis auf die Projekt-Website rechts in der Kopfzeile */
 .site-link { margin-left: auto; color: #fff; font-weight: 600; font-size: 15px; }
 .site-link:hover, .site-link:active { color: var(--red); }
+/* Anleitung links vom Link zur Website: dieser schiebt sich nach rechts, die Website folgt mit Abstand */
+.doc-link + .site-link { margin-left: 24px; }
 button, input { font: inherit; color: inherit; }
 /* Links grundsätzlich ohne Unterstreichung */
 a { text-decoration: none; transition: color 0.15s; }
@@ -560,6 +562,10 @@ legend.field-label { width: 100%; }
   .seg.wide button { white-space: normal; line-height: 1.25; padding-top: 7px; padding-bottom: 7px; }
   /* auf dem Handy steht der Rechenstand oben bei der Kennung */
   .status-m { display: inline-flex; margin-top: 8px; }
+}
+/* schmales Handy: kein Platz für beide Links, die Anleitung bleibt */
+@media (max-width: 520px) {
+  .doc-link + .site-link { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

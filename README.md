@@ -164,6 +164,14 @@ Auf GitHub laufen alle bei jedem Push (Actions → Tests), in drei gleichzeitige
 
 Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Radien hängen über die Fusion-Formeln von den Eingaben ab, axiale Maße sind fest.
 
+## Anleitung
+
+Die Anleitung für Anwender liegt in der App unter **Anleitung** (Kopfzeile, öffnet `public/anleitung.html`, auch offline im installierten Programm, hell und dunkel).
+
+- Text: `docs/anleitung.md` (einfaches Markdown, erlaubte Zeichen oben in `scripts/anleitung.ts`). Daraus baut `npm run docs` die Seite; die HTML-Datei nicht von Hand ändern.
+- Bilder: `public/anleitung/*.png`, aufgenommen mit `npm run build && npm run docs:bilder` (alle) oder `npm run docs:bilder -- kontur duese` (nur Szenen mit diesem Namen). Jede Szene startet mit Standardwerten; die Szenen stehen in `scripts/anleitung-bilder.ts`.
+- **Bei jeder Änderung an der Oberfläche prüfen**, ob die Anleitung betroffen ist (neue oder umbenannte Einstellungen, neue Adapterarten, andere Abläufe): Text in `docs/anleitung.md` anpassen, betroffene Bilder neu aufnehmen, `npm run docs` ausführen und alles mit committen. Ein Eintrag im CHANGELOG reicht dafür nicht.
+
 ## Abgleich mit Fusion
 
 Geprüft gegen die Fusion-STEP-Exporte M25/F32/H36, M32/F32/H32, M25/F25/H25, M50/F50/H50, M40/F40/H40,

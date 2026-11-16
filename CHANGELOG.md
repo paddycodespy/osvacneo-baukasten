@@ -4,6 +4,7 @@
 
 ## 0.5.0
 
+- Anleitung in der App: Link „Anleitung“ in der Kopfzeile öffnet eine bebilderte Seite mit Inhaltsverzeichnis zu allen Adapterarten und Einstellungen (auch offline, hell und dunkel). Quelle `docs/anleitung.md`, Bilder werden mit `npm run docs:bilder` automatisch aufgenommen.
 - Druckbett: Filament je Adapter und zusammen.
 - Filamentangabe bei schnellen Änderungen schneller: veraltete Messungen werden übersprungen. Das „?“ steht nicht mehr allein in der nächsten Zeile.
 - Startdatei rund 120 kB kleiner: Kontur-Versatz, SVG/DXF-Leser und Zeichenfenster werden erst bei Bedarf geladen.
