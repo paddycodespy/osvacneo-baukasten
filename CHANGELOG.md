@@ -2,6 +2,10 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## 0.5.1
+
+- Programm unter Linux und macOS: Der Knopf „Anleitung“ und der Link „Verwendete Bausteine und ihre Lizenzen“ öffnen wieder ein eigenes Fenster (vorher passierte nichts).
+
 ## 0.5.0
 
 - Installer einheitlich benannt: `osVAC-neo-Baukasten-0.5.0-Windows-Setup.exe`, `…-macOS.dmg`, `…-Linux.AppImage`, `…-Linux.deb`. Tests auf GitHub nur noch von Hand und bei Versions-Tags.

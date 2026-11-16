@@ -209,8 +209,8 @@ Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fens
 
 **Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
 Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
-`osVAC-neo-Baukasten-0.5.0-Windows-Setup.exe`. Alternativ startet ein Versions-Tag den Bau:
-`git tag v0.5.0 && git push --tags`.
+`osVAC-neo-Baukasten-0.5.1-Windows-Setup.exe`. Alternativ startet ein Versions-Tag den Bau:
+`git tag v0.5.1 && git push --tags`.
 
 **Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
 (Startmenü, Deinstallation über „Apps“). Da die Datei nicht signiert ist, meldet Windows beim ersten Start
@@ -240,7 +240,7 @@ dann `npx tauri build --bundles appimage,deb`.
 
 ## Alle Installer auf einmal
 
-Ein Versions-Tag startet alle drei Installer-Läufe und die Tests gleichzeitig: `git tag v0.5.0 && git push origin v0.5.0`.
+Ein Versions-Tag startet alle drei Installer-Läufe und die Tests gleichzeitig: `git tag v0.5.1 && git push origin v0.5.1`.
 Die Dateien liegen danach unter **Actions** beim jeweiligen Lauf unter **Artifacts**, einheitlich benannt:
 `osVAC-neo-Baukasten-<Version>-Windows-Setup.exe`, `osVAC-neo-Baukasten-<Version>-macOS.dmg`,
 `osVAC-neo-Baukasten-<Version>-Linux.AppImage` und `osVAC-neo-Baukasten-<Version>-Linux.deb`
