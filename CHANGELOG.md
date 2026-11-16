@@ -4,6 +4,8 @@
 
 ## 0.5.0
 
+- Kopfzeile: Knöpfe beim Darüberfahren mit weißem Rahmen und leicht aufgehellter Fläche statt Rot. Kein Pfeil mehr hinter „osVAC neo“ im Download.
+- Anleitung: „nach oben“ springt an den Seitenanfang; das Inhaltsverzeichnis zeigt farbig, wo man gerade liest.
 - Kopfzeile: „Anleitung“ als Knopf mit Buch-Symbol und Rahmen (auf schmalen Handys nur das Buch). Der Link zu osvacneo.de ist jetzt im Download bei „Basiert auf osVAC neo“.
 - Anleitung in der App: Link „Anleitung“ in der Kopfzeile öffnet eine bebilderte Seite mit Inhaltsverzeichnis zu allen Adapterarten und Einstellungen (auch offline, hell und dunkel). Quelle `docs/anleitung.md`, Bilder werden mit `npm run docs:bilder` automatisch aufgenommen.
 - Druckbett: Filament je Adapter und zusammen.
