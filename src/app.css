@@ -122,11 +122,10 @@ html, body { margin: 0; height: 100%; }
 .wordmark .os, .wordmark .neo { color: #ef453b; }
 .wordmark .vac { color: var(--sky); }
 .wordmark .wm-sub { font-weight: 600; font-size: 19px; letter-spacing: 0.09em; margin-top: 3px; }
-/* Verweis auf die Projekt-Website rechts in der Kopfzeile */
-.site-link { margin-left: auto; color: #fff; font-weight: 600; font-size: 15px; }
-.site-link:hover, .site-link:active { color: var(--red); }
-/* Anleitung links vom Link zur Website: dieser schiebt sich nach rechts, die Website folgt mit Abstand */
-.doc-link + .site-link { margin-left: 24px; }
+/* Anleitung rechts in der Kopfzeile: Knopf mit Rahmen wie der Umschalter daneben */
+.doc-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.35); color: #fff; font-weight: 600; font-size: 14px; white-space: nowrap; }
+.doc-btn:hover, .doc-btn:active { border-color: var(--red); color: var(--red); }
+.doc-btn svg { width: 19px; height: 19px; flex: none; }
 button, input { font: inherit; color: inherit; }
 /* Links grundsätzlich ohne Unterstreichung */
 a { text-decoration: none; transition: color 0.15s; }
@@ -500,7 +499,8 @@ legend.field-label { width: 100%; }
 .license { font-size: 13px; line-height: 1.55; color: var(--slate-2); border-top: 1px solid var(--line); padding-top: 16px; margin-top: 22px; }
 .license p { margin: 0 0 12px; }
 .license p:last-child { margin-bottom: 0; }
-.license .credit strong { color: var(--graphite); font-weight: 600; }
+.license .credit a { font-weight: 600; white-space: nowrap; }
+.license .credit a svg { width: 12px; height: 12px; margin-left: 3px; vertical-align: -1px; }
 .license .lic-link { display: inline-flex; align-items: center; gap: 4px; }
 .license .lic-link .arr { width: 13px; height: 13px; }
 /* Trenner vor dem Link zu den Lizenzen: so breit wie der Trenner über dem Block, eine Zeile Abstand */
@@ -563,9 +563,10 @@ legend.field-label { width: 100%; }
   /* auf dem Handy steht der Rechenstand oben bei der Kennung */
   .status-m { display: inline-flex; margin-top: 8px; }
 }
-/* schmales Handy: kein Platz für beide Links, die Anleitung bleibt */
-@media (max-width: 520px) {
-  .doc-link + .site-link { display: none; }
+/* schmales Handy: nur das Buch, rund wie der Umschalter */
+@media (max-width: 420px) {
+  .doc-btn { width: 34px; padding: 0; justify-content: center; }
+  .doc-btn span { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

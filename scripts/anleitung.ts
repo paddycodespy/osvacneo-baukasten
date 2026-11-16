@@ -6,7 +6,7 @@
  * Erlaubtes Markdown (bewusst klein gehalten):
  *   # Titel · ## Kapitel · ### Abschnitt (Anker automatisch aus dem Text, z. B. „Größen“ → #groessen;
  *   eigener Anker: `## Text {#anker}`)
- *   Absätze, Listen mit „- “ oder „1. “, **fett**, *kursiv*, `Code`, [Link](#anker)
+ *   Absätze, Listen mit „- “ oder „1. “ (eingerückt darunter: Unterpunkte „- “ oder ein Bild), **fett**, *kursiv*, `Code`, [Link](#anker)
  *   ![Bildunterschrift](anleitung/bild.webp)       Bild auf eigener Zeile
  *   ![Bildunterschrift](anleitung/bild.webp){klein} schmal (für Ausschnitte aus den Einstellungen)
  *   > Tipp: …                                      Hinweiskasten (Zeilen mit „> “)
@@ -36,11 +36,32 @@ function inline(s: string) {
   return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${esc(code[+i])}</code>`);
 }
 
+const missing: string[] = [];
+/** Breite und Höhe eines WebP-Bilds aus dem Dateikopf (VP8, VP8L, VP8X); sonst null */
+function webpSize(file: string): [number, number] | null {
+  const b = readFileSync(file);
+  if (b.toString('ascii', 0, 4) !== 'RIFF' || b.toString('ascii', 8, 12) !== 'WEBP') return null;
+  const kind = b.toString('ascii', 12, 16);
+  if (kind === 'VP8 ') return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
+  if (kind === 'VP8L') {
+    const v = b.readUInt32LE(21);
+    return [(v & 0x3fff) + 1, ((v >> 14) & 0x3fff) + 1];
+  }
+  if (kind === 'VP8X') return [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)];
+  return null;
+}
+function figure(alt: string, src: string, small: boolean) {
+  if (!existsSync(`public/${src}`)) missing.push(src);
+  // feste Maße: sonst verschieben nachladende Bilder die Seite, und Sprünge zu einem Abschnitt landen daneben
+  const size = existsSync(`public/${src}`) ? webpSize(`public/${src}`) : null;
+  const wh = size ? ` width="${size[0]}" height="${size[1]}"` : '';
+  return `<figure${small ? ' class="small"' : ''}><a href="${src}" target="_blank"><img src="${src}"${wh} alt="${esc(alt)}" loading="lazy"></a>${alt ? `<figcaption>${inline(alt)}</figcaption>` : ''}</figure>`;
+}
+
 const md = readFileSync(SRC, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
 const lines = md.split('\n');
 const toc: { level: number; id: string; text: string }[] = [];
 const used = new Set<string>();
-const missing: string[] = [];
 let title = 'Anleitung';
 const out: string[] = [];
 let list: 'ul' | 'ol' | null = null;
@@ -66,11 +87,17 @@ const flushQuote = () => {
 };
 const flush = () => (flushPara(), flushList(), flushQuote());
 
-for (const raw of lines) {
+for (const [idx, raw] of lines.entries()) {
   const line = raw.trimEnd();
   let m: RegExpExecArray | null;
   if (!line.trim()) {
-    flush();
+    // Leerzeile in einer Liste: Liste bleibt offen, wenn eingerückt (z. B. ein Bild zum Punkt) weitergeht
+    const next = lines.slice(idx + 1).find((l) => l.trim());
+    // … oder mit dem nächsten Punkt derselben Liste (sonst finge die Zählung wieder bei 1 an)
+    if (list && next && (/^\s{2,}\S/.test(next) || (list === 'ol' ? /^\d+\.\s/ : /^-\s/).test(next))) {
+      flushPara();
+      flushQuote();
+    } else flush();
     continue;
   }
   if ((m = /^(#{1,3})\s+(.*?)(?:\s*\{#([a-z0-9-]+)\})?$/.exec(line))) {
@@ -94,8 +121,7 @@ for (const raw of lines) {
   }
   if ((m = /^!\[([^\]]*)\]\(([^)]+)\)(\{klein\})?$/.exec(line))) {
     flush();
-    if (!existsSync(`public/${m[2]}`)) missing.push(m[2]);
-    out.push(`<figure${m[3] ? ' class="small"' : ''}><a href="${m[2]}" target="_blank"><img src="${m[2]}" alt="${esc(m[1])}" loading="lazy"></a>${m[1] ? `<figcaption>${inline(m[1])}</figcaption>` : ''}</figure>`);
+    out.push(figure(m[1], m[2], !!m[3]));
     continue;
   }
   if (line.trim() === '[[INHALT]]') {
@@ -122,8 +148,13 @@ for (const raw of lines) {
     continue;
   }
   if (list && /^\s{2,}\S/.test(raw)) {
-    // Fortsetzung des letzten Listenpunkts
-    out[out.length - 1] = out[out.length - 1].replace(/<\/li>$/, ` ${inline(line.trim())}</li>`);
+    // Fortsetzung des letzten Listenpunkts: Text oder eingerücktes Bild
+    const t = line.trim();
+    const im = /^!\[([^\]]*)\]\(([^)]+)\)(\{klein\})?$/.exec(t);
+    const sub = /^-\s+(.*)$/.exec(t);
+    const last = out[out.length - 1];
+    if (sub && last.endsWith('</ul></li>')) out[out.length - 1] = last.replace(/<\/ul><\/li>$/, `<li>${inline(sub[1])}</li></ul></li>`);
+    else out[out.length - 1] = last.replace(/<\/li>$/, `${sub ? `<ul><li>${inline(sub[1])}</li></ul>` : im ? figure(im[1], im[2], !!im[3]) : ` ${inline(t)}`}</li>`);
     continue;
   }
   flushList();

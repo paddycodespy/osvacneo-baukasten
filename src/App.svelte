@@ -218,8 +218,10 @@
 
 <header class="topbar">
   <p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p>
-  <a class="site-link doc-link" href="./anleitung.html" target="_blank" rel="noopener">Anleitung</a>
-  <a class="site-link" href="https://osvacneo.de" target="_blank" rel="noopener noreferrer">osvacneo.de <span aria-hidden="true">↗</span></a>
+  <a class="doc-btn" href="./anleitung.html" target="_blank" rel="noopener" title="Anleitung öffnen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5C10.5 5.2 8 4.5 4 4.5v13c4 0 6.5.7 8 2 1.5-1.3 4-2 8-2v-13c-4 0-6.5.7-8 2Z" /><path d="M12 6.5v13" /></svg>
+    <span>Anleitung</span>
+  </a>
   <button class="theme-btn" type="button" data-testid="theme-toggle" onclick={() => theme.toggle()}
     title={theme.current === 'dark' ? 'Helle Ansicht' : 'Dunkle Ansicht'}
     aria-label={theme.current === 'dark' ? 'Helle Ansicht' : 'Dunkle Ansicht'}>

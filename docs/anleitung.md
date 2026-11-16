@@ -24,7 +24,8 @@ Diese Anleitung zeigt Schritt für Schritt, wie das geht, und erklärt alle Eins
 5. **Stand der Berechnung.** Hier steht, ob die App gerade rechnet, ob der Adapter fertig ist (*Bereit zum Download*) oder ob noch etwas fehlt.
 6. **Maße und Material.** Höhe, größter Durchmesser und wie viel Filament (PETG) der Druck ungefähr braucht.
 7. **Weiter.** Führt zum nächsten Schritt.
-8. **Hell oder dunkel.** Der Knopf mit dem Mond schaltet auf die dunkle Ansicht, die Sonne wieder auf hell. Die App merkt sich deine Wahl.
+8. **Anleitung.** Öffnet diese Anleitung in einem eigenen Fenster.
+9. **Hell oder dunkel.** Der Knopf mit dem Mond schaltet auf die [dunkle Ansicht](#darstellung), die Sonne wieder auf hell. Die App merkt sich deine Wahl.
 
 > Tipp: Die App speichert deine Eingaben automatisch im Browser bzw. im Programm. Wenn du sie schließt und wieder öffnest, ist alles noch da. Mit **Neu anfangen** (unten im Schritt *Verbindung*, sobald du etwas geändert hast) setzt du alles auf den Anfang zurück. Das Druckbett und fertige Dateien bleiben dabei erhalten.
 
@@ -441,4 +442,4 @@ Im Schritt *Verbindung* ganz unten auf **Neu anfangen** klicken. Einzelne Bereic
 
 ![Die App in der dunklen Ansicht](anleitung/dunkel.webp)
 
-Mit dem Knopf oben rechts (Mond bzw. Sonne) wechselst du zwischen heller und dunkler Ansicht. Die App startet immer hell und merkt sich deine Wahl.
+Mit dem runden Knopf ganz rechts in der Kopfzeile (Mond bzw. Sonne) wechselst du zwischen heller und dunkler Ansicht. Die App startet immer hell und merkt sich deine Wahl.
