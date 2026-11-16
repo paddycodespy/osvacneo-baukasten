@@ -484,14 +484,14 @@
   .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
   .print-note { margin: 10px 0 0; padding: 8px 12px; border-radius: 4px; font-size: 14px; border-left: 4px solid var(--sky); background: var(--sky-l); }
   .print-note.warn { border-left-color: var(--signal); background: var(--warn-bg); }
-  .print-note.error { border-left-color: #c4362b; background: var(--err-bg); color: var(--err-fg); }
+  .print-note.error { border-left-color: var(--err); background: var(--err-bg); color: var(--err-fg); }
 
   .chain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; position: relative; }
   /* Verbindungslinie zwischen den Karten: zeigt die Reihenfolge von A nach B */
   .chain::before { content: ''; position: absolute; left: 25px; top: 20px; bottom: 20px; width: 2px; background: var(--line); }
   .card { position: relative; border: 1px solid var(--line); border-radius: 10px; background: var(--card); margin: 0 0 8px; }
   .card.open { border-color: var(--sky); }
-  .card.has-error { border-color: #d93a2b; }
+  .card.has-error { border-color: var(--err); }
   .card-head-row { display: flex; align-items: stretch; }
   .card-head { flex: 1; width: 100%; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
   .card-title { display: flex; flex-direction: column; min-width: 0; flex: 1; }
@@ -502,7 +502,7 @@
   .chev { flex: none; width: 7px; height: 7px; border-right: 1.8px solid var(--grey); border-bottom: 1.8px solid var(--grey); transform: rotate(45deg); margin: 0 4px 3px; transition: transform 0.15s; }
   .open > .card-head .chev, .open .card-head-row .chev { transform: rotate(-135deg); margin-bottom: -3px; }
   .flag { flex: none; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--signal); color: #fff; font-weight: 700; font-size: 12px; }
-  .flag.err { background: #d93a2b; }
+  .flag.err { background: var(--err); }
   .flag.todo { background: var(--sky); color: var(--on-sky); }
   .card-tools { display: flex; align-items: center; gap: 2px; padding-right: 6px; }
   .icon { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--grey); cursor: pointer; font-size: 18px; line-height: 1; padding: 0; }
@@ -512,13 +512,15 @@
   .icon:disabled { opacity: 0.3; cursor: default; }
   .card-body { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .card-body :global(.seg.wide) { margin-top: 12px; }
+  /* Auswahl als Feld neben einem Zahlenfeld: gleiche Höhe und Oberkante */
+  .card-body :global(.grid2 > .field > .seg.wide) { margin: 0; min-height: 42px; }
   .card-body > :global(.field), .card-body :global(.more-body > .field) { margin-top: 14px; }
   .card-body :global(.grid2) { margin-top: 14px; }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .num-sm { width: 130px; }
   .num-sm :global(.num-in) { width: 100%; }
 
-  .add { position: relative; margin: 2px 0 10px; padding: 10px 12px; border: 1px dashed #c6d0d5; border-radius: 10px; background: var(--mist); }
+  .add { position: relative; margin: 2px 0 10px; padding: 10px 12px; border: 1px dashed var(--disabled); border-radius: 10px; background: var(--mist); }
   .add-label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-2); margin-bottom: 6px; }
   .add-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .add-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); cursor: pointer; font: inherit; font-size: 13.5px; font-weight: 600; }
@@ -532,5 +534,5 @@
   }
   .from-nozzle { margin: -4px 0 16px; padding: 8px 12px; border-radius: 8px; background: var(--sky-l); font-size: 14px; }
   .back-link { padding: 0; border: 0; background: none; color: var(--sky); font: inherit; font-weight: 600; cursor: pointer; }
-  .back-link:hover { color: var(--red, #ff4136); }
+  .back-link:hover { color: var(--red); }
 </style>
