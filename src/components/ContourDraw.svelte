@@ -455,6 +455,8 @@
   .res { fill: rgba(232, 66, 58, 0.18); stroke: var(--red); stroke-linejoin: round; }
   .side { width: 330px; flex: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.5; }
   .tip { background: var(--mist); border-radius: 10px; padding: 10px 12px; }
+  /* Knopf und Link unter dem Text, nicht neben dem letzten Wort */
+  .tip > button { display: flex; margin-top: 10px; }
   .warnbox { background: var(--warn-bg); border-radius: 10px; padding: 8px 12px; font-size: 13px; margin: 0; }
   .fl { display: block; font-size: 13px; font-weight: 500; margin-bottom: 2px; }
   .small { margin: 0; font-size: 13px; color: var(--slate-2); }

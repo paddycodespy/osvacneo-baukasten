@@ -3,6 +3,7 @@
    * Eigene Kontur: laden (SVG/DXF), am Foto nachzeichnen oder selbst zeichnen; danach Skizze mit Maßen, drehen,
    * spiegeln, auf ein gemessenes Maß bringen und eine kurze Prüfliste.
    */
+  import { isDesktop } from '../lib/desktop';
   import { readContourFile, type Found } from '../lib/contour-import';
   import { prepare, transform, bbox, selfIntersects, straightSides, svgPath, fromVertices, CONTOUR_MIN, CONTOUR_MAX, type P2 } from '../lib/osvac/contour';
   import type { Section } from '../lib/osvac/freeform';
@@ -117,7 +118,9 @@
   }
 </script>
 
-<input bind:this={input} type="file" accept=".svg,.dxf,image/svg+xml" class="hidden-file" onchange={onFile} aria-label="{label}: Kontur-Datei" />
+<!-- Im Browser ohne Dateifilter: manche Browser unter Linux öffnen mit „.dxf“ im Filter gar kein Fenster.
+     Die Endung wird beim Lesen geprüft (readContourFile). -->
+<input bind:this={input} type="file" accept={isDesktop ? '.svg,.dxf,image/svg+xml' : undefined} class="hidden-file" onchange={onFile} aria-label="{label}: Kontur-Datei" />
 
 {#if found}
   <div class="pick">
@@ -134,7 +137,7 @@
     <button type="button" class="link" onclick={() => (found = null)}>Abbrechen</button>
   </div>
 {:else if !fig}
-  <div class="two">
+  <div class="three">
     <div class="src">
       <svg viewBox="0 0 44 34" aria-hidden="true"><path d="M8 3h20l8 8v20H8z" class="doc" /><path d="M28 3v8h8" class="docl" /><path d="M13 24c3-9 14-9 18 0" class="red" /></svg>
       <b>Datei laden</b>
@@ -147,10 +150,15 @@
       <span>Stutzen von oben fotografieren, Lineal daneben, Umriss anklicken.</span>
       <button type="button" class="btnx" onclick={() => (draw = 'photo')}>Foto wählen&nbsp;…</button>
     </div>
+    <div class="src">
+      <svg viewBox="0 0 44 34" aria-hidden="true"><path d="M3 9h38M3 17h38M3 25h38M11 3v28M22 3v28M33 3v28" class="grd" /><path d="M8 27 14 8l18 3 4 15z" class="red" /></svg>
+      <b>Selbst zeichnen</b>
+      <span>Punkte auf ein Millimeterraster setzen, z. B. nach Messschieber.</span>
+      <button type="button" class="btnx" onclick={() => (draw = 'grid')}>Zeichnen&nbsp;…</button>
+    </div>
   </div>
   <p class="note">
     Die Kontur ist hier <b>{what}</b>, gesehen mit Blick auf den Stutzen (von vorne), wie bei den anderen Formen. {measure === 'inner' ? 'Die Wand kommt außen dazu.' : 'Zugabe und Wand rechnet der Baukasten selbst dazu.'}
-    Ohne Datei oder Foto: <button type="button" class="link" onclick={() => (draw = 'grid')}>Umriss selbst zeichnen</button> (Punkte auf Millimeterraster).
   </p>
 {:else}
   <div class="row">
@@ -196,7 +204,7 @@
 
 <style>
   .hidden-file { display: none; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .src { border: 1px dashed var(--line); border-radius: 10px; padding: 12px; background: var(--card); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; font-size: 13px; color: var(--slate); }
   .src b { font-size: 14px; color: var(--graphite); }
   .src svg { width: 40px; height: 30px; }
@@ -204,6 +212,7 @@
   .docl { fill: none; stroke: var(--graphite); stroke-width: 1.5; }
   .red { fill: none; stroke: var(--red); stroke-width: 2; }
   .cam { fill: var(--graphite); }
+  .grd { fill: none; stroke: var(--grey); stroke-width: 0.8; opacity: 0.6; }
   .btnx { margin-top: auto; border: 1px solid var(--sky); color: var(--sky-d); background: var(--card); border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
   .btnx:hover:not(:disabled) { background: var(--sky-l); }
   .note { margin: 0; background: var(--mist); border-radius: 8px; padding: 9px 12px; font-size: 13px; line-height: 1.5; color: var(--slate); }
@@ -232,6 +241,6 @@
   .bad { color: var(--red); }
   .notes { margin: 0; padding-left: 18px; font-size: 12.5px; color: #8a5a00; }
   @media (max-width: 520px) {
-    .two { grid-template-columns: 1fr; }
+    .three { grid-template-columns: 1fr; }
   }
 </style>
