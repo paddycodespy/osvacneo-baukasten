@@ -36,7 +36,7 @@
 
 <style>
   .measure { width: 100%; max-height: 190px; height: auto; display: block; background: var(--shop); border-radius: 8px; }
-  .machine { fill: #c9d1d5; stroke: var(--slate-2); stroke-width: 1; }
+  .machine { fill: var(--disabled); stroke: var(--slate-2); stroke-width: 1; }
   .stub { fill: #9aa7ae; stroke: var(--slate); stroke-width: 1.2; }
   .hole { fill: var(--shop); }
   .hole2 { fill: var(--shop); stroke: var(--slate); stroke-width: 1.2; }

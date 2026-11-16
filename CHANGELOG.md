@@ -4,6 +4,7 @@
 
 ## 0.5.0
 
+- Helle und dunkle Ansicht: Umschalter (Mond/Sonne) rechts neben „osvacneo.de“ in der Kopfzeile. Start immer hell, die Wahl wird gemerkt.
 - Texte: Auslassungspunkte einheitlich mit (geschütztem) Leerzeichen, z. B. „Ordner wählen …“, „Wird berechnet …“.
 - Filamentangabe genauer: Volumen und Außenfläche des ganzen Teils (alle Körper vereinigt, manifold-3d) statt der Summe der Einzelkörper; vorher bis zu 25 % zu hoch.
 - Druckhinweis bei mitgedruckten Ringen (Schlauchadapter, Nebenluft-Regler): Slicer-Meldung „schwebende Bereiche“ bzw. „fliegender Träger“ ist gewollt, keine Stützen einschalten.

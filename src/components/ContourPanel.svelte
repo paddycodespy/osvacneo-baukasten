@@ -197,32 +197,32 @@
 <style>
   .hidden-file { display: none; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .src { border: 1px dashed var(--line); border-radius: 10px; padding: 12px; background: #fff; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; font-size: 13px; color: var(--slate); }
+  .src { border: 1px dashed var(--line); border-radius: 10px; padding: 12px; background: var(--card); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; font-size: 13px; color: var(--slate); }
   .src b { font-size: 14px; color: var(--graphite); }
   .src svg { width: 40px; height: 30px; }
-  .doc { fill: #fff; stroke: var(--graphite); stroke-width: 1.5; }
+  .doc { fill: var(--card); stroke: var(--graphite); stroke-width: 1.5; }
   .docl { fill: none; stroke: var(--graphite); stroke-width: 1.5; }
   .red { fill: none; stroke: var(--red); stroke-width: 2; }
   .cam { fill: var(--graphite); }
-  .btnx { margin-top: auto; border: 1px solid var(--sky); color: var(--sky-d); background: #fff; border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
+  .btnx { margin-top: auto; border: 1px solid var(--sky); color: var(--sky-d); background: var(--card); border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
   .btnx:hover:not(:disabled) { background: var(--sky-l); }
   .note { margin: 0; background: var(--mist); border-radius: 8px; padding: 9px 12px; font-size: 13px; line-height: 1.5; color: var(--slate); }
   .link { border: 0; background: none; padding: 0; color: var(--cobalt-d, var(--sky-d)); font-weight: 600; font-size: 13px; cursor: pointer; }
   .link:hover { color: var(--red); }
   .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 13px; }
-  .chip2 { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 12.5px; background: #fff; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip2 { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 12.5px; background: var(--card); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pick p { margin: 0 0 8px; font-size: 13.5px; }
   .thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .th { border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; background: #fff; font-size: 11.5px; display: flex; flex-direction: column; align-items: center; }
+  .th { border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; background: var(--card); font-size: 11.5px; display: flex; flex-direction: column; align-items: center; }
   .th:hover { border-color: var(--sky); background: var(--sky-l); }
   .th svg { width: 64px; height: 42px; }
-  .th path { fill: #e9eef1; stroke: var(--graphite); stroke-width: 1.2; }
+  .th path { fill: var(--soft); stroke: var(--graphite); stroke-width: 1.2; }
   .fig { width: 100%; max-width: 320px; height: auto; align-self: center; background: var(--mist); border-radius: 8px; }
-  .outline { fill: #ffd9d6; stroke: var(--red); stroke-width: 1.6; stroke-linejoin: round; }
+  .outline { fill: var(--red-l); stroke: var(--red); stroke-width: 1.6; stroke-linejoin: round; }
   .dim { stroke: var(--sky-d); stroke-width: 1.4; }
   .lt { font-family: var(--body); font-size: 12px; font-weight: 700; fill: var(--sky-d); }
   .mid { fill: var(--sky-d); }
-  .tb { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 5px 10px; font-size: 13px; font-weight: 500; }
+  .tb { border: 1px solid var(--line); border-radius: 8px; background: var(--card); padding: 5px 10px; font-size: 13px; font-weight: 500; }
   .tb:hover { border-color: var(--sky); }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; align-items: end; }
   .checks { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; }

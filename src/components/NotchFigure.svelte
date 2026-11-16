@@ -51,6 +51,6 @@
 
 <style>
   .notch-fig { display: block; width: 100%; max-width: 220px; height: auto; margin: 2px 0 8px; cursor: pointer; }
-  .nf-shape { fill: #fff; stroke: var(--graphite); stroke-width: 1.5; }
+  .nf-shape { fill: var(--card); stroke: var(--graphite); stroke-width: 1.5; }
   .nf-cut { fill: none; stroke: var(--red); stroke-width: 6; stroke-linecap: round; }
 </style>

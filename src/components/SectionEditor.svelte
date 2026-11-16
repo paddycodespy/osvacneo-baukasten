@@ -205,18 +205,18 @@
   .shapes { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin: 8px 0 10px; }
   .shape {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
-    padding: 6px 2px 5px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    padding: 6px 2px 5px; border: 1px solid var(--line); border-radius: 8px; background: var(--card);
     font-size: 11.5px; color: var(--slate); cursor: pointer;
   }
-  .shape svg { width: 30px; height: 21px; fill: #e9eef1; stroke: var(--graphite); stroke-width: 1.4; }
+  .shape svg { width: 30px; height: 21px; fill: var(--soft); stroke: var(--graphite); stroke-width: 1.4; }
   .shape.sel { border-color: var(--sky); background: var(--sky-l); }
-  .shape.sel svg { fill: #9fd5f3; stroke: var(--sky-d); }
+  .shape.sel svg { fill: var(--sky-m); stroke: var(--sky-d); }
   .shape:not(.sel):hover { border-color: var(--sky); }
   .sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
   .sec-what { font-size: 13px; color: var(--slate-2); }
   .sec-body { display: flex; flex-direction: column; gap: 10px; }
   .fig { width: 100%; max-width: 300px; height: auto; align-self: center; background: var(--mist); border-radius: 8px; }
-  .outline { fill: #ffd9d6; stroke: var(--red); stroke-width: 1.6; }
+  .outline { fill: var(--red-l); stroke: var(--red); stroke-width: 1.6; }
   .dim { stroke: var(--sky-d); stroke-width: 1.4; }
   .lt { font-family: var(--body); font-size: 12px; font-weight: 700; fill: var(--sky-d); }
   .lead { fill: none; stroke: var(--sky-d); stroke-width: 1; }

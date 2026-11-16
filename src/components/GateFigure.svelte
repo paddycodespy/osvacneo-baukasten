@@ -46,11 +46,11 @@
 
 <style>
   .gfig { width: 100%; max-width: 340px; height: auto; display: block; background: var(--mist); border-radius: 8px; margin: 10px 0 6px; }
-  .part { fill: #ffd9d6; stroke: var(--red); stroke-width: 1.4; }
+  .part { fill: var(--red-l); stroke: var(--red); stroke-width: 1.4; }
   .split { stroke: var(--red); stroke-width: 1.4; }
   .plate { fill: var(--red); }
   .screw { stroke: var(--graphite); stroke-width: 1.6; }
-  .wall { fill: #c9d1d5; stroke: var(--slate-2); stroke-width: 1; }
+  .wall { fill: var(--disabled); stroke: var(--slate-2); stroke-width: 1; }
   .pipe { fill: none; stroke: var(--graphite); stroke-width: 1.2; stroke-dasharray: 4 3; }
   .axis { stroke: var(--graphite); stroke-width: 1; stroke-dasharray: 5 3; opacity: 0.5; }
   .dim { stroke: var(--sky-d); stroke-width: 1.4; }

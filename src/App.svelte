@@ -9,6 +9,7 @@
   import { build, partNames, measureBodies } from './lib/cad';
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
+  import { theme } from './lib/theme.svelte';
   import { overhangArea, belowBedEnd, COUNTED, COUNTED_MACHINE, COUNTED_GATE } from './lib/overhang';
   import { freeSummary, sectionPlanes, inPart2, tiltedEnds } from './lib/osvac/freeform';
   import { gateBed } from './lib/osvac/gate';
@@ -209,6 +210,15 @@
 <header class="topbar">
   <p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p>
   <a class="site-link" href="https://osvacneo.de" target="_blank" rel="noopener noreferrer">osvacneo.de <span aria-hidden="true">↗</span></a>
+  <button class="theme-btn" type="button" data-testid="theme-toggle" onclick={() => theme.toggle()}
+    title={theme.current === 'dark' ? 'Helle Ansicht' : 'Dunkle Ansicht'}
+    aria-label={theme.current === 'dark' ? 'Helle Ansicht' : 'Dunkle Ansicht'}>
+    {#if theme.current === 'dark'}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+    {:else}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7Z"/></svg>
+    {/if}
+  </button>
 </header>
 
 <div class="app">

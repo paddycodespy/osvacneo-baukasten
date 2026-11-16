@@ -21,6 +21,6 @@
 
 <style>
   .fi-issues { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-  .fi-issues li { padding: 8px 12px; border-radius: 4px; border-left: 4px solid var(--signal); background: #fdf6dc; }
-  .fi-issues li.error { border-left-color: #d93a2b; background: #fdecea; color: #b02a20; }
+  .fi-issues li { padding: 8px 12px; border-radius: 4px; border-left: 4px solid var(--signal); background: var(--warn-bg); }
+  .fi-issues li.error { border-left-color: #d93a2b; background: var(--err-bg); color: var(--err-fg); }
 </style>
