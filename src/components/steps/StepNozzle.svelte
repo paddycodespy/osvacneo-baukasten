@@ -39,9 +39,10 @@
     Object.assign(app.nozzle, structuredClone(DEFAULT_NOZZLE));
   }
   /** Vorhandenen eigenen Freiform-Aufbau nicht stillschweigend ersetzen */
-  let confirmFree = $state(false);
-  function toFree() {
-    if (app.freeModified) confirmFree = true;
+  /** Rückfrage direkt beim geklickten Knopf zeigen (oben „Eigene Form“, unten der Link), sonst sieht man sie nicht */
+  let confirmFree = $state<'' | 'top' | 'bottom'>('');
+  function toFree(at: 'top' | 'bottom') {
+    if (app.freeModified) confirmFree = at;
     else app.toFreeform();
   }
   /** Bürstennut braucht den dicken Rand: Schutzring mit anhaken */
@@ -65,11 +66,12 @@
     </button>
   {/each}
   </div>
-  <button type="button" class="tpl-btn" onclick={toFree} title="Übernimmt die Düse als Bausteine in die Freiform">
+  <button type="button" class="tpl-btn" onclick={() => toFree('top')} title="Übernimmt die Düse als Bausteine in die Freiform">
     <svg viewBox="0 0 40 40" aria-hidden="true"><path d={ICONS.free} class="ic" /><rect x="13" y="31" width="14" height="6" rx="1.5" class="ic-m" /></svg>
     <span><strong>Eigene Form</strong><small>Weiter in der Freiform</small></span>
   </button>
 </div>
+{#if confirmFree === 'top'}{@render confirm()}{/if}
 
 <h3 class="sub">Anschluss</h3>
 <div class="seg wide" role="radiogroup" aria-label="Anschluss der Düse">
@@ -147,18 +149,20 @@
 {#if printNote}<p class="print-note {printNote.level}" role="status">{printNote.text}</p>{/if}
 
 <p class="to-free">
-  <button type="button" class="link" onclick={toFree}>In der Freiform weiterbauen ›</button>
+  <button type="button" class="link" onclick={() => toFree('bottom')}>In der Freiform weiterbauen ›</button>
   <span class="hint">Übernimmt die Düse als Bausteine (Übergang, Gerade, Bogen, Spitze), z. B. für einen Versatz oder eine eigene Form. Das Formular hier bleibt, wie es ist.</span>
 </p>
-{#if confirmFree}
+{#if confirmFree === 'bottom'}{@render confirm()}{/if}
+
+{#snippet confirm()}
   <div class="confirm" role="alertdialog" aria-label="Freiform ersetzen?">
     <p>In der Freiform liegt schon ein eigener Aufbau. Er wird durch die Düse ersetzt.</p>
     <div class="confirm-btns">
-      <button type="button" class="btn-sec" onclick={() => (confirmFree = false)}>Abbrechen</button>
-      <button type="button" class="btn-pri" onclick={() => ((confirmFree = false), app.toFreeform())}>Ersetzen und weiterbauen</button>
+      <button type="button" class="btn-sec" onclick={() => (confirmFree = '')}>Abbrechen</button>
+      <button type="button" class="btn-pri" onclick={() => ((confirmFree = ''), app.toFreeform())}>Ersetzen und weiterbauen</button>
     </div>
   </div>
-{/if}
+{/snippet}
 
 <ResetLink show={!isDefault} label="Düse auf Standard zurücksetzen" onclick={reset} />
 

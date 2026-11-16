@@ -419,6 +419,10 @@ await withPreview(4180, async (url, browser) => {
     await until(pg, async () => (await pg.locator('.confirm', { hasText: 'wird durch die Düse ersetzt' }).count()) > 0, 'keine Rückfrage vor dem Ersetzen der Freiform');
     await pg.getByRole('button', { name: 'Abbrechen' }).click();
     expect((await pg.locator('.step-tab', { hasText: 'Düse' }).count()) > 0, 'Abbrechen hat trotzdem gewechselt');
+    // auch „Eigene Form“ oben fragt nach, und zwar direkt unter den Düsenarten (nicht unten außer Sicht)
+    await pg.getByRole('button', { name: /Eigene Form/ }).click();
+    await until(pg, async () => (await pg.locator('.tpl + .confirm').count()) > 0, 'Rückfrage bei „Eigene Form“ nicht unter den Düsenarten');
+    await pg.getByRole('button', { name: 'Abbrechen' }).click();
     await ready(pg);
   });
 
