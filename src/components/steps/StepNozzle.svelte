@@ -5,6 +5,7 @@
   import NumberField from '../NumberField.svelte';
   import Field from '../Field.svelte';
   import ResetLink from '../ResetLink.svelte';
+  import { reveal } from '../../lib/reveal';
   import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleLayout, type NozzleIssue } from '../../lib/osvac/nozzle';
   import { NOZZLE } from '../../lib/osvac/freeform';
 
@@ -155,7 +156,7 @@
 {#if confirmFree === 'bottom'}{@render confirm()}{/if}
 
 {#snippet confirm()}
-  <div class="confirm" role="alertdialog" aria-label="Freiform ersetzen?">
+  <div class="confirm" role="alertdialog" aria-label="Freiform ersetzen?" use:reveal>
     <p>In der Freiform liegt schon ein eigener Aufbau. Er wird durch die Düse ersetzt.</p>
     <div class="confirm-btns">
       <button type="button" class="ghost sm" onclick={() => (confirmFree = '')}>Abbrechen</button>
@@ -195,7 +196,5 @@
   .to-free .hint { margin: 0; }
   .link { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--sky); font: inherit; font-weight: 600; cursor: pointer; }
   .link:hover { color: var(--red); }
-  .confirm { margin: 10px 0 0; padding: 12px 14px; border: 1px solid var(--signal); border-radius: 8px; background: var(--warn-bg); font-size: 14px; }
-  .confirm p { margin: 0 0 10px; }
-  .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .confirm { margin: 10px 0 0; }
 </style>
