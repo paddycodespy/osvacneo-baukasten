@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Hauptfenster: Links im Standardbrowser öffnen, Lizenzseiten in einem zweiten Fenster, Ordner zum Speichern wählen und zeigen",
+  "description": "Hauptfenster: Links im Standardbrowser öffnen, Lizenzseiten und Anleitung in einem zweiten Fenster (mit Sprungmarke neu geöffnet), Ordner zum Speichern wählen und zeigen",
   "windows": [
     "main"
   ],
@@ -9,6 +9,7 @@
     "core:default",
     "core:webview:allow-create-webview-window",
     "core:window:allow-set-focus",
+    "core:window:allow-close",
     {
       "identifier": "opener:allow-open-url",
       "allow": [
