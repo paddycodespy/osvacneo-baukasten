@@ -112,7 +112,7 @@ html, body { margin: 0; height: 100%; }
 :root[data-theme='dark'] .topbar { border-bottom: 1px solid var(--line); }
 /* Umschalter hell/dunkel rechts neben dem Link zur Website */
 .theme-btn { flex: none; margin-left: 16px; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.35); background: transparent; color: #fff; cursor: pointer; }
-.theme-btn:hover { border-color: var(--red); color: var(--red); }
+.theme-btn:hover { border-color: #fff; background: rgba(255, 255, 255, 0.14); }
 .theme-btn svg { width: 20px; height: 20px; }
 /* Wortmarke: Symbol (Bausteine mit Luftweg) + zweizeilig „osVAC neo“ / „BAUKASTEN“ */
 .wordmark { margin: 0; display: flex; align-items: center; gap: 12px; color: #fff; white-space: nowrap; }
@@ -124,7 +124,8 @@ html, body { margin: 0; height: 100%; }
 .wordmark .wm-sub { font-weight: 600; font-size: 19px; letter-spacing: 0.09em; margin-top: 3px; }
 /* Anleitung rechts in der Kopfzeile: Knopf mit Rahmen wie der Umschalter daneben */
 .doc-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.35); color: #fff; font-weight: 600; font-size: 14px; white-space: nowrap; }
-.doc-btn:hover, .doc-btn:active { border-color: var(--red); color: var(--red); }
+/* Hover: Rahmen weiß, Fläche leicht aufgehellt (wie beim Umschalter) */
+.doc-btn:hover, .doc-btn:active { border-color: #fff; background: rgba(255, 255, 255, 0.14); }
 .doc-btn svg { width: 19px; height: 19px; flex: none; }
 button, input { font: inherit; color: inherit; }
 /* Links grundsätzlich ohne Unterstreichung */
@@ -500,7 +501,6 @@ legend.field-label { width: 100%; }
 .license p { margin: 0 0 12px; }
 .license p:last-child { margin-bottom: 0; }
 .license .credit a { font-weight: 600; white-space: nowrap; }
-.license .credit a svg { width: 12px; height: 12px; margin-left: 3px; vertical-align: -1px; }
 .license .lic-link { display: inline-flex; align-items: center; gap: 4px; }
 .license .lic-link .arr { width: 13px; height: 13px; }
 /* Trenner vor dem Link zu den Lizenzen: so breit wie der Trenner über dem Block, eine Zeile Abstand */

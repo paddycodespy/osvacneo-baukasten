@@ -32,6 +32,8 @@ html[data-theme=dark] header{background:#0c0f11;border-bottom:1px solid var(--li
 .toc ol{list-style:none;margin:0;padding:0} .toc ol ol{padding-left:14px;margin:2px 0 6px}
 .toc li{margin:3px 0} .toc a{font-weight:500;color:var(--fg)} .toc ol ol a{color:var(--grey);font-weight:400}
 .toc a:hover{color:var(--red)}
+.toc a.on{color:var(--link);font-weight:600}
+.toc li.on>a{color:var(--link)}
 main{min-width:0}
 h1{font-style:italic;font-size:32px;margin:0 0 8px;line-height:1.2}
 h2{font-style:italic;font-size:25px;margin:0 0 10px;line-height:1.25}
@@ -50,7 +52,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 .lead{font-size:17px;color:var(--grey)}
 @media (max-width:900px){.wrap{grid-template-columns:1fr;gap:18px;padding:16px 14px 60px}.toc{position:static;max-height:none}section{padding:18px 16px 8px}header{padding:0 16px}}
 </style></head><body>
-<header><p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p></header>
+<header id="oben"><p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p></header>
 <div class="wrap"><nav class="toc" id="inhalt" aria-label="Inhalt"><p class="toc-title">Inhalt</p><ol><li><a href="#aufbau">So ist die App aufgebaut</a><ol><li><a href="#begriffe">Was die Zeichen bedeuten</a></ol></li><li><a href="#verbindung">Schritt 1: Verbindung wählen</a></li><li><a href="#stecker-kupplung">Stecker ↔ Kupplung</a><ol><li><a href="#groessen">Größen</a></li><li><a href="#passung">Passung</a></ol></li><li><a href="#schlauch">Schlauchadapter</a><ol><li><a href="#groessen-2">Größen</a></li><li><a href="#passung-2">Passung</a></ol></li><li><a href="#stutzen">Adapter auf einen Stutzen</a><ol><li><a href="#groessen-und-stutzen-messen">Größen und Stutzen messen</a></li><li><a href="#feineinstellungen">Feineinstellungen</a></ol></li><li><a href="#duese">Saugdüse</a><ol><li><a href="#duesenart">Düsenart</a></li><li><a href="#anschluss">Anschluss</a></li><li><a href="#masse">Maße</a></li><li><a href="#spitze">Spitze</a></ol></li><li><a href="#nebenluft">Nebenluft-Regler</a></li><li><a href="#schieber">Schieber</a></li><li><a href="#loesehilfe">Drehring-Lösehilfe</a></li><li><a href="#freiform">Freiform</a><ol><li><a href="#vorlagen">Vorlagen</a></li><li><a href="#der-aufbau-als-kette">Der Aufbau als Kette</a></li><li><a href="#die-bausteine">Die Bausteine</a></li><li><a href="#ende-b-am-geraet">Ende B am Gerät</a></li><li><a href="#flansch">Flansch zum Anschrauben</a></li><li><a href="#abzweig-und-schieber">Abzweig und Schieber</a></li><li><a href="#was-liegt-beim-drucken-unten">Was liegt beim Drucken unten?</a></li><li><a href="#hinweise-und-vorschlaege">Hinweise und Vorschläge</a></ol></li><li><a href="#kontur">Eigene Kontur</a><ol><li><a href="#am-foto-nachzeichnen">Am Foto nachzeichnen</a></li><li><a href="#selbst-zeichnen-und-bearbeiten">Selbst zeichnen und bearbeiten</a></li><li><a href="#nach-dem-uebernehmen">Nach dem Übernehmen</a></ol></li><li><a href="#passung-3">Schritt Passung</a></li><li><a href="#download">Download</a><ol><li><a href="#druckbett">Mehrere Adapter auf ein Druckbett</a></ol></li><li><a href="#drucken">Drucken</a></li><li><a href="#fragen">Häufige Fragen</a><ol><li><a href="#der-stecker-passt-nicht-oder-wackelt">Der Stecker passt nicht oder wackelt.</a></li><li><a href="#der-drehring-dreht-sich-nicht">Der Drehring dreht sich nicht.</a></li><li><a href="#der-download-ist-gesperrt">Der Download ist gesperrt.</a></li><li><a href="#die-vorschau-ist-blass">Die Vorschau ist blass.</a></li><li><a href="#wo-sind-meine-dateien">Wo sind meine Dateien?</a></li><li><a href="#wie-fange-ich-neu-an">Wie fange ich neu an?</a></ol></li><li><a href="#darstellung">Darstellung</a></li></ol></nav><main>
 <h1>Anleitung</h1>
 <p>Mit dem osVAC neo Baukasten stellst du Adapter für das Absaugsystem osVAC neo selbst zusammen und lädst sie als Datei für deinen 3D-Drucker herunter. Du brauchst dafür kein CAD-Programm: Du wählst aus, gibst ein paar Maße ein und siehst das Ergebnis sofort in der 3D-Vorschau.</p>
@@ -81,7 +83,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li><strong>Druckhilfe</strong> – ein kleines Hilfsteil (in der Vorschau weiß), auf dem der Stecker beim Drucken steht. Nach dem Druck wird es abgebrochen.</li>
 <li><strong>Drehring</strong> – ein Ring, der gleich mitgedruckt wird und sich danach frei dreht, z. B. damit sich der Schlauch nicht verdrillt.</li>
 </ul>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="verbindung">Schritt 1: Verbindung wählen</h2>
 <p>Im ersten Schritt wählst du, was für einen Adapter du brauchst. Die Arten sind nach ihrem Zweck sortiert.</p>
 <figure class="small"><a href="anleitung/verbindung.webp" target="_blank"><img src="anleitung/verbindung.webp" width="547" height="1375" alt="Schritt „Verbindung“ mit allen Adapterarten" loading="lazy"></a><figcaption>Schritt „Verbindung“ mit allen Adapterarten</figcaption></figure>
@@ -93,7 +95,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li><strong>Eigener Aufbau:</strong> <a href="#freiform">Freiform</a> – ein Adapter aus Bausteinen, z. B. für eckige Auslässe, Bögen, Abzweige oder Geräte mit ungewöhnlicher Form.</li>
 </ul>
 <p>Rechts neben jeder Art steht das Kürzel, unter dem die Datei später heißt (z. B. <em>MxxFyy</em>; xx und yy sind die Durchmesser).</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="stecker-kupplung">Stecker ↔ Kupplung</h2>
 <p>Der einfachste Adapter: Er verbindet zwei Teile von osVAC neo, z. B. einen Schlauch mit Kupplung 36 und ein Gerät mit Stecker 32.</p>
 <h3 id="groessen">Größen</h3>
@@ -105,7 +107,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <p><strong>Spiel zwischen Stecker und Kupplung:</strong> Standard sind 0,2 mm. Sitzt der Stecker nach dem Druck zu stramm, stell mehr Spiel ein. Wackelt er, weniger. Das Fragezeichen neben dem Namen blendet eine kurze Erklärung ein.</p>
 <div class="box tip"><strong>Tipp:</strong> Drucke beim ersten Mal einen Adapter mit dem Standardwert und probiere ihn aus. Erst wenn er nicht gut sitzt, lohnt es sich, die Passung zu ändern. Mit dem <a href="#druckbett">Druckbett</a> kannst du mehrere Varianten auf einmal drucken.</div>
 <p>Wie es danach weitergeht, steht unter <a href="#download">Download</a>.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="schlauch">Schlauchadapter</h2>
 <p><em>Kupplung ↔ Schlauch</em> (FxxHyy) und <em>Stecker ↔ Schlauch</em> (MxxHyy) werden auf den Saugschlauch gedreht. Der Schlauchteil sitzt in einem <strong>Drehring</strong>: Er dreht sich frei, damit sich der Schlauch beim Arbeiten nicht verdrillt.</p>
 <figure><a href="anleitung/schlauch-vorschau.webp" target="_blank"><img src="anleitung/schlauch-vorschau.webp" width="1440" height="900" alt="Kupplung ↔ Schlauch in der Vorschau" loading="lazy"></a><figcaption>Kupplung ↔ Schlauch in der Vorschau</figcaption></figure>
@@ -123,7 +125,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li><strong>Materialstärke:</strong> 9 mm statt 7 mm macht die Kupplung stabiler, sie wird dann außen 4 mm dicker.</li>
 </ul>
 <div class="box tip"><strong>Hinweis:</strong> Nach dem Druck den Schlauchteil einmal kräftig drehen, bis sich der Ring leicht bewegt. Sitzt er richtig fest, hilft die <a href="#loesehilfe">Drehring-Lösehilfe</a>.</div>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="stutzen">Adapter auf einen Stutzen</h2>
 <p><em>Kupplung → Stutzen</em> und <em>Stecker → Stutzen</em> verbinden osVAC neo mit einem Gerät, das einen runden Absaugstutzen hat. Du misst den Stutzen mit einem Messschieber aus, die App baut den passenden Adapter.</p>
 <figure><a href="anleitung/stutzen-vorschau.webp" target="_blank"><img src="anleitung/stutzen-vorschau.webp" width="1440" height="900" alt="Adapter auf einen Stutzen in der Vorschau" loading="lazy"></a><figcaption>Adapter auf einen Stutzen in der Vorschau</figcaption></figure>
@@ -148,7 +150,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 </ul>
 <p>Die kleine Tabelle darunter zeigt, wie weit das Rohrteil am Ende innen und außen wird.</p>
 <div class="box tip"><strong>Tipp:</strong> Für Geräte mit eckigem oder ungewöhnlichem Auslass nimm die <a href="#freiform">Freiform</a>. Dort gibt es auch einen <a href="#flansch">Flansch zum Anschrauben</a> und <a href="#kontur">eigene Konturen</a>.</div>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="duese">Saugdüse</h2>
 <p>Eine eigene Düse zum Aufstecken auf den Schlauch. Die Düse wird stehend gedruckt, mit dem Anschluss unten und der Spitze oben.</p>
 <figure><a href="anleitung/duese-breit.webp" target="_blank"><img src="anleitung/duese-breit.webp" width="1440" height="900" alt="Die Breitdüse in der Vorschau" loading="lazy"></a><figcaption>Die Breitdüse in der Vorschau</figcaption></figure>
@@ -178,7 +180,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li><strong>Nut für eine Bürstenleiste:</strong> eine Rille rundum zum Einkleben einer Streifenbürste.</li>
 </ul>
 <p>Unter den Einstellungen steht, ob die Düse ohne Stützen druckbar ist.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="nebenluft">Nebenluft-Regler</h2>
 <p>Der Nebenluft-Regler kommt direkt auf den Schlauch. Oben steckst du die Düse oder das Werkzeug an. Mit dem oberen Drehring regelst du, wie viel Luft seitlich mit angesaugt wird: Das nimmt Sog von der Düse, z. B. für Vorhänge, Polster oder lose Teile.</p>
 <figure><a href="anleitung/nebenluft-vorschau.webp" target="_blank"><img src="anleitung/nebenluft-vorschau.webp" width="1440" height="900" alt="Nebenluft-Regler in der Vorschau" loading="lazy"></a><figcaption>Nebenluft-Regler in der Vorschau</figcaption></figure>
@@ -189,7 +191,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li><strong>Bedienung:</strong> Den Nebenluft-Ring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Kerben am oberen Bund zeigen, wo die Fenster sind.</li>
 </ul>
 <p>In <strong>Passung</strong> stellst du das <strong>Spiel am Nebenluft-Ring</strong> ein. Dreht er nach dem Druck zu schwer, mehr Spiel einstellen.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="schieber">Schieber</h2>
 <p>Ein Absperrschieber für Rohre: Mit einer Platte machst du die Leitung auf oder zu. Er besteht aus zwei Gehäuseteilen und der Platte und wird verschraubt (Muttern und Schrauben M3).</p>
 <figure><a href="anleitung/schieber-vorschau.webp" target="_blank"><img src="anleitung/schieber-vorschau.webp" width="1440" height="900" alt="Schieber in der Vorschau" loading="lazy"></a><figcaption>Schieber in der Vorschau</figcaption></figure>
@@ -202,7 +204,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 </ul>
 <p>Die Anleitung zum Zusammenbauen steht im Schritt <a href="#download">Download</a> unter <em>Druckhinweise</em>.</p>
 <div class="box tip"><strong>Tipp:</strong> Einen Schieber direkt zwischen zwei Anschlüssen von osVAC neo baust du in der <a href="#freiform">Freiform</a> mit der Vorlage <em>Absperrschieber</em>.</div>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="loesehilfe">Drehring-Lösehilfe</h2>
 <p>Sitzt der Drehring eines <a href="#schlauch">Schlauchadapters</a> nach dem Druck fest, hilft dieses Werkzeug: Es hält die Kupplung bzw. den Stecker fest, damit du den Schlauchteil kräftig drehen kannst.</p>
 <figure><a href="anleitung/loesehilfe-vorschau.webp" target="_blank"><img src="anleitung/loesehilfe-vorschau.webp" width="1440" height="900" alt="Drehring-Lösehilfe in der Vorschau" loading="lazy"></a><figcaption>Drehring-Lösehilfe in der Vorschau</figcaption></figure>
@@ -213,7 +215,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li>Darunter wählst du die Größen. Die Blöcke sind beschriftet wie im Original: Der Halter für Kupplungen ist selbst ein Stecker und trägt „M“, der für Stecker trägt „F“.</li>
 </ul>
 <p>So geht's: Adapter aufstecken, den Block festhalten (z. B. im Schraubstock) und den Schlauchteil drehen, bis der Ring frei läuft.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="freiform">Freiform</h2>
 <p>Mit der Freiform baust du Adapter, die es so nicht fertig gibt: eckige Hauben, Bögen, versetzte Anschlüsse, Abzweige, Flansche zum Anschrauben oder einen Anschluss in der genauen Form deines Geräts. Der Adapter wird aus <strong>Bausteinen</strong> zusammengesetzt, vom <strong>Anschluss A</strong> bis zum <strong>Ende B</strong>.</p>
 <figure><a href="anleitung/freiform-vorschau.webp" target="_blank"><img src="anleitung/freiform-vorschau.webp" width="1440" height="900" alt="Freiform: Winkel 90° in der Vorschau" loading="lazy"></a><figcaption>Freiform: Winkel 90° in der Vorschau</figcaption></figure>
@@ -284,7 +286,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <h3 id="hinweise-und-vorschlaege">Hinweise und Vorschläge</h3>
 <figure class="small"><a href="anleitung/freiform-hinweis.webp" target="_blank"><img src="anleitung/freiform-hinweis.webp" width="547" height="638" alt="Hinweis mit Knopf zum Beheben" loading="lazy"></a><figcaption>Hinweis mit Knopf zum Beheben</figcaption></figure>
 <p>Die App prüft den Aufbau laufend. Ist etwas nicht druckbar oder passt nicht zusammen, erscheint an der Karte ein Hinweis. Im Bild ist der Radius des Bogens zu klein. Oft gibt es Knöpfe, die das Problem mit einem Klick lösen, hier <em>Radius auf 20 mm setzen</em>.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="kontur">Eigene Kontur</h2>
 <p>Hat dein Gerät einen Auslass mit ungewöhnlicher Form, wählst du in der Freiform bei der Form <strong>Eigene</strong>. Dann gibt es drei Wege zur Kontur:</p>
 <figure class="small"><a href="anleitung/kontur-auswahl.webp" target="_blank"><img src="anleitung/kontur-auswahl.webp" width="547" height="264" alt="Drei Wege zur eigenen Kontur" loading="lazy"></a><figcaption>Drei Wege zur eigenen Kontur</figcaption></figure>
@@ -323,7 +325,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li>Die <strong>Prüfliste</strong> darunter zeigt, ob die Kontur geschlossen ist, ob die Größe passt und was die App angepasst hat (z. B. spitze Ecken leicht gerundet).</li>
 </ul>
 <figure><a href="anleitung/kontur-vorschau.webp" target="_blank"><img src="anleitung/kontur-vorschau.webp" width="1440" height="900" alt="Adapter mit eigener Kontur" loading="lazy"></a><figcaption>Adapter mit eigener Kontur</figcaption></figure>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="passung-3">Schritt Passung</h2>
 <p>In <em>Passung</em> stellst du ein, wie stramm die Teile sitzen. Welche Regler es gibt, hängt vom Adapter ab:</p>
 <ul>
@@ -335,7 +337,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li><strong>Extras: Druckhilfe unter dem Stecker</strong> – der Stecker steht beim Drucken auf einer kleinen Hilfe, die danach abgebrochen wird (empfohlen).</li>
 </ul>
 <p>Die Standardwerte passen meistens. Ändern lohnt sich erst, wenn ein Testdruck nicht gut sitzt. <strong>Auf Standard zurücksetzen</strong> stellt die Werte wieder her.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="download">Download</h2>
 <figure class="small"><a href="anleitung/download.webp" target="_blank"><img src="anleitung/download.webp" width="547" height="777" alt="Schritt „Download“" loading="lazy"></a><figcaption>Schritt „Download“</figcaption></figure>
 <ul>
@@ -349,7 +351,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <h3 id="druckbett">Mehrere Adapter auf ein Druckbett</h3>
 <figure class="small"><a href="anleitung/druckbett.webp" target="_blank"><img src="anleitung/druckbett.webp" width="547" height="347" alt="Zwei Adapter auf einem Druckbett" loading="lazy"></a><figcaption>Zwei Adapter auf einem Druckbett</figcaption></figure>
 <p>Praktisch zum Testen: Klicke auf <strong>Aktuellen Adapter hinzufügen</strong>, ändere etwas (z. B. das Spiel) und füge ihn noch einmal hinzu. Alle Adapter kommen nebeneinander in eine Datei. Die Liste zeigt das Filament je Adapter und zusammen.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="drucken">Drucken</h2>
 <ul>
 <li><strong>Material:</strong> PETG ist ideal. Es ist zäh und hält Wärme besser aus als PLA.</li>
@@ -360,7 +362,7 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <li><strong>Wände:</strong> Für Düsen und stark belastete Teile mindestens 3 Wände.</li>
 </ul>
 <div class="box tip"><strong>Hinweis:</strong> Bei Teilen mit Drehring meldet Bambu Studio „schwebende Bereiche“ oder „fliegender Träger“. Das ist gewollt: Der Ring wird mit Abstand über dem Teil darunter mitgedruckt. Die Meldung kannst du bestätigen.</div>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="fragen">Häufige Fragen</h2>
 <h3 id="der-stecker-passt-nicht-oder-wackelt">Der Stecker passt nicht oder wackelt.</h3>
 <p>In <a href="#passung">Passung</a> das Spiel ändern: zu stramm → größer, wackelt → kleiner. Dann neu drucken. Mit dem <a href="#druckbett">Druckbett</a> kannst du mehrere Werte auf einmal ausprobieren.</p>
@@ -374,10 +376,31 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 <p>Im Ordner, der im <a href="#download">Download</a> unter <em>Speichern in</em> steht. Standard ist der Download-Ordner.</p>
 <h3 id="wie-fange-ich-neu-an">Wie fange ich neu an?</h3>
 <p>Im Schritt <em>Verbindung</em> ganz unten auf <strong>Neu anfangen</strong> klicken. Einzelne Bereiche setzt du mit <em>… auf Standard zurücksetzen</em> zurück.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 <section><h2 id="darstellung">Darstellung</h2>
 <figure><a href="anleitung/dunkel.webp" target="_blank"><img src="anleitung/dunkel.webp" width="1440" height="900" alt="Die App in der dunklen Ansicht" loading="lazy"></a><figcaption>Die App in der dunklen Ansicht</figcaption></figure>
 <p>Mit dem runden Knopf ganz rechts in der Kopfzeile (Mond bzw. Sonne) wechselst du zwischen heller und dunkler Ansicht. Die App startet immer hell und merkt sich deine Wahl.</p>
-<p class="up"><a href="#inhalt">nach oben</a></p></section>
+<p class="up"><a href="#oben">nach oben</a></p></section>
 </main></div>
+<script>
+// Inhaltsverzeichnis: Abschnitt einfärben, in dem man gerade liest (Kapitel und Unterabschnitt)
+(function(){
+  var links={};document.querySelectorAll('.toc a').forEach(function(a){links[a.getAttribute('href').slice(1)]=a});
+  var heads=[].slice.call(document.querySelectorAll('main h2[id], main h3[id]'));
+  var toc=document.querySelector('.toc');
+  function update(){
+    var y=window.innerHeight*0.3,cur=null;
+    for(var i=0;i<heads.length;i++){if(heads[i].getBoundingClientRect().top<=y)cur=heads[i];else break}
+    if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2)cur=heads[heads.length-1];
+    document.querySelectorAll('.toc .on').forEach(function(e){e.classList.remove('on')});
+    if(!cur)return;
+    var a=links[cur.id];if(!a)return;a.classList.add('on');
+    var li=a.parentElement.parentElement.closest('li');if(li)li.classList.add('on');
+    // im Verzeichnis sichtbar halten, ohne die Seite zu bewegen
+    if(toc.scrollHeight>toc.clientHeight){var r=a.getBoundingClientRect(),t=toc.getBoundingClientRect();if(r.top<t.top+30||r.bottom>t.bottom-30)toc.scrollTop+=r.top-t.top-t.height/2}
+  }
+  var busy=false;window.addEventListener('scroll',function(){if(!busy){busy=true;requestAnimationFrame(function(){busy=false;update()})}},{passive:true});
+  window.addEventListener('resize',update);update();
+})();
+</script>
 </body></html>

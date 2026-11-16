@@ -113,7 +113,7 @@ for (const [idx, raw] of lines.entries()) {
     used.add(id);
     toc.push({ level, id, text: m[2] });
     if (level === 2) {
-      if (inSection) out.push('<p class="up"><a href="#inhalt">nach oben</a></p></section>');
+      if (inSection) out.push('<p class="up"><a href="#oben">nach oben</a></p></section>');
       out.push(`<section><h2 id="${id}">${inline(m[2])}</h2>`);
       inSection = true;
     } else out.push(`<h3 id="${id}">${inline(m[2])}</h3>`);
@@ -162,7 +162,7 @@ for (const [idx, raw] of lines.entries()) {
   para.push(line.trim());
 }
 flush();
-if (inSection) out.push('<p class="up"><a href="#inhalt">nach oben</a></p></section>');
+if (inSection) out.push('<p class="up"><a href="#oben">nach oben</a></p></section>');
 
 const tocHtml = `<nav class="toc" id="inhalt" aria-label="Inhalt"><p class="toc-title">Inhalt</p><ol>${toc
   .map((t, i) => {
@@ -197,6 +197,8 @@ html[data-theme=dark] header{background:#0c0f11;border-bottom:1px solid var(--li
 .toc ol{list-style:none;margin:0;padding:0} .toc ol ol{padding-left:14px;margin:2px 0 6px}
 .toc li{margin:3px 0} .toc a{font-weight:500;color:var(--fg)} .toc ol ol a{color:var(--grey);font-weight:400}
 .toc a:hover{color:var(--red)}
+.toc a.on{color:var(--link);font-weight:600}
+.toc li.on>a{color:var(--link)}
 main{min-width:0}
 h1{font-style:italic;font-size:32px;margin:0 0 8px;line-height:1.2}
 h2{font-style:italic;font-size:25px;margin:0 0 10px;line-height:1.25}
@@ -215,10 +217,31 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 .lead{font-size:17px;color:var(--grey)}
 @media (max-width:900px){.wrap{grid-template-columns:1fr;gap:18px;padding:16px 14px 60px}.toc{position:static;max-height:none}section{padding:18px 16px 8px}header{padding:0 16px}}
 </style></head><body>
-<header><p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p></header>
+<header id="oben"><p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p></header>
 <div class="wrap">${tocHtml}<main>
 ${out.join('\n').replace('\u0001TOC\u0001', '')}
 </main></div>
+<script>
+// Inhaltsverzeichnis: Abschnitt einfärben, in dem man gerade liest (Kapitel und Unterabschnitt)
+(function(){
+  var links={};document.querySelectorAll('.toc a').forEach(function(a){links[a.getAttribute('href').slice(1)]=a});
+  var heads=[].slice.call(document.querySelectorAll('main h2[id], main h3[id]'));
+  var toc=document.querySelector('.toc');
+  function update(){
+    var y=window.innerHeight*0.3,cur=null;
+    for(var i=0;i<heads.length;i++){if(heads[i].getBoundingClientRect().top<=y)cur=heads[i];else break}
+    if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2)cur=heads[heads.length-1];
+    document.querySelectorAll('.toc .on').forEach(function(e){e.classList.remove('on')});
+    if(!cur)return;
+    var a=links[cur.id];if(!a)return;a.classList.add('on');
+    var li=a.parentElement.parentElement.closest('li');if(li)li.classList.add('on');
+    // im Verzeichnis sichtbar halten, ohne die Seite zu bewegen
+    if(toc.scrollHeight>toc.clientHeight){var r=a.getBoundingClientRect(),t=toc.getBoundingClientRect();if(r.top<t.top+30||r.bottom>t.bottom-30)toc.scrollTop+=r.top-t.top-t.height/2}
+  }
+  var busy=false;window.addEventListener('scroll',function(){if(!busy){busy=true;requestAnimationFrame(function(){busy=false;update()})}},{passive:true});
+  window.addEventListener('resize',update);update();
+})();
+</script>
 </body></html>
 `;
 writeFileSync(OUT, page);
