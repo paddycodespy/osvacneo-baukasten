@@ -94,7 +94,7 @@ Wie es danach weitergeht, steht unter [Download](#download).
 ![Passung beim Schlauchadapter](anleitung/passung-schlauch.webp){klein}
 
 - **Spiel zwischen Stecker und Kupplung:** wie bei [Stecker ↔ Kupplung](#stecker-kupplung).
-- **Spiel am Drehring:** Der Ring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Standard sind 0,3 mm wie im Original; für PETG sind 0,35 bis 0,5 mm besser.
+- **Spiel am Drehring:** Der Ring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Standard sind 0,45 mm, passend für PETG (bei 9 mm Materialstärke höchstens 0,35 mm). Das Original nutzt 0,3 mm; damit sitzt der Ring mit PETG oft fest.
 - **Materialstärke:** 9 mm statt 7 mm macht die Kupplung stabiler, sie wird dann außen 4 mm dicker.
 
 > Hinweis: Nach dem Druck den Schlauchteil einmal kräftig drehen, bis sich der Ring leicht bewegt. Sitzt er richtig fest, hilft die [Drehring-Lösehilfe](#loesehilfe).
@@ -185,7 +185,7 @@ Der Nebenluft-Regler kommt direkt auf den Schlauch. Oben steckst du die Düse od
 - **Unten: Schlauch (H):** wie beim [Schlauchadapter](#schlauch). Der Schlauch wird eingedreht und kann sich mit dem unteren Drehring drehen.
 - **Bedienung:** Den Nebenluft-Ring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Kerben am oberen Bund zeigen, wo die Fenster sind.
 
-In **Passung** stellst du das **Spiel am Nebenluft-Ring** ein. Dreht er nach dem Druck zu schwer, mehr Spiel einstellen.
+In **Passung** stellst du das **Spiel am Nebenluft-Ring** ein (Standard 0,35 mm) und das **Spiel am Drehring** für den Schlauch (Standard 0,45 mm). Dreht ein Ring nach dem Druck zu schwer, mehr Spiel einstellen.
 
 ## Schieber {#schieber}
 

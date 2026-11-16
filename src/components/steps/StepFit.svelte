@@ -48,7 +48,7 @@
       <output>{fmt(app.input.slipRingGapSize, 2)} mm</output>
     </div>
     <HelpText id="swivel" />
-    <p class="hint" id="swivel-hint">Standard: 0,3 mm wie im Original. <strong>Für PETG 0,35–0,5 mm einstellen</strong>, mit 0,3 mm kann der Ring festsitzen. Lässt er sich nach dem Druck nicht drehen: größer.</p>
+    <p class="hint" id="swivel-hint">Standard: {fmt(app.swivelDefault, 2)} mm (für PETG; das Original nutzt 0,3 mm, damit kann der Ring festsitzen). Lässt er sich nach dem Druck nicht drehen: größer. Wackelt er stark: kleiner.</p>
   </fieldset>
 {/if}
 
