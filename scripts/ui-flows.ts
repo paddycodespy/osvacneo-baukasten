@@ -575,6 +575,28 @@ await withPreview(4180, async (url, browser) => {
     await kind(/Freiform/);
   });
 
+  await test('hell/dunkel: Standard hell, Umschalter wirkt und bleibt gemerkt', pg, async () => {
+    const mode = () => pg.evaluate(() => document.documentElement.dataset.theme ?? 'light');
+    const btn = pg.getByTestId('theme-toggle');
+    await pg.evaluate(() => localStorage.removeItem('osvacneo-theme'));
+    await pg.reload();
+    await ready(pg);
+    expect((await mode()) === 'light', 'Start nicht hell');
+    expect((await btn.getAttribute('title')) === 'Dunkle Ansicht', 'Titel im hellen Schema falsch');
+    await btn.click();
+    expect((await mode()) === 'dark', 'Umschalten auf dunkel wirkt nicht');
+    const bar = await pg.locator('.topbar').evaluate((e) => getComputedStyle(e).backgroundColor);
+    expect(bar === 'rgb(12, 15, 17)', 'Kopfzeile im dunklen Schema: ' + bar);
+    await pg.reload();
+    await ready(pg);
+    expect((await mode()) === 'dark', 'dunkel nach dem Neuladen nicht gemerkt');
+    await btn.click();
+    expect((await mode()) === 'light', 'zurück auf hell wirkt nicht');
+    await pg.reload();
+    await ready(pg);
+    expect((await mode()) === 'light', 'hell nach dem Neuladen nicht gemerkt');
+  });
+
   if (errors.length) results.push({ name: 'keine Skriptfehler im Browser', ok: false, msg: errors.join(' | ') });
   await ctx.close();
 });

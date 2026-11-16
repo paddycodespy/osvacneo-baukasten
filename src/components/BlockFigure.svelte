@@ -124,7 +124,7 @@
 
 <style>
   .bfig { width: 100%; max-width: 340px; height: auto; display: block; background: var(--mist); border-radius: 8px; margin: 10px 0 6px; }
-  .part { fill: #ffd9d6; stroke: var(--red); stroke-width: 1.4; }
+  .part { fill: var(--red-l); stroke: var(--red); stroke-width: 1.4; }
   .axis { stroke: var(--graphite); stroke-width: 1; stroke-dasharray: 5 3; fill: none; }
   .axis.thin { opacity: 0.35; }
   .dim { stroke: var(--sky-d); stroke-width: 1.4; }
@@ -133,5 +133,5 @@
   .lead { fill: none; stroke: var(--sky-d); stroke-width: 0.9; }
   .lt, .key { font-family: var(--body); font-size: 12px; font-weight: 700; fill: var(--sky-d); }
   .mute { font-family: var(--body); font-size: 12px; font-weight: 500; fill: var(--slate); }
-  .win { fill: #fff; stroke: var(--slate-2, #7a7a7a); stroke-width: 1; }
+  .win { fill: var(--card); stroke: var(--slate-2, #7a7a7a); stroke-width: 1; }
 </style>

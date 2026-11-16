@@ -35,7 +35,7 @@
 
 <style>
   .measure { width: 100%; max-height: 190px; height: auto; display: block; background: var(--shop); border-radius: 8px; }
-  .machine { fill: #c9d1d5; stroke: var(--slate-2); stroke-width: 1; }
+  .machine { fill: var(--disabled); stroke: var(--slate-2); stroke-width: 1; }
   .screw { fill: #5f6b72; }
   .seal { fill: #2b2b2b; }
   .dim { stroke: var(--cobalt); stroke-width: 2; }

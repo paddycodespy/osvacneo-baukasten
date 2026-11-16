@@ -475,23 +475,23 @@
 <style>
   .tpl-label { font-weight: 600; font-size: 14px; margin: 0 0 8px; }
   .tpl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 22px; }
-  .tpl-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; }
+  .tpl-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); cursor: pointer; }
   .tpl-btn strong { font-weight: 600; font-size: 14px; }
   .tpl-btn small { font-size: 12.5px; color: var(--slate-2); }
   .tpl-btn.sel { border-color: var(--sky); background: var(--sky-l); }
   .tpl-btn:not(.sel):hover { border-color: var(--sky); }
   .confirm.bottom { margin: 18px 0 4px; }
-  .confirm { margin: -12px 0 22px; padding: 10px 12px; border-radius: 8px; border-left: 4px solid var(--signal); background: #fdf6dc; font-size: 14px; }
+  .confirm { margin: -12px 0 22px; padding: 10px 12px; border-radius: 8px; border-left: 4px solid var(--signal); background: var(--warn-bg); font-size: 14px; }
   .confirm p { margin: 0 0 8px; }
   .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
   .print-note { margin: 10px 0 0; padding: 8px 12px; border-radius: 4px; font-size: 14px; border-left: 4px solid var(--sky); background: var(--sky-l); }
-  .print-note.warn { border-left-color: var(--signal); background: #fdf6dc; }
-  .print-note.error { border-left-color: #c4362b; background: #fdecea; color: #8a1f17; }
+  .print-note.warn { border-left-color: var(--signal); background: var(--warn-bg); }
+  .print-note.error { border-left-color: #c4362b; background: var(--err-bg); color: var(--err-fg); }
 
   .chain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; position: relative; }
   /* Verbindungslinie zwischen den Karten: zeigt die Reihenfolge von A nach B */
   .chain::before { content: ''; position: absolute; left: 25px; top: 20px; bottom: 20px; width: 2px; background: var(--line); }
-  .card { position: relative; border: 1px solid var(--line); border-radius: 10px; background: #fff; margin: 0 0 8px; }
+  .card { position: relative; border: 1px solid var(--line); border-radius: 10px; background: var(--card); margin: 0 0 8px; }
   .card.open { border-color: var(--sky); }
   .card.has-error { border-color: #d93a2b; }
   .card-head-row { display: flex; align-items: stretch; }
@@ -500,7 +500,7 @@
   .card-title strong { font-weight: 600; font-size: 14.5px; }
   .card-title small { font-size: 12.5px; color: var(--slate-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .badge { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--mist); border: 1px solid var(--line); font-weight: 600; font-size: 13px; color: var(--slate); }
-  .badge.a, .badge.b { background: var(--graphite); border-color: var(--graphite); color: #fff; }
+  .badge.a, .badge.b { background: var(--graphite); border-color: var(--graphite); color: var(--paper); }
   .chev { flex: none; width: 7px; height: 7px; border-right: 1.8px solid var(--grey); border-bottom: 1.8px solid var(--grey); transform: rotate(45deg); margin: 0 4px 3px; transition: transform 0.15s; }
   .open > .card-head .chev, .open .card-head-row .chev { transform: rotate(-135deg); margin-bottom: -3px; }
   .flag { flex: none; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--signal); color: #fff; font-weight: 700; font-size: 12px; }
@@ -509,7 +509,7 @@
   .icon { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--grey); cursor: pointer; font-size: 18px; line-height: 1; padding: 0; }
   .icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
   .icon:hover:not(:disabled) { background: var(--sky-l); color: var(--sky-d); }
-  .icon.x:hover { background: #fdecea; color: var(--red); }
+  .icon.x:hover { background: var(--err-bg); color: var(--red); }
   .icon:disabled { opacity: 0.3; cursor: default; }
   .card-body { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .card-body :global(.seg.wide) { margin-top: 12px; }
@@ -522,7 +522,7 @@
   .add { position: relative; margin: 2px 0 10px; padding: 10px 12px; border: 1px dashed #c6d0d5; border-radius: 10px; background: var(--mist); }
   .add-label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-2); margin-bottom: 6px; }
   .add-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .add-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; font: inherit; font-size: 13.5px; font-weight: 600; }
+  .add-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); cursor: pointer; font: inherit; font-size: 13.5px; font-weight: 600; }
   .add-btn svg { flex: none; width: 13px; height: 13px; stroke: var(--sky-d); stroke-width: 2; stroke-linecap: round; }
   .add-btn:hover:not(:disabled) { border-color: var(--sky); }
   .add-btn:disabled { opacity: 0.45; cursor: default; }

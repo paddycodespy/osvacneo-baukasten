@@ -48,7 +48,7 @@
 
 <style>
   .kind-icon { width: 40px; height: 52px; flex: none; }
-  .f, .m, .h { fill: var(--icon-fill, #cfd8dd); stroke: var(--icon-stroke, #1f2a30); stroke-width: 1.4; }
-  .win { fill: #fff; stroke: var(--icon-stroke, #1f2a30); stroke-width: 1; }
-  .rib { stroke: var(--icon-stroke, #1f2a30); stroke-width: 1; opacity: 0.45; }
+  .f, .m, .h { fill: var(--icon-fill, var(--soft)); stroke: var(--icon-stroke, var(--ink)); stroke-width: 1.4; }
+  .win { fill: var(--card); stroke: var(--icon-stroke, var(--ink)); stroke-width: 1; }
+  .rib { stroke: var(--icon-stroke, var(--ink)); stroke-width: 1; opacity: 0.45; }
 </style>
