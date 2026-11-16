@@ -55,7 +55,7 @@ function figure(alt: string, src: string, small: boolean) {
   // feste Maße: sonst verschieben nachladende Bilder die Seite, und Sprünge zu einem Abschnitt landen daneben
   const size = existsSync(`public/${src}`) ? webpSize(`public/${src}`) : null;
   const wh = size ? ` width="${size[0]}" height="${size[1]}"` : '';
-  return `<figure${small ? ' class="small"' : ''}><a href="${src}" target="_blank"><img src="${src}"${wh} alt="${esc(alt)}" loading="lazy"></a>${alt ? `<figcaption>${inline(alt)}</figcaption>` : ''}</figure>`;
+  return `<figure${small ? ' class="small"' : ''}><a href="${src}" class="zoom"><img src="${src}"${wh} alt="${esc(alt)}" loading="lazy"></a>${alt ? `<figcaption>${inline(alt)}</figcaption>` : ''}</figure>`;
 }
 
 const md = readFileSync(SRC, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
@@ -214,6 +214,11 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 .box{border-left:4px solid var(--tip-l);background:var(--tip);border-radius:6px;padding:10px 14px;margin:0 0 14px;font-size:15px}
 .box.warn{border-left-color:var(--warn-l);background:var(--warn)}
 .up{text-align:right;font-size:13px;margin:4px 0 10px}
+figure a.zoom{cursor:zoom-in;display:inline-block;max-width:100%}
+.lightbox{position:fixed;inset:0;z-index:50;background:rgba(10,14,17,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:calc(100vh - 90px);border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5);background:#fff}
+.lightbox p{color:#e3e7ea;font-size:14px;margin:12px 0 0;text-align:center}
+.lightbox button{position:absolute;top:14px;right:18px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font-size:24px;line-height:1;cursor:pointer}
 .lead{font-size:17px;color:var(--grey)}
 @media (max-width:900px){.wrap{grid-template-columns:1fr;gap:18px;padding:16px 14px 60px}.toc{position:static;max-height:none}section{padding:18px 16px 8px}header{padding:0 16px}}
 </style></head><body>
@@ -222,6 +227,22 @@ figcaption{font-size:13.5px;color:var(--grey);margin-top:6px}
 ${out.join('\n').replace('\u0001TOC\u0001', '')}
 </main></div>
 <script>
+// Bilder groß zeigen (in der Seite, auch im Programmfenster); Klick, Esc oder × schließt
+(function(){
+  var box=null;
+  function close(){if(box){box.remove();box=null}}
+  document.addEventListener('click',function(e){
+    var a=e.target.closest&&e.target.closest('a.zoom');if(!a)return;
+    e.preventDefault();close();
+    var img=a.querySelector('img'),cap=a.parentElement.querySelector('figcaption');
+    box=document.createElement('div');box.className='lightbox';box.setAttribute('role','dialog');box.setAttribute('aria-label','Bild groß');
+    box.innerHTML='<button type="button" aria-label="Schließen">×</button><img alt=""><p></p>';
+    box.querySelector('img').src=a.getAttribute('href');box.querySelector('img').alt=img.alt;
+    box.querySelector('p').textContent=cap?cap.textContent:'';
+    box.addEventListener('click',close);document.body.appendChild(box);box.querySelector('button').focus();
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
+})();
 // Inhaltsverzeichnis: Abschnitt einfärben, in dem man gerade liest (Kapitel und Unterabschnitt)
 (function(){
   var links={};document.querySelectorAll('.toc a').forEach(function(a){links[a.getAttribute('href').slice(1)]=a});
@@ -246,6 +267,13 @@ ${out.join('\n').replace('\u0001TOC\u0001', '')}
 `;
 writeFileSync(OUT, page);
 console.log(`${OUT}: ${toc.filter((t) => t.level === 2).length} Kapitel, ${toc.length} Überschriften`);
+// Kapitel, auf die die App verlinkt (app.docAnchor in src/lib/app.svelte.ts): müssen da sein
+const LINKED = ['verbindung', 'stecker-kupplung', 'schlauch', 'stutzen', 'duese', 'nebenluft', 'schieber', 'loesehilfe', 'freiform', 'passung', 'download'];
+const gone = LINKED.filter((id) => !used.has(id));
+if (gone.length) {
+  console.log('Kapitel fehlen, auf die die App verlinkt:', gone.join(', '));
+  process.exitCode = 1;
+}
 if (missing.length) {
   console.log('Bilder fehlen:', missing.join(', '));
   process.exitCode = 1;

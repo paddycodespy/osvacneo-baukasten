@@ -497,6 +497,10 @@ legend.field-label { width: 100%; }
 .filament strong { font-weight: 600; color: var(--graphite); }
 .filament .help-btn, legend .help-btn { margin-left: 4px; vertical-align: 1px; }
 .filament .help-text { margin: 8px 0 0; background: var(--card); }
+.doc-hint { margin: 22px 0 0; font-size: 13.5px; }
+.doc-hint a { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--sky-d); }
+.doc-hint a:hover, .doc-hint a:active { color: var(--red); }
+.doc-hint .arr { width: 13px; height: 13px; }
 .license { font-size: 13px; line-height: 1.55; color: var(--slate-2); border-top: 1px solid var(--line); padding-top: 16px; margin-top: 22px; }
 .license p { margin: 0 0 12px; }
 .license p:last-child { margin-bottom: 0; }
