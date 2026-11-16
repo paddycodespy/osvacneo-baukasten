@@ -15,7 +15,7 @@ import { partsFree } from '../src/lib/osvac/assemblies';
 import { TEMPLATES, newBlock, planFree, tiltedEnds, bleedMinLen, DEFAULT_DEVICE, type FreeSpec } from '../src/lib/osvac/freeform';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleLayout, nozzleToFree, type NozzleSpec } from '../src/lib/osvac/nozzle';
 import { bleedTransition } from '../src/lib/osvac/bleed';
-import { prepare as prepareContour, bbox as contourBox } from '../src/lib/osvac/contour';
+import { prepare as prepareContour, bbox as contourBox, clipperReady } from '../src/lib/osvac/contour';
 import { weld, meshTolerance } from '../src/lib/worker/threemf';
 import { overhangArea, COUNTED, COUNTED_MACHINE, COUNTED_GATE } from '../src/lib/overhang';
 import { kindById } from '../src/lib/osvac/catalog';
@@ -24,6 +24,7 @@ import { DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
 
 const root = path.resolve(import.meta.dirname, '..');
 setOC(await opencascade({ locateFile: (f: string) => path.join(root, 'node_modules/replicad-opencascadejs/dist/', f) }));
+await clipperReady; // Clipper (Kontur-Versatz) wird nachgeladen
 await initFont(fs.readFileSync(path.join(root, 'public/fonts/LiberationSans-Regular.ttf')).buffer as ArrayBuffer);
 const p = deriveParams({});
 

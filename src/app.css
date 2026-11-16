@@ -596,6 +596,9 @@ legend.field-label { width: 100%; }
 .plate li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid var(--line); }
 .plate .x { border: 0; background: none; font-size: 18px; line-height: 1; color: var(--grey); cursor: pointer; padding: 0 4px; }
 .plate .x:hover { color: var(--red); }
+.plate li > span:first-child { flex: 1; }
+.plate .g { color: var(--grey); white-space: nowrap; }
+.plate-sum { margin: 8px 0 10px; font-size: 14px; }
 .plate-dl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; font-size: 14px; }
 .plate-dl span { margin-right: 2px; }
 

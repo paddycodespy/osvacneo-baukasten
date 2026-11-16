@@ -49,8 +49,9 @@
 {#if app.filament}
   <div class="filament">
     <p>
-      Material: ca. <strong>{app.gramsText} g PETG</strong>, rund {fmt(app.filament.metersMin)}{Math.round(app.filament.metersMin) !== Math.round(app.filament.metersMax) ? `–${fmt(app.filament.metersMax)}` : ''} m Filament (1,75 mm){app.supports && app.hasSupport ? ', mit Druckhilfe' : ''}.
-      <HelpToggle id="filament" />
+      Material: ca. <strong>{app.gramsText} g PETG</strong>, rund {fmt(app.filament.metersMin)}{Math.round(app.filament.metersMin) !== Math.round(app.filament.metersMax) ? `–${fmt(app.filament.metersMax)}` : ''} m Filament
+      <!-- letztes Wort und „?“ zusammenhalten, sonst steht das „?“ allein in der nächsten Zeile -->
+      {#if app.supports && app.hasSupport}(1,75 mm), mit <span class="nw">Druckhilfe. <HelpToggle id="filament" /></span>{:else}<span class="nw">(1,75 mm). <HelpToggle id="filament" /></span>{/if}
     </p>
     <HelpText id="filament" />
   </div>
@@ -106,9 +107,10 @@
   {#if app.plate.length}
     <ul class="plate">
       {#each app.plate as p, i (p.key)}
-        <li><span>{p.label}{p.includeHelpers ? ' mit Druckhilfe' : ''}</span><button class="x" aria-label="{p.label} entfernen" onclick={() => app.removeFromPlate(i)}>×</button></li>
+        <li><span>{p.label}{p.includeHelpers ? ' mit Druckhilfe' : ''}</span>{#if p.grams}<span class="g">{Math.round(p.grams[0]) === Math.round(p.grams[1]) ? Math.round(p.grams[0]) : `${Math.round(p.grams[0])}–${Math.round(p.grams[1])}`}&nbsp;g</span>{/if}<button class="x" aria-label="{p.label} entfernen" onclick={() => app.removeFromPlate(i)}>×</button></li>
       {/each}
     </ul>
+    {#if app.plateGrams}<p class="plate-sum">Zusammen ca. <strong>{app.plateGrams} g PETG</strong>.</p>{/if}
     <div class="plate-dl">
       <span>Druckbett herunterladen:</span>
       {#each FORMATS as f (f.id)}

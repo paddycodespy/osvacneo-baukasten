@@ -13,6 +13,7 @@ import { deriveParams } from '../osvac/params';
 import { initFont } from '../osvac/text';
 import { kindById } from '../osvac/catalog';
 import { meshTolerance } from './threemf';
+import { clipperReady } from '../osvac/contour';
 import type { Part } from '../osvac/assemblies';
 import type { PartRef, WorkerRequest, WorkerReply } from './protocol';
 import { UserError, GENERIC_ERROR, partLabel, partNotes } from '../errors';
@@ -212,6 +213,7 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
       return;
     }
     await ready;
+    await clipperReady;
     if (msg.type === 'part') {
       const t0 = performance.now();
       const { q, shape, volume, area, zMin, notes } = await getPart(msg);

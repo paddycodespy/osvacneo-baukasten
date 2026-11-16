@@ -4,7 +4,17 @@
  * Daraus baut freeform.ts den Draht: lange Kanten als Linien, Ketten kurzer Kanten als glatte Kurven (BSpline),
  * an Knicken (Richtungswechsel > CORNER_DEG) getrennt.
  */
-import ClipperLib from 'clipper-lib';
+/**
+ * Clipper (Versatz der Kontur) wird nachgeladen: Er ist nur bei „Eigene“ nötig und macht die Startdatei
+ * sonst rund 100 kB größer. Wer rechnet, wartet vorher auf clipperReady (Worker, Skripte); die Planung im
+ * Browser rechnet nach dem Laden neu (app.clipperOk).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let ClipperLib: any = null;
+export const clipperReady: Promise<void> = import('clipper-lib').then((m) => {
+  ClipperLib = m.default ?? m;
+});
+export const clipperLoaded = () => ClipperLib !== null;
 
 export type P2 = [number, number];
 
@@ -169,6 +179,8 @@ export function roundCorners(pts: P2[], r = CONTOUR_MIN_R): { pts: P2[]; n: numb
 
 /** Alle Teilstücke nach dem Versatz (Clipper, runde Ecken), gegen den Uhrzeigersinn */
 function offsetAll(pts: P2[], delta: number): P2[][] {
+  // noch nicht geladen: unverändert (die Planung rechnet nach dem Laden ohnehin neu)
+  if (!ClipperLib) return [area(pts) < 0 ? [...pts].reverse() : pts];
   const path = pts.map(([x, y]) => ({ X: Math.round(x * SCALE), Y: Math.round(y * SCALE) }));
   const co = new ClipperLib.ClipperOffset(2, 0.01 * SCALE);
   co.AddPath(path, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);

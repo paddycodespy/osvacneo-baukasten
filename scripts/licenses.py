@@ -108,7 +108,13 @@ li span{{color:#7a7a7a;font-size:13px;margin-left:6px}}
 section{{background:#fff;border:1px solid #e1e5e8;border-radius:10px;padding:16px 18px;margin:0 0 14px}}
 .meta{{color:#7a7a7a;font-size:13px;margin:0 0 10px}}
 pre{{white-space:pre-wrap;word-wrap:break-word;font:12.5px/1.45 ui-monospace,Consolas,monospace;background:#f5f7f8;border-radius:6px;padding:12px;margin:0;max-height:420px;overflow:auto}}
-</style></head><body>
+html[data-theme=dark]{{color-scheme:dark}}
+html[data-theme=dark] body{{color:#e3e7ea;background:#14181b}} html[data-theme=dark] header{{background:#0c0f11;border-bottom:1px solid #323a40}}
+html[data-theme=dark] .lead{{color:#b4bec5}} html[data-theme=dark] a{{color:#62c1f4}} html[data-theme=dark] a:hover{{color:#ff5a4f}}
+html[data-theme=dark] ul,html[data-theme=dark] section{{background:#1d2226;border-color:#323a40}}
+html[data-theme=dark] li span,html[data-theme=dark] .meta{{color:#9aa5ad}} html[data-theme=dark] pre{{background:#14181b}}
+</style>
+<script>try{{if(localStorage.getItem('osvacneo-theme')==='dark')document.documentElement.dataset.theme='dark'}}catch(e){{}}</script></head><body>
 <header><p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p></header>
 <main><h1>Lizenzen</h1><p class="lead">{e(intro)} <a href="./LICENSE.txt">Lizenztext CC BY-NC-SA 4.0</a></p>
 <ul>{toc}</ul>{secs}</main></body></html>

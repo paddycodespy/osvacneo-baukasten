@@ -20,11 +20,12 @@ import { gateLayout, gateLower, gateUpper, gateSlider, gateClip, sliderInGate, D
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, nozzleToFree, nozzleIssues, nozzleLayout, type NozzleSpec } from '../src/lib/osvac/nozzle';
 import { DEFAULT_TIP, bleedMinLen } from '../src/lib/osvac/freeform';
-import { prepare as prepareContour, bbox as contourBox } from '../src/lib/osvac/contour';
+import { prepare as prepareContour, bbox as contourBox, clipperReady } from '../src/lib/osvac/contour';
 import { grow as growSection, samplePoints } from '../src/lib/osvac/freeform';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 setOC(await opencascade({ locateFile: (f: string) => path.join(here, '../node_modules/replicad-opencascadejs/dist/', f) }));
+await clipperReady; // Clipper (Kontur-Versatz) wird nachgeladen
 await initFont(fs.readFileSync(path.join(here, '../public/fonts/LiberationSans-Regular.ttf')).buffer as ArrayBuffer);
 const oc = getOC();
 const valid = (s: Shape3D) => {

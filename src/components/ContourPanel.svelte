@@ -4,12 +4,11 @@
    * spiegeln, auf ein gemessenes Maß bringen und eine kurze Prüfliste.
    */
   import { isDesktop } from '../lib/desktop';
-  import { readContourFile, type Found } from '../lib/contour-import';
+  import type { Found } from '../lib/contour-import';
   import { prepare, transform, bbox, selfIntersects, straightSides, svgPath, fromVertices, CONTOUR_MIN, CONTOUR_MAX, type P2 } from '../lib/osvac/contour';
   import type { Section } from '../lib/osvac/freeform';
   import NumberField from './NumberField.svelte';
   import Field from './Field.svelte';
-  import ContourDraw from './ContourDraw.svelte';
 
   let {
     section = $bindable(),
@@ -48,6 +47,8 @@
     if (!f) return;
     busy = true;
     try {
+      // Leser für SVG/DXF erst bei Bedarf laden (kleinere Startdatei)
+      const { readContourFile } = await import('../lib/contour-import');
       const r = await readContourFile(f);
       fileName = f.name;
       notes = r.notes;
@@ -116,6 +117,8 @@
     apply(fromVertices(v), src, v);
     draw = null;
   }
+  // Zeichenfenster im Hintergrund vorladen, damit es beim Klick sofort da ist
+  const loadDraw = import('./ContourDraw.svelte');
 </script>
 
 <!-- Im Browser ohne Dateifilter: manche Browser unter Linux öffnen mit „.dxf“ im Filter gar kein Fenster.
@@ -199,7 +202,10 @@
 {#if notes.length}<ul class="notes">{#each notes as n}<li>{n}</li>{/each}</ul>{/if}
 
 {#if draw}
-  <ContourDraw photo={draw === 'photo'} start={section.draw ?? null} onapply={fromDraw} oncancel={() => (draw = null)} />
+  <!-- Zeichenfenster erst bei Bedarf laden (kleinere Startdatei); vorgeladen, sobald diese Auswahl zu sehen ist -->
+  {#await loadDraw then { default: ContourDraw }}
+    <ContourDraw photo={draw === 'photo'} start={section.draw ?? null} onapply={fromDraw} oncancel={() => (draw = null)} />
+  {/await}
 {/if}
 
 <style>
