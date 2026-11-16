@@ -218,6 +218,7 @@
 
 <header class="topbar">
   <p class="wordmark"><img class="wm-logo" src="./favicon.svg" alt="" width="34" height="34"><span class="wm-text"><span class="wm-os"><span class="os">os</span><span class="vac">VAC</span> <span class="neo">neo</span></span><span class="wm-sub">BAUKASTEN</span></span></p>
+  <a class="site-link doc-link" href="./anleitung.html" target="_blank" rel="noopener">Anleitung</a>
   <a class="site-link" href="https://osvacneo.de" target="_blank" rel="noopener noreferrer">osvacneo.de <span aria-hidden="true">↗</span></a>
   <button class="theme-btn" type="button" data-testid="theme-toggle" onclick={() => theme.toggle()}
     title={theme.current === 'dark' ? 'Helle Ansicht' : 'Dunkle Ansicht'}
