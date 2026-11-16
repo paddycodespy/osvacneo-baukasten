@@ -4,6 +4,7 @@
 
 ## 0.5.0
 
+- Freiform, Form „Eigene“: Solange noch keine Kontur da ist, kein „Fehler beim Berechnen“ mehr. Stattdessen blauer Hinweis an der Karte, Status „Kontur fehlt noch“, in der Vorschau „Sobald die Kontur angelegt ist, erscheint hier der Adapter“. Download bleibt bis dahin gesperrt.
 - Helle und dunkle Ansicht: Umschalter (Mond/Sonne) rechts neben „osvacneo.de“ in der Kopfzeile. Start immer hell, die Wahl wird gemerkt.
 - Texte: Auslassungspunkte einheitlich mit (geschütztem) Leerzeichen, z. B. „Ordner wählen …“, „Wird berechnet …“.
 - Filamentangabe genauer: Volumen und Außenfläche des ganzen Teils (alle Körper vereinigt, manifold-3d) statt der Summe der Einzelkörper; vorher bis zu 25 % zu hoch.

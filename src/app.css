@@ -253,6 +253,7 @@ button:disabled { cursor: not-allowed; }
 .status[data-s='detail']::before { background: var(--signal); animation: pulse 1s ease-in-out infinite; }
 .status[data-s='ready']::before { background: #2f9e5b; }
 .status[data-s='error']::before { background: #c4362b; }
+.status[data-s='todo']::before { background: var(--sky); }
 @keyframes pulse { 50% { opacity: 0.3; } }
 
 /* ---------- Wizard-Spalte ---------- */

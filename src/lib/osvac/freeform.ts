@@ -823,6 +823,8 @@ export interface Issue {
   level: 'error' | 'warn';
   text: string;
   fixes?: Fix[];
+  /** fehlende Eingabe statt Fehler (z. B. noch keine Kontur): sperrt wie ein Fehler, wird aber nicht rot gezeigt */
+  todo?: boolean;
 }
 
 const fmtV = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
@@ -852,7 +854,7 @@ function checkSection(s: Section, what: string, out: Issue[], at?: SecAt) {
     at ? [fixTo(name(k), `${at.label}: ${name(k)}`, v, (sp, x) => void (at.get(sp)[k] = x))] : undefined;
   if (s.shape === 'contour') {
     const p = s.pts ?? [];
-    if (p.length < 3) return void out.push({ level: 'error', text: `${what}: Noch keine Kontur. Bitte eine Datei laden, am Foto nachzeichnen oder selbst zeichnen.` });
+    if (p.length < 3) return void out.push({ level: 'error', todo: true, text: `${what}: Noch keine Kontur. Lade oben eine Datei, zeichne am Foto nach oder zeichne selbst. Danach erscheint der Adapter in der Vorschau.` });
     const b = bboxOf(p);
     if (Math.min(b.w, b.h) < CONTOUR_MIN) out.push({ level: 'error', text: `${what}: Die Kontur muss mindestens ${CONTOUR_MIN} mm breit und hoch sein (jetzt ${f(b.w)} × ${f(b.h)} mm).` });
     if (Math.max(b.w, b.h) > CONTOUR_MAX) out.push({ level: 'error', text: `${what}: Die Kontur darf höchstens ${CONTOUR_MAX} mm groß sein (jetzt ${f(b.w)} × ${f(b.h)} mm).` });
