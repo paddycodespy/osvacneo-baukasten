@@ -154,7 +154,8 @@ const scenes: Scene[] = [
         ['.stage-foot .status', 5, 'l'],
         ['.dims', 6, 't', -60],
         ['.step-nav .next', 7, 'l'],
-        ['.theme-btn', 8, 'b'],
+        ['.doc-btn', 8, 'b'],
+        ['.theme-btn', 9, 'b'],
       ]);
       await shotApp(pg, 'uebersicht');
     },

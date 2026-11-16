@@ -158,7 +158,7 @@
   </div>
 {/if}
 <div class="license">
-  <p class="credit">Basiert auf <strong>osVAC neo</strong> von Ludo Kerz,<br />ursprünglich entstanden im Hobbyhimmel Stuttgart.</p>
+  <p class="credit">Basiert auf <a href="https://osvacneo.de" target="_blank" rel="noopener noreferrer" title="osvacneo.de öffnen">osVAC neo<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12" /></svg></a> von Ludo Kerz,<br />ursprünglich entstanden im Hobbyhimmel Stuttgart.</p>
   <p>{CHANGES}</p>
   <p>
     Lizenz: <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.de" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a><br />
