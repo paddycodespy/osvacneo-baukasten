@@ -30,6 +30,10 @@
   --sky-m: #9fd5f3;                     /* gewähltes Symbol */
   --ink: #1f2a30;                       /* Linien in Symbolen */
   --on-sky: #ffffff;                    /* Schrift auf Blau */
+  --err: #d93a2b;                       /* Fehler: Rand, Punkt */
+  --ok: #2f9e5b;                        /* in Ordnung: Punkt */
+  --ok-fg: #1d7a46;                     /* in Ordnung: Schrift */
+  --warn-fg: #8a5a00;                   /* Warnung: Schrift */
   --stage-1: #3db0ec;
   --stage-2: var(--sky);
   --stage-3: var(--sky-d);
@@ -83,6 +87,10 @@
   --sky-m: #1f5f86;
   --ink: #c9d3d9;
   --on-sky: #0c1a24;
+  --err: #ff6b5f;
+  --ok: #3fbf78;
+  --ok-fg: #6fd69a;
+  --warn-fg: #f3dd9a;
   --stage-1: #1d5677;
   --stage-2: #133e58;
   --stage-3: #0b2536;
@@ -251,8 +259,8 @@ button:disabled { cursor: not-allowed; }
 }
 .status[data-s='preview']::before,
 .status[data-s='detail']::before { background: var(--signal); animation: pulse 1s ease-in-out infinite; }
-.status[data-s='ready']::before { background: #2f9e5b; }
-.status[data-s='error']::before { background: #c4362b; }
+.status[data-s='ready']::before { background: var(--ok); }
+.status[data-s='error']::before { background: var(--err); }
 .status[data-s='todo']::before { background: var(--sky); }
 @keyframes pulse { 50% { opacity: 0.3; } }
 
@@ -411,6 +419,7 @@ legend.field-label { width: 100%; }
 .sub { font-family: var(--cond); font-weight: 600; font-size: 22px; margin: 28px 0 10px; }
 .seg.wide { display: flex; margin-bottom: 14px; }
 .seg.wide button { flex: 1; padding: 8px 6px; font-size: 13px; white-space: nowrap; }
+.grid2 > .field > .seg.wide { margin: 0; min-height: 42px; }
 .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 14px; margin: 14px 0 6px; align-items: end; }
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 500; }
 .field .num-in input { width: 100%; }
@@ -447,7 +456,7 @@ legend.field-label { width: 100%; }
 .seg button:disabled { opacity: 0.45; cursor: default; }
 .checks label, .inline-check { display: flex; gap: 10px; align-items: center; margin: 6px 0; }
 .helper-parts { margin-bottom: 14px; }
-.checks input, .inline-check input { width: 18px; height: 18px; accent-color: var(--cobalt); }
+.checks input, .inline-check input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--cobalt); }
 
 /* Download */
 .downloads { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
@@ -494,7 +503,7 @@ legend.field-label { width: 100%; }
 .license .lic-link .arr { width: 13px; height: 13px; }
 /* Trenner vor dem Link zu den Lizenzen: so breit wie der Trenner über dem Block, eine Zeile Abstand */
 .license p.lic { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 1.55em; }
-.error { color: var(--err-fg); font-size: 14px; padding: 10px 14px; background: var(--err-bg); border-left: 4px solid #d93a2b; border-radius: 4px; }
+.error { color: var(--err-fg); font-size: 14px; padding: 10px 14px; background: var(--err-bg); border-left: 4px solid var(--err); border-radius: 4px; }
 
 .step-nav {
   display: flex;

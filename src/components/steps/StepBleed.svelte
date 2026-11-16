@@ -64,9 +64,6 @@
   .print-note { margin: 14px 0 0; padding: 8px 12px; border-radius: 4px; font-size: 14px; border-left: 4px solid var(--sky); background: var(--sky-l); }
   .print-note.warn { border-left-color: var(--signal); background: var(--warn-bg); }
   .link { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--sky); font: inherit; font-weight: 600; cursor: pointer; }
-  .link:hover { color: var(--red, #ff4136); }
-  .btn-sec, .btn-pri { padding: 6px 12px; border-radius: 6px; font: inherit; font-size: 14px; cursor: pointer; }
-  .btn-sec { border: 1px solid var(--line); background: var(--card); }
-  .btn-pri { border: 1px solid var(--sky); background: var(--sky); color: var(--on-sky); font-weight: 600; }
-  .print-note.error { border-left-color: #c4362b; background: var(--err-bg); color: var(--err-fg); }
+  .link:hover { color: var(--red); }
+  .print-note.error { border-left-color: var(--err); background: var(--err-bg); color: var(--err-fg); }
 </style>

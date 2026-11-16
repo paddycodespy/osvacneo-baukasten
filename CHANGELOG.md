@@ -4,6 +4,7 @@
 
 ## 0.5.0
 
+- Einheitliche Knöpfe: Rückfrage bei der Saugdüse, „Datei wählen …“, „Foto wählen …“, „Zeichnen …“, „90° drehen“ und „Spiegeln“ jetzt rund wie im Rest der App (Haupt-Knopf rot, Neben-Knopf mit Rahmen). Kästchen wie „andersherum“ stehen bündig; Auswahlen neben Zahlenfeldern (z. B. „Schräge über“) sitzen auf gleicher Höhe. Farben für Fehler, OK und Warnung vereinheitlicht (auch in der dunklen Ansicht).
 - Saugdüse: Die Rückfrage „Freiform ersetzen?“ erscheint direkt beim geklickten Knopf. Bei „Eigene Form“ stand sie vorher ganz unten außer Sicht, sodass der Klick scheinbar nichts tat.
 - Freiform: „Düse“ an Ende B ist nicht mehr wählbar (von Hand ließ sie sich nicht sinnvoll formen). Sie erscheint nur noch, wenn eine Saugdüse mit „In der Freiform weiterbauen“ übernommen wurde.
 - Eigene Kontur: „Selbst zeichnen“ als dritte Möglichkeit neben „Datei laden“ und „Am Foto nachzeichnen“. „Datei wählen …“ im Browser ohne Dateifilter (manche Browser unter Linux öffneten sonst kein Fenster; die Endung wird beim Lesen geprüft). Beim Nachzeichnen stehen „Foto wählen …“ und „Anderes Foto …“ unter dem Hilfetext.

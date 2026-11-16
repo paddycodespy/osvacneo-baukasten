@@ -142,19 +142,19 @@
       <svg viewBox="0 0 44 34" aria-hidden="true"><path d="M8 3h20l8 8v20H8z" class="doc" /><path d="M28 3v8h8" class="docl" /><path d="M13 24c3-9 14-9 18 0" class="red" /></svg>
       <b>Datei laden</b>
       <span>SVG oder DXF, z. B. aus Inkscape, Fusion oder FreeCAD. Maße in mm.</span>
-      <button type="button" class="btnx" disabled={busy} onclick={() => input?.click()}>{busy ? 'Wird gelesen\u00a0…' : 'Datei wählen\u00a0…'}</button>
+      <button type="button" class="ghost sm" disabled={busy} onclick={() => input?.click()}>{busy ? 'Wird gelesen\u00a0…' : 'Datei wählen\u00a0…'}</button>
     </div>
     <div class="src">
       <svg viewBox="0 0 44 34" aria-hidden="true"><rect x="3" y="7" width="38" height="24" rx="4" class="doc" /><circle cx="22" cy="19" r="7" class="docl" /><rect x="15" y="3" width="14" height="5" rx="1.5" class="cam" /></svg>
       <b>Am Foto nachzeichnen</b>
       <span>Stutzen von oben fotografieren, Lineal daneben, Umriss anklicken.</span>
-      <button type="button" class="btnx" onclick={() => (draw = 'photo')}>Foto wählen&nbsp;…</button>
+      <button type="button" class="ghost sm" onclick={() => (draw = 'photo')}>Foto wählen&nbsp;…</button>
     </div>
     <div class="src">
       <svg viewBox="0 0 44 34" aria-hidden="true"><path d="M3 9h38M3 17h38M3 25h38M11 3v28M22 3v28M33 3v28" class="grd" /><path d="M8 27 14 8l18 3 4 15z" class="red" /></svg>
       <b>Selbst zeichnen</b>
       <span>Punkte auf ein Millimeterraster setzen, z. B. nach Messschieber.</span>
-      <button type="button" class="btnx" onclick={() => (draw = 'grid')}>Zeichnen&nbsp;…</button>
+      <button type="button" class="ghost sm" onclick={() => (draw = 'grid')}>Zeichnen&nbsp;…</button>
     </div>
   </div>
   <p class="note">
@@ -181,8 +181,8 @@
     <circle cx={fig.cx} cy={fig.cy} r="2.5" class="mid" />
   </svg>
   <div class="row">
-    <button type="button" class="tb" onclick={turn}>↻ 90° drehen</button>
-    <button type="button" class="tb" onclick={mirror} title="Seitenverkehrt? Zum Beispiel, wenn die Zeichnung von der anderen Seite gesehen ist.">⇋ Spiegeln</button>
+    <button type="button" class="ghost sm" onclick={turn}>↻ 90° drehen</button>
+    <button type="button" class="ghost sm" onclick={mirror} title="Seitenverkehrt? Zum Beispiel, wenn die Zeichnung von der anderen Seite gesehen ist.">⇋ Spiegeln</button>
   </div>
   <div class="grid2">
     <Field label="B · Breite" help="Mit dem Messschieber nachmessen. Weicht das Maß ab (z. B. Datei in Zoll oder Foto ungenau), hier eintragen: die Kontur wird gleichmäßig vergrößert oder verkleinert.">
@@ -213,8 +213,7 @@
   .red { fill: none; stroke: var(--red); stroke-width: 2; }
   .cam { fill: var(--graphite); }
   .grd { fill: none; stroke: var(--grey); stroke-width: 0.8; opacity: 0.6; }
-  .btnx { margin-top: auto; border: 1px solid var(--sky); color: var(--sky-d); background: var(--card); border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
-  .btnx:hover:not(:disabled) { background: var(--sky-l); }
+  .src .ghost.sm { margin-top: auto; background: var(--card); white-space: nowrap; font-size: 13px; padding: 6px 12px; }
   .note { margin: 0; background: var(--mist); border-radius: 8px; padding: 9px 12px; font-size: 13px; line-height: 1.5; color: var(--slate); }
   .link { border: 0; background: none; padding: 0; color: var(--cobalt-d, var(--sky-d)); font-weight: 600; font-size: 13px; cursor: pointer; }
   .link:hover { color: var(--red); }
@@ -231,15 +230,14 @@
   .dim { stroke: var(--sky-d); stroke-width: 1.4; }
   .lt { font-family: var(--body); font-size: 12px; font-weight: 700; fill: var(--sky-d); }
   .mid { fill: var(--sky-d); }
-  .tb { border: 1px solid var(--line); border-radius: 8px; background: var(--card); padding: 5px 10px; font-size: 13px; font-weight: 500; }
-  .tb:hover { border-color: var(--sky); }
+  .row .ghost.sm { margin-top: 0; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; align-items: end; }
   .checks { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; }
   .checks span { display: inline-block; width: 18px; font-weight: 700; }
-  .ok { color: #1d7a46; }
-  .wa { color: #b06d00; }
+  .ok { color: var(--ok-fg); }
+  .wa { color: var(--warn-fg); }
   .bad { color: var(--red); }
-  .notes { margin: 0; padding-left: 18px; font-size: 12.5px; color: #8a5a00; }
+  .notes { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--warn-fg); }
   @media (max-width: 520px) {
     .three { grid-template-columns: 1fr; }
   }

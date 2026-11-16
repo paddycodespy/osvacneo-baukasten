@@ -48,6 +48,6 @@
 {/if}
 
 <style>
-  .kind-group { margin: 14px 0 0; font-size: 14px; font-weight: 600; color: var(--slate-2, #7a7a7a); }
+  .kind-group { margin: 14px 0 0; font-size: 14px; font-weight: 600; color: var(--slate-2); }
   .kind-group:first-child { margin-top: 0; }
 </style>

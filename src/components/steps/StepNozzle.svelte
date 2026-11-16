@@ -158,8 +158,8 @@
   <div class="confirm" role="alertdialog" aria-label="Freiform ersetzen?">
     <p>In der Freiform liegt schon ein eigener Aufbau. Er wird durch die Düse ersetzt.</p>
     <div class="confirm-btns">
-      <button type="button" class="btn-sec" onclick={() => (confirmFree = '')}>Abbrechen</button>
-      <button type="button" class="btn-pri" onclick={() => ((confirmFree = ''), app.toFreeform())}>Ersetzen und weiterbauen</button>
+      <button type="button" class="ghost sm" onclick={() => (confirmFree = '')}>Abbrechen</button>
+      <button type="button" class="next sm" onclick={() => ((confirmFree = ''), app.toFreeform())}>Ersetzen und weiterbauen</button>
     </div>
   </div>
 {/snippet}
@@ -177,8 +177,8 @@
   .tpl-btn small { font-size: 12.5px; color: var(--slate-2); }
   .tpl-btn.sel { border-color: var(--sky); background: var(--sky-l); }
   .tpl-btn:not(.sel):hover { border-color: var(--sky); }
-  .ic { fill: var(--red-l); stroke: #ef453b; stroke-width: 1.6; stroke-linejoin: round; }
-  .ic-m { fill: var(--soft); stroke: #7a7a7a; stroke-width: 1.2; }
+  .ic { fill: var(--red-l); stroke: var(--red); stroke-width: 1.6; stroke-linejoin: round; }
+  .ic-m { fill: var(--soft); stroke: var(--grey); stroke-width: 1.2; }
   .dia-row { margin-top: 10px; }
   .extras { display: flex; flex-direction: column; gap: 12px; margin: 16px 0 0; }
   .x-item :global(.inline-check) { margin: 0; }
@@ -186,19 +186,16 @@
   .x-item > .hint { margin: 2px 0 0 28px; }
   .issues { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
   .issues li { padding: 8px 12px; border-radius: 4px; border-left: 4px solid var(--signal); background: var(--warn-bg); }
-  .issues li.error { border-left-color: #d93a2b; background: var(--err-bg); color: var(--err-fg); }
+  .issues li.error { border-left-color: var(--err); background: var(--err-bg); color: var(--err-fg); }
   .sum { margin-top: 16px; }
   .print-note { margin: 10px 0 0; padding: 8px 12px; border-radius: 4px; font-size: 14px; border-left: 4px solid var(--sky); background: var(--sky-l); }
   .print-note.warn { border-left-color: var(--signal); background: var(--warn-bg); }
-  .print-note.error { border-left-color: #c4362b; background: var(--err-bg); color: var(--err-fg); }
+  .print-note.error { border-left-color: var(--err); background: var(--err-bg); color: var(--err-fg); }
   .to-free { margin: 20px 0 8px; display: flex; flex-direction: column; gap: 2px; }
   .to-free .hint { margin: 0; }
   .link { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--sky); font: inherit; font-weight: 600; cursor: pointer; }
-  .link:hover { color: var(--red, #ff4136); }
+  .link:hover { color: var(--red); }
   .confirm { margin: 10px 0 0; padding: 12px 14px; border: 1px solid var(--signal); border-radius: 8px; background: var(--warn-bg); font-size: 14px; }
   .confirm p { margin: 0 0 10px; }
   .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
-  .btn-sec, .btn-pri { padding: 6px 12px; border-radius: 6px; font: inherit; font-size: 14px; cursor: pointer; }
-  .btn-sec { border: 1px solid var(--line); background: var(--card); }
-  .btn-pri { border: 1px solid var(--sky); background: var(--sky); color: var(--on-sky); font-weight: 600; }
 </style>

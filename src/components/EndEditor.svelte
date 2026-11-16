@@ -359,6 +359,7 @@
   .extras { display: flex; flex-direction: column; gap: 12px; }
   .extras.nz { margin: 14px 0 0; }
   .grid2.top { align-items: start; }
+  .grid2.top + .inline-check { margin-top: 16px; }
   /* Beschreibung und Felder beginnen dort, wo der Text neben dem Kästchen beginnt (18 px Kästchen + 10 px Abstand) */
   .x-item { --x-indent: 28px; }
   .x-item :global(.inline-check) { margin: 0; }

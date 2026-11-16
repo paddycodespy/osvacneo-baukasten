@@ -129,9 +129,9 @@
   .axis.thin { opacity: 0.35; }
   .dim { stroke: var(--sky-d); stroke-width: 1.4; }
   .pt { fill: var(--sky-d); }
-  .plate { fill: #d6e6f5; stroke: var(--sky-d); stroke-width: 1.2; }
+  .plate { fill: var(--sky-l); stroke: var(--sky-d); stroke-width: 1.2; }
   .lead { fill: none; stroke: var(--sky-d); stroke-width: 0.9; }
   .lt, .key { font-family: var(--body); font-size: 12px; font-weight: 700; fill: var(--sky-d); }
   .mute { font-family: var(--body); font-size: 12px; font-weight: 500; fill: var(--slate); }
-  .win { fill: var(--card); stroke: var(--slate-2, #7a7a7a); stroke-width: 1; }
+  .win { fill: var(--card); stroke: var(--slate-2); stroke-width: 1; }
 </style>
