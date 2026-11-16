@@ -343,6 +343,19 @@ export function exportFile(req: BuildRequest, format: ExportFormat, fileName: st
 let measureWorker: Worker | null = null;
 let measureSeq = 0;
 const measureWaiting = new Map<number, (r: UnionMeasures | null) => void>();
+/** Messung, die gerade läuft, und höchstens eine wartende (die neueste); ältere wartende werden verworfen */
+let measureBusy = false;
+let measureNext: { id: number; bodies: MeshBody[] } | null = null;
+function measureStart(job: { id: number; bodies: MeshBody[] }) {
+  measureBusy = true;
+  measureWorker!.postMessage({ id: job.id, bodies: job.bodies.map((b) => ({ helper: b.helper, positions: b.positions, indices: b.indices })) });
+}
+function measureDone() {
+  measureBusy = false;
+  const next = measureNext;
+  measureNext = null;
+  if (next) measureStart(next);
+}
 /**
  * Alle Körper vereinigt messen (eigener Worker mit manifold-3d). null, wenn es nicht geht (z. B. offenes Netz):
  * dann bleibt die einfache Summe der Körper.
@@ -354,15 +367,24 @@ export function measureBodies(bodies: MeshBody[]): Promise<UnionMeasures | null>
       const done = measureWaiting.get(e.data.id);
       measureWaiting.delete(e.data.id);
       done?.(e.data.ok ? { volume: e.data.volume, area: e.data.area, helperVolume: e.data.helperVolume, helperArea: e.data.helperArea, printed: e.data.printed, printedHelper: e.data.printedHelper } : null);
+      measureDone();
     };
     measureWorker.onerror = () => {
       for (const done of measureWaiting.values()) done(null);
       measureWaiting.clear();
+      measureNext = null;
+      measureBusy = false;
     };
   }
   const id = ++measureSeq;
   return new Promise((resolve) => {
     measureWaiting.set(id, resolve);
-    measureWorker!.postMessage({ id, bodies: bodies.map((b) => ({ helper: b.helper, positions: b.positions, indices: b.indices })) });
+    if (!measureBusy) return measureStart({ id, bodies });
+    // schnelle Änderungen: die ältere wartende Messung ist überholt, nur die neueste kommt noch dran
+    if (measureNext) {
+      measureWaiting.get(measureNext.id)?.(null);
+      measureWaiting.delete(measureNext.id);
+    }
+    measureNext = { id, bodies };
   });
 }

@@ -46,6 +46,7 @@
   let timer: ReturnType<typeof setTimeout> | undefined;
   function schedule() {
     clearTimeout(timer);
+    app.measures = null; // sofort: sonst gälte die alte Filamentangabe noch bis zum Start (z. B. beim Druckbett)
     timer = setTimeout(run, 250);
   }
   async function run() {
@@ -121,7 +122,9 @@
       // geht das nicht (z. B. offenes Netz), gilt die Summe der Körper
       const sums = { volume: full.volume, area: full.area, helperVolume: full.helperVolume, helperArea: full.helperArea };
       void measureBodies(full.bodies).then((u) => {
-        if (token === buildToken) app.measures = u ?? sums;
+        if (token !== buildToken) return;
+        app.measures = u ?? sums;
+        app.fillPlateGrams();
       });
       app.progress = null;
       app.status = 'ready';

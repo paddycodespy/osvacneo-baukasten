@@ -4,6 +4,10 @@
 
 ## 0.5.0
 
+- Druckbett: Filament je Adapter und zusammen.
+- Filamentangabe bei schnellen Änderungen schneller: veraltete Messungen werden übersprungen. Das „?“ steht nicht mehr allein in der nächsten Zeile.
+- Startdatei rund 120 kB kleiner: Kontur-Versatz, SVG/DXF-Leser und Zeichenfenster werden erst bei Bedarf geladen.
+- Lizenz-Seite folgt der dunklen Ansicht.
 - Rückfragen: Neben-Knopf (z. B. „Abbrechen“, „Behalten“) mit eigener Fläche, auch in der dunklen Ansicht gut zu erkennen. Die Rückfrage bei der Saugdüse sieht aus wie die anderen (gelber Streifen links) und rollt ins Bild.
 - Einheitliche Knöpfe: Rückfrage bei der Saugdüse, „Datei wählen …“, „Foto wählen …“, „Zeichnen …“, „90° drehen“ und „Spiegeln“ jetzt rund wie im Rest der App (Haupt-Knopf rot, Neben-Knopf mit Rahmen). Kästchen wie „andersherum“ stehen bündig; Auswahlen neben Zahlenfeldern (z. B. „Schräge über“) sitzen auf gleicher Höhe. Farben für Fehler, OK und Warnung vereinheitlicht (auch in der dunklen Ansicht).
 - Saugdüse: Die Rückfrage „Freiform ersetzen?“ erscheint direkt beim geklickten Knopf. Bei „Eigene Form“ stand sie vorher ganz unten außer Sicht, sodass der Klick scheinbar nichts tat.

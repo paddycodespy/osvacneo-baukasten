@@ -177,6 +177,9 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('button', { name: 'Aktuellen Adapter hinzufügen' }).click();
     const label = (await pg.locator('.plate li').first().innerText()).trim();
     expect(label.includes('Schrauben'), `Name ohne Extras: ${label}`);
+    // Filament je Eintrag und zusammen (kommt nach, falls die Messung noch lief)
+    await until(pg, async () => (await pg.locator('.plate-sum').count()) > 0, 'Summe Filament fürs Druckbett fehlt');
+    expect(/\d+\s*g/.test(await pg.locator('.plate li .g').first().innerText()), 'Filament beim Druckbett-Eintrag fehlt');
   });
 
   await test('Flansch an Ende B', pg, async () => {
@@ -520,6 +523,7 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 58,5 × 34'), 'Foto-Kontur nicht übernommen');
     // gezeichnet: bearbeiten, einen Punkt löschen
     await pg.getByRole('button', { name: 'Bearbeiten' }).click();
+    await pg.locator('.dlg .pt').first().waitFor(); // Zeichenfenster wird nachgeladen
     // Rückgängig nach dem Löschen, Rückfrage vor dem Schließen
     const n0 = await pg.locator('.dlg .pt').count();
     await pg.locator('.dlg .pt').nth(3).dispatchEvent('pointerdown');

@@ -14,6 +14,7 @@ import { slipRingGapMax } from './osvac/hose';
 import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
+import { clipperReady, clipperLoaded } from './osvac/contour';
 import { freeMaleOnBed, DEFAULT_HELPER, type HelperSpec } from './osvac/assemblies';
 import { BLEED } from './osvac/bleed';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
@@ -160,7 +161,8 @@ class AppState {
   exporting = $state<ExportFormat | null>(null);
   files = $state<FileEntry[]>([]);
   // $state.raw: die Einträge gehen per postMessage an die Worker, Proxys ließen sich nicht übertragen
-  plate = $state.raw<(PlateItem & { key: string })[]>([]);
+  /** grams: Filament wie im Download (Spanne als [min, max]); kommt nach, wenn die Messung beim Hinzufügen noch lief */
+  plate = $state.raw<(PlateItem & { key: string; grams?: [number, number] })[]>([]);
   plateBusy = $state<ExportFormat | null>(null);
 
   // ---------------------------------------------------------------- abgeleitet
@@ -168,7 +170,12 @@ class AppState {
   steps = $derived(this.kind.bleed ? (['Verbindung', 'Größen', 'Passung', 'Download'] as const) : this.kind.nozzle ? (['Verbindung', 'Düse', 'Passung', 'Download'] as const) : this.kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : (['Verbindung', 'Größen', 'Passung', 'Download'] as const));
   lastStep = $derived(this.steps.length - 1);
   /** Prüfung des Freiform-Aufbaus (reine Rechnung, ohne CAD-Kern) */
-  freePlan = $derived(this.kind.freeform ? planFree($state.snapshot(this.free)) : null);
+  /** Clipper für eigene Konturen geladen (siehe contour.ts); bis dahin gilt die Planung nur vorläufig */
+  clipperOk = $state(clipperLoaded());
+  freePlan = $derived.by(() => {
+    void this.clipperOk; // nach dem Laden von Clipper neu planen
+    return this.kind.freeform ? planFree($state.snapshot(this.free)) : null;
+  });
   freeIssues = $derived(this.freePlan?.issues ?? []);
   /** es fehlt nur noch eine Eingabe (z. B. Kontur), sonst kein Fehler */
   waiting = $derived(this.kind.freeform && this.freeIssues.some((x) => x.todo) && !this.freeIssues.some((x) => x.level === 'error' && !x.todo));
@@ -575,8 +582,27 @@ class AppState {
   onPlate = $derived(this.plate.some((p) => p.key === this.plateKey()));
   addToPlate() {
     if (this.onPlate) return;
-    this.plate = [...this.plate, { req: this.spec(), includeHelpers: this.supports && this.hasSupport, label: this.fileName, key: this.plateKey() }];
+    this.plate = [...this.plate, { req: this.spec(), includeHelpers: this.supports && this.hasSupport, label: this.fileName, key: this.plateKey(), grams: this.gramsNow() }];
   }
+  private gramsNow(): [number, number] | undefined {
+    const f = this.filament;
+    return f && this.status === 'ready' ? [f.gramsMin, f.gramsMax] : undefined;
+  }
+  /** Messung fertig: Filament bei dem Druckbett-Eintrag nachtragen, der gerade angezeigt wird */
+  fillPlateGrams() {
+    const g = this.gramsNow();
+    if (!g || !this.plate.some((p) => !p.grams)) return;
+    const key = this.plateKey();
+    this.plate = this.plate.map((p) => (p.key === key && !p.grams ? { ...p, grams: g } : p));
+  }
+  /** Summe fürs Druckbett, als Text („–“, solange ein Eintrag noch fehlt) */
+  plateGrams = $derived.by(() => {
+    if (!this.plate.length || this.plate.some((p) => !p.grams)) return '';
+    // Summe der angezeigten (gerundeten) Werte, damit sie zur Liste passt
+    const a = this.plate.reduce((s, p) => s + Math.round(p.grams![0]), 0);
+    const b = this.plate.reduce((s, p) => s + Math.round(p.grams![1]), 0);
+    return a === b ? `${a}` : `${a}–${b}`;
+  });
   removeFromPlate(i: number) {
     this.plate = this.plate.filter((_, j) => j !== i);
   }
@@ -733,3 +759,4 @@ class AppState {
 }
 
 export const app = new AppState();
+void clipperReady.then(() => (app.clipperOk = true));
