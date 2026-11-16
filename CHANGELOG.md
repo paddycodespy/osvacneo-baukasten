@@ -4,16 +4,17 @@
 
 ## 0.5.0
 
+- Texte: Auslassungspunkte einheitlich mit (geschütztem) Leerzeichen, z. B. „Ordner wählen …“, „Wird berechnet …“.
 - Filamentangabe genauer: Volumen und Außenfläche des ganzen Teils (alle Körper vereinigt, manifold-3d) statt der Summe der Einzelkörper; vorher bis zu 25 % zu hoch.
 - Druckhinweis bei mitgedruckten Ringen (Schlauchadapter, Nebenluft-Regler): Slicer-Meldung „schwebende Bereiche“ bzw. „fliegender Träger“ ist gewollt, keine Stützen einschalten.
 - Freiform: Form „Eigene“ für Stutzen, die zu keiner Grundform passen. Kontur aus SVG- oder DXF-Datei laden, am Foto nachzeichnen (mit Lineal als Maßstab) oder selbst zeichnen; drehen, spiegeln, auf das gemessene Maß bringen, mit Prüfliste. Geht überall, wo es eine Form gibt (Gerät aufgesteckt, eingesteckt, Flansch, Übergang, Absatz). Die Kontur gilt mit Blick auf den Stutzen (von vorne). Zeichnen: Rückgängig (Strg+Z), Zoom mit zwei Fingern und Knöpfen, Rückfrage vor dem Verwerfen. Eingesteckt: Hinweis, wenn schmale Stellen in der Wand verschwinden. SVG mit <use> wird gelesen.
 - Neu unter Zubehör: „Drehring-Lösehilfe“ nach Odul. Halter für Kupplungen (FxxHyy) und/oder für Stecker (MxxHyy), beschriftet wie im Original (M32 bzw. F32), Größen frei, stehend ohne Stützen gedruckt (15–20 % Füllung reicht).
-- Download: Ordner wählbar („Speichern in … Ordner wählen…“, Standard bleibt „Downloads“, wird gemerkt). Im Programm auf allen Systemen, dazu „Im Ordner zeigen“; im Browser in Chrome und Edge (dort speichert „Speichern“ in der Liste wieder in den gewählten Ordner), sonst legt der Browser den Ordner fest.
+- Download: Ordner wählbar („Speichern in … Ordner wählen …“, Standard bleibt „Downloads“, wird gemerkt). Im Programm auf allen Systemen, dazu „Im Ordner zeigen“; im Browser in Chrome und Edge (dort speichert „Speichern“ in der Liste wieder in den gewählten Ordner), sonst legt der Browser den Ordner fest.
 - Freiform: Was nicht geht, ist ausgegraut (Grund im Tooltip): zweiter Schieber, zweiter Abzweig, Schieber oder Abzweig bei Düse an Ende B und „Düse“ bei Schieber oder Abzweig.
 - Nebenluft-Regler: „In der Freiform weiterbauen“ (mit Rückfrage) und „Zurück zum Nebenluft-Regler“; in der Freiform muss er beim Drucken senkrecht stehen (Fehler mit Vorschlag „anderes Ende nach unten“), schräg würden Stützen den Ring festschweißen.
 - Dateinamen enthalten auch das Spiel am Nebenluft-Ring („Ring 0,5“) und der Schieberplatte in der Freiform („Platte 0,4“), wenn es vom Standard abweicht.
 - Drehring am Schlauchadapter: Standard bleibt 0,3 mm wie im Original, mit deutlichem Hinweis für PETG (0,35–0,5 mm) in „Passung“ und in den Druckhinweisen.
-- Vorschau: vor dem ersten Modell ganzes Druckbett mit „Vorschau wird berechnet…“; Web-App startet schneller (Hauptdatei ohne CAD-Bibliothek, 1,26 → 0,93 MB).
+- Vorschau: vor dem ersten Modell ganzes Druckbett mit „Vorschau wird berechnet …“; Web-App startet schneller (Hauptdatei ohne CAD-Bibliothek, 1,26 → 0,93 MB).
 - test:islands prüft auch Stutzen-Adapter und Schieber einzeln.
 - Schritt 1: Verbindungen in Gruppen (osVAC neo untereinander, An den Schlauch, An ein Gerät, Zubehör, Eigener Aufbau).
 - Neu: Verbindung „Saugdüse“. Düsenart wählen (Rundrohr, Fugendüse, Fugendüse gebogen, Breitdüse, Polsterdüse), Anschluss (Stecker oder Kupplung, Ø), Länge, Biegung bis 45°, Öffnung, Schräge der Spitze und Wandstärke einstellen. Extras: Schutzring, Nut für eine Bürstenleiste. Gedruckt stehend mit dem Anschluss unten, ohne Stützen. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine.

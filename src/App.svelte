@@ -190,7 +190,7 @@
   });
 
   // Zähler erst, wenn das erste Teil fertig ist („0 von 9“ sähe nach Stillstand aus)
-  const busyText = $derived(app.progress && app.progress.total > 1 && app.progress.done > 0 ? `Wird berechnet… ${app.progress.done} von ${app.progress.total} Teilen` : 'Wird berechnet…');
+  const busyText = $derived(app.progress && app.progress.total > 1 && app.progress.done > 0 ? `Wird berechnet\u00a0… ${app.progress.done} von ${app.progress.total} Teilen` : 'Wird berechnet\u00a0…');
 
   onMount(() => {
     viewer = new PartViewer(host);
@@ -217,13 +217,13 @@
     {#if app.status === 'error' && !everShown}
       <div class="stage-empty"><p>Noch keine Vorschau. Sobald die rot markierten Punkte behoben sind, erscheint hier der Adapter.</p></div>
     {:else if !everShown}
-      <div class="stage-empty"><p>{app.status === 'start' ? 'CAD-Kern wird geladen…' : 'Vorschau wird berechnet…'}</p></div>
+      <div class="stage-empty"><p>{app.status === 'start' ? 'CAD-Kern wird geladen\u00a0…' : 'Vorschau wird berechnet\u00a0…'}</p></div>
     {/if}
 
     <header class="stage-head">
       <h1 class="code" class:free={app.kind.freeform || app.kind.gate} aria-live="polite">{app.code}</h1>
       <p class="kind-line">{app.kind.bleed ? app.kind.title : app.kind.nozzle ? freeSummary(app.free).sub.replace(/^Freiform/, 'Saugdüse') : app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
-      {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen…' : busyText}</p>{/if}
+      {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen\u00a0…' : busyText}</p>{/if}
     </header>
 
     <div class="stage-tools">
@@ -245,7 +245,7 @@
         <div><dt>PETG ca.</dt><dd>{app.gramsText}<span>g</span></dd></div>
       </dl>
       <p class="status" data-s={app.layoutError ? 'error' : app.status} role="status">
-        {#if app.status === 'start'}CAD-Kern wird geladen…
+        {#if app.status === 'start'}CAD-Kern wird geladen&nbsp;…
         {:else if app.status === 'preview' || app.status === 'detail'}{busyText}
         {:else if app.status === 'ready' && app.layoutError}So nicht druckbar, Hinweis rechts
         {:else if app.status === 'ready'}Bereit zum Download

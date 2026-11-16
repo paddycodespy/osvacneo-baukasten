@@ -76,7 +76,7 @@
     <strong>{saveTarget.name}</strong>{#if canPick && !saveTarget.custom}<span class="t-std">(Standard)</span>{/if}
   </span>
   {#if canPick}
-    <button type="button" class="ghost sm" onclick={() => saveTarget.pick()}>Ordner wählen…</button>
+    <button type="button" class="ghost sm" onclick={() => saveTarget.pick()}>Ordner wählen&nbsp;…</button>
     {#if saveTarget.custom}<button type="button" class="t-reset" onclick={() => saveTarget.reset()}>Standard</button>{/if}
   {/if}
   {#if isDesktop && saveTarget.path}<span class="t-path">{saveTarget.path}</span>{/if}
@@ -112,13 +112,13 @@
     <div class="plate-dl">
       <span>Druckbett herunterladen:</span>
       {#each FORMATS as f (f.id)}
-        <button class="ghost sm" disabled={!!app.plateBusy || !!app.exporting} onclick={() => app.downloadPlate(f.id)}>{app.plateBusy === f.id ? 'Wird erzeugt…' : f.label}</button>
+        <button class="ghost sm" disabled={!!app.plateBusy || !!app.exporting} onclick={() => app.downloadPlate(f.id)}>{app.plateBusy === f.id ? 'Wird erzeugt\u00a0…' : f.label}</button>
       {/each}
     </div>
   {/if}
 </details>
 <p class="status-line" role="status">
-  {#if app.exporting}{app.exporting.toUpperCase()} wird erzeugt…{:else if app.status !== 'ready'}Die Downloads sind verfügbar, sobald die Berechnung fertig ist.{/if}
+  {#if app.exporting}{app.exporting.toUpperCase()} wird erzeugt&nbsp;…{:else if app.status !== 'ready'}Die Downloads sind verfügbar, sobald die Berechnung fertig ist.{/if}
 </p>
 {#if app.files.length}
   <div class="files">
