@@ -139,13 +139,13 @@
       <svg viewBox="0 0 44 34" aria-hidden="true"><path d="M8 3h20l8 8v20H8z" class="doc" /><path d="M28 3v8h8" class="docl" /><path d="M13 24c3-9 14-9 18 0" class="red" /></svg>
       <b>Datei laden</b>
       <span>SVG oder DXF, z. B. aus Inkscape, Fusion oder FreeCAD. Maße in mm.</span>
-      <button type="button" class="btnx" disabled={busy} onclick={() => input?.click()}>{busy ? 'Wird gelesen…' : 'Datei wählen …'}</button>
+      <button type="button" class="btnx" disabled={busy} onclick={() => input?.click()}>{busy ? 'Wird gelesen\u00a0…' : 'Datei wählen\u00a0…'}</button>
     </div>
     <div class="src">
       <svg viewBox="0 0 44 34" aria-hidden="true"><rect x="3" y="7" width="38" height="24" rx="4" class="doc" /><circle cx="22" cy="19" r="7" class="docl" /><rect x="15" y="3" width="14" height="5" rx="1.5" class="cam" /></svg>
       <b>Am Foto nachzeichnen</b>
       <span>Stutzen von oben fotografieren, Lineal daneben, Umriss anklicken.</span>
-      <button type="button" class="btnx" onclick={() => (draw = 'photo')}>Foto wählen …</button>
+      <button type="button" class="btnx" onclick={() => (draw = 'photo')}>Foto wählen&nbsp;…</button>
     </div>
   </div>
   <p class="note">
@@ -155,8 +155,8 @@
 {:else}
   <div class="row">
     {#if section.src}<span class="chip2" title={section.src}>{section.draw ? '✏️' : '📄'} {section.src}</span>{/if}
-    <button type="button" class="link" onclick={() => input?.click()}>Andere Datei …</button>
-    <button type="button" class="link" onclick={() => (draw = section.draw ? 'grid' : 'photo')}>{section.draw ? 'Bearbeiten' : 'Nachzeichnen …'}</button>
+    <button type="button" class="link" onclick={() => input?.click()}>Andere Datei&nbsp;…</button>
+    <button type="button" class="link" onclick={() => (draw = section.draw ? 'grid' : 'photo')}>{section.draw ? 'Bearbeiten' : 'Nachzeichnen\u00a0…'}</button>
     {#if !section.draw}<button type="button" class="link" onclick={() => (draw = 'grid')}>Selbst zeichnen</button>{/if}
   </div>
   <svg class="fig" viewBox="0 0 {VW} {VH}" role="img" aria-label="Skizze der Kontur mit Maßen">

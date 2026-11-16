@@ -364,10 +364,10 @@
           <div class="tip">
             {#if !img}
               <b>Foto wählen</b><br />Von vorne auf den Stutzen fotografieren (Blick auf die Öffnung), genau gerade, ein Lineal auf Höhe der Stutzenkante daneben legen.
-              <button type="button" class="ghost sm" onclick={() => fileIn?.click()}>Foto wählen …</button>
+              <button type="button" class="ghost sm" onclick={() => fileIn?.click()}>Foto wählen&nbsp;…</button>
             {:else}
               <b>Maßstab</b><br />Auf zwei Marken des Lineals klicken (z. B. 0 und 5 cm). Die Punkte lassen sich verschieben; Mausrad oder zwei Finger zoomen.
-              <button type="button" class="link" onclick={() => fileIn?.click()}>Anderes Foto …</button>
+              <button type="button" class="link" onclick={() => fileIn?.click()}>Anderes Foto&nbsp;…</button>
             {/if}
           </div>
           {#if img}

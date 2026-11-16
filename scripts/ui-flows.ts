@@ -340,7 +340,7 @@ await withPreview(4180, async (url, browser) => {
     await step(pg, 'Download');
     const t = await pg.locator('.target').innerText();
     expect(t.includes('Speichern in') && t.includes('(Standard)'), 'Speicherort fehlt: ' + t);
-    expect((await pg.getByRole('button', { name: 'Ordner wählen…' }).count()) === 1, 'Knopf „Ordner wählen…“ fehlt (Chrome kann Ordner wählen)');
+    expect((await pg.getByRole('button', { name: 'Ordner wählen\u00a0…' }).count()) === 1, 'Knopf „Ordner wählen …“ fehlt (Chrome kann Ordner wählen)');
     // ohne gewählten Ordner: normaler Download des Browsers
     const [d] = await Promise.all([pg.waitForEvent('download', { timeout: 120000 }), pg.locator('.dl', { hasText: 'STL' }).click()]);
     expect(d.suggestedFilename().endsWith('.stl'), 'Dateiname ' + d.suggestedFilename());
@@ -491,7 +491,7 @@ await withPreview(4180, async (url, browser) => {
     await pg.locator('.card.open .th').first().click();
     expect((await pg.locator('.card.open .card-head').innerText()).includes('Kontur 50 × 40'), 'DXF: ' + (await pg.locator('.card.open .card-head').innerText()));
     // Foto nachzeichnen: Maßstab 50 mm (6 Pixel je mm), acht Ecken
-    const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.getByRole('button', { name: 'Nachzeichnen …' }).click()]);
+    const [fc] = await Promise.all([pg.waitForEvent('filechooser'), pg.getByRole('button', { name: 'Nachzeichnen\u00a0…' }).click()]);
     await fc.setFiles(fixture('kontur-foto.png'));
     await pg.getByRole('button', { name: /Weiter: Umriss/ }).waitFor();
     await pg.waitForTimeout(300);
