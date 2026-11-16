@@ -85,8 +85,6 @@
     if ((t === 'branch' || t === 'gate') && noz) return `Mit Düse an Ende B geht kein ${t === 'gate' ? 'Schieber' : 'Abzweig'}`;
     return '';
   }
-  /** Düse an Ende B geht nicht mit Schieber oder Abzweig */
-  const nozzleBlocked = $derived(hasGate ? 'Mit Schieber geht keine Düse' : hasBranch ? 'Mit Abzweig geht keine Düse' : '');
   /**
    * Gibt es an Ende B bzw. C einen Übergang? (Nur wenn der Baustein davor eine andere Form hat als das Ende; sonst
    * ändert die Übergangslänge nichts und das Feld bleibt weg.) Bei Fehlern im Plan lieber anzeigen.
@@ -405,7 +403,7 @@
     </button>
     {#if open === 'B'}
       <div class="card-body">
-        <EndEditor bind:end={spec.b} wall={spec.wall} tag="B" issues={bIssues} apply={applyFix} onflange={() => (spec.bed = 'B')} onnozzle={() => (spec.bed = 'A')} {nozzleBlocked} transition={hasTransition('B')} />
+        <EndEditor bind:end={spec.b} wall={spec.wall} tag="B" issues={bIssues} apply={applyFix} onflange={() => (spec.bed = 'B')} transition={hasTransition('B')} />
       </div>
     {/if}
   </li>
