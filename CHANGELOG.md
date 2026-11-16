@@ -4,7 +4,6 @@
 
 ## 0.5.0
 
-- Unten in jedem Schritt: „Mehr dazu in der Anleitung“ springt zum passenden Kapitel (im Programm in einem eigenen Fenster).
 - Anleitung: Bilder öffnen groß in der Seite (Klick oder Esc schließt), auch im Programmfenster. `npm run build` erzeugt die Anleitung jedes Mal mit.
 - Kopfzeile: Knöpfe beim Darüberfahren mit weißem Rahmen und leicht aufgehellter Fläche statt Rot. Kein Pfeil mehr hinter „osVAC neo“ im Download.
 - Anleitung: „nach oben“ springt an den Seitenanfang; das Inhaltsverzeichnis zeigt farbig, wo man gerade liest.

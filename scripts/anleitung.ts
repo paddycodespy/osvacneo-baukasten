@@ -267,13 +267,6 @@ ${out.join('\n').replace('\u0001TOC\u0001', '')}
 `;
 writeFileSync(OUT, page);
 console.log(`${OUT}: ${toc.filter((t) => t.level === 2).length} Kapitel, ${toc.length} Überschriften`);
-// Kapitel, auf die die App verlinkt (app.docAnchor in src/lib/app.svelte.ts): müssen da sein
-const LINKED = ['verbindung', 'stecker-kupplung', 'schlauch', 'stutzen', 'duese', 'nebenluft', 'schieber', 'loesehilfe', 'freiform', 'passung', 'download'];
-const gone = LINKED.filter((id) => !used.has(id));
-if (gone.length) {
-  console.log('Kapitel fehlen, auf die die App verlinkt:', gone.join(', '));
-  process.exitCode = 1;
-}
 if (missing.length) {
   console.log('Bilder fehlen:', missing.join(', '));
   process.exitCode = 1;

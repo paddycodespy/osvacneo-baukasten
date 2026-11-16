@@ -169,7 +169,6 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 Die Anleitung für Anwender liegt in der App unter **Anleitung** (Kopfzeile, öffnet `public/anleitung.html`, auch offline im installierten Programm, hell und dunkel).
 
 - Text: `docs/anleitung.md` (einfaches Markdown, erlaubte Zeichen oben in `scripts/anleitung.ts`). Daraus baut `npm run docs` die Seite, `npm run build` macht das jedes Mal mit; die HTML-Datei nicht von Hand ändern.
-- Unten in jedem Schritt verlinkt „Mehr dazu in der Anleitung“ das passende Kapitel (`app.docAnchor`). Kapitel-Anker (`{#…}` in der Markdown-Datei) deshalb nicht umbenennen, ohne `docAnchor` mit anzupassen.
 - Bilder: `public/anleitung/*.png`, aufgenommen mit `npm run build && npm run docs:bilder` (alle) oder `npm run docs:bilder -- kontur duese` (nur Szenen mit diesem Namen). Jede Szene startet mit Standardwerten; die Szenen stehen in `scripts/anleitung-bilder.ts`.
 - **Bei jeder Änderung an der Oberfläche prüfen**, ob die Anleitung betroffen ist (neue oder umbenannte Einstellungen, neue Adapterarten, andere Abläufe): Text in `docs/anleitung.md` anpassen, betroffene Bilder neu aufnehmen, `npm run docs` ausführen und alles mit committen. Ein Eintrag im CHANGELOG reicht dafür nicht.
 

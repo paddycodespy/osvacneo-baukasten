@@ -318,8 +318,6 @@
       {:else}
         <StepDownload />
       {/if}
-      <!-- passendes Kapitel der Anleitung zum Schritt -->
-      <p class="doc-hint"><a href="./anleitung.html#{app.docAnchor}" target="_blank" rel="noopener">Mehr dazu in der Anleitung<svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg></a></p>
     </div>
 
     {#if app.blocked && app.step === app.lastStep - 1}
