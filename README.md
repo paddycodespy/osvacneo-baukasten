@@ -140,6 +140,7 @@ scripts/
   islands.ts                 Druckbarkeit in Schichten prüfen (npm run test:islands, braucht python3 mit trimesh/shapely; tools/druck/islands.py)
   lib/preview.ts             gemeinsam für Skizzen und Bedienabläufe: vite preview + Chrome starten
   anleitung.ts, anleitung-bilder.ts  Anleitung bauen und Bilder aufnehmen
+  licenses.py, licenses-rust.py      Lizenzseiten erzeugen (Oberfläche bzw. Programm)
 src-tauri/                   Programm für Windows, macOS und Linux (Tauri)
 docs/                        Anleitung, Installation, Nutzung im Browser
 tools/fusion/                Fusion-Exportskripte und Vergleich mit dem Original
@@ -265,10 +266,11 @@ dann `npx tauri build --bundles appimage,deb`.
 
 1. Version in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` und
    `src-tauri/Cargo.lock` erhöhen und in `CHANGELOG.md` einen Abschnitt `## <Version>` anlegen.
-2. Committen, pushen, dann den Tag setzen: `git tag v0.5.2 && git push origin v0.5.2`.
+2. Bei geänderten Abhängigkeiten die Lizenzdateien neu erzeugen (siehe „Lizenzen“).
+3. Committen, pushen, dann den Tag setzen: `git tag v0.5.3 && git push origin v0.5.3`.
 
 Der Tag startet `.github/workflows/release.yml`: Erst wird geprüft, ob Tag, Versionsnummern und CHANGELOG
-zusammenpassen. Dann laufen alle Tests und die drei Installer gleichzeitig (etwa 15–20 Minuten). Nur wenn alles
+zusammenpassen und die Lizenzdateien aktuell sind. Dann laufen alle Tests und die drei Installer gleichzeitig (etwa 15–20 Minuten). Nur wenn alles
 grün ist, entsteht unter **Releases** die Seite „osVAC neo Baukasten <Version>“ mit dem Text aus dem CHANGELOG,
 Links zu den Anleitungen und den Dateien `osVAC-neo-Baukasten-<Version>-Windows-Setup.exe`, `…-macOS.dmg`,
 `…-Linux.AppImage`, `…-Linux.deb` sowie `SHA256SUMS.txt`. Herunterladen geht ohne GitHub-Konto, der Link
@@ -278,7 +280,7 @@ Vorabversion markiert und zählt nicht als „latest“.
 Schlägt etwas fehl, entsteht kein Release:
 - Fehler ohne Änderung am Code (z. B. Störung bei GitHub): im Lauf **Re-run failed jobs**.
 - Fehler im Code: beheben, pushen, Tag löschen und neu setzen:
-  `git tag -d v0.5.2 && git push origin :refs/tags/v0.5.2 && git tag v0.5.2 && git push origin v0.5.2`.
+  `git tag -d v0.5.3 && git push origin :refs/tags/v0.5.3 && git tag v0.5.3 && git push origin v0.5.3`.
   Das geht nur, solange es zu diesem Tag noch kein Release gibt. Sonst lieber eine neue Version.
 
 **Nur zum Testen** lässt sich jeder Installer auch einzeln bauen: **Actions → Windows-Installer** (bzw. macOS-,
@@ -310,4 +312,5 @@ Auch die exportierten Dateien tragen Namensnennung und Lizenz: 3MF in den Metada
   - replicad, three.js, Svelte, fflate (MIT)
   - Manifold (Apache 2.0, Filamentschätzung) und Clipper (Boost Software License 1.0, eigene Kontur)
   - Poppins (Oberfläche) und Liberation Sans Regular (Beschriftung): SIL Open Font License
-- Nach neuen Abhängigkeiten `python3 scripts/licenses.py` ausführen, damit die Datei aktuell bleibt.
+- **Programm** (nur im installierten Programm, nicht in der Browser-Fassung): Tauri und rund 350 weitere Rust-Bausteine (überwiegend MIT bzw. Apache 2.0, einzelne BSD, ISC, Zlib, Unicode, MPL 2.0), NSIS im Windows-Installer (zlib) und die AppImage-Laufzeit (MIT). Übersicht in `public/lizenzen.html` (alle Texte zum Aufklappen), vollständig in `public/lizenzen-programm.txt`.
+- Nach neuen Abhängigkeiten die Dateien neu erzeugen und mit committen: `python3 scripts/licenses-rust.py` (nach Änderungen an `src-tauri/Cargo.lock`, braucht cargo), dann `python3 scripts/licenses.py` (braucht `npm ci`). Vor jedem Release prüft `release.yml`, ob sie aktuell sind, und bricht sonst ab.
