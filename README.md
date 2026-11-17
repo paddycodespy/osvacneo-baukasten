@@ -267,7 +267,7 @@ dann `npx tauri build --bundles appimage,deb`.
 1. Version in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` und
    `src-tauri/Cargo.lock` erhöhen und in `CHANGELOG.md` einen Abschnitt `## <Version>` anlegen.
 2. Bei geänderten Abhängigkeiten die Lizenzdateien neu erzeugen (siehe „Lizenzen“).
-3. Committen, pushen, dann den Tag setzen: `git tag v0.5.3 && git push origin v0.5.3`.
+3. Committen, pushen, dann den Tag setzen: `git tag v0.5.4 && git push origin v0.5.4`.
 
 Der Tag startet `.github/workflows/release.yml`: Erst wird geprüft, ob Tag, Versionsnummern und CHANGELOG
 zusammenpassen und die Lizenzdateien aktuell sind. Dann laufen alle Tests und die drei Installer gleichzeitig (etwa 15–20 Minuten). Nur wenn alles
@@ -280,7 +280,7 @@ Vorabversion markiert und zählt nicht als „latest“.
 Schlägt etwas fehl, entsteht kein Release:
 - Fehler ohne Änderung am Code (z. B. Störung bei GitHub): im Lauf **Re-run failed jobs**.
 - Fehler im Code: beheben, pushen, Tag löschen und neu setzen:
-  `git tag -d v0.5.3 && git push origin :refs/tags/v0.5.3 && git tag v0.5.3 && git push origin v0.5.3`.
+  `git tag -d v0.5.4 && git push origin :refs/tags/v0.5.4 && git tag v0.5.4 && git push origin v0.5.4`.
   Das geht nur, solange es zu diesem Tag noch kein Release gibt. Sonst lieber eine neue Version.
 
 **Nur zum Testen** lässt sich jeder Installer auch einzeln bauen: **Actions → Windows-Installer** (bzw. macOS-,

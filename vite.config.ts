@@ -43,7 +43,10 @@ export default defineConfig({
   base: './',
   define: { __GEOM_VERSION__: JSON.stringify(geomVersion()), __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync('package.json', 'utf8')).version) },
   plugins: [svelte(), replicadStub()],
-  worker: { format: 'es' },
+  // Worker als eine einzige Datei: Würde ein nachgeladener Teil (z. B. Clipper) Code aus der Worker-Datei
+  // importieren, wertet WebKit (Programm unter Linux/macOS) die Worker-Datei ein zweites Mal aus. Die zweite
+  // Kopie übernimmt dann self.onmessage ohne geladenes OpenCascade, und die Berechnung scheitert zufällig.
+  worker: { format: 'es', rolldownOptions: { output: { codeSplitting: false } } },
   // fester Port für „npm run desktop:dev“ (Tauri erwartet http://localhost:5173)
   server: { port: 5173, strictPort: true },
   optimizeDeps: { exclude: ['replicad-opencascadejs'] },
