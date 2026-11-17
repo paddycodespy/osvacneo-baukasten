@@ -1,14 +1,13 @@
 name: macOS-Installer
 
 # Baut ein DMG für macOS (Universal: Apple Silicon und Intel).
-# Start über „Run workflow“ oder durch einen Tag v*.
+# Start über „Run workflow“ (zum Testen) oder über release.yml bei einem Versions-Tag (dann auch im Release).
 # Ergebnis: Artefakt „osVAC-neo-Baukasten-<Version>-macOS“ mit osVAC-neo-Baukasten-<Version>-macOS.dmg
 # (gleiches Schema wie Windows und Linux).
 
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
+  workflow_call:
 
 jobs:
   build:

@@ -1,6 +1,7 @@
 # Baut den osVAC neo Baukasten für Linux: AppImage (läuft ohne Installation auf den meisten Distributionen)
 # und .deb (Debian, Ubuntu, Linux Mint).
-# Start: auf GitHub unter „Actions“ → „Linux-Installer“ → „Run workflow“, oder automatisch durch einen Tag v*.
+# Start: auf GitHub unter „Actions“ → „Linux-Installer“ → „Run workflow“ (zum Testen),
+# oder über release.yml bei einem Versions-Tag (dann landen die Dateien zusätzlich im Release).
 # Ergebnis: Artefakt „osVAC-neo-Baukasten-<Version>-Linux“ mit osVAC-neo-Baukasten-<Version>-Linux.AppImage
 # und osVAC-neo-Baukasten-<Version>-Linux.deb (gleiches Schema wie Windows und macOS).
 # Gebaut auf Ubuntu 22.04: das AppImage läuft dann auch auf älteren Systemen (glibc 2.35 und neuer).
@@ -8,8 +9,7 @@ name: Linux-Installer
 
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
+  workflow_call:
 
 jobs:
   build:

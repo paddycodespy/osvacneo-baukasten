@@ -2,6 +2,8 @@
 
 Voraussetzung: macOS 11 (Big Sur) oder neuer. Die App läuft auf Apple-Silicon- und Intel-Macs.
 
+Download: auf der [Release-Seite](https://github.com/paddycodespy/osvacneo-baukasten/releases/latest) unter **Assets** die Datei `osVAC-neo-Baukasten-…-macOS.dmg`.
+
 1. Die Datei `osVAC-neo-Baukasten-…-macOS.dmg` doppelklicken.
 2. Im Fenster das App-Symbol auf den Ordner „Programme“ ziehen.
 3. Die App ist nicht bei Apple beglaubigt. Beim ersten Start deshalb:
@@ -9,7 +11,7 @@ Voraussetzung: macOS 11 (Big Sur) oder neuer. Die App läuft auf Apple-Silicon- 
    - **macOS 11 bis 14:** Im Ordner „Programme“ mit der rechten Maustaste (oder Ctrl-Klick) auf die App, **Öffnen** wählen und in der Meldung noch einmal **Öffnen** klicken.
 4. Danach startet die App normal per Doppelklick.
 
-Heruntergeladene Dateien (3MF, STL, STEP) landen im Ordner „Downloads“.
+Heruntergeladene Dateien (3MF, STL, STEP) landen im Ordner „Downloads“. Einen anderen Ordner wählst du im Schritt „Download“ unter „Speichern in“.
 
 **Umstieg vom „osVAC neo Konfigurator“ (bis 0.2.0):** Die App heißt seit 0.3.0 „osVAC neo Baukasten“ und wird neben der alten installiert. Die alte App einfach aus „Programme“ in den Papierkorb ziehen. Der zuletzt bearbeitete Adapter wird nicht übernommen, die App startet einmal mit dem Standard.
 

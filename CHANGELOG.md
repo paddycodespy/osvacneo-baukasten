@@ -2,6 +2,11 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## 0.5.2
+
+- Downloads für alle: Jede Version erscheint jetzt auf der Release-Seite von GitHub (Windows, macOS, Linux), herunterladen geht ohne GitHub-Konto. Dazu Prüfsummen in `SHA256SUMS.txt`.
+- Neue Anleitung, um den Baukasten ohne Installation im Browser zu nutzen (`docs/im-browser.md`). README auf den aktuellen Stand gebracht.
+
 ## 0.5.1
 
 - Programm unter Linux und macOS: Der Knopf „Anleitung“ und der Link „Verwendete Bausteine und ihre Lizenzen“ öffnen wieder ein eigenes Fenster (vorher passierte nichts).

@@ -1,14 +1,13 @@
 # Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen, Bedienabläufe, Geometrie aller Adapter und Druckbarkeit.
-# Läuft bei jedem Push und jedem Pull Request; Ergebnis unter „Actions“ → „Tests“.
+# Start von Hand („Actions“ → „Tests“ → „Run workflow“) oder über release.yml vor jedem Release.
 # Die Gruppen laufen gleichzeitig (Freiform in zwei Hälften).
 name: Tests
 
-# Nicht mehr bei jedem Push (das kostete auf dem privaten Repository rund 50 Actions-Minuten je Push;
-# die Tests laufen vor jedem Patch ohnehin lokal): von Hand über „Run workflow“ und bei jedem Versions-Tag.
+# Nicht bei jedem Push: die Tests laufen vor jedem Patch ohnehin lokal. Ein Release wird nur veröffentlicht,
+# wenn alle Tests grün sind (release.yml ruft diesen Workflow auf).
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
+  workflow_call:
 
 # Je Branch läuft höchstens ein Testlauf; kommt ein neuer Push, während einer wartet, ersetzt der neue den wartenden
 # (der laufende wird zu Ende geführt). Jeder Lauf prüft den ganzen Stand, also auch die übersprungenen Änderungen.

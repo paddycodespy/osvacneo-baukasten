@@ -1,14 +1,13 @@
 # Baut den Windows-Installer (NSIS, .exe) des osVAC neo Baukastens.
-# Start: auf GitHub unter „Actions“ → „Windows-Installer“ → „Run workflow“,
-# oder automatisch beim Hochladen eines Versions-Tags (z. B. git tag v0.1.0 && git push --tags).
+# Start: auf GitHub unter „Actions“ → „Windows-Installer“ → „Run workflow“ (zum Testen),
+# oder über release.yml bei einem Versions-Tag (dann landet die Datei zusätzlich im Release).
 # Ergebnis: unter dem Lauf bei „Artifacts“ das ZIP „osVAC-neo-Baukasten-<Version>-Windows“ mit
 # osVAC-neo-Baukasten-<Version>-Windows-Setup.exe (gleiches Schema wie macOS und Linux).
 name: Windows-Installer
 
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
+  workflow_call:
 
 jobs:
   build:

@@ -1,0 +1,114 @@
+# Veröffentlicht eine neue Version: Tests, alle drei Installer, dann ein GitHub-Release mit den Dateien.
+# Start: Versions-Tag hochladen, z. B. git tag v0.5.2 && git push origin v0.5.2
+# Der Tag muss zur Version in package.json und src-tauri/tauri.conf.json passen, sonst bricht der Lauf sofort ab.
+# Ergebnis: unter „Releases“ (…/releases/latest) die Seite „osVAC neo Baukasten <Version>“ mit den Änderungen aus
+# CHANGELOG.md und den Dateien osVAC-neo-Baukasten-<Version>-Windows-Setup.exe, -macOS.dmg, -Linux.AppImage,
+# -Linux.deb und SHA256SUMS.txt. Herunterladen geht ohne GitHub-Konto.
+# Schlägt ein Test oder ein Installer fehl, entsteht kein Release. Nach dem Beheben: „Re-run failed jobs“ (gleicher
+# Stand) oder Tag löschen und neu setzen (neuer Stand), siehe README.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  version:
+    name: Version prüfen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Tag, package.json, tauri.conf.json und CHANGELOG
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(node -p "require('./package.json').version")
+          tauri=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          echo "Tag $tag, package.json $pkg, tauri.conf.json $tauri"
+          if [ "$tag" != "$pkg" ] || [ "$tag" != "$tauri" ]; then
+            echo "::error::Tag v$tag passt nicht zu package.json ($pkg) bzw. tauri.conf.json ($tauri)."
+            exit 1
+          fi
+          if ! grep -qx "## $tag" CHANGELOG.md; then
+            echo "::error::In CHANGELOG.md fehlt der Abschnitt „## $tag“."
+            exit 1
+          fi
+
+  tests:
+    needs: version
+    uses: ./.github/workflows/tests.yml
+
+  windows:
+    needs: version
+    uses: ./.github/workflows/windows-installer.yml
+
+  macos:
+    needs: version
+    uses: ./.github/workflows/macos-installer.yml
+
+  linux:
+    needs: version
+    uses: ./.github/workflows/linux-installer.yml
+
+  release:
+    name: Release veröffentlichen
+    needs: [tests, windows, macos, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: osVAC-neo-Baukasten-*
+          path: out
+          merge-multiple: true
+
+      - name: Text für die Release-Seite
+        shell: bash
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          repo="https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}"
+          {
+            echo "## Was ist neu"
+            echo
+            # Abschnitt „## <Version>“ aus CHANGELOG.md bis zur nächsten Überschrift dieser Ebene
+            awk -v h="## $v" '$0 == h { on = 1; next } on && /^## / { exit } on' CHANGELOG.md
+            echo
+            echo "## Herunterladen und installieren"
+            echo
+            echo "| System | Datei | Anleitung |"
+            echo "|---|---|---|"
+            echo "| Windows 10/11 | \`osVAC-neo-Baukasten-$v-Windows-Setup.exe\` | [Windows]($repo/docs/installation-windows.md) |"
+            echo "| macOS 11 oder neuer | \`osVAC-neo-Baukasten-$v-macOS.dmg\` | [macOS]($repo/docs/installation-mac.md) |"
+            echo "| Linux (die meisten Distributionen) | \`osVAC-neo-Baukasten-$v-Linux.AppImage\` | [Linux]($repo/docs/installation-linux.md) |"
+            echo "| Debian, Ubuntu, Linux Mint | \`osVAC-neo-Baukasten-$v-Linux.deb\` | [Linux]($repo/docs/installation-linux.md) |"
+            echo
+            echo "Die Programme sind nicht signiert. Windows und macOS warnen deshalb beim ersten Start, die Anleitungen zeigen, wie man sie trotzdem öffnet."
+            echo "Ohne Installation im Browser: [Anleitung]($repo/docs/im-browser.md)."
+          } > notes.md
+          cat notes.md
+
+      - name: Prüfsummen
+        working-directory: out
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      # Vorabversionen (Tag mit Bindestrich, z. B. v0.6.0-beta.1) werden als „Pre-release“ markiert.
+      # Gibt es das Release schon (erneuter Lauf), werden nur Text und Dateien ersetzt.
+      - name: Release anlegen
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          pre=""
+          case "$v" in *-*) pre="--prerelease" ;; esac
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "osVAC neo Baukasten $v" --notes-file notes.md
+            gh release upload "$GITHUB_REF_NAME" out/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" out/* --title "osVAC neo Baukasten $v" --notes-file notes.md --verify-tag $pre
+          fi
