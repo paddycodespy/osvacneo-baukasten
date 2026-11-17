@@ -2362,7 +2362,7 @@ dependencies = [
 
 [[package]]
 name = "osvacneo-baukasten"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "tauri",
  "tauri-build",
