@@ -1,7 +1,7 @@
 {
   "name": "osvacneo-baukasten",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.5.2",
   "license": "CC-BY-NC-SA-4.0",
   "type": "module",
   "scripts": {
@@ -51,5 +51,5 @@
     "replicad-opencascadejs": "^1.1.0",
     "three": "^0.187.0"
   },
-  "description": "Absaugadapter von osVAC neo im Browser konfigurieren und als 3MF, STL oder STEP herunterladen"
+  "description": "Absaugadapter für osVAC neo gestalten und als 3MF, STL oder STEP herunterladen (Programm oder Browser, alles lokal)"
 }

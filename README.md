@@ -6,12 +6,12 @@ Der **osVAC neo Baukasten** gestaltet Absaugadapter für das System osVAC neo. E
 
 Es gibt zwei Wege:
 
-- **Als Programm** für Windows, macOS und Linux. Installation: [Windows](docs/installation-windows.md), [macOS](docs/installation-mac.md), [Linux](docs/installation-linux.md).
+- **Als Programm** für Windows, macOS und Linux. Download auf der [Release-Seite](https://github.com/paddycodespy/osvacneo-baukasten/releases/latest), Installation: [Windows](docs/installation-windows.md), [macOS](docs/installation-mac.md), [Linux](docs/installation-linux.md).
 - **Im Browser**, selbst gestartet auf dem eigenen Rechner. Dafür wird Node.js gebraucht. Schritt für Schritt erklärt in [docs/im-browser.md](docs/im-browser.md).
 
 Fehler und Wünsche bitte als [Issue](https://github.com/paddycodespy/osvacneo-baukasten/issues) melden.
 
-Was sich von Version zu Version geändert hat, steht in [CHANGELOG.md](CHANGELOG.md) und in der App im Schritt „Download“.
+Was sich von Version zu Version geändert hat, steht in [CHANGELOG.md](CHANGELOG.md) und auf der [Release-Seite](https://github.com/paddycodespy/osvacneo-baukasten/releases).
 
 Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Originalteil von osVAC neo: Profile, Bajonett, Toleranzen und Formeln stammen aus dem Fusion-360-Master **osVAC neo v366 (beta)** und wurden gegen Fusion-Exporte in mehreren Größen geprüft.
 
@@ -27,9 +27,12 @@ Es werden keine neuen Adapter erfunden. Jedes Teil ist ein parametrisiertes Orig
 | Kupplung → Stutzen | Female, Dichtnut-Füllung, Übergang, Rohrkonus | Fxx To Pipe Cone |
 | Stecker → Stutzen | Male, Übergang, Rohrkonus | Mxx To Pipe Cone |
 | Schieber einzeln | Unterteil und Oberteil (verschraubt, je eine Muffe), Schieberplatte, ggf. Wandhalter | eigene Erweiterung, siehe unten |
+| Saugdüse | Anschluss (Kupplung oder Stecker), Rohr, Spitze mit Öffnung, ggf. Schutzring und Bürstennut | eigene Erweiterung, siehe unten |
+| Nebenluft-Regler | Kupplung oder Stecker, Rohr mit Fenstern und Drehring, Drehring für den Schlauch, Schlauchteil mit Gewinde und Knickschutz | eigene Erweiterung, siehe unten |
+| Drehring-Lösehilfe | Halter für Kupplungen oder für Stecker | SlipRingHelper (Ludo Kerz), siehe unten |
 | Freiform | Anschluss A (Female oder Male), Übergang, Bausteine, Ende B (Gerät oder Female/Male) | eigene Erweiterung, siehe unten |
 
-Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Spaltmaß Drehring (ab 0,2 mm, Standard 0,3 wie im Original; an der Kupplung höchstens 0,5 mm bei 7 mm bzw. 0,35 mm bei 9 mm Materialstärke, im Gehäuse bis 0,8 mm), Materialstärke (7 oder 9 mm), Druckhilfe (die Beschriftung ist immer dabei) sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe, Übergangslänge (TransitionConeLength, Standard 8 mm), Schraubenlöcher, Klemmrippen (aufgesteckt innen, eingesteckt außen; eingesteckt möglichst neben der Beschriftung) und beim Aufstecken Schlitze für eine Schlauchschelle (2 Stück bei 0° und 180°, zwischen Löchern und Schrift; 80 % der Rohrlänge, Breite Umfang/40).
+Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Spaltmaß Drehring (ab 0,2 mm, Standard 0,45 mm, bei 9 mm Materialstärke an der Kupplung 0,35 mm; das Original hat 0,3 mm; an der Kupplung höchstens 0,5 mm bei 7 mm bzw. 0,35 mm bei 9 mm Materialstärke, im Gehäuse bis 0,8 mm), Materialstärke (7 oder 9 mm), Druckhilfe (die Beschriftung ist immer dabei) sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe, Übergangslänge (TransitionConeLength, Standard 8 mm), Schraubenlöcher, Klemmrippen (aufgesteckt innen, eingesteckt außen; eingesteckt möglichst neben der Beschriftung) und beim Aufstecken Schlitze für eine Schlauchschelle (2 Stück bei 0° und 180°, zwischen Löchern und Schrift; 80 % der Rohrlänge, Breite Umfang/40).
 
 ### Schieber einzeln
 
@@ -56,7 +59,7 @@ Gerade, Bogen, Anschlagring und Muffe/Zapfen ohne Konus sind exakte Extrusionen 
 
 **Saugdüse** (`src/lib/osvac/nozzle.ts`): Formular mit Düsenart (Rundrohr, Fugendüse, gebogen, Breitdüse, Polsterdüse), Anschluss, Länge, Biegung bis 45°, Öffnung, Schräge der Spitze bis 60° und Wandstärke; daraus entsteht eine Freiform-Kette mit dem Ende „Düse“ (Spitze an der schrägen Ebene abgeschnitten). Extras: Schutzring (1,2 mm dicker Rand) und Nut für eine Bürstenleiste (2 × 4 mm im Rand). Der Rand ist in Stufen von höchstens 0,6 mm quer zur Düse abgesetzt; bei schräger Spitze folgt er ihr in Streifen. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine, „Zurück zur Düse“ führt zum Formular.
 
-**Nebenluft-Regler** (`src/lib/osvac/bleed.ts`, `partsBleed` in `assemblies.ts`): kompakt direkt auf dem Schlauch. Oben Kupplung (Standard) oder Stecker, darunter Rohr mit drei Fenstern (je 50°) und mitgedrucktem Drehring (60° = auf bis zu), unten wie beim Schlauchadapter FxxHyy Drehring für den Schlauch, Schlauchteil mit Gewinde und Knickschutz. Rohr innen wie der Schlauch, außen wie der Schlauchteil. Ring-Querschnitt trapezförmig, Bunde mit 45°-Flanken, Spiel Standard 0,4 mm (0,2–0,6). Raste: Noppe innen am Ring, Mulden im Rohr bei „auf“ und „zu“. Kerben am oberen Bund über den Fenstern. (Der Freiform-Baustein „Nebenluft“ ist in der Oberfläche nicht mehr wählbar; ältere Stände bauen weiter.)
+**Nebenluft-Regler** (`src/lib/osvac/bleed.ts`, `partsBleed` in `assemblies.ts`): kompakt direkt auf dem Schlauch. Oben Kupplung (Standard) oder Stecker, darunter Rohr mit drei Fenstern (je 50°) und mitgedrucktem Drehring (60° = auf bis zu), unten wie beim Schlauchadapter FxxHyy Drehring für den Schlauch, Schlauchteil mit Gewinde und Knickschutz. Rohr innen wie der Schlauch, außen wie der Schlauchteil. Ring-Querschnitt trapezförmig, Bunde mit 45°-Flanken, Spiel Standard 0,35 mm (0,2–0,6). Raste: Noppe innen am Ring, Mulden im Rohr bei „auf“ und „zu“. Kerben am oberen Bund über den Fenstern. (Der Freiform-Baustein „Nebenluft“ ist in der Oberfläche nicht mehr wählbar; ältere Stände bauen weiter.)
 
 **Eigene Kontur** (`src/lib/osvac/contour.ts`, `src/lib/contour-import.ts`, `ContourPanel.svelte`, `ContourDraw.svelte`): siebte Form „Eigene“ in jeder Formauswahl der Freiform. Wege: SVG/DXF laden (SVG im Browser abgetastet mit Transformationen und Einheiten aus width/viewBox; DXF: LWPOLYLINE/POLYLINE mit Bögen, LINE/ARC verkettet, CIRCLE, ELLIPSE, SPLINE, `$INSUNITS`; mehrere Umrisse → Auswahl), am Foto nachzeichnen (Maßstab aus zwei Punkten auf einem Lineal) oder auf Millimeterraster zeichnen (Punkte ziehen, einfügen, löschen, Eckradius je Punkt). Aufbereitung: spitze Ecken R 0,5, Rundungen dicht abgetastet, Mitte des Umrisses im Ursprung. Versatz für Zugabe und Wand mit Clipper (runde Ecken). Draht: lange Kanten als Linien, Ketten kurzer Kanten als BSpline, an Knicken getrennt. Die Punkte gelten mit Blick auf den Stutzen (von außen); in der Geometrie werden sie gespiegelt, weil die Querschnittsebene in Richtung der Kette gesehen wird. Prüfung: geschlossen, ohne Überschneidung, 6–250 mm; eingesteckt Hinweis bei Stellen, die schmaler als Wand und Luft sind (narrowLoss). SVG: `<use>`/`<symbol>` werden aufgelöst, Vorlagen in `<defs>` nicht mitgezählt. Editor: Rückgängig, Zoom mit zwei Fingern und Knöpfen, Rückfrage vor dem Verwerfen. Testdateien in `scripts/fixtures`. Clipper, der SVG/DXF-Leser und das Zeichenfenster werden nachgeladen (eigene Dateien): Wer mit Konturen rechnet, wartet auf `clipperReady` (CAD-Worker, Skripte); die Planung im Browser rechnet nach dem Laden neu (`app.clipperOk`).
 
@@ -73,7 +76,7 @@ Für Entwickler. Wer den Baukasten nur benutzen will, findet die einfache Anleit
 Voraussetzung: Node.js 22 oder neuer.
 
 ```bash
-npm install
+npm ci
 npm run dev        # Entwicklungsserver auf http://localhost:5173
 ```
 
@@ -113,9 +116,21 @@ src/
   lib/osvac/assemblies.ts    Baugruppen als Liste einzelner Teile
   lib/osvac/freeform.ts      Freiform: Querschnitte, Bausteine, Prüfungen, Lage auf dem Druckbett
   lib/osvac/catalog.ts       Adaptertypen für den Wizard
+  lib/osvac/gate.ts          Schieber (Gehäuse, Platte, Befestigung)
+  lib/osvac/nozzle.ts        Saugdüse (Formular → Freiform-Kette)
+  lib/osvac/bleed.ts         Nebenluft-Regler
+  lib/osvac/helper.ts        Drehring-Lösehilfe
+  lib/osvac/contour.ts       eigene Kontur (Aufbereitung, Versatz, Prüfung)
+  lib/contour-import.ts      SVG- und DXF-Leser
+  lib/overhang.ts            Überhang- und Druckbett-Prüfung
+  lib/errors.ts              verständliche Meldungen, Hinweise
+  lib/save.svelte.ts         Speichern (Ordner wählen, im Programm und im Browser)
+  lib/desktop.ts             Besonderheiten im Programmfenster (Links, eigene Fenster)
+  lib/worker/measure.worker.ts  Filamentschätzung (manifold-3d)
   components/FreeformEditor.svelte  Schritt „Aufbau“ (Vorlagen, Bausteine, Ende B)
   components/SectionEditor.svelte   Querschnitt wählen und bemaßen, mit Skizze
   components/BlockFigure.svelte     Erklärskizzen der Bausteine
+  components/ContourPanel.svelte    eigene Kontur laden, nachzeichnen, zeichnen (ContourDraw.svelte)
 scripts/
   build-ref.ts               Einzelteil in Node bauen (npm run part -- MxxFyy 25 32 32)
   matrix.ts                  Alle Typen mit Grenzwerten bauen (npm run test:geometry)
@@ -123,8 +138,15 @@ scripts/
   sketch-overlap.ts          Skizzen auf überlappende Beschriftungen prüfen (npm run build && npm run test:sketches)
   ui-flows.ts                Bedienabläufe im Browser prüfen (npm run build && npm run test:ui)
   islands.ts                 Druckbarkeit in Schichten prüfen (npm run test:islands, braucht python3 mit trimesh/shapely; tools/druck/islands.py)
-  lib/preview.ts             gemeinsam für beide: vite preview + Chrome starten
-.github/workflows/tests.yml  Alle Prüfungen von Hand und bei jedem Versions-Tag (Typen, Build, Schlüssel, Freiform, Skizzen, Bedienabläufe, Geometrie)
+  lib/preview.ts             gemeinsam für Skizzen und Bedienabläufe: vite preview + Chrome starten
+  anleitung.ts, anleitung-bilder.ts  Anleitung bauen und Bilder aufnehmen
+src-tauri/                   Programm für Windows, macOS und Linux (Tauri)
+docs/                        Anleitung, Installation, Nutzung im Browser
+tools/fusion/                Fusion-Exportskripte und Vergleich mit dem Original
+tools/druck/                 Schichtprüfung für test:islands (Python)
+.github/workflows/tests.yml  Alle Prüfungen (Typen, Build, Schlüssel, Freiform, Skizzen, Bedienabläufe, Geometrie, Druckbarkeit)
+.github/workflows/*-installer.yml  Installer für Windows, macOS, Linux
+.github/workflows/release.yml     Version veröffentlichen: Tests, Installer, GitHub-Release
 ```
 
 ### Prüfungen
@@ -137,8 +159,9 @@ scripts/
 | `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen (braucht `npm run build` und Chrome, Pfad über `CHROME_PATH`) | < 1 min |
 | `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern und bei Teilen unter dem Druckbett, Stand und Druckbett nach dem Neuladen, Extras im Namen, Flansch, Druckhilfe je Verbindung, Link aus den Download-Hinweisen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 1 min |
 | `npm run test:geometry` | alle Adaptertypen mit Grenzwerten | ca. 10–15 min |
+| `npm run test:islands` | Druckbarkeit: Düsen, Nebenluft-Regler und Vorlagen in 0,2-mm-Schichten geschnitten, nichts beginnt frei in der Luft, wenn die App „ohne Stützen“ sagt (braucht python3 mit trimesh und shapely) | ca. 2 min |
 
-Auf GitHub laufen alle von Hand (Actions → Tests → Run workflow) und bei jedem Versions-Tag, in mehreren gleichzeitigen Gruppen, zusammen etwa 15 Minuten (rund 50 Actions-Minuten). Nicht mehr bei jedem Push: auf dem privaten Repository waren die Freiminuten sonst nach wenigen Tagen aufgebraucht; vor jedem Patch laufen die Tests lokal.
+Auf GitHub laufen alle von Hand (Actions → Tests → Run workflow) und vor jedem Release (siehe „Neue Version veröffentlichen“), in mehreren gleichzeitigen Gruppen, zusammen etwa 15 Minuten. Nicht bei jedem Push: vor jedem Patch laufen die Tests ohnehin lokal.
 
 ### Rechenzeit
 
@@ -175,7 +198,7 @@ Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Rad
 Die Anleitung für Anwender liegt in der App unter **Anleitung** (Kopfzeile, öffnet `public/anleitung.html`, auch offline im installierten Programm, hell und dunkel).
 
 - Text: `docs/anleitung.md` (einfaches Markdown, erlaubte Zeichen oben in `scripts/anleitung.ts`). Daraus baut `npm run docs` die Seite, `npm run build` macht das jedes Mal mit; die HTML-Datei nicht von Hand ändern.
-- Bilder: `public/anleitung/*.png`, aufgenommen mit `npm run build && npm run docs:bilder` (alle) oder `npm run docs:bilder -- kontur duese` (nur Szenen mit diesem Namen). Jede Szene startet mit Standardwerten; die Szenen stehen in `scripts/anleitung-bilder.ts`.
+- Bilder: `public/anleitung/*.webp`, aufgenommen mit `npm run build && npm run docs:bilder` (alle) oder `npm run docs:bilder -- kontur duese` (nur Szenen mit diesem Namen). Jede Szene startet mit Standardwerten; die Szenen stehen in `scripts/anleitung-bilder.ts`.
 - **Bei jeder Änderung an der Oberfläche prüfen**, ob die Anleitung betroffen ist (neue oder umbenannte Einstellungen, neue Adapterarten, andere Abläufe): Text in `docs/anleitung.md` anpassen, betroffene Bilder neu aufnehmen, `npm run docs` ausführen und alles mit committen. Ein Eintrag im CHANGELOG reicht dafür nicht.
 
 ## Abgleich mit Fusion
@@ -205,18 +228,13 @@ Drehring bei 9 mm mit anderem Spaltmaß, Schraubenlöcher an sich verjüngenden 
 
 Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation Sans Regular ist maßgleich zu Arial, Abweichung ≤ 0,15 mm). Die Lizenzzeile „CC BY-NC-SA 4.0“ steht wie im Original auf dem Band (Kupplung, Schlauchteil) und oben am Stecker; zusätzlich wird die Lizenz beim Download verlinkt.
 
-Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur, Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“ (einen eigenen Flansch zum Anschrauben gibt es in der Freiform).
+Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur sowie Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“ als Nachbau. Eigene Lösungen gibt es dafür: den Flansch zum Anschrauben in der Freiform und die Saugdüse.
 
 ## Windows-Programm (Installer)
 
 Der Baukasten lässt sich als eigenes Windows-Programm installieren (Tauri). Er läuft dann in einem eigenen
 Fenster mit dem in Windows eingebauten WebView2 (Edge), weiterhin vollständig lokal und ohne Internet.
-Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fenster. Anleitung für Tester: `docs/installation-windows.md`.
-
-**Installer bauen lassen (GitHub):** im Repository unter **Actions → Windows-Installer → Run workflow**.
-Nach etwa 10–15 Minuten liegt unter dem Lauf bei **Artifacts** eine ZIP mit
-`osVAC-neo-Baukasten-0.5.1-Windows-Setup.exe`. Alternativ startet ein Versions-Tag den Bau:
-`git tag v0.5.1 && git push --tags`.
+Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fenster. Anleitung: `docs/installation-windows.md`.
 
 **Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
 (Startmenü, Deinstallation über „Apps“). Da die Datei nicht signiert ist, meldet Windows beim ersten Start
@@ -226,32 +244,46 @@ Fehlt WebView2 (nur sehr alte Windows-10-Installationen), lädt der Installer es
 **Umstieg vom „osVAC neo Konfigurator“ (bis 0.2.0):** Das Programm hat seit 0.3.0 einen neuen Namen und eine
 neue App-Kennung. Es wird deshalb neben dem alten installiert, das alte Programm bitte über „Apps“ deinstallieren.
 Der zuletzt bearbeitete Adapter wird nicht übernommen, das Programm startet einmal mit dem Standard.
-Wer ihn behalten will, lädt ihn vorher im alten Programm herunter oder notiert die Maße.
 
 **Selbst bauen** (Windows mit Rust und Visual Studio Build Tools): `npm ci`, dann `npm run desktop:build`.
 Zum Entwickeln im Programmfenster: `npm run desktop:dev`.
 
 ## macOS-Programm
 
-Unter **Actions → macOS-Installer → Run workflow** entsteht eine DMG (Universal: Apple Silicon und Intel), ebenfalls als Artefakt.
-Auf einem Mac installiert und getestet: läuft. Da die App nicht signiert ist, beim ersten Start im Finder
-Rechtsklick → **Öffnen** (oder Systemeinstellungen → Datenschutz & Sicherheit → **Dennoch öffnen**), Einzelheiten in `docs/installation-mac.md`.
+DMG als Universal-App (Apple Silicon und Intel), ab macOS 11. Da die App nicht bei Apple beglaubigt ist, beim ersten
+Start im Finder Rechtsklick → **Öffnen** (oder Systemeinstellungen → Datenschutz & Sicherheit → **Dennoch öffnen**),
+Einzelheiten in `docs/installation-mac.md`.
 
 ## Linux-Programm
 
-Unter **Actions → Linux-Installer → Run workflow** entstehen ein AppImage (ohne Installation, die meisten
-Distributionen) und ein .deb (Debian, Ubuntu, Mint), gebaut auf Ubuntu 22.04. Anleitung: `docs/installation-linux.md`.
+AppImage (ohne Installation, die meisten Distributionen) und .deb (Debian, Ubuntu, Mint), gebaut auf Ubuntu 22.04.
+Anleitung: `docs/installation-linux.md`.
 Selbst bauen (Ubuntu/Debian): `sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev`,
 dann `npx tauri build --bundles appimage,deb`.
 
-## Alle Installer auf einmal
+## Neue Version veröffentlichen
 
-Ein Versions-Tag startet alle drei Installer-Läufe und die Tests gleichzeitig: `git tag v0.5.1 && git push origin v0.5.1`.
-Die Dateien liegen danach unter **Actions** beim jeweiligen Lauf unter **Artifacts**, einheitlich benannt:
-`osVAC-neo-Baukasten-<Version>-Windows-Setup.exe`, `osVAC-neo-Baukasten-<Version>-macOS.dmg`,
-`osVAC-neo-Baukasten-<Version>-Linux.AppImage` und `osVAC-neo-Baukasten-<Version>-Linux.deb`
-(Artefakte `osVAC-neo-Baukasten-<Version>-Windows`, `-macOS`, `-Linux`).
-Anleitungen für Tester: `docs/installation-windows.md`, `docs/installation-mac.md`, `docs/installation-linux.md`.
+1. Version in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` und
+   `src-tauri/Cargo.lock` erhöhen und in `CHANGELOG.md` einen Abschnitt `## <Version>` anlegen.
+2. Committen, pushen, dann den Tag setzen: `git tag v0.5.2 && git push origin v0.5.2`.
+
+Der Tag startet `.github/workflows/release.yml`: Erst wird geprüft, ob Tag, Versionsnummern und CHANGELOG
+zusammenpassen. Dann laufen alle Tests und die drei Installer gleichzeitig (etwa 15–20 Minuten). Nur wenn alles
+grün ist, entsteht unter **Releases** die Seite „osVAC neo Baukasten <Version>“ mit dem Text aus dem CHANGELOG,
+Links zu den Anleitungen und den Dateien `osVAC-neo-Baukasten-<Version>-Windows-Setup.exe`, `…-macOS.dmg`,
+`…-Linux.AppImage`, `…-Linux.deb` sowie `SHA256SUMS.txt`. Herunterladen geht ohne GitHub-Konto, der Link
+`…/releases/latest` zeigt immer auf die neueste Version. Ein Tag mit Bindestrich (z. B. `v0.6.0-beta.1`) wird als
+Vorabversion markiert und zählt nicht als „latest“.
+
+Schlägt etwas fehl, entsteht kein Release:
+- Fehler ohne Änderung am Code (z. B. Störung bei GitHub): im Lauf **Re-run failed jobs**.
+- Fehler im Code: beheben, pushen, Tag löschen und neu setzen:
+  `git tag -d v0.5.2 && git push origin :refs/tags/v0.5.2 && git tag v0.5.2 && git push origin v0.5.2`.
+  Das geht nur, solange es zu diesem Tag noch kein Release gibt. Sonst lieber eine neue Version.
+
+**Nur zum Testen** lässt sich jeder Installer auch einzeln bauen: **Actions → Windows-Installer** (bzw. macOS-,
+Linux-Installer) **→ Run workflow**. Die Datei liegt dann nur beim Lauf unter **Artifacts** (Anmeldung bei GitHub
+nötig, wird nach 90 Tagen gelöscht), es entsteht kein Release.
 
 **Downloads im Programm:** Die Oberfläche speichert über den Befehl `save_file` (`src-tauri/src/lib.rs`, Inhalt roh,
 Name und Ordner in Kopfzeilen) in den Ordner, der im Schritt Download unter „Speichern in“ gewählt ist (Plugin
@@ -276,5 +308,6 @@ Auch die exportierten Dateien tragen Namensnennung und Lizenz: 3MF in den Metada
 - **Bausteine Dritter** mit eigenen Lizenzen, vollständig in `public/lizenzen.html` (in der App im Download-Schritt verlinkt) und als Text in `public/THIRD_PARTY_LICENSES.txt`:
   - OpenCascade (LGPL 2.1, als WebAssembly unverändert und austauschbar eingebunden)
   - replicad, three.js, Svelte, fflate (MIT)
+  - Manifold (Apache 2.0, Filamentschätzung) und Clipper (Boost Software License 1.0, eigene Kontur)
   - Poppins (Oberfläche) und Liberation Sans Regular (Beschriftung): SIL Open Font License
 - Nach neuen Abhängigkeiten `python3 scripts/licenses.py` ausführen, damit die Datei aktuell bleibt.
