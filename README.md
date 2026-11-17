@@ -1,6 +1,15 @@
 # osVAC neo Baukasten
 
-Der **osVAC neo Baukasten** gestaltet Absaugadapter für das System osVAC neo und läuft komplett im Browser. Ein Wizard führt durch Verbindung, Größen, Passung und Download. Am Ende gibt es das Teil als **3MF**, **STL** oder **STEP**.
+Der **osVAC neo Baukasten** gestaltet Absaugadapter für das System osVAC neo. Ein Wizard führt durch Verbindung, Größen, Passung und Download. Am Ende gibt es das Teil als **3MF**, **STL** oder **STEP**. Alles wird auf dem eigenen Rechner berechnet, ohne Anmeldung und ohne Server.
+
+## Benutzen
+
+Es gibt zwei Wege:
+
+- **Als Programm** für Windows, macOS und Linux. Installation: [Windows](docs/installation-windows.md), [macOS](docs/installation-mac.md), [Linux](docs/installation-linux.md).
+- **Im Browser**, selbst gestartet auf dem eigenen Rechner. Dafür wird Node.js gebraucht. Schritt für Schritt erklärt in [docs/im-browser.md](docs/im-browser.md).
+
+Fehler und Wünsche bitte als [Issue](https://github.com/paddycodespy/osvacneo-baukasten/issues) melden.
 
 Was sich von Version zu Version geändert hat, steht in [CHANGELOG.md](CHANGELOG.md) und in der App im Schritt „Download“.
 
@@ -59,7 +68,9 @@ Wie in Fusion besteht ein Adapter aus mehreren Körpern, die sich berühren oder
 
 ## Lokal starten
 
-Voraussetzung: Node.js 20 oder neuer.
+Für Entwickler. Wer den Baukasten nur benutzen will, findet die einfache Anleitung in [docs/im-browser.md](docs/im-browser.md).
+
+Voraussetzung: Node.js 22 oder neuer.
 
 ```bash
 npm install
@@ -77,14 +88,9 @@ Der Ordner `dist/` ist eine statische Website und läuft mit jedem lokalen Webse
 
 ## Versionsverwaltung mit GitHub
 
-Das Repository ist für die Nutzung auf dem eigenen Rechner gedacht. GitHub dient nur als Ablage und Versionsverwaltung, es wird nichts veröffentlicht. Empfohlen ist ein **privates** Repository.
+Das Repository ist öffentlich: Jeder kann den Code ansehen und herunterladen, Änderungen kommen nur vom Eigentümer. Pull Requests sind abgeschaltet, Rückmeldungen laufen über Issues.
 
-```bash
-git remote add origin https://github.com/<dein-account>/osvacneo-baukasten.git
-git push -u origin main
-```
-
-Danach reicht nach Änderungen `git add -A`, `git commit -m "…"` und `git push`.
+Nach Änderungen reicht `git add -A`, `git commit -m "…"` und `git push`.
 
 ## Aufbau
 
