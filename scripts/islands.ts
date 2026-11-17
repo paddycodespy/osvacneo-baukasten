@@ -70,8 +70,8 @@ const others: [string, string, object, RegExp, object?][] = [
   ['schieber-50-wandplatte', 'GATE', { gate: { ...DEFAULT_GATE, d: 50, mount: 'plate' } as GateSpec }, COUNTED_GATE],
   ['schieber-32-wandhalter', 'GATE', { gate: { ...DEFAULT_GATE, d: 32, mount: 'clip' } as GateSpec }, COUNTED_GATE],
   ['loesehilfe-32', 'HELPER', {}, /^Lösehilfe/],
-  // wie beim ersten Öffnen der App (Nebenluft-Ring 0,35, Drehring 0,45)
-  ['nebenluft-F32-H36', 'BLEED', { bleed: { top: 'female', gap: 0.35 } }, /^$/, { femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: 0.45 }],
+  // wie beim ersten Öffnen der App (Nebenluft-Ring 0,35, Drehring 0,35)
+  ['nebenluft-F32-H36', 'BLEED', { bleed: { top: 'female', gap: 0.35 } }, /^$/, { femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: 0.35 }],
   ['nebenluft-M32-H27-W9', 'BLEED', { bleed: { top: 'male', gap: 0.3 } }, /^$/, { maleDiameterInner: 32, hoseDiameterInner: 27, generalMaterialWidth: 9 }],
   ['nebenluft-F50-H50', 'BLEED', { bleed: { top: 'female', gap: 0.6 } }, /^$/, { femaleDiameterInner: 50, hoseDiameterInner: 50 }],
   ['loesehilfe-F25-M50-W9', 'HELPER', {}, /^Lösehilfe/, { femaleDiameterInner: 25, maleDiameterInner: 50, generalMaterialWidth: 9, maleFemaleGapSize: 0.3 }],

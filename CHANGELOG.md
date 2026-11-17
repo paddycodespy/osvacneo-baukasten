@@ -2,9 +2,15 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
-## 0.6.0
+## In Entwicklung (noch nicht in der App)
+
+Nur in der Entwicklungsumgebung (`npm run dev`) oder in einem Build mit `VITE_DEV_KINDS=1` sichtbar, nicht im Programm.
 
 - Neu: **Magnet-Schnellkupplung Ø100** für große Geräte mit 100-mm-Absaugung. Maschinenadapter mit Schraubklemme (M5 × 25 und selbstsichernde Mutter) und Schlauchkupplung mit Links- oder Rechtsgewinde halten über je 8 eingedruckte Neodym-Magnete (10 × 3, 12 × 5 oder 15 × 3 mm) zusammen, ein Bund zentriert sie. Die Druckhinweise nennen die Höhe der Druckpause zum Einlegen der Magnete. Druckt ohne Stützen. Eigenes System, passt nicht zu osVAC neo. Anleitung mit eigenem Abschnitt.
+
+## 0.5.5
+
+- Drehring am Schlauchadapter und am Nebenluft-Regler: Standard-Spiel wieder 0,35 mm (vorher 0,45 mm). Testdrucke mit PETG haben gezeigt, dass 0,45 mm nicht besser löst, aber deutlich mehr Fäden zieht. Sitzt der Ring nach dem Druck fest, hilft die Drehring-Lösehilfe. Wer die App schon benutzt hat, behält seinen gespeicherten Wert; „Passung auf Standard zurücksetzen“ stellt 0,35 mm ein.
 
 ## 0.5.4
 

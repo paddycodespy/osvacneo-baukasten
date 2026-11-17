@@ -5,7 +5,7 @@
  */
 import { exportFile, exportPlate, makeBuild, type PlateItem } from './cad';
 import { saveTarget } from './save.svelte';
-import { kindById, type DiameterKey } from './osvac/catalog';
+import { kindById, kindSelectable, type DiameterKey } from './osvac/catalog';
 import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './osvac/params';
 import type { ExportFormat } from './worker/protocol';
 import { pipeWall, type PipeSpec } from './osvac/machine';
@@ -29,10 +29,13 @@ export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
 
 /** Startwerte (auf diese setzt „Zurücksetzen“ zurück) */
 /**
- * Startwerte der App. Drehring am Schlauch 0,45 mm statt 0,3 mm wie im Original (DEFAULT_INPUT, bleibt für den Abgleich
- * mit Fusion): mit PETG und 0,2-mm-Schichten saß der Ring bei 0,35 mm noch fest (Testdruck Nebenluft F32H36, 16.11.).
+ * Startwerte der App. Drehring am Schlauch 0,35 mm statt 0,3 mm wie im Original (DEFAULT_INPUT, bleibt für den Abgleich
+ * mit Fusion). Testdrucke F32H36 mit PETG (Sunlu) und 0,2-mm-Schichten, 16./17.11.: bei 0,35 und bei 0,45 mm saß der
+ * Ring fest, 0,45 mm zog dabei deutlich mehr Fäden. Ursache vermutlich nicht das Spiel, sondern die ersten Bahnen des
+ * Außenrings, die frei 0,45–0,55 mm über dem Innenring gedruckt werden und durchhängen. Daher wieder 0,35 mm (wie das
+ * Höchstmaß bei 9 mm Materialstärke an der Kupplung).
  */
-export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: 0.45 };
+export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: 0.35 };
 
 /** Bereiche der Eingabefelder (beim Laden eines gespeicherten Stands) */
 const INPUT_LIMITS: Record<keyof OsvacInput, [number, number]> = {
@@ -756,7 +759,7 @@ class AppState {
       const list = JSON.parse(raw);
       if (!Array.isArray(list)) return;
       this.plate = list
-        .filter((x) => x && typeof x.kind === 'string' && kindById(x.kind)?.available && (x.kind !== 'BLEED' || (x.options && typeof x.options === 'object' && 'bleed' in x.options)) && (x.kind !== 'MAGNET' || (x.options && typeof x.options === 'object' && 'magnet' in x.options)) && x.input && typeof x.input === 'object' && x.options && typeof x.options === 'object' && typeof x.label === 'string' && typeof x.key === 'string')
+        .filter((x) => x && typeof x.kind === 'string' && kindSelectable(x.kind) && (x.kind !== 'BLEED' || (x.options && typeof x.options === 'object' && 'bleed' in x.options)) && (x.kind !== 'MAGNET' || (x.options && typeof x.options === 'object' && 'magnet' in x.options)) && x.input && typeof x.input === 'object' && x.options && typeof x.options === 'object' && typeof x.label === 'string' && typeof x.key === 'string')
         .map((x) => ({ req: makeBuild(x.kind, { ...START_INPUT, ...x.input }, x.options), includeHelpers: x.includeHelpers === true, label: x.label, key: x.key }));
     } catch {
       /* beschädigt: leeres Druckbett */
@@ -775,7 +778,7 @@ class AppState {
     try {
       const s = JSON.parse(raw);
       const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
-      if (typeof s.kindId === 'string' && kindById(s.kindId)?.available) this.kindId = s.kindId;
+      if (typeof s.kindId === 'string' && kindSelectable(s.kindId)) this.kindId = s.kindId;
       if (s.input && typeof s.input === 'object')
         for (const k of Object.keys(START_INPUT) as (keyof OsvacInput)[]) if (num(s.input[k])) (this.input[k] as number) = Math.min(INPUT_LIMITS[k][1], Math.max(INPUT_LIMITS[k][0], s.input[k]));
       if (this.input.generalMaterialWidth !== 7 && this.input.generalMaterialWidth !== 9) this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;

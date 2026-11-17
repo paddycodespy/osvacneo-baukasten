@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Schritt 1: Adaptertyp wählen */
   import { app } from '../../lib/app.svelte';
-  import { KINDS, KIND_GROUPS } from '../../lib/osvac/catalog';
+  import { VISIBLE_KINDS as KINDS, KIND_GROUPS } from '../../lib/osvac/catalog';
   import KindIcon from '../KindIcon.svelte';
   import ResetLink from '../ResetLink.svelte';
   import { reveal } from '../../lib/reveal';
