@@ -2,6 +2,10 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## 0.6.0
+
+- Neu: **Magnet-Schnellkupplung Ø100** für große Geräte mit 100-mm-Absaugung. Maschinenadapter mit Schraubklemme (M5 × 25 und selbstsichernde Mutter) und Schlauchkupplung mit Links- oder Rechtsgewinde halten über je 8 eingedruckte Neodym-Magnete (10 × 3, 12 × 5 oder 15 × 3 mm) zusammen, ein Bund zentriert sie. Die Druckhinweise nennen die Höhe der Druckpause zum Einlegen der Magnete. Druckt ohne Stützen. Eigenes System, passt nicht zu osVAC neo. Anleitung mit eigenem Abschnitt.
+
 ## 0.5.4
 
 - Programm unter Linux und macOS: Beim Start kam oft die Meldung „Ein Teil des Adapters ließ sich mit diesen Maßen nicht berechnen“, obwohl alles stimmte. Ursache: WebKit startete den Rechen-Worker doppelt, eine Kopie ohne geladenen CAD-Kern. Der Worker ist jetzt eine einzige Datei.

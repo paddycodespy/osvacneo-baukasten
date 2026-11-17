@@ -19,6 +19,7 @@
   import StepSizes from './components/steps/StepSizes.svelte';
   import StepNozzle from './components/steps/StepNozzle.svelte';
   import StepBleed from './components/steps/StepBleed.svelte';
+  import StepMagnet from './components/steps/StepMagnet.svelte';
   import StepFit from './components/steps/StepFit.svelte';
   import StepDownload from './components/steps/StepDownload.svelte';
 
@@ -245,7 +246,7 @@
     {/if}
 
     <header class="stage-head">
-      <h1 class="code" class:free={app.kind.freeform || app.kind.gate} aria-live="polite">{app.code}</h1>
+      <h1 class="code" class:free={app.kind.freeform || app.kind.gate || app.kind.magnet} aria-live="polite">{app.code}</h1>
       <p class="kind-line">{app.kind.bleed ? app.kind.title : app.kind.nozzle ? freeSummary(app.free).sub.replace(/^Freiform/, 'Saugdüse') : app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
       {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'todo' ? 'Kontur fehlt noch' : app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen\u00a0…' : busyText}</p>{/if}
     </header>
@@ -261,7 +262,7 @@
     <footer class="stage-foot">
       <dl class="dims">
         <div><dt>Höhe</dt><dd>{app.dims ? fmt(app.dims.height) : '–'}<span>mm</span></dd></div>
-        {#if app.kind.freeform || app.kind.gate}
+        {#if app.kind.freeform || app.kind.gate || (app.kind.magnet && app.magnet.adapter && app.magnet.coupling)}
           <div><dt>Breite</dt><dd>{app.dims ? fmt(app.dims.width) : '–'}<span>mm</span></dd></div>
         {:else}
           <div><dt>Größter Ø</dt><dd>{app.dims ? fmt(app.dims.diameter) : '–'}<span>mm</span></dd></div>
@@ -304,6 +305,8 @@
       {/if}
       {#if app.step === 0}
         <StepKind />
+      {:else if app.step === 1 && app.kind.magnet}
+        <StepMagnet {printNote} />
       {:else if app.step === 1 && app.kind.bleed}
         <StepBleed {printNote} />
       {:else if app.step === 1 && app.kind.nozzle}

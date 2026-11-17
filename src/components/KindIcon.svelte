@@ -31,6 +31,15 @@
       <path d="M12 {y} H32 V{y + 12} L28 {y + 16} V{y + 24} H16 V{y + 16} L12 {y + 12} Z" class="h" />
       <rect x="11" y={y + 15} width="22" height="7" rx="1.5" class="h" />
       <rect x="19" y={y + 16.5} width="6" height="4" class="win" />
+    {:else if s === 'magnet'}
+      <!-- zwei Flansche mit Nasen, dazwischen die Magnete -->
+      <rect x="12" y="2" width="20" height="20" rx="1.5" class="h" />
+      <rect x="4" y="22" width="36" height="5" rx="1" class="m" />
+      <rect x="4" y="29" width="36" height="5" rx="1" class="m" />
+      <rect x="8" y="23.5" width="5" height="2" class="mag" /><rect x="31" y="23.5" width="5" height="2" class="mag" />
+      <rect x="8" y="30.5" width="5" height="2" class="mag" /><rect x="31" y="30.5" width="5" height="2" class="mag" />
+      <path d="M12 34 h20 v20 h-20 z" class="h" />
+      {#each [39, 44, 49] as d}<line x1="12" x2="32" y1={d} y2={d + 2} class="rib" />{/each}
     {:else if s === 'helper'}
       <!-- Block mit Stutzen und Rippe -->
       <rect x="13" y="2" width="18" height="27" rx="1.5" class="m" />
@@ -49,6 +58,7 @@
 <style>
   .kind-icon { width: 40px; height: 52px; flex: none; }
   .f, .m, .h { fill: var(--icon-fill, var(--soft)); stroke: var(--icon-stroke, var(--ink)); stroke-width: 1.4; }
+  .mag { fill: var(--icon-stroke, var(--ink)); }
   .win { fill: var(--card); stroke: var(--icon-stroke, var(--ink)); stroke-width: 1; }
   .rib { stroke: var(--icon-stroke, var(--ink)); stroke-width: 1; opacity: 0.45; }
 </style>

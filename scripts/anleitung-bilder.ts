@@ -249,6 +249,15 @@ const scenes: Scene[] = [
     },
   },
   {
+    name: 'magnet',
+    run: async (pg) => {
+      await kind(pg, /Magnet-Schnellkupplung/);
+      await step(pg, 'Teile');
+      await shotPanel(pg, 'magnet');
+      await shotApp(pg, 'magnet-vorschau');
+    },
+  },
+  {
     name: 'freiform',
     run: async (pg) => {
       await kind(pg, 'Freiform');

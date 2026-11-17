@@ -564,6 +564,40 @@ await withPreview(4180, async (url, browser) => {
     expect((await pg.locator('.stage-head .code').innerText()).includes('F32'), 'Stecker-Halter fehlt in der Kopfzeile');
   });
 
+  await test('Magnet-Schnellkupplung: Teile, Magnete, Druckpause', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: /Magnet-Schnellkupplung/ }).click();
+    await step(pg, 'Teile');
+    await ready(pg);
+    expect((await pg.locator('.stage-head .code').innerText()).includes('10 × 3'), 'Kopfzeile: ' + (await pg.locator('.stage-head .code').innerText()));
+    await pg.getByRole('radio', { name: '12 × 5 mm' }).click();
+    await ready(pg);
+    expect((await pg.locator('.stage-head .code').innerText()).includes('12 × 5'), 'Magnetgröße nicht übernommen');
+    await pg.getByLabel(/Schlauchkupplung: wird/).uncheck();
+    expect(await pg.getByLabel(/Maschinenadapter: kommt/).isDisabled(), 'letztes Teil abwählbar');
+    expect((await pg.getByText('Steigung', { exact: true }).count()) === 0, 'Gewinde-Felder ohne Kupplung sichtbar');
+    await ready(pg);
+    await step(pg, 'Download');
+    const tips = await pg.locator('.tips').innerText();
+    expect(tips.includes('8 Neodym-Scheibenmagnete 12 × 5 mm'), 'Zahl/Größe der Magnete fehlt');
+    expect(/Adapter bei [\d,]+ mm/.test(tips) && !tips.includes('Kupplung bei'), 'Druckpause nur für den Adapter erwartet');
+    expect(tips.includes('M5 × 25') && tips.includes('DIN 985'), 'Schraube/Mutter fehlt');
+    expect(tips.includes('Stützen werden nicht gebraucht'), 'Magnetkupplung braucht Stützen?');
+    expect((await pg.locator('.lead').first().innerText()).includes('Magnete 12 × 5 mm'), 'Download-Text ohne Magnetgröße');
+    await step(pg, 'Teile');
+    await pg.getByLabel(/Schlauchkupplung: wird/).check();
+    await pg.getByRole('radio', { name: 'Rechtsgewinde' }).click();
+    await step(pg, 'Passung');
+    expect((await pg.getByText('Spiel am Zentrierbund').count()) === 1, 'Spiel am Bund fehlt');
+    await ready(pg);
+    await step(pg, 'Download');
+    expect((await pg.locator('.tips').innerText()).includes('Kupplung bei'), 'Druckpause der Kupplung fehlt');
+    expect((await pg.locator('.tips').innerText()).includes('im Uhrzeigersinn'), 'Drehrichtung Rechtsgewinde fehlt');
+    await step(pg, 'Teile');
+    await pg.getByRole('radio', { name: '10 × 3 mm' }).click();
+    await pg.getByRole('radio', { name: 'Linksgewinde' }).click();
+  });
+
   await test('Druckhilfe gilt je Verbindung', pg, async () => {
     const tool = pg.locator('button.tool', { hasText: 'Druckhilfe' });
     const on = async () => (await tool.getAttribute('aria-pressed')) === 'true';

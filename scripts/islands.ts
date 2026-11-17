@@ -21,6 +21,7 @@ import { overhangArea, COUNTED, COUNTED_MACHINE, COUNTED_GATE } from '../src/lib
 import { kindById } from '../src/lib/osvac/catalog';
 import { DEFAULT_PIPE, type PipeSpec } from '../src/lib/osvac/machine';
 import { DEFAULT_GATE, type GateSpec } from '../src/lib/osvac/gate';
+import { DEFAULT_MAGNET, type MagnetSpec } from '../src/lib/osvac/magnet';
 
 const root = path.resolve(import.meta.dirname, '..');
 setOC(await opencascade({ locateFile: (f: string) => path.join(root, 'node_modules/replicad-opencascadejs/dist/', f) }));
@@ -74,6 +75,11 @@ const others: [string, string, object, RegExp, object?][] = [
   ['nebenluft-M32-H27-W9', 'BLEED', { bleed: { top: 'male', gap: 0.3 } }, /^$/, { maleDiameterInner: 32, hoseDiameterInner: 27, generalMaterialWidth: 9 }],
   ['nebenluft-F50-H50', 'BLEED', { bleed: { top: 'female', gap: 0.6 } }, /^$/, { femaleDiameterInner: 50, hoseDiameterInner: 50 }],
   ['loesehilfe-F25-M50-W9', 'HELPER', {}, /^Lösehilfe/, { femaleDiameterInner: 25, maleDiameterInner: 50, generalMaterialWidth: 9, maleFemaleGapSize: 0.3 }],
+  // Magnetkupplung: alles in 45°, Taschen geschlossen. Überhang zählt nicht (die Decken der Taschen sind Brücken über den
+  // Magneten), dafür darf nichts schwebend beginnen
+  ['magnet-10x3', 'MAGNET', { magnet: { ...DEFAULT_MAGNET } as MagnetSpec }, /^$/],
+  ['magnet-12x5-rechts-110', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, magnet: '12x5', hand: 'right', stutzen: 110, hose: 110, pitch: 8, depth: 20 } as MagnetSpec }, /^$/],
+  ['magnet-15x3-90', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, magnet: '15x3', stutzen: 90, hose: 90, pitch: 20, depth: 60 } as MagnetSpec }, /^$/],
 ];
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const dir = path.join(root, 'out/islands');
