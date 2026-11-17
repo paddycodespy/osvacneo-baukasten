@@ -184,6 +184,16 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => app.save(), 400);
   });
+  // beim Neuladen oder Schließen sofort speichern: sonst ginge eine Änderung der letzten 400 ms verloren
+  // (fiel im Test „Neu anfangen“ auf dem langsamen GitHub-Rechner auf)
+  $effect(() => {
+    const flush = () => {
+      clearTimeout(saveTimer);
+      app.save();
+    };
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  });
 
   /** Hinweis zum Drucken schon im Aufbau (erst sicher, wenn die Berechnung fertig ist) */
   const printNote = $derived.by((): { text: string; level: 'ok' | 'warn' | 'error' } | null => {
