@@ -1,5 +1,5 @@
 # Veröffentlicht eine neue Version: Tests, alle drei Installer, dann ein GitHub-Release mit den Dateien.
-# Start: Versions-Tag hochladen, z. B. git tag v0.5.2 && git push origin v0.5.2
+# Start: Versions-Tag hochladen, z. B. git tag v0.5.3 && git push origin v0.5.3
 # Der Tag muss zur Version in package.json und src-tauri/tauri.conf.json passen, sonst bricht der Lauf sofort ab.
 # Ergebnis: unter „Releases“ (…/releases/latest) die Seite „osVAC neo Baukasten <Version>“ mit den Änderungen aus
 # CHANGELOG.md und den Dateien osVAC-neo-Baukasten-<Version>-Windows-Setup.exe, -macOS.dmg, -Linux.AppImage,
@@ -14,7 +14,7 @@ on:
 
 jobs:
   version:
-    name: Version prüfen
+    name: Version und Lizenzen prüfen
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -31,6 +31,23 @@ jobs:
           fi
           if ! grep -qx "## $tag" CHANGELOG.md; then
             echo "::error::In CHANGELOG.md fehlt der Abschnitt „## $tag“."
+            exit 1
+          fi
+
+      # Lizenzseiten müssen zu den Abhängigkeiten passen (Rust über Cargo.lock, Oberfläche über package-lock.json)
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lizenzen aktuell?
+        shell: bash
+        run: |
+          python3 scripts/licenses-rust.py
+          python3 scripts/licenses.py
+          if ! git diff --quiet -- public/; then
+            git diff --stat -- public/
+            echo "::error::Lizenzdateien veraltet: python3 scripts/licenses-rust.py und python3 scripts/licenses.py ausführen und committen."
             exit 1
           fi
 

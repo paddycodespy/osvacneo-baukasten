@@ -2,6 +2,10 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## 0.5.3
+
+- Lizenzen: Die Seite „Verwendete Bausteine und ihre Lizenzen“ nennt jetzt auch alles, was nur im installierten Programm steckt: 355 Rust-Bausteine (Tauri u. a.) mit ihren Lizenztexten zum Aufklappen, dazu NSIS (Windows-Installer) und die AppImage-Laufzeit. Vollständig auch in `lizenzen-programm.txt`.
+
 ## 0.5.2
 
 - Downloads für alle: Jede Version erscheint jetzt auf der Release-Seite von GitHub (Windows, macOS, Linux), herunterladen geht ohne GitHub-Konto. Dazu Prüfsummen in `SHA256SUMS.txt`.

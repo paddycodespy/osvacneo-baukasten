@@ -1,7 +1,10 @@
 """Erzeugt die Lizenzübersicht der eingebundenen Bausteine:
   public/lizenzen.html            (in der App verlinkt, UTF-8)
   public/THIRD_PARTY_LICENSES.txt (Textfassung, UTF-8 mit BOM, damit Browser und Editoren die Umlaute richtig zeigen)
-usage: python3 scripts/licenses.py   (nach npm ci; bei neuen Abhängigkeiten erneut ausführen)"""
+Die Rust-Bausteine des Programms stehen in public/lizenzen-programm.txt (scripts/licenses-rust.py); hier wird nur
+deren Übersicht übernommen und die Datei verlinkt.
+usage: python3 scripts/licenses.py   (nach npm ci; bei neuen Abhängigkeiten erneut ausführen,
+       nach Änderungen an src-tauri/Cargo.lock vorher python3 scripts/licenses-rust.py)"""
 import html, json, pathlib, re
 root = pathlib.Path(__file__).resolve().parent.parent
 nm = root / 'node_modules'
@@ -64,6 +67,17 @@ items.append(('Liberation Sans Regular', 'public/fonts/LiberationSans-Regular.tt
               'Schrift der Beschriftung auf den Adaptern. https://github.com/liberationfonts',
               (root / 'public/fonts/LICENSE-LiberationSans.txt').read_text(encoding='utf-8').strip()))
 
+# Programm (Tauri): Übersicht aus lizenzen-programm.txt, die vollständigen Texte stehen dort
+_rust = (root / 'public/lizenzen-programm.txt').read_text(encoding='utf-8-sig')
+_ov = _rust.split('<<ÜBERSICHT\n', 1)[1].split('\nÜBERSICHT>>', 1)[0].strip('\n')
+RUST_TITLE = 'Programm für Windows, macOS und Linux (Tauri und Rust-Bausteine)'
+items.append((RUST_TITLE, _ov.split('\n', 1)[0] + ' (Rust), NSIS, AppImage-Laufzeit', 'überwiegend MIT bzw. Apache-2.0',
+              'Nur im installierten Programm enthalten, nicht in der Browser-Fassung. Alle Lizenztexte unten zum Aufklappen und in lizenzen-programm.txt. '
+              'https://tauri.app',
+              _ov.split('\n', 1)[1].strip('\n')))
+# Auf der HTML-Seite aufklappbar (kein Link: im Programmfenster gäbe es keinen Weg zurück)
+FULL = {RUST_TITLE: _rust.split('ÜBERSICHT>>', 1)[1].strip('\n')}
+
 intro = ('Der osVAC neo Baukasten basiert auf osVAC neo von Ludo Kerz, ursprünglich entstanden im Hobbyhimmel Stuttgart, '
          'und steht wie dieses unter CC BY-NC-SA 4.0 (siehe LICENSE.txt). Für den Baukasten nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar. Die folgenden Bausteine Dritter sind eingebunden '
          'und stehen unter ihren eigenen Lizenzen.')
@@ -72,6 +86,8 @@ intro = ('Der osVAC neo Baukasten basiert auf osVAC neo von Ludo Kerz, ursprüng
 out = ['Bausteine Dritter im osVAC neo Baukasten und ihre Lizenzen', '=' * 58, '', intro, '']
 for title, p, spdx, note, text in items:
     out += ['-' * 62, title, f'Paket: {p}', f'Lizenz: {spdx}', note, '-' * 62, '', text, '', '']
+    if title == RUST_TITLE:
+        out[-2:-2] = ['', '(Vollständige Lizenztexte: lizenzen-programm.txt)']
 (root / 'public/THIRD_PARTY_LICENSES.txt').write_text('\ufeff' + '\n'.join(out).rstrip() + '\n', encoding='utf-8')
 
 # HTML-Fassung: Poppins wie in der App (eigene Kopie, die Seite lädt das App-CSS nicht)
@@ -87,7 +103,10 @@ for w, st in (('400', 'normal'), ('500', 'normal'), ('600', 'normal'), ('700', '
 e = html.escape
 toc = ''.join(f'<li><a href="#l{i}">{e(t)}</a> <span>{e(s)}</span></li>' for i, (t, p, s, n, x) in enumerate(items))
 secs = ''.join(
-    f'<section id="l{i}"><h2>{e(t)}</h2><p class="meta">Paket: {e(p)} · Lizenz: {e(s)}<br>{e(n)}</p><pre>{e(x)}</pre></section>'
+    f'<section id="l{i}"><h2>{e(t)}</h2><p class="meta">Paket: {e(p)} · Lizenz: {e(s)}<br>{e(n)}</p>'
+    + f'<pre>{e(x)}</pre>'
+    + (f'<details><summary>Alle Lizenztexte anzeigen</summary><pre class="full">{e(FULL[t])}</pre></details>' if t in FULL else '')
+    + '</section>'
     for i, (t, p, s, n, x) in enumerate(items))
 page = f'''<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -107,6 +126,8 @@ ul{{background:#fff;border:1px solid #e1e5e8;border-radius:10px;padding:12px 16p
 li span{{color:#7a7a7a;font-size:13px;margin-left:6px}}
 section{{background:#fff;border:1px solid #e1e5e8;border-radius:10px;padding:16px 18px;margin:0 0 14px}}
 .meta{{color:#7a7a7a;font-size:13px;margin:0 0 10px}}
+details{{margin-top:10px}} summary{{cursor:pointer;font-weight:600;color:#1d86c2}} pre.full{{margin-top:8px;max-height:600px}}
+html[data-theme=dark] summary{{color:#62c1f4}}
 pre{{white-space:pre-wrap;word-wrap:break-word;font:12.5px/1.45 ui-monospace,Consolas,monospace;background:#f5f7f8;border-radius:6px;padding:12px;margin:0;max-height:420px;overflow:auto}}
 html[data-theme=dark]{{color-scheme:dark}}
 html[data-theme=dark] body{{color:#e3e7ea;background:#14181b}} html[data-theme=dark] header{{background:#0c0f11;border-bottom:1px solid #323a40}}
