@@ -97,7 +97,13 @@ Wie es danach weitergeht, steht unter [Download](#download).
 ![Passung beim Schlauchadapter](anleitung/passung-schlauch.webp){klein}
 
 - **Spiel zwischen Stecker und Kupplung:** wie bei [Stecker ↔ Kupplung](#stecker-kupplung).
+<!-- nodev -->
 - **Spiel am Drehring:** Der Ring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Standard sind 0,35 mm, bei 9 mm Materialstärke ist das auch das Höchstmaß. Das Original nutzt 0,3 mm. Mit PETG kann der Ring nach dem Druck festsitzen; dann hilft die [Drehring-Lösehilfe](#loesehilfe).
+<!-- /nodev -->
+<!-- dev -->
+- **Drehring:** *Wie Original* hat die Form von osVAC neo. *Druckoptimiert* ist eine eigene Form (in Entwicklung): Alle Flächen, die beim Druck nach unten zeigen, sind mindestens 45° steil, und nichts hängt flach über einem Spalt. Frei in der Luft beginnt nur die schmale Spitze eines Rings, 0,7 mm über dem anderen. So soll sich der Ring direkt nach dem Druck drehen. Der Ring an der Kupplung bzw. am Gehäuse sitzt dabei innen, der Ring am Schlauchteil liegt außen als Hülse darüber. Der Schlauchadapter mit Kupplung wird 0,5 mm länger. Ein Testdruck steht noch aus.
+- **Spiel am Drehring:** Der Ring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Standard sind 0,3 mm wie im Original. Beim druckoptimierten Drehring gilt der Wert für die beiden senkrechten Dichtflächen, an den Schrägen ist der Spalt 0,15 mm weiter, mindestens 0,45 mm (Spiel höchstens 0,5 mm). Sitzt der Ring nach dem Druck fest, hilft die [Drehring-Lösehilfe](#loesehilfe).
+<!-- /dev -->
 - **Materialstärke:** 9 mm statt 7 mm macht die Kupplung stabiler, sie wird dann außen 4 mm dicker.
 
 > Hinweis: Nach dem Druck den Schlauchteil einmal kräftig drehen, bis sich der Ring leicht bewegt. Sitzt er richtig fest, hilft die [Drehring-Lösehilfe](#loesehilfe).
@@ -216,7 +222,7 @@ Der Nebenluft-Regler kommt direkt auf den Schlauch. Oben steckst du die Düse od
 - **Unten: Schlauch (H):** wie beim [Schlauchadapter](#schlauch). Der Schlauch wird eingedreht und kann sich mit dem unteren Drehring drehen.
 - **Bedienung:** Den Nebenluft-Ring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Kerben am oberen Bund zeigen, wo die Fenster sind.
 
-In **Passung** stellst du das **Spiel am Nebenluft-Ring** ein (Standard 0,35 mm) und das **Spiel am Drehring** für den Schlauch (Standard 0,35 mm). Dreht ein Ring nach dem Druck zu schwer, mehr Spiel einstellen.
+In **Passung** stellst du das **Spiel am Nebenluft-Ring** ein (Standard 0,35 mm) und das **Spiel am Drehring** für den Schlauch (Standard <!-- nodev -->0,35 mm<!-- /nodev --><!-- dev -->0,3 mm; auch hier gibt es den druckoptimierten Drehring<!-- /dev -->). Dreht ein Ring nach dem Druck zu schwer, mehr Spiel einstellen.
 
 ## Schieber {#schieber}
 

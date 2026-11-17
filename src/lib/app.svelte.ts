@@ -5,12 +5,12 @@
  */
 import { exportFile, exportPlate, makeBuild, type PlateItem } from './cad';
 import { saveTarget } from './save.svelte';
-import { kindById, kindSelectable, type DiameterKey } from './osvac/catalog';
+import { kindById, kindSelectable, SHOW_DEV_KINDS, type DiameterKey } from './osvac/catalog';
 import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './osvac/params';
 import type { ExportFormat } from './worker/protocol';
 import { pipeWall, type PipeSpec } from './osvac/machine';
 import type { Dimensions } from './viewer';
-import { slipRingGapMax } from './osvac/hose';
+import { slipRingGapMax, SWIVEL_PRINT } from './osvac/hose';
 import { estimateFilament } from './filament';
 import { userMessage } from './errors';
 import { TEMPLATES, planFree, freeSummary, withFreshIds, specKey, flangeExtent, BRIM_FROM, AUTO_HOLE_D, type FreeSpec } from './osvac/freeform';
@@ -34,8 +34,13 @@ export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
  * Ring fest, 0,45 mm zog dabei deutlich mehr Fäden. Ursache vermutlich nicht das Spiel, sondern die ersten Bahnen des
  * Außenrings, die frei 0,45–0,55 mm über dem Innenring gedruckt werden und durchhängen. Daher wieder 0,35 mm (wie das
  * Höchstmaß bei 9 mm Materialstärke an der Kupplung).
+ * In der Entwicklungsumgebung (SHOW_DEV_KINDS) gibt es den druckoptimierten Drehring zur Wahl; dort ist der Standard
+ * wieder 0,3 mm wie im Original (gilt für beide Bauarten; beim druckoptimierten sind die Schrägen 0,15 mm weiter).
  */
-export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: 0.35 };
+export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: SHOW_DEV_KINDS ? 0.3 : 0.35 };
+
+/** Bauart des Drehrings am Schlauch: wie im Original oder druckoptimiert (nur in der Entwicklungsumgebung wählbar) */
+export type SwivelStyle = 'original' | 'print';
 
 /** Bereiche der Eingabefelder (beim Laden eines gespeicherten Stands) */
 const INPUT_LIMITS: Record<keyof OsvacInput, [number, number]> = {
@@ -99,6 +104,8 @@ class AppState {
   /** Aufbau, der gerade gilt: bei der Saugdüse der erzeugte (nur lesen), sonst der Freiform-Aufbau */
   /** Nebenluft-Regler: oben Kupplung oder Stecker, Spiel am Drehring (Größen in input: F/M oben, H unten) */
   bleed = $state<{ top: 'female' | 'male'; bleedGap: number }>({ top: 'female', bleedGap: BLEED.gap });
+  /** Drehring am Schlauch (FxxHyy, MxxHyy, Nebenluft-Regler): Bauart; außerhalb der Entwicklungsumgebung immer wie im Original */
+  swivelStyle = $state<SwivelStyle>('original');
   /** Aufbau, der gerade gilt: bei der Saugdüse der erzeugte (nur lesen), sonst der Freiform-Aufbau */
   get free(): FreeSpec {
     return this.kind.nozzle ? this.nozzleFree : this.freeState;
@@ -209,7 +216,9 @@ class AppState {
   hasSupport = $derived(this.kind.id === 'M' || this.kind.id === 'MF' || (!!this.kind.freeform && freeMaleOnBed(this.free)));
   hasSwivel = $derived(this.kind.id === 'FH' || this.kind.id === 'MH' || this.kind.id === 'BLEED');
   /** Beim Drehring an der Kupplung (FxxHyy) begrenzt die Geometrie des Originals das Spaltmaß (7 mm: 0,5, 9 mm: 0,35) */
-  swivelMax = $derived(slipRingGapMax(this.input.generalMaterialWidth, this.kind.id === 'MH'));
+  /** druckoptimierter Drehring gewählt (und wählbar) */
+  swivelPrint = $derived(SHOW_DEV_KINDS && this.hasSwivel && this.swivelStyle === 'print');
+  swivelMax = $derived(this.swivelPrint ? SWIVEL_PRINT.gapMax : slipRingGapMax(this.input.generalMaterialWidth, this.kind.id === 'MH'));
   /** Standard am Drehring; bei 9 mm Materialstärke an der Kupplung höchstens das zulässige Maß (0,35) */
   swivelDefault = $derived(Math.min(START_INPUT.slipRingGapSize, this.swivelMax));
 
@@ -233,7 +242,10 @@ class AppState {
     { label: 'innen Ø', a: this.pipe.d1Inner, b: this.pipe.d2Inner },
     { label: 'außen Ø', a: this.pipe.d1Inner + 2 * this.pipe.wall, b: this.pipe.d2Inner + 2 * this.pipe.wall },
   ]);
-  buildOpts = $derived(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : this.kind.helper ? { helper: $state.snapshot(this.helper) } : this.kind.bleed ? { bleed: { top: this.bleed.top, gap: this.bleed.bleedGap } } : this.kind.magnet ? { magnet: $state.snapshot(this.magnet) } : {});
+  buildOpts = $derived({
+    ...(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : this.kind.helper ? { helper: $state.snapshot(this.helper) } : this.kind.bleed ? { bleed: { top: this.bleed.top, gap: this.bleed.bleedGap } } : this.kind.magnet ? { magnet: $state.snapshot(this.magnet) } : {}),
+    ...(this.swivelPrint ? { swivel: 'print' as const } : {}),
+  });
   /** Schieber einzeln: abgeleitete Maße (kleinster Wandabstand, Lochabstand, …) */
   gateLay = $derived(gateLayout(this.gate));
 
@@ -254,6 +266,7 @@ class AppState {
       return [this.baseName, ...extra].join(' ');
     }
     if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
+    if (this.swivelPrint) extra.push('Drehring druckoptimiert');
     if (this.hasSwivel && i.slipRingGapSize !== this.swivelDefault) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
     if (i.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${i.generalMaterialWidth} mm`);
     if (this.kind.machine && this.machine.ribs) extra.push('Rippen');
@@ -387,7 +400,10 @@ class AppState {
   helpTexts: Record<string, string> = $derived({
     helperLabel: 'Beschriftet wie im Original nach dem Teil selbst: Der Halter für Kupplungen ist ein Stecker und trägt „M“ (z. B. M32), der Halter für Stecker ist eine Kupplung und trägt „F“ (z. B. F32).',
     gap: 'Der Wert gilt für Stecker und Kupplung zusammen. Steckt ein neues Teil in einem älteren mit 0,2 mm, wirkt nur die Hälfte: eingestellte 0,4 mm wirken dann wie 0,3 mm.',
-    swivel: `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(this.swivelMax, 2)} mm${this.kind.id !== 'MH' ? ` bei ${this.input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
+    swivel: this.swivelPrint
+      ? `Der Drehring wird gleich mitgedruckt. Das Spiel gilt für die beiden senkrechten Dichtflächen; an den Schrägen ist der Spalt 0,15 mm weiter (mindestens 0,45 mm). Ist das Spiel zu klein, klebt er fest; ist es groß, wackelt er und zieht etwas mehr Falschluft. Höchstens ${fmt(this.swivelMax, 2)} mm.`
+      : `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(this.swivelMax, 2)} mm${this.kind.id !== 'MH' ? ` bei ${this.input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
+    swivelStyle: 'Wie im Original: Form von osVAC neo, mit PETG sitzt der Ring nach dem Druck oft fest. Druckoptimiert: eigene Form, bei der nichts flach über einem Spalt hängt. Alle Flächen, die beim Druck nach unten zeigen, sind mindestens 45° steil; frei beginnt nur die schmale Spitze eines Rings, 0,7 mm über dem anderen. Der Ring soll sich so direkt nach dem Druck drehen. Passt nicht zu Ersatzteilen des Originals; der Schlauchadapter wird 0,5 mm länger. Noch nicht als Testdruck geprüft.',
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
     magnetGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als der Stutzen. Die Schraubklemme zieht sie zusammen, deshalb darf es etwas mehr Luft sein als bei einer Steckverbindung. Geht der Adapter schwer auf den Stutzen: größer.',
     magnetFit: 'Luft zwischen dem Bund am Adapter und der Tasche in der Kupplung, je Seite. Der Bund hält die Teile mittig; die Magnete ziehen sie zusammen. Geht die Kupplung schwer auf: größer. Wackelt sie seitlich: kleiner.',
@@ -527,7 +543,7 @@ class AppState {
         `Slicer-Meldung: ${two ? 'Die beiden Ringe werden' : 'Der Ring wird'} gleich mitgedruckt und ${two ? 'liegen' : 'liegt'} mit dem eingestellten Spiel über dem Teil darunter; die unterste Schicht hängt kurz in der Luft. Bambu Studio meldet das je nach Version als „schwebende Bereiche“ oder „fliegender Träger“ (andere Slicer z. B. „floating regions“ oder „floating cantilever“). Das ist gewollt: Meldung wegklicken und keine Stützen einschalten, sonst ${two ? 'wachsen die Ringe' : 'wächst der Ring'} fest.`,
       );
     }
-    if (this.hasSwivel && this.input.slipRingGapSize <= 0.3)
+    if (this.hasSwivel && !this.swivelPrint && this.input.slipRingGapSize <= 0.3)
       t.push('Drehring: Das Spiel ist auf 0,3 mm (wie im Original). Beim Druck mit PETG kann der Ring damit festsitzen; für PETG in „Passung“ 0,35–0,5 mm einstellen.');
     if (this.hasBleed)
       t.push(`Der Nebenluft-Ring wird gleich mitgedruckt. Nach dem Druck den Ring ein paarmal kräftig hin und her drehen, bis er leicht läuft. Um 60° drehen: von ganz auf (Fenster übereinander) bis ganz zu. Dreht er zu schwer oder klebt fest: in „Passung“ mehr Spiel am Nebenluft-Ring einstellen (jetzt ${fmt(this.bleedGap, 2)} mm).`);
@@ -572,7 +588,7 @@ class AppState {
       : this.kind.gate
       ? this.gate.pipeGap === DEFAULT_GATE.pipeGap && this.gate.plateGap === DEFAULT_GATE.plateGap
       : this.input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
-      (!this.hasSwivel || this.input.slipRingGapSize === this.swivelDefault) &&
+      (!this.hasSwivel || (this.input.slipRingGapSize === this.swivelDefault && !this.swivelPrint)) &&
       this.input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
       (!this.hasSupport || this.supports) &&
       (!this.freeHasGate || (this.free.gateGap ?? GATE_GAP) === GATE_GAP) &&
@@ -590,7 +606,10 @@ class AppState {
       return;
     }
     this.input.maleFemaleGapSize = START_INPUT.maleFemaleGapSize;
-    if (this.hasSwivel) this.input.slipRingGapSize = this.swivelDefault;
+    if (this.hasSwivel) {
+      this.swivelStyle = 'original';
+      this.input.slipRingGapSize = this.swivelDefault;
+    }
     this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
     if (this.hasSupport) this.supports = true;
     if (this.freeHasGate) delete this.free.gateGap;
@@ -623,7 +642,7 @@ class AppState {
   }
   /** alles, was eine neue Berechnung auslöst */
   buildKey = $derived(
-    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null, this.kind.helper ? this.helper : null, this.kind.bleed ? this.bleed : null, this.kind.magnet ? this.magnet : null]),
+    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null, this.kind.helper ? this.helper : null, this.kind.bleed ? this.bleed : null, this.kind.magnet ? this.magnet : null, this.swivelPrint]),
   );
 
   // ---------------------------------------------------------------- Export und Druckbett
@@ -650,7 +669,7 @@ class AppState {
     this.files = [];
   }
   plateKey() {
-    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null, this.kind.gate ? $state.snapshot(this.gate) : null, this.kind.helper ? $state.snapshot(this.helper) : null, this.kind.bleed ? $state.snapshot(this.bleed) : null, this.kind.magnet ? $state.snapshot(this.magnet) : null]);
+    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null, this.kind.gate ? $state.snapshot(this.gate) : null, this.kind.helper ? $state.snapshot(this.helper) : null, this.kind.bleed ? $state.snapshot(this.bleed) : null, this.kind.magnet ? $state.snapshot(this.magnet) : null, this.swivelPrint]);
   }
   onPlate = $derived(this.plate.some((p) => p.key === this.plateKey()));
   addToPlate() {
@@ -708,6 +727,7 @@ class AppState {
       fromKind: this.fromKind,
       nozzle: this.nozzle,
       bleed: this.bleed,
+      swivelStyle: this.swivelStyle,
       gate: this.gate,
       helper: this.helper,
       magnet: this.magnet,
@@ -733,6 +753,7 @@ class AppState {
     this.freeTemplate = TEMPLATES[0].id;
     this.nozzle = structuredClone(DEFAULT_NOZZLE);
     this.bleed = { top: 'female', bleedGap: BLEED.gap };
+    this.swivelStyle = 'original';
     this.fromKind = '';
     this.gate = { ...DEFAULT_GATE };
     this.helper = { ...DEFAULT_HELPER };
@@ -825,6 +846,8 @@ class AppState {
         if (z.top === 'female' || z.top === 'male') this.bleed.top = z.top;
         if (num(z.bleedGap)) this.bleed.bleedGap = Math.min(BLEED.gapMax, Math.max(BLEED.gapMin, Math.round(z.bleedGap * 100) / 100));
       }
+      // druckoptimierter Drehring nur in der Entwicklungsumgebung
+      if (s.swivelStyle === 'print' && SHOW_DEV_KINDS) this.swivelStyle = 'print';
       if (s.nozzle && typeof s.nozzle === 'object') {
         const n = this.nozzle, z = s.nozzle;
         if (NOZZLE_KINDS.some((k) => k.id === z.kind)) n.kind = z.kind;

@@ -599,12 +599,36 @@ await withPreview(4180, async (url, browser) => {
       await pg.getByRole('radio', { name: '10 × 3 mm' }).click();
       await pg.getByRole('radio', { name: 'Linksgewinde' }).click();
     });
-  } else
+    await test('Drehring druckoptimiert wählbar', pg, async () => {
+      await step(pg, 'Verbindung');
+      await pg.getByRole('radio', { name: /Kupplung ↔ Schlauch/ }).click();
+      await step(pg, 'Passung');
+      expect((await pg.locator('#swivel-hint').innerText()).includes('0,3 mm wie im Original'), 'Standard 0,3 fehlt: ' + (await pg.locator('#swivel-hint').innerText()));
+      await pg.getByRole('radio', { name: 'Druckoptimiert' }).click();
+      expect((await pg.locator('#swivel-hint').innerText()).includes('an den Schrägen 0,45 mm'), 'Spiel an den Schrägen fehlt');
+      await ready(pg);
+      await step(pg, 'Download');
+      expect(!(await pg.locator('.tips').innerText()).includes('wie im Original'), 'PETG-Hinweis zum Original beim druckoptimierten Drehring');
+      await step(pg, 'Passung');
+      await pg.getByRole('button', { name: /Passung auf Standard/ }).click();
+      expect((await pg.getByRole('radio', { name: 'Wie Original' }).getAttribute('aria-checked')) === 'true', 'Zurücksetzen lässt druckoptimiert stehen');
+      await ready(pg);
+    });
+  } else {
+    await test('Drehring druckoptimiert im Build ausgeblendet', pg, async () => {
+      await step(pg, 'Verbindung');
+      await pg.getByRole('radio', { name: /Kupplung ↔ Schlauch/ }).click();
+      await step(pg, 'Passung');
+      expect((await pg.getByRole('radio', { name: 'Druckoptimiert' }).count()) === 0, 'Auswahl druckoptimiert ist sichtbar');
+      expect((await pg.locator('#swivel-hint').innerText()).includes('0,35 mm'), 'Standard im Build nicht 0,35');
+      await ready(pg);
+    });
     await test('Magnet-Schnellkupplung im Build ausgeblendet', pg, async () => {
       await step(pg, 'Verbindung');
       expect((await pg.getByRole('radio', { name: /Magnet-Schnellkupplung/ }).count()) === 0, 'Magnet-Schnellkupplung ist sichtbar');
       expect((await pg.getByText('Magnet-Schnellkupplung Ø100').count()) === 0, 'Gruppe Magnet-Schnellkupplung ist sichtbar');
     });
+  }
 
   await test('Druckhilfe gilt je Verbindung', pg, async () => {
     const tool = pg.locator('button.tool', { hasText: 'Druckhilfe' });

@@ -7,6 +7,8 @@
 Nur in der Entwicklungsumgebung (`npm run dev`) oder in einem Build mit `VITE_DEV_KINDS=1` sichtbar, nicht im Programm.
 
 - Neu: **Magnet-Schnellkupplung Ø100** für große Geräte mit 100-mm-Absaugung. Maschinenadapter mit Schraubklemme (M5 × 25 und selbstsichernde Mutter) und Schlauchkupplung mit Links- oder Rechtsgewinde halten über je 8 eingedruckte Neodym-Magnete (10 × 3, 12 × 5 oder 15 × 3 mm) zusammen, ein Bund zentriert sie. Die Druckhinweise nennen die Höhe der Druckpause zum Einlegen der Magnete. Druckt ohne Stützen. Eigenes System, passt nicht zu osVAC neo. Anleitung mit eigenem Abschnitt.
+- Neu: **druckoptimierter Drehring** am Schlauchadapter (Kupplung ↔ Schlauch, Stecker ↔ Schlauch) und am Nebenluft-Regler, in „Passung“ wählbar (*Wie Original* / *Druckoptimiert*). Er soll sich direkt nach dem Druck drehen: Alle Flächen, die beim Druck nach unten zeigen, sind mindestens 45° steil, nichts hängt flach über einem Spalt, frei beginnt nur die schmale Spitze eines Rings (0,65 mm über dem anderen statt 0,4 mm, rund 15 statt 700 mm²). Spiel an den senkrechten Dichtflächen wie eingestellt, an den Schrägen 0,15 mm mehr (mindestens 0,45 mm). Der Ring an der Kupplung bzw. am Gehäuse sitzt innen, der am Schlauchteil außen als Hülse; beim Stecker ↔ Schlauch ist die Unterkante des Gehäuses 45° statt 35° steil. Der Schlauchadapter mit Kupplung wird 0,5 mm länger. Neue Prüfung `npm run test:swivel`. Testdruck steht aus.
+- Drehring wie im Original: Standard-Spiel in der Entwicklungsumgebung wieder 0,3 mm wie im Original (im Programm weiter 0,35 mm).
 
 ## 0.5.5
 

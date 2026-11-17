@@ -74,6 +74,10 @@ const others: [string, string, object, RegExp, object?][] = [
   ['nebenluft-F32-H36', 'BLEED', { bleed: { top: 'female', gap: 0.35 } }, /^$/, { femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: 0.35 }],
   ['nebenluft-M32-H27-W9', 'BLEED', { bleed: { top: 'male', gap: 0.3 } }, /^$/, { maleDiameterInner: 32, hoseDiameterInner: 27, generalMaterialWidth: 9 }],
   ['nebenluft-F50-H50', 'BLEED', { bleed: { top: 'female', gap: 0.6 } }, /^$/, { femaleDiameterInner: 50, hoseDiameterInner: 50 }],
+  // druckoptimierter Drehring (in Entwicklung): Schlauchadapter beider Arten und Nebenluft-Regler
+  ['drehring-druck-F32-H36', 'FH', { swivel: 'print' }, /^$/, { femaleDiameterInner: 32, hoseDiameterInner: 36 }],
+  ['drehring-druck-M32-H27-W9', 'MH', { swivel: 'print' }, /^$/, { maleDiameterInner: 32, hoseDiameterInner: 27, generalMaterialWidth: 9, slipRingGapSize: 0.5 }],
+  ['nebenluft-druck-F32-H36', 'BLEED', { bleed: { top: 'female', gap: 0.35 }, swivel: 'print' }, /^$/, { femaleDiameterInner: 32, hoseDiameterInner: 36 }],
   ['loesehilfe-F25-M50-W9', 'HELPER', {}, /^Lösehilfe/, { femaleDiameterInner: 25, maleDiameterInner: 50, generalMaterialWidth: 9, maleFemaleGapSize: 0.3 }],
   // Magnetkupplung: alles in 45°, Taschen geschlossen. Überhang zählt nicht (die Decken der Taschen sind Brücken über den
   // Magneten), dafür darf nichts schwebend beginnen

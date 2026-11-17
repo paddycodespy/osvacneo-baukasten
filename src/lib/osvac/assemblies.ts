@@ -8,7 +8,7 @@ import type { OsvacParams } from './params';
 import { femaleRing, femaleFields, femaleFieldsOverlap, femaleKnurl, femaleKnurlOverlap } from './female';
 import { maleTube, maleSupport } from './male';
 import { revolveProfile, L, L as L_ } from './geom';
-import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
+import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, swivelPrintTop, swivelPrintBottom, SWIVEL_PRINT, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, partPlacements, inPart2, hasSplit, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
@@ -61,6 +61,8 @@ export interface BuildOptions {
   bleed?: BleedSpec;
   /** Magnet-Schnellkupplung Ø100 */
   magnet?: MagnetSpec;
+  /** Drehring am Schlauch: 'print' = druckoptimiert (in Entwicklung), sonst wie im Original */
+  swivel?: 'print';
 }
 
 /** Nebenluft-Regler: unten Schlauch (H), oben Kupplung (F, Standard) oder Stecker (M) */
@@ -207,18 +209,41 @@ export function partsHose(p: OsvacParams, o: BuildOptions = {}): Part[] {
 /** Abstände im Drehring-Stapel (gemessen, unabhängig von der Größe). */
 const SWIVEL = { innerBelowOuter: 1.367, hoseBelowOuter: 6.0, housedHoseBelowInner: 6.634, housingH: 32, outerBelowHousing: 3.006 };
 
+/** Schlauchteil unter der Oberkante des Drehrings an der Kupplung (FxxHyy, Nebenluft-Regler) */
+const swivelHoseBelow = (o: BuildOptions) => (o.swivel === 'print' ? SWIVEL_PRINT.hoseBelow : SWIVEL.hoseBelowOuter);
+
+/**
+ * Die beiden Ringe des Drehrings, Oberkante bei zO. Original: „Drehring außen“ (an Kupplung bzw. Gehäuse) und
+ * „Drehring innen“ (am Schlauchteil). Druckoptimiert: „Drehring oben“ (innen, an Kupplung bzw. Gehäuse) und
+ * „Drehring unten“ (Hülse am Schlauchteil), beide im selben System.
+ */
+function swivelParts(p: OsvacParams, o: BuildOptions, zO: number, housed: boolean): Part[] {
+  const t = (sh: Shape3D, z: number) => sh.translate([0, 0, z]);
+  const v = housed ? { variant: 'housed' } : {};
+  if (o.swivel === 'print') {
+    const k = { ...dH(p), z: zO, ...v, swivel: 'print' };
+    return [
+      part('Drehring oben', 0.1, k, () => t(swivelPrintTop(p, housed), zO)),
+      part('Drehring unten', 0.1, k, () => t(swivelPrintBottom(p, housed), zO)),
+    ];
+  }
+  const zI = zO - SWIVEL.innerBelowOuter;
+  return [
+    part('Drehring außen', 0.1, { ...dH(p), z: zO, ...v }, () => t(swivelOuter(p, housed), zO)),
+    part('Drehring innen', 0.1, { ...dH(p), z: zI, ...v }, () => t(swivelInner(p, housed), zI)),
+  ];
+}
+
 /** FxxHyy: Female oben, Übergang, Drehring, Gewindekörper, Knickschutz. */
 export function partsFxxHyy(p: OsvacParams, o: BuildOptions = {}): Part[] {
   const h = p.hoseFemaleTransitionConeHeight + p.generalMiniValue * 5;
   const zO = -p.femaleHeight - h;
-  const zI = zO - SWIVEL.innerBelowOuter;
-  const zH = zO - SWIVEL.hoseBelowOuter;
+  const zH = zO - swivelHoseBelow(o);
   const t = (sh: Shape3D, z: number) => sh.translate([0, 0, z]);
   return [
     ...female(p, o),
     part('Übergang', 0.1, { ...dAll(p, o), kind: 'FH' }, () => t(transitionConeFH(p).shape, -p.femaleHeight)),
-    part('Drehring außen', 0.1, { ...dH(p), z: zO }, () => t(swivelOuter(p, false), zO)),
-    part('Drehring innen', 0.1, { ...dH(p), z: zI }, () => t(swivelInner(p, false), zI)),
+    ...swivelParts(p, o, zO, false),
     part('Schlauchteil', 0.5, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseBody(p, 'plain'), zH)),
     ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseKnurl(p, 'plain'), zH), hoseKnurlOverlap(p, 'plain')),
     part('Textfeld Schlauchteil', 7, { ...dHK(p), text: o.text, z: zH, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zH), { volumeOffset: hoseFieldsOverlap(p, 'plain') }),
@@ -231,20 +256,21 @@ export function partsFxxHyy(p: OsvacParams, o: BuildOptions = {}): Part[] {
 export function partsMxxHyy(p: OsvacParams, o: BuildOptions = {}): Part[] {
   const zHousing = -p.maleHeight;
   const zO = zHousing - SWIVEL.outerBelowHousing;
-  const zI = zO - SWIVEL.innerBelowOuter;
-  const zH = zI - SWIVEL.housedHoseBelowInner;
+  const zH = zO - SWIVEL.innerBelowOuter - SWIVEL.housedHoseBelowInner;
   const t = (sh: Shape3D, z: number) => sh.translate([0, 0, z]);
   const dHM = { ...dH(p), maleDiameterInner: p.maleDiameterInner, maleFemaleGapSize: p.maleFemaleGapSize };
+  // druckoptimiert: Gehäuse-Unterkante 45°, Schulter des Schlauchteils folgt (eigene Schlüssel)
+  const pr = o.swivel === 'print';
+  const sw = pr ? { swivel: 'print' } : {};
   return [
     part('Male', 9, { ...dM(p, o), rot: 'flip' }, () => flippedMale(p, o)),
-    part('Gehäuse', 0.5, { ...dHM, z: zHousing }, () => t(maleHousing(p), zHousing)),
+    part('Gehäuse', 0.5, { ...dHM, z: zHousing, ...sw }, () => t(maleHousing(p, { print: pr }), zHousing)),
     ...knurlPart('Rändelung Gehäuse', o, { ...dHK(p), z: zHousing }, () => t(housingKnurl(p), zHousing), housingKnurlOverlap(p)),
     part('Textfeld Gehäuse', 2, { ...dHK(p), text: o.text, z: zHousing }, () => t(housingFields(p, o), zHousing), { volumeOffset: housingFieldsOverlap(p) }),
-    part('Drehring außen', 0.1, { ...dH(p), z: zO, variant: 'housed' }, () => t(swivelOuter(p, true), zO)),
-    part('Drehring innen', 0.1, { ...dH(p), z: zI, variant: 'housed' }, () => t(swivelInner(p, true), zI)),
-    part('Schlauchteil', 0.5, { ...dH(p), z: zH, variant: 'housed' }, () => t(hoseBody(p, 'housed'), zH)),
-    ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p, true), z: zH, variant: 'housed' }, () => t(hoseKnurl(p, 'housed'), zH), hoseKnurlOverlap(p, 'housed')),
-    part('Textfeld Schlauchteil', 5, { ...dHK(p, true), text: o.text, z: zH, variant: 'housed' }, () => t(hoseFields(p, 'housed', o), zH), { volumeOffset: hoseFieldsOverlap(p, 'housed') }),
+    ...swivelParts(p, o, zO, true),
+    part('Schlauchteil', 0.5, { ...dH(p), z: zH, variant: 'housed', ...sw }, () => t(hoseBody(p, 'housed', { print: pr }), zH)),
+    ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p, true), z: zH, variant: 'housed', ...sw }, () => t(hoseKnurl(p, 'housed', pr), zH), hoseKnurlOverlap(p, 'housed', pr)),
+    part('Textfeld Schlauchteil', 5, { ...dHK(p, true), text: o.text, z: zH, variant: 'housed', ...sw }, () => t(hoseFields(p, 'housed', { ...o, print: pr }), zH), { volumeOffset: hoseFieldsOverlap(p, 'housed', pr) }),
     part('Gewinde', 8, { ...dH(p), z: zH, variant: 'plain' }, () => t(hoseThreadBody(p, false), zH)),
   ];
 }
@@ -412,12 +438,11 @@ export function partsBleed(p: OsvacParams, o: BuildOptions = {}): Part[] {
   }
   void hC;
   // darunter wie beim Schlauchadapter FxxHyy: Drehring (außen fest am Rohr, innen fest am Schlauchteil), Schlauchteil
-  const zO = zB, zI = zO - SWIVEL.innerBelowOuter, zH = zO - SWIVEL.hoseBelowOuter;
+  const zO = zB, zH = zO - swivelHoseBelow(o);
   out.push(
     part('Nebenluft · Rohr', 1, { ...dB, L, z: zB }, () => t(bleedBody(D, L), zB)),
     part('Nebenluft · Drehring', 1, { ...dB, z: zB }, () => t(bleedRing(D), zB)),
-    part('Drehring außen', 0.1, { ...dH(p), z: zO }, () => t(swivelOuter(p, false), zO)),
-    part('Drehring innen', 0.1, { ...dH(p), z: zI }, () => t(swivelInner(p, false), zI)),
+    ...swivelParts(p, o, zO, false),
     part('Schlauchteil', 0.5, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseBody(p, 'plain'), zH)),
     ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseKnurl(p, 'plain'), zH), hoseKnurlOverlap(p, 'plain')),
     part('Textfeld Schlauchteil', 7, { ...dHK(p), text: o.text, z: zH, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zH), { volumeOffset: hoseFieldsOverlap(p, 'plain') }),

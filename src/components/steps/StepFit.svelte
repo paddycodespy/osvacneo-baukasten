@@ -2,6 +2,8 @@
   /** Schritt 3: Passung (Spiel, Materialstärke, Extras) */
   import { app, fmt } from '../../lib/app.svelte';
   import { BLEED } from '../../lib/osvac/bleed';
+  import { SHOW_DEV_KINDS } from '../../lib/osvac/catalog';
+  import { swivelPrintFlankGap } from '../../lib/osvac/hose';
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
   import ResetLink from '../ResetLink.svelte';
@@ -63,6 +65,19 @@
   <p class="hint" id="gap-hint">Sitzt der Stecker zu stramm: größer. Wackelt er: kleiner. Standard: 0,2 mm.</p>
 </fieldset>
 
+{#if app.hasSwivel && SHOW_DEV_KINDS}
+  <fieldset class="opt">
+    <legend class="field-label">Drehring <HelpToggle id="swivelStyle" /></legend>
+    <div class="seg" role="radiogroup" aria-label="Bauart des Drehrings">
+      {#each [['original', 'Wie Original'], ['print', 'Druckoptimiert']] as const as [v, label]}
+        <button role="radio" aria-checked={app.swivelStyle === v} class:sel={app.swivelStyle === v} onclick={() => (app.swivelStyle = v)}>{label}</button>
+      {/each}
+    </div>
+    <HelpText id="swivelStyle" />
+    <p class="hint">{app.swivelStyle === 'print' ? 'In Entwicklung: soll sich direkt nach dem Druck drehen, Testdruck steht noch aus.' : 'Form wie bei osVAC neo. Mit PETG sitzt der Ring nach dem Druck oft fest.'}</p>
+  </fieldset>
+{/if}
+
 {#if app.hasSwivel}
   <fieldset class="opt">
     <legend class="field-label">Spiel am Drehring <HelpToggle id="swivel" /></legend>
@@ -71,7 +86,7 @@
       <output>{fmt(app.input.slipRingGapSize, 2)} mm</output>
     </div>
     <HelpText id="swivel" />
-    <p class="hint" id="swivel-hint">Standard: {fmt(app.swivelDefault, 2)} mm (das Original nutzt 0,3 mm). Sitzt er nach dem Druck fest: mit der Drehring-Lösehilfe lösen. Wackelt er stark: kleiner.</p>
+    <p class="hint" id="swivel-hint">{#if app.swivelPrint}Standard: {fmt(app.swivelDefault, 2)} mm an den Dichtflächen, an den Schrägen {fmt(swivelPrintFlankGap(app.input.slipRingGapSize), 2)} mm. Dreht er schwer: größer. Wackelt er stark: kleiner.{:else}Standard: {fmt(app.swivelDefault, 2)} mm{app.swivelDefault !== 0.3 ? ' (das Original nutzt 0,3 mm)' : ' wie im Original'}. Sitzt er nach dem Druck fest: mit der Drehring-Lösehilfe lösen. Wackelt er stark: kleiner.{/if}</p>
   </fieldset>
 {/if}
 
