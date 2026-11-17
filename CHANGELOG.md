@@ -11,6 +11,7 @@ Nur in der Entwicklungsumgebung (`npm run dev`) oder in einem Build mit `VITE_DE
 ## 0.5.5
 
 - Drehring am Schlauchadapter und am Nebenluft-Regler: Standard-Spiel wieder 0,35 mm (vorher 0,45 mm). Testdrucke mit PETG haben gezeigt, dass 0,45 mm nicht besser löst, aber deutlich mehr Fäden zieht. Sitzt der Ring nach dem Druck fest, hilft die Drehring-Lösehilfe. Wer die App schon benutzt hat, behält seinen gespeicherten Wert; „Passung auf Standard zurücksetzen“ stellt 0,35 mm ein.
+- Eingaben werden beim Neuladen oder Schließen sofort gespeichert. Vorher konnte eine Änderung der letzten halben Sekunde verloren gehen.
 
 ## 0.5.4
 
