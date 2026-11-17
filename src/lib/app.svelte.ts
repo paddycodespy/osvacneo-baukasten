@@ -18,6 +18,7 @@ import { clipperReady, clipperLoaded } from './osvac/contour';
 import { freeMaleOnBed, DEFAULT_HELPER, type HelperSpec } from './osvac/assemblies';
 import { BLEED } from './osvac/bleed';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
+import { DEFAULT_MAGNET, MAGNET_LIMITS, MAGNET_SIZES, MAG, magnetLayout, magnetName, type MagnetSpec, type MagnetSize } from './osvac/magnet';
 import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
@@ -143,6 +144,20 @@ class AppState {
     if (this.helper[k] && !this.helper[o]) return;
     this.helper[k] = !this.helper[k];
   }
+  /** Magnet-Schnellkupplung Ø100 */
+  magnet = $state<MagnetSpec>({ ...DEFAULT_MAGNET });
+  /** Magnetkupplung: Adapter oder Kupplung an- oder abwählen (eines bleibt immer) */
+  toggleMagnetPart(k: 'adapter' | 'coupling') {
+    const o = k === 'adapter' ? 'coupling' : 'adapter';
+    if (this.magnet[k] && !this.magnet[o]) return;
+    this.magnet[k] = !this.magnet[k];
+  }
+  magnetLay = $derived(magnetLayout($state.snapshot(this.magnet)));
+  /** Magnetkupplung: Maße auf Standard (Teile, Passung bleiben) */
+  magnetIsDefault = $derived((['magnet', 'stutzen', 'depth', 'hose', 'pitch', 'hand'] as const).every((k) => this.magnet[k] === DEFAULT_MAGNET[k]));
+  resetMagnet() {
+    for (const k of ['magnet', 'stutzen', 'depth', 'hose', 'pitch', 'hand'] as const) (this.magnet[k] as number | string) = DEFAULT_MAGNET[k];
+  }
   /** aufgeklappte Erklärungen (Passung, Download) */
   helpOpen = $state<Record<string, boolean>>({});
 
@@ -171,7 +186,7 @@ class AppState {
 
   // ---------------------------------------------------------------- abgeleitet
   kind = $derived(kindById(this.kindId));
-  steps = $derived(this.kind.bleed ? (['Verbindung', 'Größen', 'Passung', 'Download'] as const) : this.kind.nozzle ? (['Verbindung', 'Düse', 'Passung', 'Download'] as const) : this.kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : (['Verbindung', 'Größen', 'Passung', 'Download'] as const));
+  steps = $derived(this.kind.magnet ? (['Verbindung', 'Teile', 'Passung', 'Download'] as const) : this.kind.bleed ? (['Verbindung', 'Größen', 'Passung', 'Download'] as const) : this.kind.nozzle ? (['Verbindung', 'Düse', 'Passung', 'Download'] as const) : this.kind.freeform ? (['Verbindung', 'Aufbau', 'Passung', 'Download'] as const) : (['Verbindung', 'Größen', 'Passung', 'Download'] as const));
   lastStep = $derived(this.steps.length - 1);
   /** Prüfung des Freiform-Aufbaus (reine Rechnung, ohne CAD-Kern) */
   /** Clipper für eigene Konturen geladen (siehe contour.ts); bis dahin gilt die Planung nur vorläufig */
@@ -215,7 +230,7 @@ class AppState {
     { label: 'innen Ø', a: this.pipe.d1Inner, b: this.pipe.d2Inner },
     { label: 'außen Ø', a: this.pipe.d1Inner + 2 * this.pipe.wall, b: this.pipe.d2Inner + 2 * this.pipe.wall },
   ]);
-  buildOpts = $derived(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : this.kind.helper ? { helper: $state.snapshot(this.helper) } : this.kind.bleed ? { bleed: { top: this.bleed.top, gap: this.bleed.bleedGap } } : {});
+  buildOpts = $derived(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : this.kind.helper ? { helper: $state.snapshot(this.helper) } : this.kind.bleed ? { bleed: { top: this.bleed.top, gap: this.bleed.bleedGap } } : this.kind.magnet ? { magnet: $state.snapshot(this.magnet) } : {});
   /** Schieber einzeln: abgeleitete Maße (kleinster Wandabstand, Lochabstand, …) */
   gateLay = $derived(gateLayout(this.gate));
 
@@ -227,6 +242,12 @@ class AppState {
     if (this.kind.gate) {
       if (this.gate.pipeGap !== DEFAULT_GATE.pipeGap) extra.push(`Spiel ${fmt(this.gate.pipeGap, 2)}`);
       if (this.gate.plateGap !== DEFAULT_GATE.plateGap) extra.push(`Platte ${fmt(this.gate.plateGap, 2)}`);
+      return [this.baseName, ...extra].join(' ');
+    }
+    if (this.kind.magnet) {
+      if (this.magnet.pipeGap !== DEFAULT_MAGNET.pipeGap && this.magnet.adapter) extra.push(`Spiel ${fmt(this.magnet.pipeGap, 2)}`);
+      if (this.magnet.fitGap !== DEFAULT_MAGNET.fitGap && this.magnet.coupling) extra.push(`Bund ${fmt(this.magnet.fitGap, 2)}`);
+      if (this.magnet.depth !== DEFAULT_MAGNET.depth && this.magnet.adapter) extra.push(`Tiefe ${fmt(this.magnet.depth)}`);
       return [this.baseName, ...extra].join(' ');
     }
     if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
@@ -243,6 +264,7 @@ class AppState {
     const k = this.kind;
     if (k.freeform) return freeSummary(this.free).code;
     if (k.gate) return gateName(this.gate).code;
+    if (k.magnet) return magnetName(this.magnet).code;
     // wie die Beschriftung: Halter für Kupplungen = Stecker (M), für Stecker = Kupplung (F)
     if (k.bleed) return this.baseName.replace('osVAC neo Nebenluft ', '');
     if (k.helper) return [this.helper.forF ? `M${fmt(this.input.femaleDiameterInner)}` : '', this.helper.forM ? `F${fmt(this.input.maleDiameterInner)}` : ''].filter(Boolean).join(' · ');
@@ -329,10 +351,15 @@ class AppState {
       for (const t of this.buildNotes) sizes(t);
     }
     // übliche Druckbetten: 220–256 mm Kantenlänge, Bauhöhe ab 250 mm
-    if (this.dims && (this.dims.width > 220 || this.dims.height > 250))
+    if (this.dims && (this.dims.width > 220 || this.dims.height > 250) && !(this.kind.magnet && this.magnet.adapter && this.magnet.coupling))
       sizes(`Der Adapter ist ${fmt(this.dims.width, 0)} mm breit und ${fmt(this.dims.height, 0)} mm hoch. Das passt nicht auf jeden Drucker (viele haben 220 bis 256 mm). Bitte mit deinem Druckbett vergleichen.`);
     if (this.kind.gate) {
       if (!(this.gate.d >= 15 && this.gate.d <= 60)) sizes(`Rohr: ${fmt(this.gate.d)} mm liegt außerhalb von 15 bis 60 mm.`);
+      return w;
+    }
+    if (this.kind.magnet) {
+      if (this.magnet.adapter && this.magnet.coupling && this.dims && this.dims.width > 220)
+        sizes('Beide Teile zusammen brauchen ein großes Druckbett. Passt es nicht, in „Teile“ nur eines wählen und nacheinander drucken.');
       return w;
     }
     if (this.input.maleFemaleGapSize < 0.1 || this.input.maleFemaleGapSize > 0.5) w.push({ text: 'Das Spiel liegt außerhalb von 0,1 bis 0,5 mm. Stecker und Kupplung passen dann kaum zusammen.', step: 2 });
@@ -359,6 +386,10 @@ class AppState {
     gap: 'Der Wert gilt für Stecker und Kupplung zusammen. Steckt ein neues Teil in einem älteren mit 0,2 mm, wirkt nur die Hälfte: eingestellte 0,4 mm wirken dann wie 0,3 mm.',
     swivel: `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(this.swivelMax, 2)} mm${this.kind.id !== 'MH' ? ` bei ${this.input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
+    magnetGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als der Stutzen. Die Schraubklemme zieht sie zusammen, deshalb darf es etwas mehr Luft sein als bei einer Steckverbindung. Geht der Adapter schwer auf den Stutzen: größer.',
+    magnetFit: 'Luft zwischen dem Bund am Adapter und der Tasche in der Kupplung, je Seite. Der Bund hält die Teile mittig; die Magnete ziehen sie zusammen. Geht die Kupplung schwer auf: größer. Wackelt sie seitlich: kleiner.',
+    magnetSize: 'Größere Magnete halten fester: 12 × 5 mm etwa doppelt so stark wie 10 × 3 mm, 15 × 3 mm liegt dazwischen. Adapter und Kupplung brauchen dieselbe Magnetgröße, sonst stehen die Magnete nicht genau übereinander.',
+    magnetPitch: 'Abstand von einer Windung der Drahtspirale im Schlauch zur nächsten. Am besten über fünf Windungen messen und durch fünf teilen.',
     pipeGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als das Rohr außen. Sitzt das Rohr zu stramm: größer. Rutscht es heraus: kleiner, oder das Rohr mit etwas Klebeband umwickeln.',
     plateGap: this.kind.gate || (!!this.kind.freeform && this.free.blocks.some((b) => b.type === 'gate'))
       ? 'Luft über und unter der Platte im Kanal, in Schritten von 0,1 mm (passend zu 0,2 mm Schichthöhe). Um die Bohrung drücken zwei Dichtlippen (0,4 mm hoch) auf die Platte, beim Standardwert 0,3 mm je Seite 0,1 mm: das dichtet und hält die Platte durch Reibung. Ab 0,4 mm liegen die Lippen nur noch an. Das gilt für 0,2 mm Schichthöhe; bei anderen Schichthöhen rundet der Slicer. Geht die Platte zu schwer: größer. Zieht der Schieber Falschluft oder rutscht die Platte von allein: kleiner.'
@@ -405,6 +436,31 @@ class AppState {
     return t;
   });
 
+  /** Druckhinweise zur Magnetkupplung (Druckpause, Polung, Klemme) */
+  magnetTips = $derived.by(() => {
+    const s = this.magnet, L = this.magnetLay, m = MAGNET_SIZES[s.magnet];
+    const f = (v: number) => fmt(v, 1);
+    const n = MAG.n * ((s.adapter ? 1 : 0) + (s.coupling ? 1 : 0));
+    const t = [
+      `Du brauchst ${n} Neodym-Scheibenmagnete ${m.label} (N42 oder stärker, ${MAG.n} je Teil). Die Taschen sind ${fmt(L.pD, 1)} × ${fmt(L.pH, 1)} mm und ganz geschlossen: Der Drucker überdruckt die Magnete.`,
+    ];
+    const lay = (z: number) => f(z + MAG.layer);
+    const pauses = [s.adapter ? `Adapter bei ${lay(L.pauseA)} mm` : '', s.coupling ? `Kupplung bei ${lay(L.pauseC)} mm` : ''].filter(Boolean);
+    const tops = [s.adapter ? f(L.pauseA) : '', s.coupling ? f(L.pauseC) : ''].filter(Boolean).join(' bzw. ');
+    t.push(
+      `Druckpause: Im Slicer an der ersten Schicht über den Taschen ${pauses.length > 1 ? 'je eine Pause' : 'eine Pause'} einfügen: ${pauses.join(', ')} (Höhe der Schicht, wie die Schichtvorschau sie anzeigt; die Taschen enden bei ${tops} mm). In Bambu Studio den Schieber der Schichtvorschau auf diese Höhe stellen und mit Rechtsklick auf das Plus „Pause hinzufügen“ wählen. Der Drucker hält vor dieser Schicht an. Mit 0,2 mm Schichthöhe drucken (auch die erste Schicht), dann liegt die Pause genau auf einer Schichtgrenze.`,
+      'In der Pause die Magnete in die Taschen drücken, bis sie unten aufliegen. Sie dürfen nicht über die Tasche hinausstehen, sonst streift die Düse. Weiterdrucken: Die drei Schichten darüber schließen die Taschen.',
+      'Polung: Alle Magnete eines Teils gleich herum einlegen. Am einfachsten einen Stapel Magnete nehmen: Beim Adapter jeden Magneten mit der Oberseite des Stapels nach oben einlegen, bei der Kupplung umgedreht (Unterseite des Stapels nach oben). Dann ziehen sich alle Kupplungen und Adapter an, egal wie herum man sie ansetzt. Vorher mit zwei Magneten prüfen und die Seite am Stapel markieren.',
+      'Die Magnete sind spröde und schnappen kräftig zusammen: einzeln vom Stapel schieben, nicht ziehen, und von der Düse fernhalten, solange der Druck pausiert.',
+    );
+    if (s.adapter)
+      t.push(
+        `Klemme am Adapter: eine Zylinderschraube ${MAG.screw} (ISO 4762, Innensechskant) und eine selbstsichernde Mutter M5 (DIN 985, Schlüsselweite 8). Die Mutter in die Sechskant-Tasche am rechten Ohr drücken, die Schraube von links durchstecken und anziehen, bis der Adapter fest auf dem Stutzen sitzt. Der Stutzen steckt ${fmt(s.depth)} mm tief bis zum Anschlag.`,
+      );
+    if (s.coupling) t.push(`Den Schlauch ${s.hand === 'right' ? 'im Uhrzeigersinn' : 'gegen den Uhrzeigersinn'} auf das Gewinde der Kupplung drehen (${s.hand === 'right' ? 'Rechtsgewinde' : 'Linksgewinde'}, Steigung ${fmt(s.pitch)} mm). Dreht er schwer oder gar nicht, passt die Steigung oder die Drehrichtung nicht zum Schlauch.`);
+    return t;
+  });
+
   /** Abstände der Schrauben in Worten (zum Anzeichnen an der Wand) */
   gatePitch = $derived.by(() => {
     const [q, l] = this.gateLay.pitch;
@@ -446,6 +502,7 @@ class AppState {
       t.push(`Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : this.kind.id === 'BLEED' ? 'das Rohr des Reglers' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Klemmt er, beim nächsten Mal in „Passung“ das Spiel am Drehring erhöhen.`);
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
     if (this.kind.gate) t.push(...this.gateTips);
+    if (this.kind.magnet) t.push(...this.magnetTips);
     if (this.kind.helper)
       t.push(
         'So wird ein festsitzender Drehring gelöst: Die Kupplung eines Schlauchadapters (FxxHyy) auf den Stutzen der Lösehilfe stecken, den Stecker eines Schlauchadapters (MxxHyy) in die Bohrung. Die Rippen bzw. Taschen halten ihn fest. Den Block festhalten (z. B. im Schraubstock) und den Schlauchteil kräftig drehen, bis der Ring frei läuft.',
@@ -507,7 +564,9 @@ class AppState {
   }
   /** Passung: Spaltmaße, Materialstärke, Beschriftung, Druckhilfe */
   fitDefault = $derived(
-    this.kind.gate
+    this.kind.magnet
+      ? this.magnet.pipeGap === DEFAULT_MAGNET.pipeGap && this.magnet.fitGap === DEFAULT_MAGNET.fitGap
+      : this.kind.gate
       ? this.gate.pipeGap === DEFAULT_GATE.pipeGap && this.gate.plateGap === DEFAULT_GATE.plateGap
       : this.input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
       (!this.hasSwivel || this.input.slipRingGapSize === this.swivelDefault) &&
@@ -517,6 +576,11 @@ class AppState {
       (!this.hasBleed || this.bleedGap === BLEED.gap),
   );
   resetFit() {
+    if (this.kind.magnet) {
+      this.magnet.pipeGap = DEFAULT_MAGNET.pipeGap;
+      this.magnet.fitGap = DEFAULT_MAGNET.fitGap;
+      return;
+    }
     if (this.kind.gate) {
       this.gate.pipeGap = DEFAULT_GATE.pipeGap;
       this.gate.plateGap = DEFAULT_GATE.plateGap;
@@ -556,7 +620,7 @@ class AppState {
   }
   /** alles, was eine neue Berechnung auslöst */
   buildKey = $derived(
-    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null, this.kind.helper ? this.helper : null, this.kind.bleed ? this.bleed : null]),
+    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null, this.kind.helper ? this.helper : null, this.kind.bleed ? this.bleed : null, this.kind.magnet ? this.magnet : null]),
   );
 
   // ---------------------------------------------------------------- Export und Druckbett
@@ -583,7 +647,7 @@ class AppState {
     this.files = [];
   }
   plateKey() {
-    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null, this.kind.gate ? $state.snapshot(this.gate) : null, this.kind.helper ? $state.snapshot(this.helper) : null, this.kind.bleed ? $state.snapshot(this.bleed) : null]);
+    return JSON.stringify([this.kindId, $state.snapshot(this.input), true, this.supports && this.hasSupport, this.kind.machine ? $state.snapshot(this.machine) : null, this.kind.freeform ? $state.snapshot(this.free) : null, this.kind.gate ? $state.snapshot(this.gate) : null, this.kind.helper ? $state.snapshot(this.helper) : null, this.kind.bleed ? $state.snapshot(this.bleed) : null, this.kind.magnet ? $state.snapshot(this.magnet) : null]);
   }
   onPlate = $derived(this.plate.some((p) => p.key === this.plateKey()));
   addToPlate() {
@@ -643,6 +707,7 @@ class AppState {
       bleed: this.bleed,
       gate: this.gate,
       helper: this.helper,
+      magnet: this.magnet,
     }),
   );
   /** Stand beim ersten Start (zum Vergleich für „Neu anfangen“; ohne Schritt, Freiform ohne IDs) */
@@ -668,6 +733,7 @@ class AppState {
     this.fromKind = '';
     this.gate = { ...DEFAULT_GATE };
     this.helper = { ...DEFAULT_HELPER };
+    this.magnet = { ...DEFAULT_MAGNET };
     this.freeOpen = null;
     this.helpOpen = {};
     this.errorMsg = '';
@@ -690,7 +756,7 @@ class AppState {
       const list = JSON.parse(raw);
       if (!Array.isArray(list)) return;
       this.plate = list
-        .filter((x) => x && typeof x.kind === 'string' && kindById(x.kind)?.available && (x.kind !== 'BLEED' || (x.options && typeof x.options === 'object' && 'bleed' in x.options)) && x.input && typeof x.input === 'object' && x.options && typeof x.options === 'object' && typeof x.label === 'string' && typeof x.key === 'string')
+        .filter((x) => x && typeof x.kind === 'string' && kindById(x.kind)?.available && (x.kind !== 'BLEED' || (x.options && typeof x.options === 'object' && 'bleed' in x.options)) && (x.kind !== 'MAGNET' || (x.options && typeof x.options === 'object' && 'magnet' in x.options)) && x.input && typeof x.input === 'object' && x.options && typeof x.options === 'object' && typeof x.label === 'string' && typeof x.key === 'string')
         .map((x) => ({ req: makeBuild(x.kind, { ...START_INPUT, ...x.input }, x.options), includeHelpers: x.includeHelpers === true, label: x.label, key: x.key }));
     } catch {
       /* beschädigt: leeres Druckbett */
@@ -741,6 +807,14 @@ class AppState {
       }
       if (s.helper && typeof s.helper === 'object' && typeof s.helper.forF === 'boolean' && typeof s.helper.forM === 'boolean' && (s.helper.forF || s.helper.forM))
         this.helper = { forF: s.helper.forF, forM: s.helper.forM };
+      if (s.magnet && typeof s.magnet === 'object') {
+        const z = s.magnet, mg = this.magnet;
+        for (const k of ['adapter', 'coupling'] as const) if (typeof z[k] === 'boolean') mg[k] = z[k];
+        if (!mg.adapter && !mg.coupling) mg.adapter = mg.coupling = true;
+        if (typeof z.magnet === 'string' && z.magnet in MAGNET_SIZES) mg.magnet = z.magnet as MagnetSize;
+        if (z.hand === 'left' || z.hand === 'right') mg.hand = z.hand;
+        for (const k of Object.keys(MAGNET_LIMITS) as (keyof typeof MAGNET_LIMITS)[]) if (num(z[k])) mg[k] = Math.min(MAGNET_LIMITS[k][1], Math.max(MAGNET_LIMITS[k][0], z[k]));
+      }
       if (s.fromKind === 'NOZZLE') this.fromKind = s.fromKind;
       else if (s.fromNozzle === true) this.fromKind = 'NOZZLE';
       if (s.bleed && typeof s.bleed === 'object') {

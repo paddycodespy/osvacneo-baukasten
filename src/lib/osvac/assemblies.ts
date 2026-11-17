@@ -15,6 +15,7 @@ import { planFree, partPlacements, inPart2, hasSplit, placeShape, isIdentity, pl
 import { DEFAULT_GATE, gateLayout, gateLower, gateUpper, gateSlider, gateClip, gateBed, upperOnBed, type GateSpec } from './gate';
 import { helperForFemale, helperForMale, helperSide } from './helper';
 import { BLEED, bleedLayout, bleedBody, bleedRing } from './bleed';
+import { DEFAULT_MAGNET, magnetAdapter, magnetCoupling, magnetThread, magnetThreadOverlap, magnetBed, type MagnetSpec } from './magnet';
 import { UserError } from '../errors';
 
 export interface Body {
@@ -58,6 +59,8 @@ export interface BuildOptions {
   helper?: HelperSpec;
   /** Nebenluft-Regler: Anschluss oben, Spiel am Drehring */
   bleed?: BleedSpec;
+  /** Magnet-Schnellkupplung Ø100 */
+  magnet?: MagnetSpec;
 }
 
 /** Nebenluft-Regler: unten Schlauch (H), oben Kupplung (F, Standard) oder Stecker (M) */
@@ -424,6 +427,33 @@ export function partsBleed(p: OsvacParams, o: BuildOptions = {}): Part[] {
   return out;
 }
 
+// ---------------------------------------------------------------- Magnet-Schnellkupplung Ø100
+
+/**
+ * Maschinenadapter und/oder Schlauchkupplung, beide mit der Kontaktfläche nach oben. Mit beiden Teilen liegen sie
+ * diagonal nebeneinander, die Kupplung als eigenes Objekt im 3MF.
+ */
+export function partsMagnet(_p: OsvacParams, o: BuildOptions = {}): Part[] {
+  const s = { ...DEFAULT_MAGNET, ...o.magnet };
+  if (!s.adapter && !s.coupling) s.adapter = s.coupling = true;
+  const bed = magnetBed(s);
+  const both = s.adapter && s.coupling;
+  const place = (sh: Shape3D, at: [number, number, number], rot: number) => (rot ? sh.rotate(rot, [0, 0, 0], [0, 0, 1]) : sh).translate(at) as Shape3D;
+  const dM = { kind: 'magnet', mag: s.magnet };
+  const dC = { ...dM, hose: s.hose, fit: s.fitGap };
+  const dT = { ...dM, hose: s.hose, pitch: s.pitch, hand: s.hand };
+  const obj = both ? { object: 'Schlauchkupplung' } : {};
+  const out: Part[] = [];
+  if (s.adapter)
+    out.push(part('Maschinenadapter', 2, { ...dM, stutzen: s.stutzen, depth: s.depth, gap: s.pipeGap, at: bed.adapter }, () => place(magnetAdapter(s), bed.adapter, 0)));
+  if (s.coupling)
+    out.push(
+      part('Schlauchkupplung', 1.5, { ...dC, at: bed.coupling, rot: bed.rot }, () => place(magnetCoupling(s), bed.coupling, bed.rot), obj),
+      part('Gewinde', 1.5, { ...dT, at: bed.coupling, rot: bed.rot }, () => place(magnetThread(s), bed.coupling, bed.rot), { ...obj, volumeOffset: magnetThreadOverlap(s) }),
+    );
+  return out;
+}
+
 // Kompatible Bau-Funktionen (alle Körper sofort)
 export const buildFemale = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsFemale(p, o));
 export const buildMale = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMale(p, o));
@@ -437,3 +467,4 @@ export const buildFree = (p: OsvacParams, o: BuildOptions = {}) => buildAll(part
 export const buildGate = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsGate(p, o));
 export const buildHelper = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsHelper(p, o));
 export const buildBleed = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsBleed(p, o));
+export const buildMagnet = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMagnet(p, o));

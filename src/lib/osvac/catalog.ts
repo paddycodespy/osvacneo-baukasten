@@ -6,6 +6,7 @@ import type { OsvacParams } from './params';
 import * as asm from './assemblies';
 import { DEFAULT_FREE, freeSummary } from './freeform';
 import { DEFAULT_GATE, gateName } from './gate';
+import { DEFAULT_MAGNET, magnetName } from './magnet';
 
 export type DiameterKey = 'maleDiameterInner' | 'femaleDiameterInner' | 'hoseDiameterInner';
 
@@ -36,20 +37,23 @@ export interface AdapterKind {
   bleed?: boolean;
   /** Drehring-Lösehilfe: Halter für Kupplung und/oder Stecker */
   helper?: boolean;
+  /** Magnet-Schnellkupplung Ø100: eigenes System mit eingedruckten Neodym-Magneten */
+  magnet?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
-export type KindGroup = 'osvac' | 'hose' | 'machine' | 'accessory' | 'custom';
+export type KindGroup = 'osvac' | 'hose' | 'machine' | 'magnet' | 'accessory' | 'custom';
 /** Überschriften der Gruppen in Schritt 1, in dieser Reihenfolge */
 export const KIND_GROUPS: { id: KindGroup; title: string }[] = [
   { id: 'osvac', title: 'osVAC neo untereinander' },
   { id: 'hose', title: 'An den Schlauch' },
   { id: 'machine', title: 'An ein Gerät' },
+  { id: 'magnet', title: 'Magnet-Schnellkupplung Ø100' },
   { id: 'accessory', title: 'Zubehör' },
   { id: 'custom', title: 'Eigener Aufbau' },
 ];
 
-export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle' | 'bleed' | 'helper';
+export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle' | 'bleed' | 'helper' | 'magnet';
 
 function pipeName(o?: asm.BuildOptions): string {
   const s = o?.pipe;
@@ -153,6 +157,20 @@ export const KINDS: AdapterKind[] = [
     build: asm.buildMachineM,
     parts: asm.partsMachineM,
     fileName: (p, o) => `osVAC neo M${n(p.maleDiameterInner)}-Rohr${pipeName(o)}`,
+  },
+  {
+    id: 'MAGNET',
+    group: 'magnet',
+    code: 'Magnet',
+    title: 'Magnet-Schnellkupplung',
+    description: 'Eigenes System für 100-mm-Schläuche: Adapter am Gerät, Kupplung am Schlauch, gehalten von eingedruckten Neodym-Magneten. Umstecken in Sekunden.',
+    ends: { top: 'magnet', bottom: null },
+    diameters: [],
+    magnet: true,
+    available: true,
+    build: asm.buildMagnet,
+    parts: asm.partsMagnet,
+    fileName: (_p, o) => `${magnetName({ ...DEFAULT_MAGNET, ...o?.magnet }).file}`,
   },
   {
     id: 'NOZZLE',

@@ -49,6 +49,7 @@ Im ersten Schritt wählst du, was für einen Adapter du brauchst. Die Arten sind
 - **osVAC neo untereinander:** [Stecker ↔ Kupplung](#stecker-kupplung) verbindet zwei Größen. *Kupplung einzeln* und *Stecker einzeln* sind nur der Verschluss, z. B. zum Einbau in eigene Konstruktionen.
 - **An den Schlauch:** [Kupplung ↔ Schlauch und Stecker ↔ Schlauch](#schlauch) – zum Aufdrehen auf den Saugschlauch.
 - **An ein Gerät:** [Kupplung → Stutzen und Stecker → Stutzen](#stutzen) – für ein Gerät mit rundem Stutzen, den du selbst ausmisst.
+- **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten. Ein eigenes System, es passt nicht zu den Teilen von osVAC neo.
 - **Zubehör:** [Saugdüse](#duese), [Nebenluft-Regler](#nebenluft), [Schieber einzeln](#schieber) und [Drehring-Lösehilfe](#loesehilfe).
 - **Eigener Aufbau:** [Freiform](#freiform) – ein Adapter aus Bausteinen, z. B. für eckige Auslässe, Bögen, Abzweige oder Geräte mit ungewöhnlicher Form.
 
@@ -136,6 +137,32 @@ Unter **Feineinstellungen** (meist nicht nötig) findest du:
 Die kleine Tabelle darunter zeigt, wie weit das Rohrteil am Ende innen und außen wird.
 
 > Tipp: Für Geräte mit eckigem oder ungewöhnlichem Auslass nimm die [Freiform](#freiform). Dort gibt es auch einen [Flansch zum Anschrauben](#flansch) und [eigene Konturen](#kontur).
+
+## Magnet-Schnellkupplung Ø100 {#magnet}
+
+Für große Geräte mit 100-mm-Absaugung: Am Gerät sitzt ein **Maschinenadapter**, am Schlauch eine **Schlauchkupplung**. Beide halten über je acht Neodym-Magnete zusammen; ein Bund in der Mitte zentriert sie. Zum Umstecken ziehst du die Kupplung ab und setzt sie am nächsten Gerät an. Das ist ein eigenes System und passt nicht zu den Teilen von osVAC neo.
+
+![Magnet-Schnellkupplung in der Vorschau](anleitung/magnet-vorschau.webp)
+
+![Einstellungen der Magnet-Schnellkupplung](anleitung/magnet.webp){klein}
+
+- **Teile:** Maschinenadapter, Schlauchkupplung oder beides. Für jedes Gerät brauchst du einen Adapter, für jeden Schlauch eine Kupplung. Beide zusammen brauchen ein Druckbett von etwa 240 mm; ist deins kleiner, druckst du sie nacheinander.
+- **Magnete:** Scheibenmagnete 10 × 3, 12 × 5 oder 15 × 3 mm (Ø × Höhe). Größere halten fester. Adapter und Kupplung immer mit derselben Größe drucken.
+- **Stutzen außen Ø** und **Tiefe:** Außendurchmesser des Stutzens am Gerät und wie weit er im Adapter steckt, bis zum Anschlag innen.
+- **Schlauch innen Ø**, **Steigung** und **Links- oder Rechtsgewinde:** passend zur Drahtspirale deines Schlauchs. Die Steigung misst du am besten über fünf Windungen und teilst durch fünf.
+
+In *Passung* stellst du das Spiel am Stutzen und am Zentrierbund ein.
+
+Der Adapter wird mit einer Schraubklemme festgezogen: eine Zylinderschraube M5 × 25 (ISO 4762) und eine selbstsichernde Mutter M5 (DIN 985). Die Mutter sitzt verdrehsicher in einer Sechskant-Tasche.
+
+### Magnete eindrucken {#magnete-eindrucken}
+
+Die Magnete liegen in geschlossenen Taschen unter der Kontaktfläche. Beim Drucken hältst du an der richtigen Schicht an, legst die Magnete ein und druckst weiter; drei Schichten darüber schließen die Taschen.
+
+1. Im Slicer an der Höhe, die im [Download](#download) unter *Druckhinweise* steht, eine Pause einfügen (Bambu Studio: Schieber der Schichtvorschau auf diese Höhe, Rechtsklick auf das Plus, *Pause hinzufügen*). Mit 0,2 mm Schichthöhe drucken.
+2. In der Pause die Magnete bis zum Boden in die Taschen drücken. Nichts darf überstehen.
+3. **Polung:** Alle Magnete eines Teils gleich herum einlegen, beim Adapter mit der einen Seite nach oben, bei der Kupplung mit der anderen. Dann ziehen sich alle Kupplungen und Adapter an.
+4. Weiterdrucken.
 
 ## Saugdüse {#duese}
 

@@ -10,7 +10,30 @@
 <h2>Passung</h2>
 <p class="lead">Die Standardwerte passen meistens. Ändern lohnt sich erst, wenn ein Testdruck nicht gut sitzt.</p>
 
-{#if app.kind.gate}
+{#if app.kind.magnet}
+{#if app.magnet.adapter}
+<fieldset class="opt">
+  <legend class="field-label">Spiel am Stutzen <HelpToggle id="magnetGap" /></legend>
+  <div class="slider">
+    <input type="range" min="0.1" max="1" step="0.05" bind:value={app.magnet.pipeGap} aria-describedby="mpipe-hint" />
+    <output>{fmt(app.magnet.pipeGap, 2)} mm</output>
+  </div>
+  <HelpText id="magnetGap" />
+  <p class="hint" id="mpipe-hint">Je Seite. Geht der Adapter schwer auf den Stutzen: größer. Standard: 0,3 mm.</p>
+</fieldset>
+{/if}
+{#if app.magnet.coupling}
+<fieldset class="opt">
+  <legend class="field-label">Spiel am Zentrierbund <HelpToggle id="magnetFit" /></legend>
+  <div class="slider">
+    <input type="range" min="0.2" max="0.6" step="0.05" bind:value={app.magnet.fitGap} aria-describedby="mfit-hint" />
+    <output>{fmt(app.magnet.fitGap, 2)} mm</output>
+  </div>
+  <HelpText id="magnetFit" />
+  <p class="hint" id="mfit-hint">Je Seite, wirkt an der Tasche der Kupplung. Geht die Kupplung schwer auf: größer. Wackelt sie: kleiner. Standard: 0,3 mm.</p>
+</fieldset>
+{/if}
+{:else if app.kind.gate}
 <fieldset class="opt">
   <legend class="field-label">Spiel am Rohr <HelpToggle id="pipeGap" /></legend>
   <div class="slider">
