@@ -113,3 +113,6 @@ jobs:
 
       - name: Schichten prüfen
         run: npm run test:islands
+
+      - name: Druckoptimierter Drehring
+        run: npm run test:swivel

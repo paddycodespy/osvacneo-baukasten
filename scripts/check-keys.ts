@@ -14,7 +14,7 @@ await initFont(fs.readFileSync(path.join(here, '../public/fonts/LiberationSans-R
 const p = deriveParams({ maleDiameterInner: 25, femaleDiameterInner: 32, hoseDiameterInner: 36 });
 const pipe = { d1Inner: 29.3, d2Inner: 33.3, length: 30, wall: 3, transition: 8, screwHoles: true };
 const by = new Map<string, { kind: string; make: () => any }[]>();
-for (const o of [{ text: false, knurl: false, supports: true }, { text: true, knurl: true, supports: true }])
+for (const o of [{ text: false, knurl: false, supports: true }, { text: true, knurl: true, supports: true }, { text: false, knurl: false, supports: true, swivel: 'print' as const }])
   for (const k of KINDS) for (const q of k.parts!(p, { ...o, pipe })) { const a = by.get(q.key) ?? []; a.push({ kind: k.id, make: q.make }); by.set(q.key, a); }
 let bad = 0;
 for (const [key, a] of by) {

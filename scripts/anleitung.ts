@@ -58,11 +58,14 @@ function figure(alt: string, src: string, small: boolean) {
   return `<figure${small ? ' class="small"' : ''}><a href="${src}" class="zoom"><img src="${src}"${wh} alt="${esc(alt)}" loading="lazy"></a>${alt ? `<figcaption>${inline(alt)}</figcaption>` : ''}</figure>`;
 }
 
-// Abschnitte zwischen <!-- dev --> und <!-- /dev --> gehören zu Verbindungen in Entwicklung (catalog.ts, dev: true):
-// nur mit VITE_DEV_KINDS=1 in der Anleitung
+// Abschnitte zwischen <!-- dev --> und <!-- /dev --> gehören zu Funktionen in Entwicklung (catalog.ts, dev: true;
+// druckoptimierter Drehring): nur mit VITE_DEV_KINDS=1 in der Anleitung. <!-- nodev --> … <!-- /nodev --> ist der Text,
+// den diese Abschnitte in der Entwicklungsumgebung ersetzen.
 const DEV = process.env.VITE_DEV_KINDS === '1';
 const raw = readFileSync(SRC, 'utf8');
-const md = (DEV ? raw.replace(/^<!-- \/?dev -->\n/gm, '') : raw.replace(/<!-- dev -->[\s\S]*?<!-- \/dev -->\n?/g, '')).replace(/<!--[\s\S]*?-->/g, '');
+const keep = (t: string, tag: string) => t.replace(new RegExp(`^<!-- \\/?${tag} -->\\n`, 'gm'), '');
+const drop = (t: string, tag: string) => t.replace(new RegExp(`<!-- ${tag} -->[\\s\\S]*?<!-- \\/${tag} -->\\n?`, 'g'), '');
+const md = (DEV ? drop(keep(raw, 'dev'), 'nodev') : keep(drop(raw, 'dev'), 'nodev')).replace(/<!--[\s\S]*?-->/g, '');
 const lines = md.split('\n');
 const toc: { level: number; id: string; text: string }[] = [];
 const used = new Set<string>();

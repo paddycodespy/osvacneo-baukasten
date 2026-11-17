@@ -18,6 +18,7 @@
     "test:sketches": "tsx scripts/sketch-overlap.ts",
     "test:ui": "tsx scripts/ui-flows.ts",
     "test:islands": "tsx scripts/islands.ts",
+    "test:swivel": "tsx scripts/swivel-print.ts",
     "docs": "tsx scripts/anleitung.ts",
     "docs:bilder": "tsx scripts/anleitung-bilder.ts",
     "tauri": "tauri",
