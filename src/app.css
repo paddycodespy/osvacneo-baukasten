@@ -631,6 +631,8 @@ legend.field-label { width: 100%; }
 }
 .help-btn:hover, .help-btn.on { border-color: var(--sky); color: var(--sky-d); background: var(--sky-l); }
 .help-text { margin: 0 0 4px; padding: 7px 10px; border-radius: 6px; background: var(--sky-l); color: var(--slate); font-size: 13.5px; font-weight: 400; line-height: 1.45; }
+/* unter Auswahlknöpfen (Seg) Abstand, sonst liegt der Hilfetext direkt am Rahmen */
+.seg + .help-text { margin-top: 8px; }
 
 /* Feineinstellungen: einklappbar, für Werte, die meist nicht geändert werden müssen */
 .more { margin: 18px 0 0; border-top: 1px solid var(--line); }
