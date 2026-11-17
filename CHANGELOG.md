@@ -2,6 +2,10 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## 0.5.4
+
+- Programm unter Linux und macOS: Beim Start kam oft die Meldung „Ein Teil des Adapters ließ sich mit diesen Maßen nicht berechnen“, obwohl alles stimmte. Ursache: WebKit startete den Rechen-Worker doppelt, eine Kopie ohne geladenen CAD-Kern. Der Worker ist jetzt eine einzige Datei.
+
 ## 0.5.3
 
 - Lizenzen: Die Seite „Verwendete Bausteine und ihre Lizenzen“ nennt jetzt auch alles, was nur im installierten Programm steckt: 355 Rust-Bausteine (Tauri u. a.) mit ihren Lizenztexten zum Aufklappen, dazu NSIS (Windows-Installer) und die AppImage-Laufzeit. Vollständig auch in `lizenzen-programm.txt`.
