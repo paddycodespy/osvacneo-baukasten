@@ -403,7 +403,7 @@ class AppState {
     swivel: this.swivelPrint
       ? `Der Drehring wird gleich mitgedruckt. Das Spiel gilt für die beiden senkrechten Dichtflächen; an den Schrägen ist der Spalt 0,15 mm weiter (mindestens 0,45 mm). Ist das Spiel zu klein, klebt er fest; ist es groß, wackelt er und zieht etwas mehr Falschluft. Höchstens ${fmt(this.swivelMax, 2)} mm.`
       : `Der Drehring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Höchstens ${fmt(this.swivelMax, 2)} mm${this.kind.id !== 'MH' ? ` bei ${this.input.generalMaterialWidth} mm Materialstärke, sonst berührt der äußere Ring den Schlauchteil` : ''}.`,
-    swivelStyle: 'Wie im Original: Form von osVAC neo, mit PETG sitzt der Ring nach dem Druck oft fest. Druckoptimiert: eigene Form, bei der nichts flach über einem Spalt hängt. Alle Flächen, die beim Druck nach unten zeigen, sind mindestens 45° steil; frei beginnt nur die schmale Spitze eines Rings, 0,65 mm über dem anderen. Der Ring soll sich so direkt nach dem Druck drehen. Passt nicht zu Ersatzteilen des Originals; der Schlauchadapter wird 0,5 mm länger. Noch nicht als Testdruck geprüft.',
+    swivelStyle: 'Wie im Original: Form von osVAC neo, mit PETG sitzt der Ring nach dem Druck oft fest. Druckoptimiert: eigene Form, bei der nichts flach über einem Spalt hängt. Alle Flächen, die beim Druck nach unten zeigen, sind mindestens 45° steil; frei beginnt nur die schmale Spitze eines Rings, 0,65 mm über dem anderen. Der Ring dreht sich so direkt nach dem Druck, auch mit PETG. Passt nicht zu Ersatzteilen des Originals; der Schlauchadapter wird 0,5 mm länger.',
     refill: 'Setzt Platte und Löcher wieder auf Werte, die zur Öffnung passen, so wie beim ersten Umschalten auf „Rechteckig“ oder „Rund“. Deine eigenen Eingaben in diesen Feldern werden dabei ersetzt. Solange du dort nichts selbst änderst, passt das Programm die Werte von allein an, wenn sich die Öffnung ändert.',
     magnetGap: 'Die Muffe ist um das Doppelte dieses Werts weiter als der Stutzen. Die Schraubklemme zieht sie zusammen, deshalb darf es etwas mehr Luft sein als bei einer Steckverbindung. Geht der Adapter schwer auf den Stutzen: größer.',
     magnetFit: 'Luft zwischen dem Bund am Adapter und der Tasche in der Kupplung, je Seite. Der Bund hält die Teile mittig; die Magnete ziehen sie zusammen. Geht die Kupplung schwer auf: größer. Wackelt sie seitlich: kleiner.',
@@ -518,7 +518,11 @@ class AppState {
     else if (!this.femaleOnBed) t.push('Stützen werden nicht gebraucht, im Slicer ausschalten.');
     if (this.femaleOnBed) t.push(this.femaleOnBedText);
     if (this.hasSwivel)
-      t.push(`Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : this.kind.id === 'BLEED' ? 'das Rohr des Reglers' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Klemmt er, beim nächsten Mal in „Passung“ das Spiel am Drehring erhöhen.`);
+      t.push(
+        this.swivelPrint
+          ? `Nach dem Druck den Schlauchteil einmal gegen ${this.kind.id === 'FH' ? 'die Kupplung' : this.kind.id === 'BLEED' ? 'das Rohr des Reglers' : 'das Gehäuse'} drehen: Der Ring löst sich mit einem leichten Ruck und läuft dann frei. Geht er schwer, beim nächsten Mal in „Passung“ das Spiel am Drehring etwas erhöhen.`
+          : `Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : this.kind.id === 'BLEED' ? 'das Rohr des Reglers' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Sitzt er fest, hilft die Drehring-Lösehilfe.`,
+      );
     if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
     if (this.kind.gate) t.push(...this.gateTips);
     if (this.kind.magnet) t.push(...this.magnetTips);
@@ -543,8 +547,8 @@ class AppState {
         `Slicer-Meldung: ${two ? 'Die beiden Ringe werden' : 'Der Ring wird'} gleich mitgedruckt und ${two ? 'liegen' : 'liegt'} mit dem eingestellten Spiel über dem Teil darunter; die unterste Schicht hängt kurz in der Luft. Bambu Studio meldet das je nach Version als „schwebende Bereiche“ oder „fliegender Träger“ (andere Slicer z. B. „floating regions“ oder „floating cantilever“). Das ist gewollt: Meldung wegklicken und keine Stützen einschalten, sonst ${two ? 'wachsen die Ringe' : 'wächst der Ring'} fest.`,
       );
     }
-    if (this.hasSwivel && !this.swivelPrint && this.input.slipRingGapSize <= 0.3)
-      t.push('Drehring: Das Spiel ist auf 0,3 mm (wie im Original). Beim Druck mit PETG kann der Ring damit festsitzen; für PETG in „Passung“ 0,35–0,5 mm einstellen.');
+    if (this.hasSwivel && !this.swivelPrint)
+      t.push('Drehring in der Form des Originals: Mit PETG sitzt er nach dem Druck oft fest, auch mit mehr Spiel. Dann mit der Drehring-Lösehilfe lösen, oder in „Passung“ den druckoptimierten Drehring wählen, der sich direkt nach dem Druck dreht.');
     if (this.hasBleed)
       t.push(`Der Nebenluft-Ring wird gleich mitgedruckt. Nach dem Druck den Ring ein paarmal kräftig hin und her drehen, bis er leicht läuft. Um 60° drehen: von ganz auf (Fenster übereinander) bis ganz zu. Dreht er zu schwer oder klebt fest: in „Passung“ mehr Spiel am Nebenluft-Ring einstellen (jetzt ${fmt(this.bleedGap, 2)} mm).`);
     const c = this.free.c;
