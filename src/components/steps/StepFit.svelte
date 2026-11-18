@@ -73,7 +73,7 @@
       {/each}
     </div>
     <HelpText id="swivelStyle" />
-    <p class="hint">{app.swivelStyle === 'print' ? 'Eigene Form: soll sich direkt nach dem Druck drehen, Testdruck steht noch aus.' : 'Form wie bei osVAC neo. Mit PETG sitzt der Ring nach dem Druck oft fest.'}</p>
+    <p class="hint">{app.swivelStyle === 'print' ? 'Eigene Form: dreht sich direkt nach dem Druck, auch mit PETG.' : 'Form wie bei osVAC neo. Mit PETG sitzt der Ring nach dem Druck oft fest; dann hilft die Drehring-Lösehilfe oder die druckoptimierte Form.'}</p>
   </fieldset>
 {/if}
 

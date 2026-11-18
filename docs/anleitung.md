@@ -95,11 +95,11 @@ Wie es danach weitergeht, steht unter [Download](#download).
 ![Passung beim Schlauchadapter](anleitung/passung-schlauch.webp){klein}
 
 - **Spiel zwischen Stecker und Kupplung:** wie bei [Stecker ↔ Kupplung](#stecker-kupplung).
-- **Drehring:** *Wie Original* hat die Form von osVAC neo. *Druckoptimiert* ist eine eigene Form (in Entwicklung): Alle Flächen, die beim Druck nach unten zeigen, sind mindestens 45° steil, und nichts hängt flach über einem Spalt. Frei in der Luft beginnt nur die schmale Spitze eines Rings, 0,65 mm über dem anderen. So soll sich der Ring direkt nach dem Druck drehen. Der Ring an der Kupplung bzw. am Gehäuse sitzt dabei innen, der Ring am Schlauchteil liegt außen als Hülse darüber. Der Schlauchadapter mit Kupplung wird 0,5 mm länger. Ein Testdruck steht noch aus.
+- **Drehring:** *Wie Original* hat die Form von osVAC neo. *Druckoptimiert* ist eine eigene Form: Alle Flächen, die beim Druck nach unten zeigen, sind mindestens 45° steil, und nichts hängt flach über einem Spalt. Frei in der Luft beginnt nur die schmale Spitze eines Rings, 0,65 mm über dem anderen. So dreht sich der Ring direkt nach dem Druck, auch mit PETG. Der Ring an der Kupplung bzw. am Gehäuse sitzt dabei innen, der Ring am Schlauchteil liegt außen als Hülse darüber. Der Schlauchadapter mit Kupplung wird 0,5 mm länger. Mit Ersatzteilen des Originals passt er nicht zusammen.
 - **Spiel am Drehring:** Der Ring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Standard sind 0,3 mm wie im Original. Beim druckoptimierten Drehring gilt der Wert für die beiden senkrechten Dichtflächen, an den Schrägen ist der Spalt 0,15 mm weiter, mindestens 0,45 mm (Spiel höchstens 0,5 mm). Sitzt der Ring nach dem Druck fest, hilft die [Drehring-Lösehilfe](#loesehilfe).
 - **Materialstärke:** 9 mm statt 7 mm macht die Kupplung stabiler, sie wird dann außen 4 mm dicker.
 
-> Hinweis: Nach dem Druck den Schlauchteil einmal kräftig drehen, bis sich der Ring leicht bewegt. Sitzt er richtig fest, hilft die [Drehring-Lösehilfe](#loesehilfe).
+> Hinweis: Nach dem Druck den Schlauchteil einmal gegen die Kupplung bzw. das Gehäuse drehen. Der druckoptimierte Drehring löst sich mit einem leichten Ruck. Der Ring in der Form des Originals braucht oft Kraft; sitzt er richtig fest, hilft die [Drehring-Lösehilfe](#loesehilfe).
 
 ## Adapter auf einen Stutzen {#stutzen}
 
@@ -448,7 +448,7 @@ In [Passung](#passung) das Spiel ändern: zu stramm → größer, wackelt → kl
 
 ### Der Drehring dreht sich nicht.
 
-Kräftig drehen, z. B. mit der [Drehring-Lösehilfe](#loesehilfe). Beim nächsten Druck in [Passung](#passung) das Spiel am Drehring erhöhen (für PETG 0,35 bis 0,5 mm).
+Kräftig drehen, z. B. mit der [Drehring-Lösehilfe](#loesehilfe). In der Form des Originals sitzt der Ring mit PETG oft fest, auch mit mehr Spiel; beim nächsten Druck in [Passung](#passung) besser *Druckoptimiert* wählen. Klemmt auch der druckoptimierte Drehring, das Spiel etwas erhöhen.
 
 ### Der Download ist gesperrt.
 
