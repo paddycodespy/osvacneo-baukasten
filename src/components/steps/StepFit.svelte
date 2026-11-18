@@ -107,7 +107,7 @@
       <output>{fmt(app.bleedGap, 2)} mm</output>
     </div>
     <HelpText id="bleedGap" />
-    <p class="hint" id="bleed-hint">Klebt der Ring fest oder dreht schwer: größer. Standard: {fmt(BLEED.gap, 2)} mm.</p>
+    <p class="hint" id="bleed-hint">Klebt der Ring fest oder dreht schwer: größer. Wackelt er oder zieht zu viel Luft: kleiner. Standard: {fmt(BLEED.gap, 2)} mm.</p>
   </fieldset>
 {/if}
 
