@@ -116,3 +116,6 @@ jobs:
 
       - name: Druckoptimierter Drehring
         run: npm run test:swivel
+
+      - name: Nebenluft-Ring
+        run: npm run test:bleed

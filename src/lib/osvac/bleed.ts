@@ -1,11 +1,17 @@
 /**
  * Nebenluft-Regler: Rohrstück mit drei Fenstern und einem Drehring mit drei gleichen Fenstern darüber.
  * Ring um 60° drehen = von ganz auf bis ganz zu. Der Ring wird gleich mitgedruckt:
- * - unterer Bund: Oberseite fällt nach außen ab (45°), der Ring liegt mit Spiel g darauf;
+ * - unterer Bund: Oberseite fällt nach außen ab (45°), der Ring liegt darauf;
  * - oberer Bund: wächst unten mit 45° vom Rohr nach außen (hängt nie frei), die Ringoberseite steigt parallel dazu
  *   nach außen an. Querschnitt des Rings damit ein Trapez: innen niedrig, außen um 2·T höher.
+ * - Spiel wie beim druckoptimierten Drehring: an der senkrechten Innenfläche (führt und dichtet) das eingestellte Spiel g,
+ *   an den beiden 45°-Schrägen (dort hängen beim Druck Ring bzw. oberer Bund über dem Spalt) slopeGap(g) = g + 0,15,
+ *   mindestens 0,45. Frei beginnt nur die unterste Schicht des Rings außen; darunter ist der untere Bund auf 0,8 mm Breite
+ *   um 0,4 mm abgesenkt, der Anfang liegt damit gut 1 mm über dem Bund (vorher 0,49 mm).
+ * - Griffzähne beginnen erst im Ring und wachsen mit 45° nach außen (kein flacher Anfang über der Luft).
  * - Raste: eine Noppe innen am Ring (oberhalb der Fenster) greift in Mulden im Rohr bei „auf“ und „zu“; sie ragt
- *   nur halb so weit über das Rohr, wie der Ring Spiel hat, so lässt sie sich mit leichtem Klick überdrehen.
+ *   nur halb so weit über das Rohr, wie der Ring Spiel hat, so lässt sie sich mit leichtem Klick überdrehen. Die Mulde
+ *   ist um slopeGap(g) größer als die Noppe (die Unterseite der Noppe hängt beim Druck über der Mulde).
  * - Kerben außen am oberen Bund über den Fenstern im Rohr: Ringfenster unter der Kerbe = auf.
  *
  * Eigenes System: Achse +z, Rohr von z = 0 bis L (Anfang des Bausteins bei z = 0).
@@ -31,11 +37,20 @@ export const BLEED = {
   gap: 0.35,
   gapMin: 0.2,
   gapMax: 0.6,
+  /** Unterer Bund außen unter dem Anfang des Rings abgesenkt: um relief tiefer, auf reliefW Breite (Oberseite steiler) */
+  relief: 0.4,
+  reliefW: 0.8,
+  /** Spiel an den Schrägen: Spiel + slopeExtra, mindestens slopeMin */
+  slopeExtra: 0.15,
+  slopeMin: 0.45,
 };
+
+/** Spiel (senkrecht zur Fläche) an den 45°-Schrägen und an der Mulde der Raste */
+export const bleedSlopeGap = (g: number) => Math.max(g + BLEED.slopeExtra, BLEED.slopeMin);
 
 export function bleedDims(Ri: number, Ro: number, gap: number) {
   const B = BLEED;
-  const g = gap, off = g * Math.SQRT2;
+  const g = gap, gs = bleedSlopeGap(g), off = gs * Math.SQRT2;
   const RR = Ro + g + B.T;
   const dc = RR - Ro;
   const c0 = B.margin;
@@ -51,7 +66,7 @@ export function bleedDims(Ri: number, Ro: number, gap: number) {
   const zb0 = a1 - g + off;
   const zb1 = zb0 + dc;
   const zTop = zb1 + B.collar;
-  return { Ri, Ro, g, RR, dc, c0, k, hw, a0, a1, w0, w1, zDet, zb0, zb1, zTop, minLen: zTop + B.margin };
+  return { Ri, Ro, g, gs, RR, dc, c0, k, hw, a0, a1, w0, w1, zDet, zb0, zb1, zTop, minLen: zTop + B.margin };
 }
 export type BleedDims = ReturnType<typeof bleedDims>;
 
@@ -90,13 +105,14 @@ const bumpCenterR = (D: BleedDims) => D.Ro - D.g / 2 + BLEED.bumpR;
 
 /** Rohr mit unterem und oberem Bund, den drei Fenstern, Mulden für die Raste und Kerben; L ≥ minLen */
 export function bleedBody(D: BleedDims, L: number): Shape3D {
-  const { Ri, Ro, RR, dc, c0, k, zb0, zb1, zTop, g } = D;
+  const { Ri, Ro, RR, dc, c0, k, zb0, zb1, zTop } = D;
   let body = rev([
     [Ri, 0],
     [Ro, 0],
     [Ro, c0],
     [RR, c0 + dc],
-    [RR, k],
+    [RR, k - BLEED.relief],
+    [RR - BLEED.reliefW, k + BLEED.reliefW],
     [Ro, k + dc],
     [Ro, zb0],
     [RR, zb1],
@@ -106,9 +122,9 @@ export function bleedBody(D: BleedDims, L: number): Shape3D {
     [Ri, L],
   ]);
   body = cutWindows(body, D);
-  // Mulden: Kugel um die Noppe herum (Noppe + Spiel), bei auf (DETENT_DEG) und zu (DETENT_DEG + 60)
+  // Mulden: Kugel um die Noppe herum (Noppe + Spiel an den Schrägen), bei auf (DETENT_DEG) und zu (DETENT_DEG + 60)
   const c = bumpCenterR(D);
-  for (const deg of [DETENT_DEG, DETENT_DEG + 60]) body = body.cut(makeSphere(BLEED.bumpR + g).translate(at(deg, c, D.zDet)) as Shape3D) as Shape3D;
+  for (const deg of [DETENT_DEG, DETENT_DEG + 60]) body = body.cut(makeSphere(BLEED.bumpR + D.gs).translate(at(deg, c, D.zDet)) as Shape3D) as Shape3D;
   // Kerben außen am oberen Bund über den Rohrfenstern (0,8 tief, 1,6 breit, ganze Bundhöhe)
   for (let i = 0; i < BLEED.windows; i++) {
     const notch = (makeBox([RR - 0.8, -0.8, zb1 - 1], [RR + 1, 0.8, zTop + 0.01]) as Shape3D).rotate((360 * i) / BLEED.windows, [0, 0, 0], [0, 0, 1]) as Shape3D;
@@ -131,7 +147,7 @@ export function bleedRing(D: BleedDims): Shape3D {
     [RR, a1 + B.T],
     [Rin, a1],
   ]);
-  // Griffzähne: Dreiecke 1,6 breit, 0,8 hoch, über die Außenhöhe
+  // Griffzähne: Dreiecke 1,6 breit, 0,8 hoch, über die Außenhöhe; unten mit 45° aus dem Ring heraus (Kegel)
   const n = Math.max(12, Math.round((2 * Math.PI * RR) / 4));
   const z0 = a0 - B.T + 0.4, z1 = a1 + B.T - 0.4;
   const teeth: Shape3D[] = [];
@@ -141,7 +157,16 @@ export function bleedRing(D: BleedDims): Shape3D {
     const p = (r: number, t: number): [number, number, number] => [r * c - t * s, r * s + t * c, z0];
     teeth.push(basicFaceExtrusion(makePolygon([p(RR - 0.3, -0.8), p(RR + 0.8, 0), p(RR - 0.3, 0.8)]) as never, new Vector([0, 0, z1 - z0])) as Shape3D);
   }
-  ring = ring.fuse(makeCompound(teeth) as Shape3D) as Shape3D;
+  // Hülle: unterhalb z0 nur bis RR, darüber mit 45° bis über die Zahnspitzen
+  const hull = rev([
+    [Rin - 1, a0 - B.T - 1],
+    [RR, a0 - B.T - 1],
+    [RR, z0],
+    [RR + 1, z0 + 1],
+    [RR + 1, a1 + B.T + 1],
+    [Rin - 1, a1 + B.T + 1],
+  ]);
+  ring = ring.fuse(makeCompound(teeth) as Shape3D).intersect(hull) as Shape3D;
   ring = cutWindows(ring, D);
   // Noppe: Kugel, die zur Hälfte im Ring steckt
   ring = ring.fuse(makeSphere(B.bumpR).translate(at(DETENT_DEG, bumpCenterR(D), D.zDet)) as Shape3D) as Shape3D;
