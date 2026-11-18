@@ -2,7 +2,6 @@
   /** Schritt 3: Passung (Spiel, Materialstärke, Extras) */
   import { app, fmt } from '../../lib/app.svelte';
   import { BLEED } from '../../lib/osvac/bleed';
-  import { SHOW_DEV_KINDS } from '../../lib/osvac/catalog';
   import { swivelPrintFlankGap } from '../../lib/osvac/hose';
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
@@ -65,7 +64,7 @@
   <p class="hint" id="gap-hint">Sitzt der Stecker zu stramm: größer. Wackelt er: kleiner. Standard: 0,2 mm.</p>
 </fieldset>
 
-{#if app.hasSwivel && SHOW_DEV_KINDS}
+{#if app.hasSwivel}
   <fieldset class="opt">
     <legend class="field-label">Drehring <HelpToggle id="swivelStyle" /></legend>
     <div class="seg" role="radiogroup" aria-label="Bauart des Drehrings">
@@ -74,7 +73,7 @@
       {/each}
     </div>
     <HelpText id="swivelStyle" />
-    <p class="hint">{app.swivelStyle === 'print' ? 'In Entwicklung: soll sich direkt nach dem Druck drehen, Testdruck steht noch aus.' : 'Form wie bei osVAC neo. Mit PETG sitzt der Ring nach dem Druck oft fest.'}</p>
+    <p class="hint">{app.swivelStyle === 'print' ? 'Eigene Form: soll sich direkt nach dem Druck drehen, Testdruck steht noch aus.' : 'Form wie bei osVAC neo. Mit PETG sitzt der Ring nach dem Druck oft fest.'}</p>
   </fieldset>
 {/if}
 

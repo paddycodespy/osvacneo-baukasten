@@ -49,9 +49,7 @@ Im ersten Schritt wählst du, was für einen Adapter du brauchst. Die Arten sind
 - **osVAC neo untereinander:** [Stecker ↔ Kupplung](#stecker-kupplung) verbindet zwei Größen. *Kupplung einzeln* und *Stecker einzeln* sind nur der Verschluss, z. B. zum Einbau in eigene Konstruktionen.
 - **An den Schlauch:** [Kupplung ↔ Schlauch und Stecker ↔ Schlauch](#schlauch) – zum Aufdrehen auf den Saugschlauch.
 - **An ein Gerät:** [Kupplung → Stutzen und Stecker → Stutzen](#stutzen) – für ein Gerät mit rundem Stutzen, den du selbst ausmisst.
-<!-- dev -->
 - **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten. Ein eigenes System, es passt nicht zu den Teilen von osVAC neo.
-<!-- /dev -->
 - **Zubehör:** [Saugdüse](#duese), [Nebenluft-Regler](#nebenluft), [Schieber einzeln](#schieber) und [Drehring-Lösehilfe](#loesehilfe).
 - **Eigener Aufbau:** [Freiform](#freiform) – ein Adapter aus Bausteinen, z. B. für eckige Auslässe, Bögen, Abzweige oder Geräte mit ungewöhnlicher Form.
 
@@ -97,13 +95,8 @@ Wie es danach weitergeht, steht unter [Download](#download).
 ![Passung beim Schlauchadapter](anleitung/passung-schlauch.webp){klein}
 
 - **Spiel zwischen Stecker und Kupplung:** wie bei [Stecker ↔ Kupplung](#stecker-kupplung).
-<!-- nodev -->
-- **Spiel am Drehring:** Der Ring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Standard sind 0,35 mm, bei 9 mm Materialstärke ist das auch das Höchstmaß. Das Original nutzt 0,3 mm. Mit PETG kann der Ring nach dem Druck festsitzen; dann hilft die [Drehring-Lösehilfe](#loesehilfe).
-<!-- /nodev -->
-<!-- dev -->
 - **Drehring:** *Wie Original* hat die Form von osVAC neo. *Druckoptimiert* ist eine eigene Form (in Entwicklung): Alle Flächen, die beim Druck nach unten zeigen, sind mindestens 45° steil, und nichts hängt flach über einem Spalt. Frei in der Luft beginnt nur die schmale Spitze eines Rings, 0,65 mm über dem anderen. So soll sich der Ring direkt nach dem Druck drehen. Der Ring an der Kupplung bzw. am Gehäuse sitzt dabei innen, der Ring am Schlauchteil liegt außen als Hülse darüber. Der Schlauchadapter mit Kupplung wird 0,5 mm länger. Ein Testdruck steht noch aus.
 - **Spiel am Drehring:** Der Ring wird gleich mitgedruckt. Ist das Spiel zu klein, klebt er fest. Standard sind 0,3 mm wie im Original. Beim druckoptimierten Drehring gilt der Wert für die beiden senkrechten Dichtflächen, an den Schrägen ist der Spalt 0,15 mm weiter, mindestens 0,45 mm (Spiel höchstens 0,5 mm). Sitzt der Ring nach dem Druck fest, hilft die [Drehring-Lösehilfe](#loesehilfe).
-<!-- /dev -->
 - **Materialstärke:** 9 mm statt 7 mm macht die Kupplung stabiler, sie wird dann außen 4 mm dicker.
 
 > Hinweis: Nach dem Druck den Schlauchteil einmal kräftig drehen, bis sich der Ring leicht bewegt. Sitzt er richtig fest, hilft die [Drehring-Lösehilfe](#loesehilfe).
@@ -146,7 +139,6 @@ Die kleine Tabelle darunter zeigt, wie weit das Rohrteil am Ende innen und auße
 
 > Tipp: Für Geräte mit eckigem oder ungewöhnlichem Auslass nimm die [Freiform](#freiform). Dort gibt es auch einen [Flansch zum Anschrauben](#flansch) und [eigene Konturen](#kontur).
 
-<!-- dev -->
 ## Magnet-Schnellkupplung Ø100 {#magnet}
 
 Für große Geräte mit 100-mm-Absaugung: Am Gerät sitzt ein **Maschinenadapter**, am Schlauch eine **Schlauchkupplung**. Beide halten über je acht Neodym-Magnete zusammen; ein Bund in der Mitte zentriert sie. Zum Umstecken ziehst du die Kupplung ab und setzt sie am nächsten Gerät an. Das ist ein eigenes System und passt nicht zu den Teilen von osVAC neo.
@@ -173,7 +165,6 @@ Die Magnete liegen in geschlossenen Taschen unter der Kontaktfläche. Beim Druck
 3. **Polung:** Alle Magnete eines Teils gleich herum einlegen, beim Adapter mit der einen Seite nach oben, bei der Kupplung mit der anderen. Dann ziehen sich alle Kupplungen und Adapter an.
 4. Weiterdrucken.
 
-<!-- /dev -->
 ## Saugdüse {#duese}
 
 Eine eigene Düse zum Aufstecken auf den Schlauch. Die Düse wird stehend gedruckt, mit dem Anschluss unten und der Spitze oben.
@@ -222,7 +213,7 @@ Der Nebenluft-Regler kommt direkt auf den Schlauch. Oben steckst du die Düse od
 - **Unten: Schlauch (H):** wie beim [Schlauchadapter](#schlauch). Der Schlauch wird eingedreht und kann sich mit dem unteren Drehring drehen.
 - **Bedienung:** Den Nebenluft-Ring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Kerben am oberen Bund zeigen, wo die Fenster sind.
 
-In **Passung** stellst du das **Spiel am Nebenluft-Ring** ein (Standard 0,35 mm) und das **Spiel am Drehring** für den Schlauch (Standard <!-- nodev -->0,35 mm<!-- /nodev --><!-- dev -->0,3 mm; auch hier gibt es den druckoptimierten Drehring<!-- /dev -->). Dreht ein Ring nach dem Druck zu schwer, mehr Spiel einstellen.
+In **Passung** stellst du das **Spiel am Nebenluft-Ring** ein (Standard 0,35 mm) und das **Spiel am Drehring** für den Schlauch (Standard 0,3 mm; auch hier gibt es den druckoptimierten Drehring). Das Spiel am Nebenluft-Ring gilt für die Innenfläche, an den schrägen Flanken oben und unten ist der Spalt 0,15 mm weiter (mindestens 0,45 mm). Der Ring beginnt beim Druck gut 1 mm über dem unteren Bund und hängt sonst nirgends flach über einem Spalt. Dreht ein Ring nach dem Druck zu schwer, mehr Spiel einstellen.
 
 ## Schieber {#schieber}
 

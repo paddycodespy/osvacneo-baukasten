@@ -39,8 +39,6 @@ export interface AdapterKind {
   helper?: boolean;
   /** Magnet-Schnellkupplung Ø100: eigenes System mit eingedruckten Neodym-Magneten */
   magnet?: boolean;
-  /** noch in Entwicklung: nur in der Entwicklungsumgebung sichtbar (siehe SHOW_DEV_KINDS) */
-  dev?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
@@ -169,7 +167,6 @@ export const KINDS: AdapterKind[] = [
     ends: { top: 'magnet', bottom: null },
     diameters: [],
     magnet: true,
-    dev: true,
     available: true,
     build: asm.buildMagnet,
     parts: asm.partsMagnet,
@@ -258,15 +255,7 @@ export const KINDS: AdapterKind[] = [
 
 export const kindById = (id: string) => KINDS.find((k) => k.id === id)!;
 
-/**
- * Verbindungen in Entwicklung (dev: true) zeigt die Oberfläche nur in der Entwicklungsumgebung (`npm run dev`) oder in
- * einem Build mit `VITE_DEV_KINDS=1`. Im Programm und in `npm run build` ohne diese Variable sind sie ausgeblendet; ein
- * gespeicherter Stand oder Druckbett-Eintrag damit wird nicht geladen. Geometrie, Worker und Skripte (Node, ohne
- * import.meta.env) kennen sie weiter.
- */
-const viteEnv = (import.meta as { env?: { DEV?: boolean; VITE_DEV_KINDS?: string } }).env;
-export const SHOW_DEV_KINDS = !viteEnv || !!viteEnv.DEV || viteEnv.VITE_DEV_KINDS === '1';
 /** Verbindungen, die die Oberfläche anbietet */
-export const VISIBLE_KINDS = KINDS.filter((k) => !k.dev || SHOW_DEV_KINDS);
-/** Verbindung wählbar (bekannt, verfügbar und sichtbar) */
+export const VISIBLE_KINDS = KINDS;
+/** Verbindung wählbar (bekannt und verfügbar) */
 export const kindSelectable = (id: string) => VISIBLE_KINDS.some((k) => k.id === id && k.available);

@@ -5,7 +5,7 @@
  */
 import { exportFile, exportPlate, makeBuild, type PlateItem } from './cad';
 import { saveTarget } from './save.svelte';
-import { kindById, kindSelectable, SHOW_DEV_KINDS, type DiameterKey } from './osvac/catalog';
+import { kindById, kindSelectable, type DiameterKey } from './osvac/catalog';
 import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './osvac/params';
 import type { ExportFormat } from './worker/protocol';
 import { pipeWall, type PipeSpec } from './osvac/machine';
@@ -34,12 +34,12 @@ export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
  * Ring fest, 0,45 mm zog dabei deutlich mehr Fäden. Ursache vermutlich nicht das Spiel, sondern die ersten Bahnen des
  * Außenrings, die frei 0,45–0,55 mm über dem Innenring gedruckt werden und durchhängen. Daher wieder 0,35 mm (wie das
  * Höchstmaß bei 9 mm Materialstärke an der Kupplung).
- * In der Entwicklungsumgebung (SHOW_DEV_KINDS) gibt es den druckoptimierten Drehring zur Wahl; dort ist der Standard
- * wieder 0,3 mm wie im Original (gilt für beide Bauarten; beim druckoptimierten sind die Schrägen 0,15 mm weiter).
+ * Seit es den druckoptimierten Drehring zur Wahl gibt, ist der Standard wieder 0,3 mm wie im Original (gilt für beide
+ * Bauarten; beim druckoptimierten sind die Schrägen 0,15 mm weiter).
  */
-export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: SHOW_DEV_KINDS ? 0.3 : 0.35 };
+export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32, femaleDiameterInner: 32, hoseDiameterInner: 36, slipRingGapSize: 0.3 };
 
-/** Bauart des Drehrings am Schlauch: wie im Original oder druckoptimiert (nur in der Entwicklungsumgebung wählbar) */
+/** Bauart des Drehrings am Schlauch: wie im Original oder druckoptimiert */
 export type SwivelStyle = 'original' | 'print';
 
 /** Bereiche der Eingabefelder (beim Laden eines gespeicherten Stands) */
@@ -104,7 +104,7 @@ class AppState {
   /** Aufbau, der gerade gilt: bei der Saugdüse der erzeugte (nur lesen), sonst der Freiform-Aufbau */
   /** Nebenluft-Regler: oben Kupplung oder Stecker, Spiel am Drehring (Größen in input: F/M oben, H unten) */
   bleed = $state<{ top: 'female' | 'male'; bleedGap: number }>({ top: 'female', bleedGap: BLEED.gap });
-  /** Drehring am Schlauch (FxxHyy, MxxHyy, Nebenluft-Regler): Bauart; außerhalb der Entwicklungsumgebung immer wie im Original */
+  /** Drehring am Schlauch (FxxHyy, MxxHyy, Nebenluft-Regler): Bauart */
   swivelStyle = $state<SwivelStyle>('original');
   /** Aufbau, der gerade gilt: bei der Saugdüse der erzeugte (nur lesen), sonst der Freiform-Aufbau */
   get free(): FreeSpec {
@@ -217,7 +217,7 @@ class AppState {
   hasSwivel = $derived(this.kind.id === 'FH' || this.kind.id === 'MH' || this.kind.id === 'BLEED');
   /** Beim Drehring an der Kupplung (FxxHyy) begrenzt die Geometrie des Originals das Spaltmaß (7 mm: 0,5, 9 mm: 0,35) */
   /** druckoptimierter Drehring gewählt (und wählbar) */
-  swivelPrint = $derived(SHOW_DEV_KINDS && this.hasSwivel && this.swivelStyle === 'print');
+  swivelPrint = $derived(this.hasSwivel && this.swivelStyle === 'print');
   swivelMax = $derived(this.swivelPrint ? SWIVEL_PRINT.gapMax : slipRingGapMax(this.input.generalMaterialWidth, this.kind.id === 'MH'));
   /** Standard am Drehring; bei 9 mm Materialstärke an der Kupplung höchstens das zulässige Maß (0,35) */
   swivelDefault = $derived(Math.min(START_INPUT.slipRingGapSize, this.swivelMax));
@@ -415,7 +415,7 @@ class AppState {
       : 'Luft über und unter der Platte im Schlitz. Klemmt die Platte: größer. Klappert sie oder zieht viel Falschluft: kleiner. Die Noppen zum Einrasten passen sich an.',
     wallDist: `Gemessen von der Wand bis zur Mitte des Rohrs. ${fmt(this.gateLay.minA)} mm ist der kleinste Wert, dann sitzt ${this.gate.mount === 'clip' ? 'der Wandhalter' : 'der Schieber'} direkt an der Wand. Mehr Abstand hilft z. B. über Fußleisten oder Kabelkanäle hinweg, höchstens ${WALL_MORE} mm mehr (${fmt(this.gateLay.maxA)} mm), sonst wird die Halterung wacklig.`,
     orient: 'Wie das Rohr an der Wand entlangläuft. Der Schlitz der Schlüssellöcher muss nach oben zeigen: bei senkrechtem Rohr zum oberen Ende, bei waagerechtem zur Seite.',
-    bleedGap: 'Luft zwischen Drehring und Rohr, auch an den schrägen Flanken oben und unten. Der Ring wird gleich mitgedruckt: Ist das Spiel zu klein, klebt er fest; ist es groß, dreht er sehr leicht und zieht etwas mehr Nebenluft, auch wenn er zu ist. Für PETG eher 0,35–0,4 mm.',
+    bleedGap: 'Luft zwischen Drehring und Rohr an der Innenfläche. An den schrägen Flanken oben und unten ist der Spalt 0,15 mm weiter, mindestens 0,45 mm, damit dort beim Druck nichts durchhängt und anklebt. Der Ring wird gleich mitgedruckt: Ist das Spiel zu klein, klebt er fest; ist es groß, dreht er sehr leicht und zieht etwas mehr Nebenluft, auch wenn er zu ist. Für PETG eher 0,35–0,4 mm.',
     filament: this.filament && Math.round(this.filament.gramsMin) === Math.round(this.filament.gramsMax)
       ? 'Gerechnet wie im Slicer: 0,2 mm Schichthöhe, 3 Wände, 15 % Füllung (abgeglichen mit Bambu Studio, meist auf 1 bis 2 % genau). Mehr Wände oder mehr Füllung brauchen mehr Material.'
       : 'Der kleinere Wert gilt für ein Teil mit 3 Wänden und 15 % Füllung, der größere für ein komplett gefülltes Teil. Die Füllung stellst du im Slicer ein.',
@@ -846,8 +846,7 @@ class AppState {
         if (z.top === 'female' || z.top === 'male') this.bleed.top = z.top;
         if (num(z.bleedGap)) this.bleed.bleedGap = Math.min(BLEED.gapMax, Math.max(BLEED.gapMin, Math.round(z.bleedGap * 100) / 100));
       }
-      // druckoptimierter Drehring nur in der Entwicklungsumgebung
-      if (s.swivelStyle === 'print' && SHOW_DEV_KINDS) this.swivelStyle = 'print';
+      if (s.swivelStyle === 'print') this.swivelStyle = 'print';
       if (s.nozzle && typeof s.nozzle === 'object') {
         const n = this.nozzle, z = s.nozzle;
         if (NOZZLE_KINDS.some((k) => k.id === z.kind)) n.kind = z.kind;

@@ -249,10 +249,8 @@ const scenes: Scene[] = [
     },
   },
   {
-    // Verbindung in Entwicklung: nur mit VITE_DEV_KINDS=1 (Build und Aufnahme), sonst übersprungen
     name: 'magnet',
     run: async (pg) => {
-      if (process.env.VITE_DEV_KINDS !== '1') return console.log('   übersprungen (nur mit VITE_DEV_KINDS=1)');
       await kind(pg, /Magnet-Schnellkupplung/);
       await step(pg, 'Teile');
       await shotPanel(pg, 'magnet');
