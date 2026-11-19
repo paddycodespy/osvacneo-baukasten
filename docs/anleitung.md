@@ -293,6 +293,8 @@ Ein **Ausrufezeichen** an einer Karte zeigt einen Hinweis: rot heißt, so geht e
 - **Abzweig:** ein zweiter Abgang (Y oder T) mit eigenem **Ende C**. Einstellbar sind Winkel, Richtung und Durchmesser.
 - **Schieber:** eine Platte zum Auf- und Zumachen. Mit Schieber wird der Adapter in zwei Teilen gedruckt und verschraubt.
 
+Einen **Bogen auf 0°** oder eine **Gerade auf 0 mm** überspringt die App: Der Baustein bleibt in der Liste, wirkt aber nicht und fehlt im Namen der Datei. So kannst du ihn zum Vergleichen kurz „ausschalten“. Ganz entfernen kannst du ihn mit ×.
+
 Bausteine mit Formwechsel haben eine **Form am Ende**: *Kreis*, *Ellipse*, *Langloch*, *Rechteck*, *D-Form*, *Trapez*, *Dreieck* oder *Eigene* ([eigene Kontur](#kontur)). Die Skizze neben den Feldern zeigt, welches Maß was ist.
 
 Unter **Wandstärke** (unten im Aufbau) stellst du die Wanddicke aller Bausteine ein; der Standard passt meistens.
