@@ -6,6 +6,7 @@
 
 Entwicklungsumgebung und Programm haben jetzt denselben Stand: Was bisher nur unter `npm run dev` zu sehen war, gibt es überall.
 
+- **Druckoptimierter Drehring ist jetzt Standard** (Schlauchadapter und Nebenluft-Regler). *Wie Original* bleibt in „Passung“ wählbar, dann steht „Drehring wie Original“ im Dateinamen; „Passung auf Standard“ stellt druckoptimiert ein. Wer die App schon benutzt hat, behält seine gespeicherte Wahl.
 - Exporte: Als Ersteller steht jetzt **osVAC neo Baukasten** in 3MF (Designer), STEP (Autor) und im STL-Kopf, statt Ludo Kerz bei jedem Teil. Die Namensnennung „Basiert auf osVAC neo von Ludo Kerz …“ und die Lizenz stehen wie bisher in der Beschreibung.
 - Freiform: Ein **Bogen lässt sich auf 0°** und eine **Gerade auf 0 mm** stellen (vorher mindestens 1). Der Baustein bleibt dann in der Liste, wird aber übersprungen und fehlt in Titel und Dateiname. Mit × wird er wie bisher entfernt (Anregung aus dem Forum).
 - Schlauchadapter und Nebenluft-Regler: In *Größen* steht unter dem Schlauchfeld eine kleine Tabelle mit den Durchmessern des Gewindes (Gewindegrund und Rippen innen, jeweils am Eingang und hinten). So sieht man vor dem Druck, ob ein Schlauch mit dickerer Wand noch hineingeht: Sein Außendurchmesser sollte höchstens so groß sein wie der Gewindegrund am Eingang (Anregung aus dem Forum).

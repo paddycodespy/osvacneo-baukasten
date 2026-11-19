@@ -41,6 +41,8 @@ export const START_INPUT: OsvacInput = { ...DEFAULT_INPUT, maleDiameterInner: 32
 
 /** Bauart des Drehrings am Schlauch: wie im Original oder druckoptimiert */
 export type SwivelStyle = 'original' | 'print';
+/** Standard seit 0.6: druckoptimierter Drehring */
+export const SWIVEL_DEFAULT: SwivelStyle = 'print';
 
 /** Bereiche der Eingabefelder (beim Laden eines gespeicherten Stands) */
 const INPUT_LIMITS: Record<keyof OsvacInput, [number, number]> = {
@@ -105,7 +107,7 @@ class AppState {
   /** Nebenluft-Regler: oben Kupplung oder Stecker, Spiel am Drehring (Größen in input: F/M oben, H unten) */
   bleed = $state<{ top: 'female' | 'male'; bleedGap: number }>({ top: 'female', bleedGap: BLEED.gap });
   /** Drehring am Schlauch (FxxHyy, MxxHyy, Nebenluft-Regler): Bauart */
-  swivelStyle = $state<SwivelStyle>('original');
+  swivelStyle = $state<SwivelStyle>(SWIVEL_DEFAULT);
   /** Aufbau, der gerade gilt: bei der Saugdüse der erzeugte (nur lesen), sonst der Freiform-Aufbau */
   get free(): FreeSpec {
     return this.kind.nozzle ? this.nozzleFree : this.freeState;
@@ -266,7 +268,7 @@ class AppState {
       return [this.baseName, ...extra].join(' ');
     }
     if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
-    if (this.swivelPrint) extra.push('Drehring druckoptimiert');
+    if (this.hasSwivel && !this.swivelPrint) extra.push('Drehring wie Original');
     if (this.hasSwivel && i.slipRingGapSize !== this.swivelDefault) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
     if (i.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${i.generalMaterialWidth} mm`);
     if (this.kind.machine && this.machine.ribs) extra.push('Rippen');
@@ -592,7 +594,7 @@ class AppState {
       : this.kind.gate
       ? this.gate.pipeGap === DEFAULT_GATE.pipeGap && this.gate.plateGap === DEFAULT_GATE.plateGap
       : this.input.maleFemaleGapSize === START_INPUT.maleFemaleGapSize &&
-      (!this.hasSwivel || (this.input.slipRingGapSize === this.swivelDefault && !this.swivelPrint)) &&
+      (!this.hasSwivel || (this.input.slipRingGapSize === this.swivelDefault && this.swivelStyle === SWIVEL_DEFAULT)) &&
       this.input.generalMaterialWidth === START_INPUT.generalMaterialWidth &&
       (!this.hasSupport || this.supports) &&
       (!this.freeHasGate || (this.free.gateGap ?? GATE_GAP) === GATE_GAP) &&
@@ -611,7 +613,7 @@ class AppState {
     }
     this.input.maleFemaleGapSize = START_INPUT.maleFemaleGapSize;
     if (this.hasSwivel) {
-      this.swivelStyle = 'original';
+      this.swivelStyle = SWIVEL_DEFAULT;
       this.input.slipRingGapSize = this.swivelDefault;
     }
     this.input.generalMaterialWidth = START_INPUT.generalMaterialWidth;
@@ -757,7 +759,7 @@ class AppState {
     this.freeTemplate = TEMPLATES[0].id;
     this.nozzle = structuredClone(DEFAULT_NOZZLE);
     this.bleed = { top: 'female', bleedGap: BLEED.gap };
-    this.swivelStyle = 'original';
+    this.swivelStyle = SWIVEL_DEFAULT;
     this.fromKind = '';
     this.gate = { ...DEFAULT_GATE };
     this.helper = { ...DEFAULT_HELPER };
@@ -850,7 +852,7 @@ class AppState {
         if (z.top === 'female' || z.top === 'male') this.bleed.top = z.top;
         if (num(z.bleedGap)) this.bleed.bleedGap = Math.min(BLEED.gapMax, Math.max(BLEED.gapMin, Math.round(z.bleedGap * 100) / 100));
       }
-      if (s.swivelStyle === 'print') this.swivelStyle = 'print';
+      if (s.swivelStyle === 'print' || s.swivelStyle === 'original') this.swivelStyle = s.swivelStyle;
       if (s.nozzle && typeof s.nozzle === 'object') {
         const n = this.nozzle, z = s.nozzle;
         if (NOZZLE_KINDS.some((k) => k.id === z.kind)) n.kind = z.kind;
