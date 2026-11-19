@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Schritt 2 beim Nebenluft-Regler: unten Schlauch (H), oben Kupplung oder Stecker (Wahl, Standard Kupplung) */
   import { app, fmt, LABELS, START_INPUT } from '../../lib/app.svelte';
+  import ThreadInfo from '../ThreadInfo.svelte';
   import NumberField from '../NumberField.svelte';
   import ResetLink from '../ResetLink.svelte';
   import { BLEED, bleedLayout } from '../../lib/osvac/bleed';
@@ -44,6 +45,7 @@
   <NumberField value={app.input.hoseDiameterInner} min={15} max={60} step={0.1} label={LABELS.hoseDiameterInner.hint} oncommit={(v) => app.setDia('hoseDiameterInner', v)} />
 </div>
 <p class="hint">Wie beim Schlauchadapter: Der Schlauch wird unten eingedreht und kann sich mit dem Drehring drehen.</p>
+<ThreadInfo hose={app.input.hoseDiameterInner} />
 
 <p class="hint sum">
   Drei Fenster mit zusammen etwa {Math.round(ratio * 100)} % des Schlauchquerschnitts. Nebenluft-Ring um 60° drehen: von ganz auf bis ganz zu, dazwischen stufenlos. Eine kleine Raste hält ihn bei „auf“ und „zu“; die Kerben am oberen Bund zeigen, wo die Fenster im Rohr sind. Ganz dicht ist er auch zu nicht, durch das Spiel am Nebenluft-Ring ({fmt(b.bleedGap, 2)} mm, in „Passung“) zieht immer etwas Luft.
