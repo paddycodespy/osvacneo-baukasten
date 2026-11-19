@@ -621,7 +621,16 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('radio', { name: /Kupplung ↔ Schlauch/ }).click();
     await step(pg, 'Größen');
     expect((await pg.getByRole('radio', { name: 'Linksgewinde' }).getAttribute('aria-checked')) === 'true', 'Linksgewinde ist nicht Standard');
+    await ready(pg);
+    const status = pg.locator('.stage-foot .status');
     await pg.getByRole('radio', { name: 'Rechtsgewinde' }).click();
+    // die Berechnung startet nach 250 ms; das Rechtsgewinde ist noch nicht im Cache und braucht Sekunden
+    let started = false;
+    for (let i = 0; i < 30 && !started; i++) {
+      await pg.waitForTimeout(50);
+      started = !(await status.innerText()).includes('Bereit');
+    }
+    expect(started, 'Rechtsgewinde: Vorschau wird nicht neu berechnet');
     await ready(pg);
     await step(pg, 'Download');
     expect((await pg.locator('.lead').first().innerText()).includes('Rechtsgewinde'), 'Download-Text ohne Rechtsgewinde: ' + (await pg.locator('.lead').first().innerText()));
@@ -629,6 +638,7 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('radio', { name: /Nebenluft-Regler/ }).click();
     await step(pg, 'Größen');
     expect((await pg.getByRole('radio', { name: 'Rechtsgewinde' }).getAttribute('aria-checked')) === 'true', 'Rechtsgewinde gilt nicht auch beim Nebenluft-Regler');
+    await ready(pg);
     await pg.getByRole('radio', { name: 'Linksgewinde' }).click();
     await ready(pg);
   });

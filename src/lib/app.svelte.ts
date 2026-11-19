@@ -652,7 +652,7 @@ class AppState {
   }
   /** alles, was eine neue Berechnung auslöst */
   buildKey = $derived(
-    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null, this.kind.helper ? this.helper : null, this.kind.bleed ? this.bleed : null, this.kind.magnet ? this.magnet : null, this.swivelPrint]),
+    JSON.stringify([this.kindId, this.input, true, this.kind.machine ? this.pipe : null, this.kind.freeform ? this.free : null, this.kind.gate ? this.gate : null, this.kind.helper ? this.helper : null, this.kind.bleed ? this.bleed : null, this.kind.magnet ? this.magnet : null, this.swivelPrint, this.hasSwivel ? this.hoseHand : null]),
   );
 
   // ---------------------------------------------------------------- Export und Druckbett
