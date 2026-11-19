@@ -10,6 +10,7 @@
   import HelpText from '../HelpText.svelte';
   import { setContext } from 'svelte';
   import { threadDiameters } from '../../lib/osvac/thread';
+  const mm1 = (v: number) => v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   import { MOUNT_LABELS, ORIENT_LABELS, type GateMount, type GateOrient } from '../../lib/osvac/gate';
 
   // Felder markieren, die ein Hinweis zum Stutzen betrifft
@@ -96,7 +97,16 @@
     </div>
     {#if k === 'hoseDiameterInner'}
       {@const t = threadDiameters(app.input[k])}
-      <p class="hint">Gewindegrund Ø {fmt(t.rootEntry, 1)} mm am Eingang, Ø {fmt(t.rootBack, 1)} mm hinten · Rippen innen Ø {fmt(t.tipEntry, 1)} bis {fmt(t.tipBack, 1)} mm.<br />Der Schlauch passt, wenn sein Außendurchmesser höchstens so groß ist wie der Gewindegrund am Eingang.</p>
+      <div class="thread-info">
+        <table>
+          <thead><tr><th>Gewinde</th><th>am Eingang</th><th>hinten</th></tr></thead>
+          <tbody>
+            <tr><td>Gewindegrund Ø</td><td><strong>{mm1(t.rootEntry)} mm</strong></td><td>{mm1(t.rootBack)} mm</td></tr>
+            <tr><td>Rippen innen Ø</td><td>{mm1(t.tipEntry)} mm</td><td>{mm1(t.tipBack)} mm</td></tr>
+          </tbody>
+        </table>
+        <p>Der Schlauch passt, wenn sein Außendurchmesser höchstens so groß ist wie der Gewindegrund am Eingang.</p>
+      </div>
     {/if}
   </fieldset>
 {/each}

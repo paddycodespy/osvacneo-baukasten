@@ -674,3 +674,13 @@ legend.field-label { width: 100%; }
 .x-list .x-item .inline-check { margin: 0; }
 .x-list .x-item .inline-check input { margin: 0; flex: none; }
 .x-list .x-item > .hint { margin: 2px 0 0 28px; }
+
+/* Gewindedurchmesser unter dem Schlauchfeld (Schritt 2) */
+.thread-info { margin-top: 14px; padding: 10px 14px; background: var(--mist); border: 1px solid var(--line); border-radius: 8px; font-size: 14px; color: var(--slate-2); max-width: 420px; }
+.thread-info table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.thread-info th { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--grey); text-align: right; padding: 0 0 4px 12px; }
+.thread-info th:first-child { text-align: left; padding-left: 0; }
+.thread-info td { padding: 3px 0 3px 12px; text-align: right; white-space: nowrap; }
+.thread-info td:first-child { text-align: left; padding-left: 0; }
+.thread-info strong { color: var(--graphite); font-weight: 700; }
+.thread-info p { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
