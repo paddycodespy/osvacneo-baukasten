@@ -172,3 +172,16 @@ export function threadNetVolumeFactor(p: OsvacParams, ext = 0.5): number {
   };
   return area(0) / area(ext);
 }
+
+/**
+ * Durchmesser des Schlauchgewindes zur Anzeige (Schritt 2). Der Grund wird durch den Konus zum
+ * Eingang hin weiter: hinten (oberste Windung, z = rootZ0) Ø H + 6,5, am Eingang (letzte volle
+ * Windung, φ 1440°) etwa H + 9,6. Die Spitze liegt jeweils 2,8 mm innerhalb.
+ */
+export function threadDiameters(hoseDiameterInner: number, indentation = 3.25) {
+  const tan = Math.tan(rad(THREAD.taperDeg));
+  const zIn = -4.5 - 1440 / 72;
+  const back = hoseDiameterInner + 2 * indentation;
+  const entry = back + 2 * (THREAD.rootZ0 - zIn) * tan;
+  return { rootBack: back, rootEntry: entry, tipBack: back - 2 * THREAD.depth, tipEntry: entry - 2 * THREAD.depth };
+}
