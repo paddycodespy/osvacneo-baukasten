@@ -15,7 +15,7 @@
   import { reveal } from '../lib/reveal';
   import { app } from '../lib/app.svelte';
   import { tubeGateDims, GATE_GAP } from '../lib/osvac/gate';
-  import { TEMPLATES, planFree, grow, BLOCK_LABELS, newBlock, sec, sectionText, lastSection, extrasLong, specKey, branchGeom, bleedMinLen, bleedGapOf, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
+  import { TEMPLATES, planFree, grow, BLOCK_LABELS, blockOff, newBlock, sec, sectionText, lastSection, extrasLong, specKey, branchGeom, bleedMinLen, bleedGapOf, defaultC, SWEEP_FROM, SWEEP_ENTRY, type FreeSpec, type EndSpec, type Block, type BlockType, type Issue, type Section, type Fix } from '../lib/osvac/freeform';
 
   type Open = number | 'A' | 'B' | 'C' | null;
   let {
@@ -127,6 +127,7 @@
 
   function summary(b: Block, i: number): string {
     const parts: string[] = [];
+    if (blockOff(b)) return b.type === 'bend' ? '0° · ohne Wirkung' : '0 mm · ohne Wirkung';
     if (b.type === 'straight') parts.push(`${fmt(b.length)} mm lang`);
     if (b.type === 'bend') {
       parts.push(`${fmt(b.angle)}°`, `Radius ${fmt(b.radius)}`);
@@ -271,15 +272,17 @@
           <BlockFigure type={b.type} />
           {#if b.type === 'straight'}
             <div class="grid2">
-              <Field label="L · Länge"><NumberField bind:value={b.length} min={1} max={300} step={1} label="Länge der Geraden" /></Field>
+              <Field label="L · Länge"><NumberField bind:value={b.length} min={0} max={300} step={1} label="Länge der Geraden" /></Field>
             </div>
+            {#if blockOff(b)}<p class="hint">Bei 0 mm wird die Gerade übersprungen. Ganz entfernen mit ×.</p>{/if}
           {:else if b.type === 'bend'}
             <Field label="W · Winkel">
               <div class="row">
                 {@render chipsWithField([30, 45, 60, 90], () => b.angle, (v) => (b.angle = v))}
-                <span class="num-sm"><NumberField bind:value={b.angle} min={1} max={180} step={5} unit="°" label="Winkel des Bogens" /></span>
+                <span class="num-sm"><NumberField bind:value={b.angle} min={0} max={180} step={5} unit="°" label="Winkel des Bogens" /></span>
               </div>
             </Field>
+            {#if blockOff(b)}<p class="hint">Bei 0° wird der Bogen übersprungen. Ganz entfernen mit ×.</p>{/if}
             <div class="grid2">
               <Field label="R · Radius" help="Abstand vom Drehpunkt bis zur Mitte des Rohrs. Größer ergibt einen sanfteren Bogen: besser für den Luftstrom und leichter zu drucken.">
                 <NumberField bind:value={b.radius} min={5} max={500} step={1} label="Radius des Bogens" />
