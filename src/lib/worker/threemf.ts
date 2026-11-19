@@ -4,7 +4,7 @@
  * als zusammengehörendes Teil laden.
  */
 import { zipSync, strToU8 } from 'fflate';
-import { CREDIT, CHANGES, LICENSE_NAME, LICENSE_URL } from '../credits';
+import { CREDIT, CHANGES, CREATOR, LICENSE_NAME, LICENSE_URL } from '../credits';
 
 export interface MeshPart {
   name: string;
@@ -82,7 +82,7 @@ export function build3MF(parts: MeshPart[], title: string, groupNames?: string[]
   const model = `<?xml version="1.0" encoding="UTF-8"?>
 <model unit="millimeter" xml:lang="de-DE" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
 <metadata name="Title">${esc(title)}</metadata>
-<metadata name="Designer">Ludo Kerz (osVAC neo)</metadata>
+<metadata name="Designer">${esc(CREATOR)}</metadata>
 <metadata name="Description">${esc(CREDIT)} ${esc(CHANGES)} Erzeugt mit dem osVAC neo Baukasten.</metadata>
 <metadata name="LicenseTerms">${LICENSE_NAME} ${LICENSE_URL}</metadata>
 <resources>${objects}</resources>
