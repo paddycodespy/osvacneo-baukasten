@@ -597,19 +597,22 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('radio', { name: '10 × 3 mm' }).click();
     await pg.getByRole('radio', { name: 'Linksgewinde' }).click();
   });
-  await test('Drehring druckoptimiert wählbar', pg, async () => {
+  await test('Drehring: druckoptimiert ist Standard, wie Original wählbar', pg, async () => {
     await step(pg, 'Verbindung');
     await pg.getByRole('radio', { name: /Kupplung ↔ Schlauch/ }).click();
     await step(pg, 'Passung');
+    expect((await pg.getByRole('radio', { name: 'Druckoptimiert' }).getAttribute('aria-checked')) === 'true', 'Druckoptimiert ist nicht Standard');
+    expect((await pg.locator('#swivel-hint').innerText()).includes('an den Schrägen 0,45 mm'), 'Spiel an den Schrägen fehlt');
+    await pg.getByRole('radio', { name: 'Wie Original' }).click();
     expect((await pg.locator('#swivel-hint').innerText()).includes('0,3 mm wie im Original'), 'Standard 0,3 fehlt: ' + (await pg.locator('#swivel-hint').innerText()));
     await pg.getByRole('radio', { name: 'Druckoptimiert' }).click();
-    expect((await pg.locator('#swivel-hint').innerText()).includes('an den Schrägen 0,45 mm'), 'Spiel an den Schrägen fehlt');
     await ready(pg);
     await step(pg, 'Download');
     expect(!(await pg.locator('.tips').innerText()).includes('wie im Original'), 'PETG-Hinweis zum Original beim druckoptimierten Drehring');
     await step(pg, 'Passung');
+    await pg.getByRole('radio', { name: 'Wie Original' }).click();
     await pg.getByRole('button', { name: /Passung auf Standard/ }).click();
-    expect((await pg.getByRole('radio', { name: 'Wie Original' }).getAttribute('aria-checked')) === 'true', 'Zurücksetzen lässt druckoptimiert stehen');
+    expect((await pg.getByRole('radio', { name: 'Druckoptimiert' }).getAttribute('aria-checked')) === 'true', 'Zurücksetzen stellt nicht druckoptimiert ein');
     await ready(pg);
   });
 
