@@ -9,8 +9,7 @@
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
   import { setContext } from 'svelte';
-  import { threadDiameters } from '../../lib/osvac/thread';
-  const mm1 = (v: number) => v.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  import ThreadInfo from '../ThreadInfo.svelte';
   import { MOUNT_LABELS, ORIENT_LABELS, type GateMount, type GateOrient } from '../../lib/osvac/gate';
 
   // Felder markieren, die ein Hinweis zum Stutzen betrifft
@@ -96,17 +95,7 @@
       <NumberField value={app.input[k]} min={15} max={60} step={0.1} label={LABELS[k].hint} oncommit={(v) => app.setDia(k, v)} />
     </div>
     {#if k === 'hoseDiameterInner'}
-      {@const t = threadDiameters(app.input[k])}
-      <div class="thread-info">
-        <table>
-          <thead><tr><th>Gewinde</th><th>am Eingang</th><th>hinten</th></tr></thead>
-          <tbody>
-            <tr><td>Gewindegrund Ø</td><td><strong>{mm1(t.rootEntry)} mm</strong></td><td>{mm1(t.rootBack)} mm</td></tr>
-            <tr><td>Rippen innen Ø</td><td>{mm1(t.tipEntry)} mm</td><td>{mm1(t.tipBack)} mm</td></tr>
-          </tbody>
-        </table>
-        <p>Der Schlauch passt, wenn sein Außendurchmesser höchstens so groß ist wie der Gewindegrund am Eingang.</p>
-      </div>
+      <ThreadInfo hose={app.input[k]} />
     {/if}
   </fieldset>
 {/each}
