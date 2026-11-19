@@ -108,6 +108,8 @@ class AppState {
   bleed = $state<{ top: 'female' | 'male'; bleedGap: number }>({ top: 'female', bleedGap: BLEED.gap });
   /** Drehring am Schlauch (FxxHyy, MxxHyy, Nebenluft-Regler): Bauart */
   swivelStyle = $state<SwivelStyle>(SWIVEL_DEFAULT);
+  /** Schlauchgewinde (FxxHyy, MxxHyy, Nebenluft-Regler): Standard links wie im Original */
+  hoseHand = $state<'left' | 'right'>('left');
   /** Aufbau, der gerade gilt: bei der Saugdüse der erzeugte (nur lesen), sonst der Freiform-Aufbau */
   get free(): FreeSpec {
     return this.kind.nozzle ? this.nozzleFree : this.freeState;
@@ -247,6 +249,7 @@ class AppState {
   buildOpts = $derived({
     ...(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : this.kind.helper ? { helper: $state.snapshot(this.helper) } : this.kind.bleed ? { bleed: { top: this.bleed.top, gap: this.bleed.bleedGap } } : this.kind.magnet ? { magnet: $state.snapshot(this.magnet) } : {}),
     ...(this.swivelPrint ? { swivel: 'print' as const } : {}),
+    ...(this.hasSwivel && this.hoseHand === 'right' ? { hoseHand: 'right' as const } : {}),
   });
   /** Schieber einzeln: abgeleitete Maße (kleinster Wandabstand, Lochabstand, …) */
   gateLay = $derived(gateLayout(this.gate));
@@ -268,6 +271,7 @@ class AppState {
       return [this.baseName, ...extra].join(' ');
     }
     if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
+    if (this.hasSwivel && this.hoseHand === 'right') extra.push('Rechtsgewinde');
     if (this.hasSwivel && !this.swivelPrint) extra.push('Drehring wie Original');
     if (this.hasSwivel && i.slipRingGapSize !== this.swivelDefault) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
     if (i.generalMaterialWidth !== START_INPUT.generalMaterialWidth) extra.push(`Wand ${i.generalMaterialWidth} mm`);
@@ -734,6 +738,7 @@ class AppState {
       nozzle: this.nozzle,
       bleed: this.bleed,
       swivelStyle: this.swivelStyle,
+      hoseHand: this.hoseHand,
       gate: this.gate,
       helper: this.helper,
       magnet: this.magnet,
@@ -760,6 +765,7 @@ class AppState {
     this.nozzle = structuredClone(DEFAULT_NOZZLE);
     this.bleed = { top: 'female', bleedGap: BLEED.gap };
     this.swivelStyle = SWIVEL_DEFAULT;
+    this.hoseHand = 'left';
     this.fromKind = '';
     this.gate = { ...DEFAULT_GATE };
     this.helper = { ...DEFAULT_HELPER };
@@ -853,6 +859,7 @@ class AppState {
         if (num(z.bleedGap)) this.bleed.bleedGap = Math.min(BLEED.gapMax, Math.max(BLEED.gapMin, Math.round(z.bleedGap * 100) / 100));
       }
       if (s.swivelStyle === 'print' || s.swivelStyle === 'original') this.swivelStyle = s.swivelStyle;
+      if (s.hoseHand === 'left' || s.hoseHand === 'right') this.hoseHand = s.hoseHand;
       if (s.nozzle && typeof s.nozzle === 'object') {
         const n = this.nozzle, z = s.nozzle;
         if (NOZZLE_KINDS.some((k) => k.id === z.kind)) n.kind = z.kind;

@@ -115,8 +115,10 @@ export function hoseFieldsOverlap(p: OsvacParams, variant: 'plain' | 'housed', p
  * Gewinderippe als eigener Körper; überlappt die Wand um 0.5 mm und wird im Slicer verschmolzen.
  * runout = true, wenn ein Knickschutz folgt: dann läuft die Rippe im Trichter aus.
  */
-export function hoseThreadBody(p: OsvacParams, runout: boolean): Shape3D {
-  return hoseThread(p, 0.5, runout);
+export function hoseThreadBody(p: OsvacParams, runout: boolean, hand: 'left' | 'right' = 'left'): Shape3D {
+  const t = hoseThread(p, 0.5, runout);
+  // Rechtsgewinde: Spiegelbild an der XZ-Ebene durch die Achse (Anschnitt, Auslauf und Steigung wie links)
+  return hand === 'right' ? (t.mirror('XZ', [0, 0, 0]) as Shape3D) : t;
 }
 
 /**

@@ -63,6 +63,8 @@ export interface BuildOptions {
   magnet?: MagnetSpec;
   /** Drehring am Schlauch: 'print' = druckoptimiert (in Entwicklung), sonst wie im Original */
   swivel?: 'print';
+  /** Schlauchgewinde: 'right' = Rechtsgewinde, sonst links wie im Original */
+  hoseHand?: 'right';
 }
 
 /** Nebenluft-Regler: unten Schlauch (H), oben Kupplung (F, Standard) oder Stecker (M) */
@@ -126,6 +128,9 @@ const dFK = (p: OsvacParams) => ({ femaleDiameterOuter: p.femaleDiameterOuter })
 const dFT = (p: OsvacParams, o: BuildOptions) => ({ ...dFK(p), femaleDiameterInner: p.femaleDiameterInner, text: o.text });
 const dM = (p: OsvacParams, o: BuildOptions) => ({ maleDiameterInner: p.maleDiameterInner, maleFemaleGapSize: p.maleFemaleGapSize, generalMaterialWidth: p.generalMaterialWidth, text: o.text });
 const dS = (p: OsvacParams) => ({ maleDiameterInner: p.maleDiameterInner, maleFemaleGapSize: p.maleFemaleGapSize, generalMaterialWidth: p.generalMaterialWidth, supportStructureGapSize: p.supportStructureGapSize });
+/** Schlüssel des Gewindekörpers: Rechtsgewinde nur, wenn gewählt (Linksgewinde behält die alten Schlüssel) */
+const dHand = (o: BuildOptions) => (o.hoseHand === 'right' ? { hand: 'right' } : {});
+const hand = (o: BuildOptions) => (o.hoseHand === 'right' ? 'right' : 'left');
 const dH = (p: OsvacParams) => ({ hoseDiameterInner: p.hoseDiameterInner, generalMaterialWidth: p.generalMaterialWidth, slipRingGapSize: p.slipRingGapSize });
 /** Griffzone der Schlauchseite: nur beim Schlauchteil im Gehäuse hängt ihre Lage am Drehring-Spalt */
 const dHK = (p: OsvacParams, housed = false) => ({ hoseDiameterInner: p.hoseDiameterInner, generalMaterialWidth: p.generalMaterialWidth, ...(housed ? { slipRingGapSize: p.slipRingGapSize } : {}) });
@@ -201,7 +206,7 @@ export function partsHose(p: OsvacParams, o: BuildOptions = {}): Part[] {
     part('Schlauchteil', 0.5, { ...dHK(p), variant: 'plain' }, () => hoseBody(p, 'plain')),
     ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p), variant: 'plain' }, () => hoseKnurl(p, 'plain'), hoseKnurlOverlap(p, 'plain')),
     part('Textfeld Schlauchteil', 7, { ...dHK(p), text: o.text, variant: 'plain' }, () => hoseFields(p, 'plain', o), { volumeOffset: hoseFieldsOverlap(p, 'plain') }),
-    part('Gewinde', 8, { ...dH(p), variant: 'runout' }, () => hoseThreadBody(p, true)),
+    part('Gewinde', 8, { ...dH(p), variant: 'runout', ...dHand(o) }, () => hoseThreadBody(p, true, hand(o))),
     part('Knickschutz', 0.1, dH(p), () => hoseSkirt(p)),
   ];
 }
@@ -247,7 +252,7 @@ export function partsFxxHyy(p: OsvacParams, o: BuildOptions = {}): Part[] {
     part('Schlauchteil', 0.5, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseBody(p, 'plain'), zH)),
     ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseKnurl(p, 'plain'), zH), hoseKnurlOverlap(p, 'plain')),
     part('Textfeld Schlauchteil', 7, { ...dHK(p), text: o.text, z: zH, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zH), { volumeOffset: hoseFieldsOverlap(p, 'plain') }),
-    part('Gewinde', 8, { ...dH(p), z: zH, variant: 'runout' }, () => t(hoseThreadBody(p, true), zH)),
+    part('Gewinde', 8, { ...dH(p), z: zH, variant: 'runout', ...dHand(o) }, () => t(hoseThreadBody(p, true, hand(o)), zH)),
     part('Knickschutz', 0.1, { ...dH(p), z: zH }, () => t(hoseSkirt(p), zH)),
   ];
 }
@@ -271,7 +276,7 @@ export function partsMxxHyy(p: OsvacParams, o: BuildOptions = {}): Part[] {
     part('Schlauchteil', 0.5, { ...dH(p), z: zH, variant: 'housed', ...sw }, () => t(hoseBody(p, 'housed', { print: pr }), zH)),
     ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p, true), z: zH, variant: 'housed', ...sw }, () => t(hoseKnurl(p, 'housed', pr), zH), hoseKnurlOverlap(p, 'housed', pr)),
     part('Textfeld Schlauchteil', 5, { ...dHK(p, true), text: o.text, z: zH, variant: 'housed', ...sw }, () => t(hoseFields(p, 'housed', { ...o, print: pr }), zH), { volumeOffset: hoseFieldsOverlap(p, 'housed', pr) }),
-    part('Gewinde', 8, { ...dH(p), z: zH, variant: 'plain' }, () => t(hoseThreadBody(p, false), zH)),
+    part('Gewinde', 8, { ...dH(p), z: zH, variant: 'plain', ...dHand(o) }, () => t(hoseThreadBody(p, false, hand(o)), zH)),
   ];
 }
 
@@ -446,7 +451,7 @@ export function partsBleed(p: OsvacParams, o: BuildOptions = {}): Part[] {
     part('Schlauchteil', 0.5, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseBody(p, 'plain'), zH)),
     ...knurlPart('Rändelung Schlauchteil', o, { ...dHK(p), z: zH, variant: 'plain' }, () => t(hoseKnurl(p, 'plain'), zH), hoseKnurlOverlap(p, 'plain')),
     part('Textfeld Schlauchteil', 7, { ...dHK(p), text: o.text, z: zH, variant: 'plain' }, () => t(hoseFields(p, 'plain', o), zH), { volumeOffset: hoseFieldsOverlap(p, 'plain') }),
-    part('Gewinde', 8, { ...dH(p), z: zH, variant: 'runout' }, () => t(hoseThreadBody(p, true), zH)),
+    part('Gewinde', 8, { ...dH(p), z: zH, variant: 'runout', ...dHand(o) }, () => t(hoseThreadBody(p, true, hand(o)), zH)),
     part('Knickschutz', 0.1, { ...dH(p), z: zH }, () => t(hoseSkirt(p), zH)),
   );
   return out;

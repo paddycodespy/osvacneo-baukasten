@@ -616,6 +616,23 @@ await withPreview(4180, async (url, browser) => {
     await ready(pg);
   });
 
+  await test('Schlauchgewinde: links Standard, rechts wählbar', pg, async () => {
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: /Kupplung ↔ Schlauch/ }).click();
+    await step(pg, 'Größen');
+    expect((await pg.getByRole('radio', { name: 'Linksgewinde' }).getAttribute('aria-checked')) === 'true', 'Linksgewinde ist nicht Standard');
+    await pg.getByRole('radio', { name: 'Rechtsgewinde' }).click();
+    await ready(pg);
+    await step(pg, 'Download');
+    expect((await pg.locator('.lead').first().innerText()).includes('Rechtsgewinde'), 'Download-Text ohne Rechtsgewinde: ' + (await pg.locator('.lead').first().innerText()));
+    await step(pg, 'Verbindung');
+    await pg.getByRole('radio', { name: /Nebenluft-Regler/ }).click();
+    await step(pg, 'Größen');
+    expect((await pg.getByRole('radio', { name: 'Rechtsgewinde' }).getAttribute('aria-checked')) === 'true', 'Rechtsgewinde gilt nicht auch beim Nebenluft-Regler');
+    await pg.getByRole('radio', { name: 'Linksgewinde' }).click();
+    await ready(pg);
+  });
+
   await test('Druckhilfe gilt je Verbindung', pg, async () => {
     const tool = pg.locator('button.tool', { hasText: 'Druckhilfe' });
     const on = async () => (await tool.getAttribute('aria-pressed')) === 'true';
