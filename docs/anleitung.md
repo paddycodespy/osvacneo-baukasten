@@ -89,6 +89,7 @@ Wie es danach weitergeht, steht unter [Download](#download).
 
 - **Kupplung (F)** bzw. **Stecker (M):** die Seite für osVAC neo.
 - **Schlauch (H):** der Innendurchmesser des Schlauchs. Miss ihn innen oder schau in die Angaben deines Saugers. Viele Schläuche haben 32 oder 36 mm.
+- **Links- oder Rechtsgewinde:** Standard ist *Linksgewinde* wie im Original. Je nach Hersteller ist die Drahtspirale im Schlauch aber auch rechtsherum gewickelt. Den Schlauch senkrecht halten und von außen auf die Spirale schauen: Steigt sie nach links an, ist es ein Linksgewinde, nach rechts ein Rechtsgewinde. Die Wahl gilt auch für den [Nebenluft-Regler](#nebenluft); beim Rechtsgewinde steht „Rechtsgewinde“ im Dateinamen.
 - **Gewinde:** Unter dem Schlauchfeld stehen die Durchmesser des Gewindes. Das Gewinde ist leicht konisch, am Eingang weiter als hinten. Der Schlauch passt, wenn sein **Außendurchmesser** höchstens so groß ist wie der *Gewindegrund am Eingang*. Schläuche mit gleichem Innendurchmesser sind außen oft verschieden dick: Ist deiner zu dick, stell einen etwas größeren Wert bei *Schlauch (H)* ein.
 
 ### Passung
