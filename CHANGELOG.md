@@ -2,6 +2,11 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## Unveröffentlicht
+
+- Anleitung: Abschnitte in derselben Reihenfolge wie die Karten in Schritt 1 (Freiform und eigene Kontur nach den Stutzen-Adaptern, dann Zubehör, Magnet-Schnellkupplung zuletzt). Bilder von Schritt 1 und der Magnet-Schnellkupplung neu (neues Symbol und Name der Karte *Gerät ↔ Kupplung/Stecker*, Kontrollkästchen im einheitlichen Stil).
+- Hilfetext „Spiel am Zentrierbund“: Satzbau korrigiert.
+
 ## 0.6.0
 
 Entwicklungsumgebung und Programm haben jetzt denselben Stand: Was bisher nur unter `npm run dev` zu sehen war, gibt es überall.
