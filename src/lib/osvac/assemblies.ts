@@ -484,7 +484,7 @@ export function magnetPortLayout(W: number, s: MagnetSpec, osvac: boolean) {
     ? s.ports.map((q) => ({ ...q, hand: 'left' as const }))
     : s.hoses.map((h) => ({ t: 'H' as const, d: h.d, cap: false, hand: h.hand }));
   const env = list.map((q) => portEnvelope(W, q.t, q.d));
-  const gap = osvac ? PLATE.gapBayonet : PLATE.gapHose;
+  const gap = !osvac ? PLATE.gapHose : list.every((q) => q.t === 'M') ? PLATE.gapMale : PLATE.gapBayonet;
   return { list, env, gap, ...portLayout(env, gap) };
 }
 

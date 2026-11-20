@@ -404,6 +404,8 @@ export const PLATE = {
   wall: 3,
   /** freier Abstand zwischen den Außenkonturen zweier Anschlüsse (mit Gegenstück): Bajonett greifen und drehen bzw. Schlauch aufdrehen */
   gapBayonet: 15,
+  /** zwei Stecker: gemessen wird mit den aufgesteckten Kupplungen, dazwischen reichen 12 mm */
+  gapMale: 12,
   gapHose: 8,
   /** Dicke der Platte innerhalb des Bunds und Wand an der Ringnut */
   disc: 4,

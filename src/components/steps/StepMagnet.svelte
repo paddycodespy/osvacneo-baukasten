@@ -82,7 +82,7 @@
       <label class="cap"><input type="checkbox" bind:checked={q.cap} /> Verschlusskappe dazu ({q.t === 'F' ? `Stopfen für die Kupplung F${fmt(q.d)}` : `Kappe für den Stecker M${fmt(q.d)}`})</label>
     </fieldset>
   {/each}
-  <p class="hint">Fest auf der Platte, ohne Drehring: Die Schläuche drehen sich in ihren eigenen Schlauchadaptern von osVAC neo. Zwei Anschlüsse brauchen {PLATE.gapBayonet} mm Luft zwischen den aufgesteckten Teilen, damit man sie greifen und drehen kann; zu große Kombinationen gehen nicht.</p>
+  <p class="hint">Fest auf der Platte, ohne Drehring: Die Schläuche drehen sich in ihren eigenen Schlauchadaptern von osVAC neo. Zwei Anschlüsse brauchen Luft zwischen den aufgesteckten Teilen, damit man sie greifen und drehen kann: {PLATE.gapBayonet} mm, bei zwei Steckern {PLATE.gapMale} mm zwischen den aufgesteckten Kupplungen. Zu große Kombinationen gehen nicht.</p>
 {:else if g.coupling}
   <h3 class="sub">Schlauch</h3>
   <div class="seg wide" role="radiogroup" aria-label="Art der Schlauchkupplung">

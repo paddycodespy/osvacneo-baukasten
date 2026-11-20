@@ -178,7 +178,7 @@ Platte, Drehring und Becher druckst du in einem Stück, mit der Kontaktfläche a
 
 Eine flache **Anschlussplatte** mit einem oder zwei Anschlüssen von osVAC neo. Je Anschluss wählst du **Kupplung (F)** oder **Stecker (M)** und den Durchmesser; beide Anschlüsse dürfen verschieden sein. Die Anschlüsse sitzen fest auf der Platte, ohne Drehring: Die Schläuche drehen sich in ihren eigenen Schlauchadaptern von osVAC neo.
 
-- Zwei Anschlüsse brauchen 15 mm Luft zwischen den aufgesteckten Teilen, damit du sie greifen und drehen kannst. Möglich sind z. B. 32 + 32, F32 + F36 oder 25 + 40; zu große Kombinationen sperrt die App.
+- Zwei Anschlüsse brauchen Luft zwischen den aufgesteckten Teilen, damit du sie greifen und drehen kannst: 15 mm, bei zwei Steckern 12 mm zwischen den aufgesteckten Kupplungen. Möglich sind z. B. 32 + 32, F32 + F36, 25 + 40 oder 2 × M36; zu große Kombinationen sperrt die App.
 - **Verschlusskappe dazu:** Für eine Kupplung gibt es einen Stopfen (ein geschlossener Stecker), für einen Stecker eine Kappe (eine geschlossene Kupplung). Sie liegt als eigenes Teil daneben und verschließt einen Anschluss, an dem gerade kein Schlauch hängt – sonst zieht er Falschluft.
 - In *Passung* stellst du das **Spiel zwischen Stecker und Kupplung** ein, wie bei den anderen Teilen von osVAC neo.
 
