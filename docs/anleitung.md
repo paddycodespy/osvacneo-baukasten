@@ -51,7 +51,7 @@ Im ersten Schritt wählst du, was für einen Adapter du brauchst. Die Arten sind
 - **An ein Gerät:** [Kupplung → Stutzen und Stecker → Stutzen](#stutzen) – für ein Gerät mit rundem Stutzen, den du selbst ausmisst.
 - **Eigener Aufbau:** [Freiform](#freiform) – ein Adapter aus Bausteinen, z. B. für eckige Auslässe, Bögen, Abzweige oder Geräte mit ungewöhnlicher Form.
 - **Zubehör:** [Saugdüse](#duese), [Nebenluft-Regler](#nebenluft), [Schieber einzeln](#schieber) und [Drehring-Lösehilfe](#loesehilfe).
-- **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten, auch mit [kleineren Schläuchen](#magnet-schlauch) oder [Anschlüssen von osVAC neo](#magnet-osvac). Ein eigenes System für Geräte mit 100-mm-Stutzen.
+- **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten, auch mit [kleineren Schläuchen](#magnet-schlauch) oder [Kupplung/Stecker](#magnet-osvac). Ein eigenes System für Geräte mit 100-mm-Stutzen.
 
 Rechts neben jeder Art steht das Kürzel, unter dem die Datei später heißt (z. B. *MxxFyy*; xx und yy sind die Durchmesser).
 
@@ -167,6 +167,10 @@ In *Passung* stellst du das Spiel am Stutzen und am Zentrierbund ein.
 
 Bei *Gerät ↔ Schlauch* unter *Schlauch* auf **Kleiner, mit Drehring** stellen. Statt der Kupplung Ø100 entsteht eine **Schlauchplatte**: eine flache Platte mit den Magneten, darauf ein oder zwei Becher mit dem Schlauchgewinde von osVAC neo. Jeder Becher dreht sich auf einem Drehring, so verdreht sich der Schlauch beim Arbeiten nicht.
 
+![Schlauchplatte mit zwei Schläuchen in der Vorschau](anleitung/magnet-schlauch-vorschau.webp)
+
+![Einstellungen für zwei Schläuche](anleitung/magnet-schlauch.webp){klein}
+
 - **Ein Schlauch** oder **zwei Schläuche**, je mit eigenem Innendurchmesser (15 bis 60 mm). Jeder Schlauch hat seine eigene [Gewindetabelle](#schlauch) wie bei den Schlauchadaptern.
 - **Links- oder Rechtsgewinde** wählst du für jeden Schlauch einzeln. Auf jedem Becher steht vorne „osVAC neo“ und sein Durchmesser, hinten die Lizenz.
 - Zwei Schläuche gehen nur, wenn zwischen den Bechern mindestens 8 mm Luft bleibt und beide auf die Platte passen (z. B. 32 + 32, 32 + 36, 25 + 40). Sonst meldet die App einen Fehler und du wählst einen kleineren Durchmesser.
@@ -177,6 +181,10 @@ Platte, Drehring und Becher druckst du in einem Stück, mit der Kontaktfläche a
 ### Gerät ↔ Kupplung/Stecker {#magnet-osvac}
 
 Eine flache **Anschlussplatte** mit einem oder zwei Anschlüssen von osVAC neo. Je Anschluss wählst du **Kupplung (F)** oder **Stecker (M)** und den Durchmesser; beide Anschlüsse dürfen verschieden sein. Die Anschlüsse sitzen fest auf der Platte, ohne Drehring: Die Schläuche drehen sich in ihren eigenen Schlauchadaptern von osVAC neo.
+
+![Anschlussplatte mit Kupplung, Stecker und Verschlusskappe in der Vorschau](anleitung/magnet-anschluss-vorschau.webp)
+
+![Einstellungen für zwei Anschlüsse](anleitung/magnet-anschluss.webp){klein}
 
 - Zwei Anschlüsse brauchen Luft zwischen den aufgesteckten Teilen, damit du sie greifen und drehen kannst: 15 mm, bei zwei Steckern 12 mm zwischen den aufgesteckten Kupplungen. Möglich sind z. B. 32 + 32, F32 + F36, 25 + 40 oder 2 × M36; zu große Kombinationen sperrt die App.
 - **Verschlusskappe dazu:** Für eine Kupplung gibt es einen Stopfen (ein geschlossener Stecker), für einen Stecker eine Kappe (eine geschlossene Kupplung). Sie liegt als eigenes Teil daneben und verschließt einen Anschluss, an dem gerade kein Schlauch hängt – sonst zieht er Falschluft.

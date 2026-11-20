@@ -292,7 +292,7 @@ export function swivelInner(p: OsvacParams, housed: boolean): Shape3D {
   return revolveProfile(...poly(swivelInnerPts(p.hoseDiameterInner / 2, p.generalMaterialWidth, housed, g)));
 }
 
-// ---------------------------------------------------------------- druckoptimierter Drehring (in Entwicklung)
+// ---------------------------------------------------------------- druckoptimierter Drehring (Standard seit 0.6)
 
 /**
  * Druckoptimierter Drehring (eigene Konstruktion, nicht im Original). Ziel: dreht sich direkt nach dem Druck.

@@ -1,5 +1,5 @@
 /**
- * Magnet-Schnellkupplung Ø100 (eigenes System, nicht osVAC neo), nach dem Vorbild der magnetischen Schnellkupplung von
+ * Magnet-Schnellkupplung Ø100 (eigenes System; über die Platte mit Kupplung/Stecker auch an osVAC neo), nach dem Vorbild der magnetischen Schnellkupplung von
  * kleinholz.me: Maschinenadapter und Schlauchkupplung halten über Neodym-Scheiben zusammen, die beim Druck eingelegt und
  * überdruckt werden (geschlossene Taschen, Druckpause).
  *
