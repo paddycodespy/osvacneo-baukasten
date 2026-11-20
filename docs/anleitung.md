@@ -143,12 +143,12 @@ Die kleine Tabelle darunter zeigt, wie weit das Rohrteil am Ende innen und auße
 
 ## Magnet-Schnellkupplung Ø100 {#magnet}
 
-Für große Geräte mit 100-mm-Absaugung. Am Gerät sitzt ein **Maschinenadapter**, darauf die Kupplung für den Schlauch. Beide halten über je acht Neodym-Magnete zusammen; ein Bund in der Mitte zentriert sie. Zum Umstecken ziehst du die Kupplung ab und setzt sie am nächsten Gerät an. Das ist ein eigenes System; über die Karte *Gerät ↔ osVAC neo* schließt du daran aber auch Teile von osVAC neo an.
+Für große Geräte mit 100-mm-Absaugung. Am Gerät sitzt ein **Maschinenadapter**, darauf die Kupplung für den Schlauch. Beide halten über je acht Neodym-Magnete zusammen; ein Bund in der Mitte zentriert sie. Zum Umstecken ziehst du die Kupplung ab und setzt sie am nächsten Gerät an. Das ist ein eigenes System; über die Karte *Gerät ↔ Kupplung/Stecker* schließt du daran aber auch Teile von osVAC neo an.
 
 In Schritt 1 gibt es zwei Karten:
 
 - **Gerät ↔ Schlauch:** Kupplung für einen 100er-Schlauch (Gewinde außen) oder eine Platte für einen oder zwei kleinere Schläuche mit Drehring.
-- **Gerät ↔ osVAC neo:** eine Platte mit einem oder zwei Anschlüssen von osVAC neo, wahlweise mit Verschlusskappe.
+- **Gerät ↔ Kupplung/Stecker:** eine Platte mit einem oder zwei Anschlüssen von osVAC neo, wahlweise mit Verschlusskappe.
 
 Adapter, Magnete und Stutzen sind bei beiden Karten gleich; jede Kupplung und jede Platte passt an jeden Adapter mit derselben Magnetgröße.
 
@@ -174,7 +174,7 @@ Bei *Gerät ↔ Schlauch* unter *Schlauch* auf **Kleiner, mit Drehring** stellen
 
 Platte, Drehring und Becher druckst du in einem Stück, mit der Kontaktfläche auf dem Druckbett. Nach dem Druck den Becher festhalten und die Platte einmal kräftig dagegen drehen, bis er frei läuft.
 
-### Gerät ↔ osVAC neo {#magnet-osvac}
+### Gerät ↔ Kupplung/Stecker {#magnet-osvac}
 
 Eine flache **Anschlussplatte** mit einem oder zwei Anschlüssen von osVAC neo. Je Anschluss wählst du **Kupplung (F)** oder **Stecker (M)** und den Durchmesser; beide Anschlüsse dürfen verschieden sein. Die Anschlüsse sitzen fest auf der Platte, ohne Drehring: Die Schläuche drehen sich in ihren eigenen Schlauchadaptern von osVAC neo.
 

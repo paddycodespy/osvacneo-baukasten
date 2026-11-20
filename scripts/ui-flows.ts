@@ -631,7 +631,7 @@ await withPreview(4180, async (url, browser) => {
   });
   await test('Magnet-Schnellkupplung: Anschlüsse von osVAC neo', pg, async () => {
     await step(pg, 'Verbindung');
-    await pg.getByRole('radio', { name: /Gerät ↔ osVAC neo/ }).click();
+    await pg.getByRole('radio', { name: /Gerät ↔ Kupplung\/Stecker/ }).click();
     await step(pg, 'Teile');
     await ready(pg);
     expect((await pg.locator('.stage-head .code').innerText()).includes('F32'), 'Kopfzeile: ' + (await pg.locator('.stage-head .code').innerText()));

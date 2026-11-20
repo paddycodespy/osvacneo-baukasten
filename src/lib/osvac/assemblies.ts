@@ -61,7 +61,7 @@ export interface BuildOptions {
   bleed?: BleedSpec;
   /** Magnet-Schnellkupplung Ø100 */
   magnet?: MagnetSpec;
-  /** Magnet-Schnellkupplung: osVAC-Anschlüsse statt Schlauch („Gerät ↔ osVAC neo“) */
+  /** Magnet-Schnellkupplung: osVAC-Anschlüsse statt Schlauch („Gerät ↔ Kupplung/Stecker“) */
   magnetOsvac?: boolean;
   /** Drehring am Schlauch: 'print' = druckoptimiert (in Entwicklung), sonst wie im Original */
   swivel?: 'print';
