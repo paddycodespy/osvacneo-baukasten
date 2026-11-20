@@ -204,9 +204,6 @@ export const SECTION_FIELDS: Record<SectionShape, SecNum[]> = {
   contour: [],
 };
 
-/** Bogen mit 0° oder Gerade mit 0 mm: bleibt in der Liste, wird aber übersprungen (zum Ausprobieren, ohne den Baustein zu löschen). */
-export const blockOff = (b: Block) => (b.type === 'bend' && b.angle === 0) || (b.type === 'straight' && b.length === 0);
-
 export const BLOCK_LABELS: Record<BlockType, string> = {
   straight: 'Gerade',
   bend: 'Bogen',
@@ -1118,7 +1115,6 @@ function planRaw(spec: FreeSpec, adj: GateAdj): FreePlan {
     cuts[idx] = { start, n: null };
     const inner0 = s0, outer0 = grow(s0, w);
     const base = { kind: 'free', f: frameKey(start), s: secKey(s0), rot: r6(rot0), w };
-    if (blockOff(b)) return;
     if (b.type === 'straight') {
       if (!(b.length > 0.5)) {
         issues.push({ level: 'error', text: `${what}: Die Länge muss größer als 0,5 mm sein.`, fixes: [fixTo('Länge', 'Länge der Geraden', 1, (sp, x) => void (blk(sp).length = x))] });
@@ -1132,8 +1128,8 @@ function planRaw(spec: FreeSpec, adj: GateAdj): FreePlan {
       cuts[idx].n = unit(cross(f.t, D));
       const need = extent(outer0, rot0, b.dir) + 0.5;
       if (!(b.angle > 0 && b.angle <= 180)) {
-        const a = b.angle > 180 ? 180 : 0;
-        issues.push({ level: 'error', text: `${what}: Der Winkel muss zwischen 0° und 180° liegen.`, fixes: [fixTo('Winkel', 'Winkel des Bogens', a, (sp, x) => void (blk(sp).angle = x), '°')] });
+        const a = b.angle > 180 ? 180 : 1;
+        issues.push({ level: 'error', text: `${what}: Der Winkel muss zwischen 1° und 180° liegen.`, fixes: [fixTo('Winkel', 'Winkel des Bogens', a, (sp, x) => void (blk(sp).angle = x), '°')] });
         return;
       }
       if (!(b.radius > need)) {
@@ -2712,12 +2708,12 @@ export function freeSummary(spec: FreeSpec): { code: string; sub: string; long: 
   const tipSec = sectionText(lastSection(spec));
   const tipText = tip.angle > 0 ? `Spitze schräg ${f(tip.angle)}°` : 'Spitze gerade';
   const B = isDev ? dev : isNoz ? tipSec : end(spec.b.type as OsvacEnd, spec.b.d);
-  const blocks = spec.blocks.filter((b) => !blockOff(b)).map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : b.type === 'branch' ? `Abzweig ${f(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}` : BLOCK_LABELS[b.type])).join(', ');
+  const blocks = spec.blocks.map((b) => (b.type === 'bend' ? `Bogen ${f(b.angle)}°` : b.type === 'branch' ? `Abzweig ${f(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}` : BLOCK_LABELS[b.type])).join(', ');
   const devText = `Gerät ${{ over: 'aufgesteckt', into: 'eingesteckt', flange: 'mit Flansch' }[spec.b.device.mode]}`;
   const split = hasSplit(spec);
   const sub = ['Freiform', blocks, isDev ? devText : isNoz ? `Düse, ${tipText}` : '', split ? '2 Druckteile' : ''].filter(Boolean).join(' · ');
   const fileB = isDev ? `Geraet ${dev.replace(/ × /g, 'x').replace('Ø ', 'D')}` : isNoz ? `Duese ${tipSec.replace(/ × /g, 'x').replace('Ø ', 'D')}${tip.angle > 0 ? ` schraeg${f(tip.angle)}` : ''}` : B;
-  const fileMid = spec.blocks.filter((b) => !blockOff(b) && (b.type === 'bend' || b.type === 'branch' || b.type === 'gate' || b.type === 'bleed')).map((b) => (b.type === 'gate' ? 'Schieber' : b.type === 'bleed' ? 'Nebenluft' : `${b.type === 'bend' ? 'Bogen' : 'Abzweig'}${f(b.angle)}`)).join(' ');
+  const fileMid = spec.blocks.filter((b) => b.type === 'bend' || b.type === 'branch' || b.type === 'gate' || b.type === 'bleed').map((b) => (b.type === 'gate' ? 'Schieber' : b.type === 'bleed' ? 'Nebenluft' : `${b.type === 'bend' ? 'Bogen' : 'Abzweig'}${f(b.angle)}`)).join(' ');
   // Ende C am Abzweig
   const hasC = spec.blocks.some((b) => b.type === 'branch') && !!spec.c;
   const C = hasC ? (spec.c!.type === 'device' ? sectionText(spec.c!.device.section) : end(spec.c!.type as OsvacEnd, spec.c!.d)) : '';
