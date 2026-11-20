@@ -161,7 +161,7 @@ await withPreview(4180, async (url, browser) => {
     await pg.reload();
     await ready(pg);
     expect((await pg.locator('.step-tab.current').innerText()).includes('Aufbau'), 'Schritt nicht wiederhergestellt');
-    expect((await pg.locator('.stage-head .code').innerText()).includes('Ø 32'), 'Freiform-Aufbau nicht wiederhergestellt');
+    expect((await pg.locator('.stage-head .code').innerText()).includes('Ø32'), 'Freiform-Aufbau nicht wiederhergestellt');
   });
 
   await test('Extras im Namen auf dem Druckbett', pg, async () => {
@@ -188,7 +188,7 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('radio', { name: 'Mit Flansch' }).click();
     await ready(pg);
     expect((await pg.locator('.fi-opt').innerText()).includes('Der Flansch (Ende B) liegt flach'), 'Druckbett-Wahl nicht durch Hinweis ersetzt');
-    expect((await pg.locator('.card.open').innerText()).includes('Löcher Ø 4,5 mm'), 'Hinweis zu den Löchern fehlt');
+    expect((await pg.locator('.card.open').innerText()).includes('Löcher Ø4,5 mm'), 'Hinweis zu den Löchern fehlt');
     expect(!(await pg.locator('.step-tab', { hasText: 'Download' }).isDisabled()), 'Download mit Flansch gesperrt');
     if (!(await pg.getByLabel('Nut für ein Dichtband').isVisible())) await pg.locator('.card.open summary', { hasText: 'Extras' }).click();
     await pg.getByLabel('Nut für ein Dichtband').check();

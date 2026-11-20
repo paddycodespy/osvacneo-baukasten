@@ -90,7 +90,7 @@ export const MAG = {
   reliefD: 8,
   screwD: 5.5,
   screwZ: 8,
-  /** Kopf ISO 4762 M5: Ø 8,5 × 5 → Senkung Ø 9,2; Mutter DIN 985 M5: SW 8 × 5 → Tasche SW 8,3; beide 5,3 tief */
+  /** Kopf ISO 4762 M5: Ø8,5 × 5 → Senkung Ø9,2; Mutter DIN 985 M5: SW 8 × 5 → Tasche SW 8,3; beide 5,3 tief */
   headD: 9.2,
   nutSW: 8.3,
   seat: 5.3,
@@ -349,8 +349,8 @@ export function magnetName(s: MagnetSpec): { code: string; file: string; long: s
   ].filter(Boolean).join(' ');
   const long = [
     parts,
-    s.adapter ? `Stutzen Ø ${f(s.stutzen)} mm, ${f(s.depth)} mm tief` : '',
-    s.coupling ? `Schlauch Ø ${f(s.hose)} mm, ${s.hand === 'right' ? 'Rechts' : 'Links'}gewinde Steigung ${f(s.pitch)} mm` : '',
+    s.adapter ? `Stutzen Ø${f(s.stutzen)} mm, ${f(s.depth)} mm tief` : '',
+    s.coupling ? `Schlauch Ø${f(s.hose)} mm, ${s.hand === 'right' ? 'Rechts' : 'Links'}gewinde Steigung ${f(s.pitch)} mm` : '',
     `Magnete ${MAGNET_SIZES[mag].label}`,
   ].filter(Boolean).join(', ');
   return { code: `Ø100 · ${MAGNET_SIZES[mag].label.replace(' mm', '')}`, file, long };

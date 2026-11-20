@@ -351,7 +351,7 @@ export function gateName(s: GateSpec): { code: string; file: string; long: strin
   return {
     code: `Schieber Ø${f(s.d)}`,
     file: ['Schieber', `Rohr${f(s.d)}`, mountFile, turned ? 'waagerecht' : '', far ? `Wand${f(lay.A)}` : ''].filter(Boolean).join(' '),
-    long: `Rohr Ø ${f(s.d)} mm außen, Muffen ${f(s.depth)} mm tief, ${s.mount === 'none' ? 'ohne Befestigung' : `${MOUNT_LABELS[s.mount]}${s.mount === 'keyhole' ? `, ${ORIENT_LABELS[s.orient]}` : ''}, Rohrmitte ${f(lay.A)} mm vor der Wand`}`,
+    long: `Rohr Ø${f(s.d)} mm außen, Muffen ${f(s.depth)} mm tief, ${s.mount === 'none' ? 'ohne Befestigung' : `${MOUNT_LABELS[s.mount]}${s.mount === 'keyhole' ? `, ${ORIENT_LABELS[s.orient]}` : ''}, Rohrmitte ${f(lay.A)} mm vor der Wand`}`,
   };
 }
 

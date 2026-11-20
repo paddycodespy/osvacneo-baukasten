@@ -100,7 +100,7 @@ export interface DeviceEnd {
   ribs: boolean;
   /** Extras, nur aufgesteckt: 3 Längsschlitze vom offenen Ende her, damit eine Schlauchschelle klemmen kann */
   slots: boolean;
-  /** Extras: 3 Schraubenlöcher (aufgesteckt Ø 4 mit Senkung, eingesteckt Ø 3,2 zum Vorbohren) */
+  /** Extras: 3 Schraubenlöcher (aufgesteckt Ø4 mit Senkung, eingesteckt Ø3,2 zum Vorbohren) */
   holes: boolean;
   /** Extras, nur aufgesteckt: Aussparung am offenen Rand (Breite, Tiefe, Lage in Grad) */
   notch: boolean;
@@ -787,10 +787,10 @@ function extent(s: Section, rotDeg: number, deg: number): number {
   return Math.max(...samplePoints(s, 180, rotDeg).map(([x, y]) => x * dx + y * dy));
 }
 
-/** Kennmaß für Texte: „62 × 38“, „Ø 32“ */
+/** Kennmaß für Texte: „62 × 38“, „Ø32“ */
 export function sectionText(s: Section): string {
   const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
-  if (s.shape === 'circle') return `Ø ${f(s.d)}`;
+  if (s.shape === 'circle') return `Ø${f(s.d)}`;
   if (s.shape === 'dshape') return `D ${f(s.d)}/${f(s.h)}`;
   if (s.shape === 'trapezoid') return `${f(s.w)}/${f(s.w2)} × ${f(s.h)}`;
   if (s.shape === 'tri') return `Dreieck ${f(s.d)}`;
@@ -2281,7 +2281,7 @@ function deviceExtras(spec: FreeSpec, fb: Frame, front: Section, back: Section, 
     }
     return t;
   };
-  /** Schraubenlöcher: aufgesteckt Ø 4 mit Senkung außen (wie beim Rohrkonus), eingesteckt Ø 3,2 zum Eindrehen */
+  /** Schraubenlöcher: aufgesteckt Ø4 mit Senkung außen (wie beim Rohrkonus), eingesteckt Ø3,2 zum Eindrehen */
   const holeTools = (): Shape3D[] => {
     const outer = over ? grow(devAt(xHole), a + w) : grow(devAt(xHole), -a);
     return contourAt(outer, rot1, holeAt).map(({ p, n }) => {

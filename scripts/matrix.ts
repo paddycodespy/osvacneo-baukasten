@@ -16,7 +16,7 @@ const cases = [
 const pipes = [
   { d1Inner: 29.3, d2Inner: 33.3, length: 30, wall: 3, transition: 8, screwHoles: true },
   { d1Inner: 50, d2Inner: 50, length: 15, wall: 2, transition: 8, screwHoles: false },
-  // Ø 38–43 mit Schraubenlöchern: hier scheiterte der Schnitt früher
+  // Ø38–43 mit Schraubenlöchern: hier scheiterte der Schnitt früher
   { d1Inner: 40, d2Inner: 40, length: 30, wall: 4, transition: 12, screwHoles: true },
 ];
 let fail = 0;

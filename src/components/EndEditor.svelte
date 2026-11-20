@@ -171,7 +171,7 @@
     </Field>
   </div>
   <p class="hint">
-    {flange?.holes.length ? `${flange.holes.length} Löcher` : 'Löcher'} Ø {fmt(dv.flangeLayout === 'auto' ? AUTO_HOLE_D : dv.holeD)} mm mit Senkung für Senkkopfschrauben{dv.flangeLayout === 'auto' ? ' M4, automatisch verteilt' : ''}. {tag === 'B' ? 'Der Flansch liegt beim Drucken unten auf dem Bett, so geht es ohne Stützen.' : 'Der Flansch steht beim Drucken schräg in der Luft und braucht Stützen. Besser wäre er an Ende B.'}{#if flange && !flange.errors.length && flangeExtent(dv, wall) >= BRIM_FROM} Bei dieser Plattengröße im Slicer einen Brim einschalten, damit die Ecken flach bleiben.{/if}
+    {flange?.holes.length ? `${flange.holes.length} Löcher` : 'Löcher'} Ø{fmt(dv.flangeLayout === 'auto' ? AUTO_HOLE_D : dv.holeD)} mm mit Senkung für Senkkopfschrauben{dv.flangeLayout === 'auto' ? ' M4, automatisch verteilt' : ''}. {tag === 'B' ? 'Der Flansch liegt beim Drucken unten auf dem Bett, so geht es ohne Stützen.' : 'Der Flansch steht beim Drucken schräg in der Luft und braucht Stützen. Besser wäre er an Ende B.'}{#if flange && !flange.errors.length && flangeExtent(dv, wall) >= BRIM_FROM} Bei dieser Plattengröße im Slicer einen Brim einschalten, damit die Ecken flach bleiben.{/if}
   </p>
   <IssueList list={issues} {apply} />
   <details class="more" bind:open={extrasOpen}>
@@ -283,7 +283,7 @@
       {/if}
       <div class="x-item">
         <label class="inline-check"><input type="checkbox" bind:checked={dv.holes} /> Löcher für Schrauben</label>
-        <p class="hint">{over ? 'Ø 4 mm mit Senkung, für kleine Senkkopfschrauben in den Stutzen.' : 'Ø 3,2 mm zum Vorbohren: Schrauben von außen durch das Gerät in den Adapter drehen.'} {dv.section.shape === 'circle' || dv.section.shape === 'ellipse' ? '3 Löcher, gleichmäßig verteilt.' : 'Je ein Loch mittig auf den geraden Seiten.'}</p>
+        <p class="hint">{over ? 'Ø4 mm mit Senkung, für kleine Senkkopfschrauben in den Stutzen.' : 'Ø3,2 mm zum Vorbohren: Schrauben von außen durch das Gerät in den Adapter drehen.'} {dv.section.shape === 'circle' || dv.section.shape === 'ellipse' ? '3 Löcher, gleichmäßig verteilt.' : 'Je ein Loch mittig auf den geraden Seiten.'}</p>
       </div>
       {#if over}
         <div class="x-item">

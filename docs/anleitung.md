@@ -133,7 +133,7 @@ Unter **Feineinstellungen** (meist nicht nötig) findest du:
 - **Luft (Zugabe):** etwas Spiel, damit der Adapter passt. Geht er nicht drauf bzw. hinein: Wert erhöhen. Sitzt er zu locker: verringern, bis 0.
 - **Wandstärke:** Dicke der Wand am Rohrteil. 3 mm sind stabil.
 - **Übergangslänge:** Länge des schrägen Stücks zwischen Anschluss und Rohrteil. Länger ist flacher und lässt sich besser drucken.
-- **3 Löcher für Schrauben:** Mit kleinen Senkkopfschrauben (Ø 4 mm) hält der Adapter zusätzlich am Stutzen.
+- **3 Löcher für Schrauben:** Mit kleinen Senkkopfschrauben (Ø4 mm) hält der Adapter zusätzlich am Stutzen.
 - **Klemmrippen:** schmale Rippen, die sich beim Aufstecken etwas zusammendrücken. Hilft, wenn der Stutzen nicht genau rund ist.
 - **Schlitze für eine Schlauchschelle:** Eine Schelle außen drückt den Adapter fest auf den Stutzen (nur bei „über den Stutzen“).
 

@@ -133,7 +133,7 @@
       if (b.dir) parts.push(`Richtung ${fmt(b.dir)}°`);
     }
     if (b.type === 'branch') {
-      parts.push(`${fmt(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}`, `Ø ${fmt(b.branchD)}`, `zu Ende C`);
+      parts.push(`${fmt(b.angle)}°${b.sweep && b.angle >= SWEEP_FROM ? ' gebogen' : ''}`, `Ø${fmt(b.branchD)}`, `zu Ende C`);
       if (b.dir) parts.push(`Richtung ${fmt(b.dir)}°`);
     }
     if (b.type === 'bleed') parts.push(`${fmt(b.length)} mm lang`, 'Drehring');
