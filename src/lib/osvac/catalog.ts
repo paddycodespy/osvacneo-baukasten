@@ -39,6 +39,8 @@ export interface AdapterKind {
   helper?: boolean;
   /** Magnet-Schnellkupplung Ø100: eigenes System mit eingedruckten Neodym-Magneten */
   magnet?: boolean;
+  /** Magnet-Schnellkupplung mit Anschlüssen von osVAC neo („Gerät ↔ osVAC neo“) */
+  magnetOsvac?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
 
@@ -163,7 +165,7 @@ export const KINDS: AdapterKind[] = [
     group: 'magnet',
     code: 'Magnet',
     title: 'Gerät ↔ Schlauch',
-    description: 'Adapter am Gerät und Kupplung für den 100er-Schlauch, gehalten von eingedruckten Neodym-Magneten. Umstecken in Sekunden.',
+    description: 'Adapter am Gerät und Kupplung für den Schlauch: Ø100 oder ein bis zwei kleinere Schläuche mit Drehring, gehalten von eingedruckten Neodym-Magneten. Umstecken in Sekunden.',
     ends: { top: 'magnet', bottom: null },
     diameters: [],
     magnet: true,
@@ -171,6 +173,21 @@ export const KINDS: AdapterKind[] = [
     build: asm.buildMagnet,
     parts: asm.partsMagnet,
     fileName: (_p, o) => `${magnetName({ ...DEFAULT_MAGNET, ...o?.magnet }).file}`,
+  },
+  {
+    id: 'MAGNET_OSVAC',
+    group: 'magnet',
+    code: 'Magnet',
+    title: 'Gerät ↔ osVAC neo',
+    description: 'Adapter am Gerät und eine Platte mit ein oder zwei Anschlüssen von osVAC neo (Kupplung oder Stecker), wahlweise mit Verschlusskappe.',
+    ends: { top: 'magnet', bottom: null },
+    diameters: [],
+    magnet: true,
+    magnetOsvac: true,
+    available: true,
+    build: (p, o) => asm.buildMagnet(p, { ...o, magnetOsvac: true }),
+    parts: (p, o) => asm.partsMagnet(p, { ...o, magnetOsvac: true }),
+    fileName: (_p, o) => `${magnetName({ ...DEFAULT_MAGNET, ...o?.magnet }, true).file}`,
   },
   {
     id: 'NOZZLE',
