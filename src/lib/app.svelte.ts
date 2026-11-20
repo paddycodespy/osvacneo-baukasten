@@ -226,7 +226,7 @@ class AppState {
   waiting = $derived(this.kind.freeform && this.freeIssues.some((x) => x.todo) && !this.freeIssues.some((x) => x.level === 'error' && !x.todo));
   nozzleIssues = $derived(this.kind.nozzle ? nozzleIssues(this.nozzle) : []);
   params = $derived(deriveParams(this.input));
-  /** Magnetplatte mit kleineren Schläuchen („Gerät ↔ Schlauch“) oder osVAC-Anschlüssen („Gerät ↔ osVAC neo“) */
+  /** Magnetplatte mit kleineren Schläuchen („Gerät ↔ Schlauch“) oder osVAC-Anschlüssen („Gerät ↔ Kupplung/Stecker“) */
   magnetPlate = $derived(!!this.kind.magnetOsvac || (this.kind.magnet && this.magnet.hoseMode === 'small'));
   magnetPlateInfo = $derived(this.magnetPlate ? magnetPlateInfo(this.params, $state.snapshot(this.magnet), !!this.kind.magnetOsvac) : null);
   /** passen die Anschlüsse nicht mit genug Abstand auf die Platte: Fehler (Download gesperrt) */

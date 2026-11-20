@@ -39,7 +39,7 @@ export interface AdapterKind {
   helper?: boolean;
   /** Magnet-Schnellkupplung Ø100: eigenes System mit eingedruckten Neodym-Magneten */
   magnet?: boolean;
-  /** Magnet-Schnellkupplung mit Anschlüssen von osVAC neo („Gerät ↔ osVAC neo“) */
+  /** Magnet-Schnellkupplung mit Anschlüssen von osVAC neo („Gerät ↔ Kupplung/Stecker“) */
   magnetOsvac?: boolean;
   fileName: (p: OsvacParams, o?: asm.BuildOptions) => string;
 }
@@ -178,7 +178,7 @@ export const KINDS: AdapterKind[] = [
     id: 'MAGNET_OSVAC',
     group: 'magnet',
     code: 'Magnet',
-    title: 'Gerät ↔ osVAC neo',
+    title: 'Gerät ↔ Kupplung/Stecker',
     description: 'Adapter am Gerät und eine Platte mit ein oder zwei Anschlüssen von osVAC neo (Kupplung oder Stecker), wahlweise mit Verschlusskappe.',
     ends: { top: 'magnet', bottom: null },
     diameters: [],

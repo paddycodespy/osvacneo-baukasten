@@ -46,7 +46,7 @@ export interface MagnetSpec {
   hoseMode: 'large' | 'small';
   /** kleinere Schläuche: ein oder zwei, je Innendurchmesser und Drehrichtung des Gewindes */
   hoses: MagnetHose[];
-  /** „Gerät ↔ osVAC neo“: ein oder zwei Anschlüsse, je Kupplung (F) oder Stecker (M), wahlweise mit Verschlusskappe */
+  /** „Gerät ↔ Kupplung/Stecker“: ein oder zwei Anschlüsse, je Kupplung (F) oder Stecker (M), wahlweise mit Verschlusskappe */
   ports: MagnetPort[];
 }
 
@@ -360,7 +360,7 @@ function outlinePoints(sdf: (x: number, y: number) => number, R: number): [numbe
   return out;
 }
 
-/** Kurzname für Dateien und Kopfzeile; osvac: „Gerät ↔ osVAC neo“ */
+/** Kurzname für Dateien und Kopfzeile; osvac: „Gerät ↔ Kupplung/Stecker“ */
 export function magnetName(s: MagnetSpec, osvac = false): { code: string; file: string; long: string } {
   const f = (v: number) => (Math.round(v * 10) / 10).toLocaleString('de-DE');
   const mag = s.magnet;
