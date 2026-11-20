@@ -275,20 +275,3 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
   return body;
 }
 
-/** Füllring für die Dichtnut am Female-Boden mit 45°-Einlauf (Maschinenadapter). Female-System. */
-export function femaleBeadFill(p: OsvacParams): Shape3D {
-  const rFi = p.femaleDiameterInner / 2;
-  const rFm = p.femaleDiameterMiddle / 2;
-  const H = p.femaleHeight;
-  // Dichtnut: Lage fest zum Innendurchmesser (bei Spalt 0,4 gemessen: wandert nicht mit der Bohrung)
-  const beadC: [number, number] = [p.femaleDiameterInner / 2 + 2.15, -31.45];
-  const beadR = 1.95;
-  const beadTopZ = beadC[1] + Math.sqrt(beadR ** 2 - (rFm - beadC[0]) ** 2);
-  const zBot = -H + 0.1;
-  const zCh = zBot + (rFm - (rFi + 0.1));
-  return revolveProfile([rFm, beadTopZ], [
-    { t: 'A', p: [beadC[0], beadC[1] - beadR], c: beadC },
-    L(rFi + 0.1, zBot),
-    L(rFm, Math.min(zCh, beadTopZ)),
-  ]);
-}

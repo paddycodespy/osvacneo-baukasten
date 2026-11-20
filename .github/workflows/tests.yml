@@ -1,4 +1,4 @@
-# Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen, Bedienabläufe, Geometrie aller Adapter und Druckbarkeit.
+# Prüft jede Änderung: Typen, Build, Cache-Schlüssel, Freiform-Rechnung, Skizzen, Bedienabläufe, Geometrie aller Adapter, Druckbarkeit und ob die Anleitungsbilder aktuell sind.
 # Start von Hand („Actions“ → „Tests“ → „Run workflow“) oder über release.yml vor jedem Release.
 # Die Gruppen laufen gleichzeitig (Freiform in zwei Hälften).
 name: Tests
@@ -119,3 +119,37 @@ jobs:
 
       - name: Nebenluft-Ring
         run: npm run test:bleed
+
+  # Anleitungsbilder: alle Szenen neu aufnehmen und mit public/anleitung/ vergleichen. Veraltete Bilder erscheinen als
+  # Warnung (der Lauf bleibt grün, ein Release wird nicht blockiert); die neuen Bilder liegen als Artefakt bereit.
+  anleitung:
+    name: Anleitungsbilder aktuell?
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: pip install pillow numpy
+
+      - name: Web-Oberfläche bauen
+        run: npm run build
+
+      - name: Bilder aufnehmen und vergleichen
+        run: npm run docs:pruefen
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      - name: Neu aufgenommene Bilder
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anleitung-bilder
+          path: out/anleitung/*.webp
+          if-no-files-found: ignore

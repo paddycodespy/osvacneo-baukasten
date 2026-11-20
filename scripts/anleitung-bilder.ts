@@ -5,17 +5,23 @@
  * Jede Szene startet mit leerem Speicher (Standardwerte), damit die Bilder zu den Texten passen.
  * Die Bilder landen in public/anleitung/ als WebP (helle Ansicht, Breite 1440 px; Chrome wandelt sie um, ohne weitere Pakete).
  *
+ * Prüfen, ob Bilder veraltet sind (npm run build && npm run docs:pruefen): nimmt alle Bilder nach out/anleitung/ auf und
+ * vergleicht sie mit public/anleitung/ (tools/anleitung/vergleich.py, braucht python3 mit Pillow und numpy). Veraltete
+ * Bilder werden genannt, auf GitHub als Warnung; der Lauf bleibt grün.
  * Chrome: CHROME_PATH oder /usr/bin/google-chrome. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
  */
 import type { Browser, Locator, Page } from 'playwright-core';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { withPreview } from './lib/preview';
 
-const OUT = 'public/anleitung';
+const check = process.argv.includes('--pruefen');
+const OUT = check ? 'out/anleitung' : 'public/anleitung';
 const fixture = (n: string) => path.join(import.meta.dirname, 'fixtures', n);
+if (check) rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
-const only = process.argv.slice(2);
+const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 
 async function ready(pg: Page) {
   await pg.waitForTimeout(400);
@@ -415,3 +421,19 @@ await withPreview(4181, async (url, browser) => {
     await runScene(browser, url, s);
   }
 });
+
+if (check) {
+  const r = spawnSync('python3', [path.join(import.meta.dirname, '../tools/anleitung/vergleich.py'), 'public/anleitung', OUT], { encoding: 'utf8' });
+  if (r.status !== 0) {
+    console.error(r.stderr);
+    console.error('python3 mit Pillow und numpy nötig: pip install pillow numpy');
+    process.exit(1);
+  }
+  const stale = r.stdout.trim().split('\n').filter(Boolean);
+  const gh = !!process.env.GITHUB_ACTIONS;
+  if (!stale.length) console.log('Anleitungsbilder aktuell');
+  else {
+    console.log(`Veraltet (${stale.length}): neu aufnehmen mit npm run build && npm run docs:bilder -- <Name>`);
+    for (const l of stale) console.log(gh ? `::warning title=Anleitungsbild veraltet::${l} der Pixel anders als in public/anleitung` : `   ${l}`);
+  }
+}
