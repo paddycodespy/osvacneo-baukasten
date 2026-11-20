@@ -2,7 +2,7 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
-## Unveröffentlicht
+## 0.6.0
 
 Entwicklungsumgebung und Programm haben jetzt denselben Stand: Was bisher nur unter `npm run dev` zu sehen war, gibt es überall.
 
