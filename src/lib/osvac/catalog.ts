@@ -55,7 +55,7 @@ export const KIND_GROUPS: { id: KindGroup; title: string }[] = [
   { id: 'magnet', title: 'Magnet-Schnellkupplung Ø100' },
 ];
 
-export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle' | 'bleed' | 'helper' | 'magnet';
+export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle' | 'bleed' | 'helper' | 'magnet' | 'magnet-plate';
 
 function pipeName(o?: asm.BuildOptions): string {
   const s = o?.pipe;
@@ -180,7 +180,7 @@ export const KINDS: AdapterKind[] = [
     code: 'Magnet',
     title: 'Gerät ↔ Kupplung/Stecker',
     description: 'Adapter am Gerät und eine Platte mit ein oder zwei Anschlüssen (Kupplung oder Stecker), wahlweise mit Verschlusskappe.',
-    ends: { top: 'magnet', bottom: null },
+    ends: { top: 'magnet-plate', bottom: null },
     diameters: [],
     magnet: true,
     magnetOsvac: true,

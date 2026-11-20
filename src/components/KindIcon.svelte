@@ -31,15 +31,24 @@
       <path d="M12 {y} H32 V{y + 12} L28 {y + 16} V{y + 24} H16 V{y + 16} L12 {y + 12} Z" class="h" />
       <rect x="11" y={y + 15} width="22" height="7" rx="1.5" class="h" />
       <rect x="19" y={y + 16.5} width="6" height="4" class="win" />
-    {:else if s === 'magnet'}
-      <!-- zwei Flansche mit Nasen, dazwischen die Magnete -->
+    {:else if s === 'magnet' || s === 'magnet-plate'}
+      <!-- Adapter, zwei Flansche mit Nasen, dazwischen die Magnete -->
       <rect x="12" y="2" width="20" height="20" rx="1.5" class="h" />
       <rect x="4" y="22" width="36" height="5" rx="1" class="m" />
       <rect x="4" y="29" width="36" height="5" rx="1" class="m" />
       <rect x="8" y="23.5" width="5" height="2" class="mag" /><rect x="31" y="23.5" width="5" height="2" class="mag" />
       <rect x="8" y="30.5" width="5" height="2" class="mag" /><rect x="31" y="30.5" width="5" height="2" class="mag" />
-      <path d="M12 34 h20 v20 h-20 z" class="h" />
-      {#each [39, 44, 49] as d}<line x1="12" x2="32" y1={d} y2={d + 2} class="rib" />{/each}
+      {#if s === 'magnet'}
+        <!-- Schlauch mit Rillen, nach unten weiter werdend -->
+        <path d="M13 34 h18 l3 20 h-24 z" class="h" />
+        {#each [38, 43, 48] as d}<line x1="13" x2="31" y1={d} y2={d + 2.5} class="rib" />{/each}
+      {:else}
+        <!-- Platte mit zwei Anschlüssen: Kupplung (gerippt) und Stecker (mit Bund) -->
+        <rect x="5" y="34" width="15" height="20" rx="2" class="f" />
+        {#each [9, 12.5, 16] as x}<line x1={x} x2={x} y1="38" y2="50" class="rib" />{/each}
+        <rect x="27" y="34" width="10" height="20" rx="1.5" class="m" />
+        <rect x="25" y="45" width="14" height="4" rx="1" class="m" />
+      {/if}
     {:else if s === 'helper'}
       <!-- Block mit Stutzen und Rippe -->
       <rect x="13" y="2" width="18" height="27" rx="1.5" class="m" />
