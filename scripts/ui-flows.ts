@@ -566,7 +566,7 @@ await withPreview(4180, async (url, browser) => {
 
   await test('Magnet-Schnellkupplung: Teile, Magnete, Druckpause', pg, async () => {
     await step(pg, 'Verbindung');
-    await pg.getByRole('radio', { name: /Magnet-Schnellkupplung/ }).click();
+    await pg.getByRole('radio', { name: /Gerät ↔ Schlauch/ }).click();
     await step(pg, 'Teile');
     await ready(pg);
     expect((await pg.locator('.stage-head .code').innerText()).includes('10 × 3'), 'Kopfzeile: ' + (await pg.locator('.stage-head .code').innerText()));

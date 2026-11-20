@@ -251,7 +251,7 @@ const scenes: Scene[] = [
   {
     name: 'magnet',
     run: async (pg) => {
-      await kind(pg, /Magnet-Schnellkupplung/);
+      await kind(pg, /Gerät ↔ Schlauch/);
       await step(pg, 'Teile');
       await shotPanel(pg, 'magnet');
       await shotApp(pg, 'magnet-vorschau');

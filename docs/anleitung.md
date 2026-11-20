@@ -143,7 +143,7 @@ Die kleine Tabelle darunter zeigt, wie weit das Rohrteil am Ende innen und auße
 
 ## Magnet-Schnellkupplung Ø100 {#magnet}
 
-Für große Geräte mit 100-mm-Absaugung: Am Gerät sitzt ein **Maschinenadapter**, am Schlauch eine **Schlauchkupplung**. Beide halten über je acht Neodym-Magnete zusammen; ein Bund in der Mitte zentriert sie. Zum Umstecken ziehst du die Kupplung ab und setzt sie am nächsten Gerät an. Das ist ein eigenes System und passt nicht zu den Teilen von osVAC neo.
+Für große Geräte mit 100-mm-Absaugung, in Schritt 1 die Karte *Gerät ↔ Schlauch*. Am Gerät sitzt ein **Maschinenadapter**, am Schlauch eine **Schlauchkupplung**. Beide halten über je acht Neodym-Magnete zusammen; ein Bund in der Mitte zentriert sie. Zum Umstecken ziehst du die Kupplung ab und setzt sie am nächsten Gerät an. Das ist ein eigenes System und passt nicht zu den Teilen von osVAC neo.
 
 ![Magnet-Schnellkupplung in der Vorschau](anleitung/magnet-vorschau.webp)
 

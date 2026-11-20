@@ -257,7 +257,7 @@
 
     <header class="stage-head">
       <h1 class="code" class:free={app.kind.freeform || app.kind.gate || app.kind.magnet} aria-live="polite">{app.code}</h1>
-      <p class="kind-line">{app.kind.bleed ? app.kind.title : app.kind.nozzle ? freeSummary(app.free).sub.replace(/^Freiform/, 'Saugdüse') : app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
+      <p class="kind-line">{app.kind.magnet ? `Magnet-Schnellkupplung Ø100 · ${app.kind.title}` : app.kind.bleed ? app.kind.title : app.kind.nozzle ? freeSummary(app.free).sub.replace(/^Freiform/, 'Saugdüse') : app.kind.freeform ? freeSummary(app.free).sub : app.kind.title}</p>
       {#if app.status !== 'ready'}<p class="status status-m" data-s={app.status} aria-hidden="true">{app.status === 'todo' ? 'Kontur fehlt noch' : app.status === 'error' ? 'Fehler beim Berechnen' : app.status === 'start' ? 'CAD-Kern wird geladen\u00a0…' : busyText}</p>{/if}
     </header>
 
