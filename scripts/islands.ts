@@ -94,6 +94,20 @@ const others: [string, string, object, RegExp, object?][] = [
   ['magnet-osvac-M50-15x3', 'MAGNET_OSVAC', { magnet: { ...DEFAULT_MAGNET, adapter: false, magnet: '15x3', ports: [{ t: 'M', d: 50, cap: true }] } as MagnetSpec }, /^$/],
 ];
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+// Ohne Auswahl: jede Gruppe (Name bis zum ersten „-“) in einem eigenen Prozess. Alle Fälle in einem Lauf bringen
+// den CAD-Kern (WASM) irgendwann zum Absturz („table index is out of bounds“), auch auf GitHub.
+if (!only.length) {
+  const groups = [...new Set([...cases.map(([id]) => id), ...others.map(([id]) => id)].map((id) => id.split('-')[0]))];
+  const tsx = path.join(root, 'node_modules/.bin/tsx');
+  const failed: string[] = [];
+  for (const g of groups) {
+    console.log(`— ${g}`);
+    const r = spawnSync(tsx, [import.meta.filename, `${g}-`], { stdio: 'inherit' });
+    if (r.status !== 0) failed.push(g);
+  }
+  console.log(failed.length ? `Fehler in: ${failed.join(', ')}` : `Alle Gruppen in Ordnung (${groups.join(', ')})`);
+  process.exit(failed.length ? 1 : 0);
+}
 const dir = path.join(root, 'out/islands');
 fs.rmSync(dir, { recursive: true, force: true });
 fs.mkdirSync(dir, { recursive: true });
