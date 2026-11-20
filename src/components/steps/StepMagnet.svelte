@@ -22,7 +22,7 @@
 <h2>Teile</h2>
 <p class="lead">
   {#if osvac}
-    Am Gerät sitzt der Adapter, darauf eine Platte mit einem oder zwei Anschlüssen von osVAC neo. Beide halten über je {MAG.n} Neodym-Magnete zusammen, die beim Drucken eingelegt und überdruckt werden. Ein Bund in der Mitte zentriert die Teile.
+    Am Gerät sitzt der Adapter, darauf eine Platte mit einem oder zwei Anschlüssen (Kupplung oder Stecker). Beide halten über je {MAG.n} Neodym-Magnete zusammen, die beim Drucken eingelegt und überdruckt werden. Ein Bund in der Mitte zentriert die Teile.
   {:else}
     Am Gerät sitzt der Adapter, am Schlauch die Kupplung. Beide halten über je {MAG.n} Neodym-Magnete zusammen, die beim Drucken eingelegt und überdruckt werden. Ein Bund in der Mitte zentriert die Teile. Zum Umstecken die Kupplung einfach abziehen und am nächsten Gerät ansetzen.
   {/if}
@@ -31,7 +31,7 @@
 <div class="checks helper-parts">
   <label><input type="checkbox" checked={g.adapter} disabled={g.adapter && !g.coupling} onchange={() => app.toggleMagnetPart('adapter')} /> Maschinenadapter: kommt auf den Stutzen am Gerät, mit Schraubklemme</label>
   <label><input type="checkbox" checked={g.coupling} disabled={g.coupling && !g.adapter} onchange={() => app.toggleMagnetPart('coupling')} />
-    {#if osvac}Anschlussplatte: mit Kupplung oder Stecker von osVAC neo{:else if g.hoseMode === 'small'}Schlauchplatte: ein oder zwei Schläuche mit Drehring{:else}Schlauchkupplung: wird auf den Schlauch gedreht{/if}</label>
+    {#if osvac}Anschlussplatte: mit Kupplung oder Stecker{:else if g.hoseMode === 'small'}Schlauchplatte: ein oder zwei Schläuche mit Drehring{:else}Schlauchkupplung: wird auf den Schlauch gedreht{/if}</label>
 </div>
 <p class="hint">{osvac ? 'Für jedes Gerät einen Adapter; die Anschlussplatte passt auf jeden Adapter mit derselben Magnetgröße.' : 'Für jedes Gerät einen Adapter, für jeden Schlauch eine Kupplung.'}</p>
 

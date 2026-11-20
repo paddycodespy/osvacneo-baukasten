@@ -258,6 +258,34 @@ const scenes: Scene[] = [
     },
   },
   {
+    name: 'magnet-schlauch',
+    run: async (pg) => {
+      await kind(pg, /Gerät ↔ Schlauch/);
+      await step(pg, 'Teile');
+      await pg.getByRole('radio', { name: 'Kleiner, mit Drehring' }).click();
+      await pg.getByRole('radio', { name: 'Zwei Schläuche' }).click();
+      await ready(pg);
+      await shotPanel(pg, 'magnet-schlauch', pg.locator('h3.sub', { hasText: 'Schlauch' }), pg.locator('.port').last());
+      await shotApp(pg, 'magnet-schlauch-vorschau');
+      await pg.getByRole('radio', { name: 'Ein Schlauch' }).click();
+      await pg.getByRole('radio', { name: 'Ø100, Gewinde außen' }).click();
+    },
+  },
+  {
+    name: 'magnet-anschluss',
+    run: async (pg) => {
+      await kind(pg, /Gerät ↔ Kupplung\/Stecker/);
+      await step(pg, 'Teile');
+      await pg.getByRole('radio', { name: 'Zwei Anschlüsse' }).click();
+      await pg.getByRole('radio', { name: 'Stecker (M)' }).nth(1).click();
+      await pg.locator('label.cap input').first().check();
+      await ready(pg);
+      await shotPanel(pg, 'magnet-anschluss', pg.locator('h3.sub', { hasText: 'Anschlüsse' }), pg.locator('.port').last());
+      await shotApp(pg, 'magnet-anschluss-vorschau');
+      await pg.getByRole('button', { name: /Teile auf Standard zurücksetzen/ }).click();
+    },
+  },
+  {
     name: 'freiform',
     run: async (pg) => {
       await kind(pg, 'Freiform');

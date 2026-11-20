@@ -63,7 +63,7 @@ export interface BuildOptions {
   magnet?: MagnetSpec;
   /** Magnet-Schnellkupplung: osVAC-Anschlüsse statt Schlauch („Gerät ↔ Kupplung/Stecker“) */
   magnetOsvac?: boolean;
-  /** Drehring am Schlauch: 'print' = druckoptimiert (in Entwicklung), sonst wie im Original */
+  /** Drehring am Schlauch: 'print' = druckoptimiert (Standard in der App), sonst wie im Original */
   swivel?: 'print';
   /** Schlauchgewinde: 'right' = Rechtsgewinde, sonst links wie im Original */
   hoseHand?: 'right';
