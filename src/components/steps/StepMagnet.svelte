@@ -33,7 +33,7 @@
   <label><input type="checkbox" checked={g.coupling} disabled={g.coupling && !g.adapter} onchange={() => app.toggleMagnetPart('coupling')} />
     {#if osvac}Anschlussplatte: mit Kupplung oder Stecker{:else if g.hoseMode === 'small'}Schlauchplatte: ein oder zwei Schläuche mit Drehring{:else}Schlauchkupplung: wird auf den Schlauch gedreht{/if}</label>
 </div>
-<p class="hint">{osvac ? 'Für jedes Gerät einen Adapter; die Anschlussplatte passt auf jeden Adapter mit derselben Magnetgröße.' : 'Für jedes Gerät einen Adapter, für jeden Schlauch eine Kupplung.'}</p>
+<p class="hint">{osvac ? 'Für jedes Gerät einen Adapter; die Anschlussplatte passt auf jeden Adapter mit derselben Magnetgröße.' : g.hoseMode === 'small' ? 'Für jedes Gerät einen Adapter; die Schlauchplatte passt auf jeden Adapter mit derselben Magnetgröße.' : 'Für jedes Gerät einen Adapter, für jeden Schlauch eine Kupplung.'}</p>
 
 <div class="mag-size">
 <Field label="Magnete" help={app.helpTexts.magnetSize}>
@@ -44,7 +44,7 @@
   </div>
 </Field>
 </div>
-<p class="hint">Scheibenmagnete Ø × Höhe, {MAG.n} je Teil. Adapter und Kupplung immer mit derselben Größe drucken.</p>
+<p class="hint">Scheibenmagnete Ø × Höhe, {MAG.n} je Teil. Adapter und {osvac ? 'Anschlussplatte' : g.hoseMode === 'small' ? 'Schlauchplatte' : 'Kupplung'} immer mit derselben Größe drucken.</p>
 
 {#if g.adapter}
   <h3 class="sub">Stutzen am Gerät</h3>
@@ -79,7 +79,7 @@
         </div>
         <NumberField value={q.d} min={PORT_D[0]} max={PORT_D[1]} step={0.1} label="Innendurchmesser von Anschluss {i + 1}" oncommit={(v) => (q.d = clampD(v))} />
       </div>
-      <label class="cap"><input type="checkbox" bind:checked={q.cap} /> Verschlusskappe dazu ({q.t === 'F' ? `Stopfen für die Kupplung F${fmt(q.d)}` : `Kappe für den Stecker M${fmt(q.d)}`})</label>
+      <label class="inline-check cap"><input type="checkbox" bind:checked={q.cap} /> Verschlusskappe dazu ({q.t === 'F' ? `Stopfen für die Kupplung F${fmt(q.d)}` : `Kappe für den Stecker M${fmt(q.d)}`})</label>
     </fieldset>
   {/each}
   <p class="hint">Fest auf der Platte, ohne Drehring: Die Schläuche drehen sich in ihren eigenen Schlauchadaptern von osVAC neo. Zwei Anschlüsse brauchen Luft zwischen den aufgesteckten Teilen, damit man sie greifen und drehen kann: {PLATE.gapBayonet} mm, bei zwei Steckern {PLATE.gapMale} mm zwischen den aufgesteckten Kupplungen. Zu große Kombinationen gehen nicht.</p>
@@ -147,7 +147,7 @@
   .sum { margin-top: 18px; }
   .port { margin-top: 14px; }
   .port .seg { margin-top: 4px; }
-  .cap { display: block; margin-top: 10px; font-size: 15px; }
+  .cap { margin-top: 10px; }
   .hand { margin-top: 10px; }
   .print-note { margin: 14px 0 0; padding: 8px 12px; border-radius: 4px; font-size: 14px; border-left: 4px solid var(--sky); background: var(--sky-l); }
   .print-note.warn { border-left-color: var(--signal); background: var(--warn-bg); }
