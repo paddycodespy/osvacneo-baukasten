@@ -1,6 +1,6 @@
 [package]
 name = "osvacneo-baukasten"
-version = "0.5.5"
+version = "0.6.0"
 description = "osVAC neo Baukasten als Desktop-Programm"
 authors = ["paddycodespy"]
 license = "CC-BY-NC-SA-4.0"
