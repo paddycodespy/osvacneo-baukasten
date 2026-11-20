@@ -179,7 +179,7 @@ export const KINDS: AdapterKind[] = [
     group: 'magnet',
     code: 'Magnet',
     title: 'Gerät ↔ Kupplung/Stecker',
-    description: 'Adapter am Gerät und eine Platte mit ein oder zwei Anschlüssen von osVAC neo (Kupplung oder Stecker), wahlweise mit Verschlusskappe.',
+    description: 'Adapter am Gerät und eine Platte mit ein oder zwei Anschlüssen (Kupplung oder Stecker), wahlweise mit Verschlusskappe.',
     ends: { top: 'magnet', bottom: null },
     diameters: [],
     magnet: true,
