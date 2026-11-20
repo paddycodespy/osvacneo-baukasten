@@ -48,9 +48,9 @@ export const KIND_GROUPS: { id: KindGroup; title: string }[] = [
   { id: 'osvac', title: 'osVAC neo untereinander' },
   { id: 'hose', title: 'An den Schlauch' },
   { id: 'machine', title: 'An ein Gerät' },
-  { id: 'magnet', title: 'Magnet-Schnellkupplung Ø100' },
-  { id: 'accessory', title: 'Zubehör' },
   { id: 'custom', title: 'Eigener Aufbau' },
+  { id: 'accessory', title: 'Zubehör' },
+  { id: 'magnet', title: 'Magnet-Schnellkupplung Ø100' },
 ];
 
 export type EndType = 'female' | 'male' | 'hose' | 'machine' | 'free' | 'gate' | 'nozzle' | 'bleed' | 'helper' | 'magnet';
@@ -256,6 +256,7 @@ export const KINDS: AdapterKind[] = [
 export const kindById = (id: string) => KINDS.find((k) => k.id === id)!;
 
 /** Verbindungen, die die Oberfläche anbietet */
-export const VISIBLE_KINDS = KINDS;
+/** Karten in Schritt 1: nach der Reihenfolge der Gruppen (KIND_GROUPS), innerhalb einer Gruppe wie in KINDS */
+export const VISIBLE_KINDS = KIND_GROUPS.flatMap((g) => KINDS.filter((k) => k.group === g.id));
 /** Verbindung wählbar (bekannt und verfügbar) */
 export const kindSelectable = (id: string) => VISIBLE_KINDS.some((k) => k.id === id && k.available);

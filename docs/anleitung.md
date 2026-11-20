@@ -49,9 +49,9 @@ Im ersten Schritt wählst du, was für einen Adapter du brauchst. Die Arten sind
 - **osVAC neo untereinander:** [Stecker ↔ Kupplung](#stecker-kupplung) verbindet zwei Größen. *Kupplung einzeln* und *Stecker einzeln* sind nur der Verschluss, z. B. zum Einbau in eigene Konstruktionen.
 - **An den Schlauch:** [Kupplung ↔ Schlauch und Stecker ↔ Schlauch](#schlauch) – zum Aufdrehen auf den Saugschlauch.
 - **An ein Gerät:** [Kupplung → Stutzen und Stecker → Stutzen](#stutzen) – für ein Gerät mit rundem Stutzen, den du selbst ausmisst.
-- **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten. Ein eigenes System, es passt nicht zu den Teilen von osVAC neo.
-- **Zubehör:** [Saugdüse](#duese), [Nebenluft-Regler](#nebenluft), [Schieber einzeln](#schieber) und [Drehring-Lösehilfe](#loesehilfe).
 - **Eigener Aufbau:** [Freiform](#freiform) – ein Adapter aus Bausteinen, z. B. für eckige Auslässe, Bögen, Abzweige oder Geräte mit ungewöhnlicher Form.
+- **Zubehör:** [Saugdüse](#duese), [Nebenluft-Regler](#nebenluft), [Schieber einzeln](#schieber) und [Drehring-Lösehilfe](#loesehilfe).
+- **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten. Ein eigenes System, es passt nicht zu den Teilen von osVAC neo.
 
 Rechts neben jeder Art steht das Kürzel, unter dem die Datei später heißt (z. B. *MxxFyy*; xx und yy sind die Durchmesser).
 
