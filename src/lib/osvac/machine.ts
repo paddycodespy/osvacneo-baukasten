@@ -166,10 +166,10 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
 
   if (s.screwHoles) {
     // 3 Schraubenlöcher Ø4 bei 90/210/330° mit Senkung wie im Original (dort eine Fase an der Bohrungskante):
-    // beginnt 2,0 mm unter der Außenfläche in der Bohrung und endet auf der Außenfläche überall bei Ø 7,88;
+    // beginnt 2,0 mm unter der Außenfläche in der Bohrung und endet auf der Außenfläche überall bei Ø7,88;
     // nachgebaut als Regelfläche zwischen den beiden Randkurven
     // Achse 8 mm über dem Rohrende, bei konischem Rohr um 2 · Steigung höher
-    // (gemessen: gerade 8,000 bei Wand 3–6 und Ø 30/40, Konus 29,3→33,3 7,867, Konus 40→42 7,900)
+    // (gemessen: gerade 8,000 bei Wand 3–6 und Ø30/40, Konus 29,3→33,3 7,867, Konus 40→42 7,900)
     const zH = -(L0 - 8 + 2 * slope);
     const rOutAt = (z: number) => r1i + w + slope * -z;
     const rAt = r1i + slope * -zH;
@@ -196,7 +196,7 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
       const w0 = ring((ph) => P(rimY(ph, 2) - 2.3, 1.7, ph)); // etwas innerhalb der Bohrung beginnen
       const w1 = ring((ph) => P(rimY(ph, 2) - 2.0, 2, ph));
       // Fasenlinie über die Außenfläche hinaus verlängert (k = 1,25): liegt die Randkurve genau auf dem
-      // Außenzylinder, scheitert der Schnitt je nach Durchmesser (z. B. Ø 38–43 mm)
+      // Außenzylinder, scheitert der Schnitt je nach Durchmesser (z. B. Ø38–43 mm)
       const k = 1.25;
       const ext = (ph: number): [number, number] => {
         const y1 = rimY(ph, 2) - 2.0, y2 = rimY(ph, 3.94);
@@ -210,7 +210,7 @@ export function pipeCone(s: PipeSpec, opt: { text?: boolean } = {}): Shape3D {
     }
     // Gegenprobe: entfernt werden darf höchstens das Volumen der Werkzeuge (bei gescheitertem Schnitt
     // blieb früher z. B. nur ein Rest des Rohrs übrig)
-    // einzeln schneiden: alle drei auf einmal scheiterten bei konischen Rohren ab etwa Ø 50 (Volumen wuchs statt zu sinken)
+    // einzeln schneiden: alle drei auf einmal scheiterten bei konischen Rohren ab etwa Ø50 (Volumen wuchs statt zu sinken)
     let removed = 0, toolVol = 0;
     tools.forEach((tool, i) => {
       const before = measureVolume(body);

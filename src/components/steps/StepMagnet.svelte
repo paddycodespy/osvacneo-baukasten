@@ -64,7 +64,7 @@
 {/if}
 
 <p class="hint sum">
-  {g.adapter ? `Adapter ${fmt(app.magnetLay.heightA)} mm hoch` : ''}{g.adapter && g.coupling ? ', ' : ''}{g.coupling ? `Kupplung ${fmt(app.magnetLay.zC)} mm hoch` : ''}, Flansch Ø {fmt(2 * app.magnetLay.lugOut, 0)} mm über die Nasen. Druckpause zum Einlegen der Magnete, Höhen im Download.
+  {g.adapter ? `Adapter ${fmt(app.magnetLay.heightA)} mm hoch` : ''}{g.adapter && g.coupling ? ', ' : ''}{g.coupling ? `Kupplung ${fmt(app.magnetLay.zC)} mm hoch` : ''}, Flansch Ø{fmt(2 * app.magnetLay.lugOut, 0)} mm über die Nasen. Druckpause zum Einlegen der Magnete, Höhen im Download.
 </p>
 
 {#if printNote}<p class="print-note {printNote.level}" role="status">{printNote.text}</p>{/if}

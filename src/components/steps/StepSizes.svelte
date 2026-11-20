@@ -47,7 +47,7 @@
     {g.mount === 'none'
       ? 'Der Schieber hängt nur am Rohr.'
       : g.mount === 'plate'
-      ? 'Platte hinten am Schieber mit vier Löchern für Senkkopfschrauben (Ø 4 mm), je Seite unten und oben. Hält am festesten.'
+      ? 'Platte hinten am Schieber mit vier Löchern für Senkkopfschrauben (Ø4 mm), je Seite unten und oben. Hält am festesten.'
       : g.mount === 'keyhole'
       ? 'Zwei Schlüssellöcher: Schrauben in die Wand drehen, Schieber einhängen. Schnell wieder abzunehmen.'
       : 'Eigenes kleines Teil, das an die Wand geschraubt wird. Das Rohr neben dem Schieber wird hineingedrückt.'}
@@ -150,7 +150,7 @@
       </div>
       <div class="x-list">
         <div class="x-item">
-          <label class="inline-check"><input type="checkbox" bind:checked={app.machine.holes} /> 3 Löcher für Schrauben (Ø 4 mm)</label>
+          <label class="inline-check"><input type="checkbox" bind:checked={app.machine.holes} /> 3 Löcher für Schrauben (Ø4 mm)</label>
           <p class="hint">Mit kleinen Senkkopfschrauben hält der Adapter zusätzlich am Stutzen.</p>
         </div>
         <div class="x-item">

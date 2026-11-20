@@ -446,17 +446,17 @@ class AppState {
       `Zusammenbau: ${L.screwN === 2 ? 'zwei' : 'vier'} Muttern M3 von unten in die Sechskant-Taschen des Unterteils drücken. Die Platte mit den dicken Enden nach oben in den Kanal legen. Oberteil aufsetzen und mit ${L.screwN === 2 ? 'zwei' : 'vier'} Schrauben M3 × ${L.screwLen} (Zylinderkopf) gleichmäßig ${L.screwN === 2 ? 'abwechselnd' : 'über Kreuz'} anziehen, nur so fest, dass die Platte noch gleitet.`,
       'Herausziehen öffnet, hineinschieben schließt. Die dicken Enden schlagen bei „auf“ und „zu“ am Gehäuse an, so bleibt die Platte im Schieber. Die Dichtlippen um die Bohrung drücken leicht auf die Platte, dadurch zieht der Schieber kaum Falschluft und die Platte bleibt in jeder Stellung stehen. Zum Herausnehmen das Oberteil abschrauben.',
       'Mit 0,2 mm Schichthöhe drucken (auch die erste Schicht): Boden, Kanal und Dichtlippen sind genau auf dieses Raster ausgelegt. Bei anderen Schichthöhen rundet der Slicer, die Lippen drücken dann zu wenig oder zu stark.',
-      `Das Rohr (außen Ø ${fmt(s.d)} mm) auf beiden Seiten bis zum Anschlag einstecken.`,
+      `Das Rohr (außen Ø${fmt(s.d)} mm) auf beiden Seiten bis zum Anschlag einstecken.`,
     ];
     const at = `Die Rohrmitte liegt ${fmt(L.A)} mm vor der Wand.`;
-    if (s.mount === 'plate') t.push(`Vier Senklöcher für Senkkopfschrauben Ø 4 mm, ${this.gatePitch}. ${at}`);
+    if (s.mount === 'plate') t.push(`Vier Senklöcher für Senkkopfschrauben Ø4 mm, ${this.gatePitch}. ${at}`);
     if (s.mount === 'keyhole')
       t.push(
         L.keyTurned
-          ? `Zwei Schlüssellöcher, ${this.gatePitch}: zwei Schrauben (Ø 4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit der Seite der Schlüssellöcher nach oben einhängen; das Rohr läuft dann waagerecht, die Platte gleitet senkrecht. ${at}`
-          : `Zwei Schlüssellöcher, ${this.gatePitch}: zwei Schrauben (Ø 4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit dem oberen Ende (wie gedruckt) nach oben einhängen; das Rohr läuft dann senkrecht. ${at}`,
+          ? `Zwei Schlüssellöcher, ${this.gatePitch}: zwei Schrauben (Ø4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit der Seite der Schlüssellöcher nach oben einhängen; das Rohr läuft dann waagerecht, die Platte gleitet senkrecht. ${at}`
+          : `Zwei Schlüssellöcher, ${this.gatePitch}: zwei Schrauben (Ø4 mm, Kopf bis 8 mm) waagerecht nebeneinander in die Wand drehen und etwa 4 mm herausstehen lassen. Den Schieber mit dem oberen Ende (wie gedruckt) nach oben einhängen; das Rohr läuft dann senkrecht. ${at}`,
       );
-    if (s.mount === 'clip') t.push(`Der Wandhalter ist ein eigenes Teil für das Rohr neben dem Schieber. Mit zwei Senkkopfschrauben Ø 4 mm (${this.gatePitch}) an die Wand schrauben und das Rohr hineindrücken. ${at}`);
+    if (s.mount === 'clip') t.push(`Der Wandhalter ist ein eigenes Teil für das Rohr neben dem Schieber. Mit zwei Senkkopfschrauben Ø4 mm (${this.gatePitch}) an die Wand schrauben und das Rohr hineindrücken. ${at}`);
     if (s.mount === 'keyhole' && s.orient === 'turned') t.push('Bei waagerechtem Rohr gleitet die Platte senkrecht. Die Dichtlippen halten sie durch Reibung, auch gegen ihr Gewicht; rutscht sie doch, in „Passung“ das Spiel der Platte verkleinern.');
     return t;
   });
@@ -529,7 +529,7 @@ class AppState {
           ? `Nach dem Druck den Schlauchteil einmal gegen ${this.kind.id === 'FH' ? 'die Kupplung' : this.kind.id === 'BLEED' ? 'das Rohr des Reglers' : 'das Gehäuse'} drehen: Der Ring löst sich mit einem leichten Ruck und läuft dann frei. Geht er schwer, beim nächsten Mal in „Passung“ das Spiel am Drehring etwas erhöhen.`
           : `Nach dem Druck den Schlauchteil einmal kräftig gegen ${this.kind.id === 'FH' ? 'die Kupplung' : this.kind.id === 'BLEED' ? 'das Rohr des Reglers' : 'das Gehäuse'} drehen, bis sich der Ring leicht bewegt. Sitzt er fest, hilft die Drehring-Lösehilfe.`,
       );
-    if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø 4 mm), falls der Adapter zusätzlich halten soll.');
+    if (this.kind.machine && this.machine.holes) t.push('Die drei kleinen Löcher sind für Senkkopfschrauben (Ø4 mm), falls der Adapter zusätzlich halten soll.');
     if (this.kind.gate) t.push(...this.gateTips);
     if (this.kind.magnet) t.push(...this.magnetTips);
     if (this.kind.helper)
@@ -563,7 +563,7 @@ class AppState {
     const dv = this.free.b.device;
     if (this.kind.freeform && this.free.b.type === 'device' && dv.mode === 'flange') {
       const d = (dv.flangeLayout === 'auto' ? AUTO_HOLE_D : dv.holeD).toLocaleString('de-DE');
-      t.push(`Der Flansch hat Löcher Ø ${d} mm mit Senkung für Senkkopfschrauben. Die Senkung liegt oben, auf der Seite zum Adapter.`);
+      t.push(`Der Flansch hat Löcher Ø${d} mm mit Senkung für Senkkopfschrauben. Die Senkung liegt oben, auf der Seite zum Adapter.`);
       if (flangeExtent(dv, this.free.wall) >= BRIM_FROM)
         t.push('Große Flanschplatte: Im Slicer einen Brim (Rand, etwa 5 mm) einschalten, damit sich die Ecken beim Drucken nicht vom Bett lösen.');
       if (dv.seal) t.push(`Nach dem Druck selbstklebendes Moosgummi-Dichtband ${dv.sealW} mm breit in die Nut auf der Unterseite kleben.`);
