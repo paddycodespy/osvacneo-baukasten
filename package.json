@@ -22,6 +22,7 @@
     "test:bleed": "tsx scripts/bleed-print.ts",
     "docs": "tsx scripts/anleitung.ts",
     "docs:bilder": "tsx scripts/anleitung-bilder.ts",
+    "docs:pruefen": "tsx scripts/anleitung-bilder.ts --pruefen",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build"

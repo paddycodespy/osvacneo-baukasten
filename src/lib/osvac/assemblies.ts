@@ -9,7 +9,7 @@ import { femaleRing, femaleFields, femaleFieldsOverlap, femaleKnurl, femaleKnurl
 import { maleTube, maleSupport } from './male';
 import { revolveProfile, L, L as L_ } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, hoseCupGrip, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, swivelPrintTop, swivelPrintBottom, swivelPrintProfile, SWIVEL_PRINT, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
-import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
+import { pipeCone, pipeTransition, pipeRibs, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, partPlacements, inPart2, hasSplit, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
 import { DEFAULT_GATE, gateLayout, gateLower, gateUpper, gateSlider, gateClip, gateBed, upperOnBed, type GateSpec } from './gate';
@@ -177,7 +177,6 @@ export function partsMachineF(p: OsvacParams, o: BuildOptions = {}): Part[] {
   const rFi = p.femaleDiameterInner / 2;
   return [
     ...female(p, o),
-    part('Dichtnut-Füllung', 0.2, dF(p), () => femaleBeadFill(p)),
     part('Übergang', 0.1, { ...dAll(p, o), pipe: s, kind: 'pipeF' }, () => pipeTransition(rFi, rFi + p.generalMaterialWidth, s).translate([0, 0, zT])),
     part('Rohr', 12, { pipe: s, text: o.text, z: zT - s.transition }, () => pipeCone(s, o).translate([0, 0, zT - s.transition])),
     ...pipeRibPart(s, o, zT - s.transition),
@@ -335,7 +334,7 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
   const pA = withDiameter(p, spec.a.type, spec.a.d);
   const rA = ringOf(pA, spec.a.type);
   if (spec.a.type === 'female') {
-    out.push(...female(pA, o), part('Dichtnut-Füllung', 0.2, dF(pA), () => femaleBeadFill(pA)));
+    out.push(...female(pA, o));
     out.push(part('Übergang A', 0.1, { kind: 'freeA', a: 'female', ...dAll(pA), w }, () => pipeTransition(rA.rIn, rA.rOut, pipeFor(spec.a.d)).translate([0, 0, -pA.femaleHeight])));
   } else {
     out.push(part('Male', 9, { ...dM(pA, o), rot: 'flip' }, () => flippedMale(pA, o)));
@@ -357,7 +356,7 @@ export function partsFree(p: OsvacParams, o: BuildOptions = {}): Part[] {
     out.push(placedPart(part(`Übergang ${tag}`, 0.1, { kind: tag === 'B' ? 'freeB' : 'freeC', b: type, ...dAll(pB), w }, () => pipeTransition(rB.rIn, rB.rOut, pipeFor(E.d))), cone));
     if (type === 'female') {
       const pl = localPlacement(at(OSVAC_TRANSITION + pB.femaleHeight), fe.u, fe.t);
-      for (const q of [...female(pB, o), part('Dichtnut-Füllung', 0.2, dF(pB), () => femaleBeadFill(pB))]) out.push(placedPart({ ...q, name: `${q.name} ${tag}` }, pl));
+      for (const q of female(pB, o)) out.push(placedPart({ ...q, name: `${q.name} ${tag}` }, pl));
     } else {
       const neg: V3 = [-fe.t[0], -fe.t[1], -fe.t[2]];
       const pl = localPlacement(at(OSVAC_TRANSITION), fe.u, neg);
@@ -579,7 +578,7 @@ function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: Retur
     const o2 = { ...noSupport };
     if (q.t === 'F') {
       const v: [number, number, number] = [x, 0, zTop + pq.femaleHeight + OSVAC_TRANSITION];
-      for (const r of [...female(pq, o2), part('Dichtnut-Füllung', 0.2, dF(pq), () => femaleBeadFill(pq)), part('Übergang', 0.1, { kind: 'magnetF', ...dAll(pq) }, () => pipeTransition(q.d / 2, q.d / 2 + W, pipeFor(q.d)).translate([0, 0, -pq.femaleHeight]))])
+      for (const r of [...female(pq, o2), part('Übergang', 0.1, { kind: 'magnetF', ...dAll(pq) }, () => pipeTransition(q.d / 2, q.d / 2 + W, pipeFor(q.d)).translate([0, 0, -pq.femaleHeight]))])
         out.push(moved(r, v, tag));
     } else if (q.t === 'M') {
       const v: [number, number, number] = [x, 0, zTop + pq.maleHeight + OSVAC_TRANSITION];
@@ -612,7 +611,7 @@ function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: Retur
     if (q.t === 'F')
       out.push(...[part('Male', 9, { ...dM(pq, noSupport), rot: 'flip' }, () => flippedMale(pq, noSupport)), part('Übergang', 0.1, { kind: 'magnetM', ...dAll(pq) }, () => pipeTransition(pq.maleDiameterInner / 2, pq.maleDiameterOuter / 2, pipeFor(q.d)).translate([0, 0, -pq.maleHeight])), floor].map(mv));
     else
-      out.push(...[...female(pq, noSupport), part('Dichtnut-Füllung', 0.2, dF(pq), () => femaleBeadFill(pq)), part('Übergang', 0.1, { kind: 'magnetF', ...dAll(pq) }, () => pipeTransition(q.d / 2, q.d / 2 + W, pipeFor(q.d)).translate([0, 0, -pq.femaleHeight])), floor].map(mv));
+      out.push(...[...female(pq, noSupport), part('Übergang', 0.1, { kind: 'magnetF', ...dAll(pq) }, () => pipeTransition(q.d / 2, q.d / 2 + W, pipeFor(q.d)).translate([0, 0, -pq.femaleHeight])), floor].map(mv));
   });
   return out;
 }
