@@ -95,20 +95,25 @@
       <button type="button" role="radio" aria-checked={g.hoses.length === 1} class:sel={g.hoses.length === 1} onclick={() => app.setMagnetCount(1)}>Ein Schlauch</button>
       <button type="button" role="radio" aria-checked={g.hoses.length === 2} class:sel={g.hoses.length === 2} onclick={() => app.setMagnetCount(2)}>Zwei Schläuche</button>
     </div>
-    {#each g.hoses as d, i}
+    {#each g.hoses as h, i}
       <fieldset class="dia port">
         <legend>{g.hoses.length > 1 ? `Schlauch ${i + 1} (H)` : 'Schlauch (H)'}</legend>
         <div class="dia-row">
           <div class="chips">
             {#each HOSE_PRESETS as v}
-              <button class="chip" class:sel={d === v} onclick={() => (app.magnet.hoses[i] = v)}>{v}</button>
+              <button class="chip" class:sel={h.d === v} onclick={() => (h.d = v)}>{v}</button>
             {/each}
           </div>
-          <NumberField value={d} min={PORT_D[0]} max={PORT_D[1]} step={0.1} label="Innendurchmesser von Schlauch {i + 1}" oncommit={(v) => (app.magnet.hoses[i] = clampD(v))} />
+          <NumberField value={h.d} min={PORT_D[0]} max={PORT_D[1]} step={0.1} label="Innendurchmesser von Schlauch {i + 1}" oncommit={(v) => (h.d = clampD(v))} />
         </div>
-        {#if i === 0 || d !== g.hoses[0]}<ThreadInfo hose={d} hand={false} />{/if}
+        <div class="seg wide hand" role="radiogroup" aria-label="Drehrichtung von Schlauch {i + 1}">
+          <button type="button" role="radio" aria-checked={h.hand === 'left'} class:sel={h.hand === 'left'} onclick={() => (h.hand = 'left')}>Linksgewinde</button>
+          <button type="button" role="radio" aria-checked={h.hand === 'right'} class:sel={h.hand === 'right'} onclick={() => (h.hand = 'right')}>Rechtsgewinde</button>
+        </div>
+        <ThreadInfo hose={h.d} hand={false} />
       </fieldset>
     {/each}
+    <p class="hint">Je nach Hersteller ist die Drahtspirale im Schlauch links- oder rechtsherum gewickelt. Den Schlauch senkrecht halten und von außen auf die Spirale schauen: Steigt sie nach links an, ist es ein Linksgewinde, nach rechts ein Rechtsgewinde.</p>
   {:else}
     <div class="grid2">
       <Field label="Schlauch innen Ø" help="Innendurchmesser des Schlauchs. Das Gewinde der Kupplung hat unten genau diesen Durchmesser, die Rippen greifen zwischen die Drahtspirale.">
@@ -118,12 +123,12 @@
         <NumberField bind:value={app.magnet.pitch} min={lim.pitch[0]} max={lim.pitch[1]} step={0.5} label="Steigung des Schlauchgewindes" />
       </Field>
     </div>
+    <div class="seg wide" role="radiogroup" aria-label="Drehrichtung des Gewindes">
+      <button type="button" role="radio" aria-checked={g.hand === 'left'} class:sel={g.hand === 'left'} onclick={() => (app.magnet.hand = 'left')}>Linksgewinde</button>
+      <button type="button" role="radio" aria-checked={g.hand === 'right'} class:sel={g.hand === 'right'} onclick={() => (app.magnet.hand = 'right')}>Rechtsgewinde</button>
+    </div>
+    <p class="hint">Je nach Hersteller ist die Drahtspirale im Schlauch links- oder rechtsherum gewickelt. Den Schlauch senkrecht halten und von außen auf die Spirale schauen: Steigt sie nach links an, ist es ein Linksgewinde, nach rechts ein Rechtsgewinde.</p>
   {/if}
-  <div class="seg wide" role="radiogroup" aria-label="Drehrichtung des Gewindes">
-    <button type="button" role="radio" aria-checked={g.hand === 'left'} class:sel={g.hand === 'left'} onclick={() => (app.magnet.hand = 'left')}>Linksgewinde</button>
-    <button type="button" role="radio" aria-checked={g.hand === 'right'} class:sel={g.hand === 'right'} onclick={() => (app.magnet.hand = 'right')}>Rechtsgewinde</button>
-  </div>
-  <p class="hint">Je nach Hersteller ist die Drahtspirale im Schlauch links- oder rechtsherum gewickelt. Den Schlauch senkrecht halten und von außen auf die Spirale schauen: Steigt sie nach links an, ist es ein Linksgewinde, nach rechts ein Rechtsgewinde.</p>
 {/if}
 
 {#if g.coupling && app.magnetIssue}<p class="print-note error" role="alert">{app.magnetIssue}</p>{/if}
@@ -143,6 +148,7 @@
   .port { margin-top: 14px; }
   .port .seg { margin-top: 4px; }
   .cap { display: block; margin-top: 10px; font-size: 15px; }
+  .hand { margin-top: 10px; }
   .print-note { margin: 14px 0 0; padding: 8px 12px; border-radius: 4px; font-size: 14px; border-left: 4px solid var(--sky); background: var(--sky-l); }
   .print-note.warn { border-left-color: var(--signal); background: var(--warn-bg); }
   .print-note.error { border-left-color: var(--err); background: var(--err-bg); color: var(--err-fg); }

@@ -18,7 +18,7 @@ import { clipperReady, clipperLoaded } from './osvac/contour';
 import { freeMaleOnBed, magnetPlateInfo, DEFAULT_HELPER, type HelperSpec } from './osvac/assemblies';
 import { BLEED } from './osvac/bleed';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
-import { DEFAULT_MAGNET, MAGNET_LIMITS, MAGNET_SIZES, MAG, PORT_D, magnetLayout, magnetName, type MagnetSpec, type MagnetSize, type MagnetPort } from './osvac/magnet';
+import { DEFAULT_MAGNET, MAGNET_LIMITS, MAGNET_SIZES, MAG, PORT_D, magnetLayout, magnetName, type MagnetSpec, type MagnetSize, type MagnetPort, type MagnetHose } from './osvac/magnet';
 import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
@@ -175,14 +175,14 @@ class AppState {
   );
   resetMagnet() {
     for (const k of ['magnet', 'stutzen', 'depth', 'hose', 'pitch', 'hand', 'hoseMode'] as const) (this.magnet[k] as number | string) = DEFAULT_MAGNET[k];
-    this.magnet.hoses = [...DEFAULT_MAGNET.hoses];
+    this.magnet.hoses = DEFAULT_MAGNET.hoses.map((h) => ({ ...h }));
     this.magnet.ports = DEFAULT_MAGNET.ports.map((q) => ({ ...q }));
   }
   /** Magnetplatte: zweiten Anschluss bzw. Schlauch an- oder abwählen (übernimmt Art und Größe des ersten) */
   setMagnetCount(n: 1 | 2) {
     const m = this.magnet;
     if (this.kind.magnetOsvac) m.ports = n === 1 ? [m.ports[0]] : [m.ports[0], m.ports[1] ?? { ...m.ports[0], cap: false }];
-    else m.hoses = n === 1 ? [m.hoses[0]] : [m.hoses[0], m.hoses[1] ?? m.hoses[0]];
+    else m.hoses = n === 1 ? [m.hoses[0]] : [m.hoses[0], m.hoses[1] ?? { ...m.hoses[0] }];
   }
   /** aufgeklappte Erklärungen (Passung, Download) */
   helpOpen = $state<Record<string, boolean>>({});
@@ -520,7 +520,10 @@ class AppState {
     } else if (s.coupling && P)
       t.push(
         `Drehring: Platte und Becher werden in einem Stück gedruckt, der Becher mit dem Gewinde dreht sich auf dem Drehring. Nach dem Druck den Becher festhalten und die Platte einmal kräftig dagegen drehen, bis er frei läuft.`,
-        `Den Schlauch ${s.hand === 'right' ? 'im Uhrzeigersinn' : 'gegen den Uhrzeigersinn'} in den Becher drehen (${s.hand === 'right' ? 'Rechtsgewinde' : 'Linksgewinde'}, Gewinde wie bei den Schlauchadaptern von osVAC neo).`,
+        ...s.hoses.map(
+          (h, i) =>
+            `${s.hoses.length > 1 ? `Schlauch ${i + 1} (Ø${fmt(h.d)})` : 'Den Schlauch'} ${h.hand === 'right' ? 'im Uhrzeigersinn' : 'gegen den Uhrzeigersinn'} in den Becher drehen (${h.hand === 'right' ? 'Rechtsgewinde' : 'Linksgewinde'}, Gewinde wie bei den Schlauchadaptern von osVAC neo).`,
+        ),
       );
     else if (s.coupling) t.push(`Den Schlauch ${s.hand === 'right' ? 'im Uhrzeigersinn' : 'gegen den Uhrzeigersinn'} auf das Gewinde der Kupplung drehen (${s.hand === 'right' ? 'Rechtsgewinde' : 'Linksgewinde'}, Steigung ${fmt(s.pitch)} mm). Dreht er schwer oder gar nicht, passt die Steigung oder die Drehrichtung nicht zum Schlauch.`);
     return t;
@@ -896,7 +899,9 @@ class AppState {
         if (z.hand === 'left' || z.hand === 'right') mg.hand = z.hand;
         if (z.hoseMode === 'large' || z.hoseMode === 'small') mg.hoseMode = z.hoseMode;
         const dOk = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= PORT_D[0] && v <= PORT_D[1];
-        if (Array.isArray(z.hoses) && (z.hoses.length === 1 || z.hoses.length === 2) && z.hoses.every(dOk)) mg.hoses = [...z.hoses];
+        // gespeichert als Zahlen (Stand 0014) oder als { d, hand }
+        const hoseOf = (h: unknown) => (dOk(h) ? { d: h, hand: mg.hand } : h && typeof h === 'object' && dOk((h as MagnetHose).d) ? { d: (h as MagnetHose).d, hand: (h as MagnetHose).hand === 'right' ? ('right' as const) : ('left' as const) } : null);
+        if (Array.isArray(z.hoses) && (z.hoses.length === 1 || z.hoses.length === 2) && z.hoses.every((h: unknown) => hoseOf(h))) mg.hoses = z.hoses.map((h: unknown) => hoseOf(h)!);
         if (Array.isArray(z.ports) && (z.ports.length === 1 || z.ports.length === 2) && z.ports.every((q: Partial<MagnetPort>) => q && (q.t === 'F' || q.t === 'M') && dOk(q.d)))
           mg.ports = z.ports.map((q: MagnetPort) => ({ t: q.t, d: q.d, cap: q.cap === true }));
         for (const k of Object.keys(MAGNET_LIMITS) as (keyof typeof MAGNET_LIMITS)[]) if (num(z[k])) mg[k] = Math.min(MAGNET_LIMITS[k][1], Math.max(MAGNET_LIMITS[k][0], z[k]));
@@ -931,5 +936,5 @@ void clipperReady.then(() => (app.clipperOk = true));
 
 /** frische Magnetkupplung (Listen kopiert, damit der Standard unverändert bleibt) */
 function freshMagnet(): MagnetSpec {
-  return { ...DEFAULT_MAGNET, hoses: [...DEFAULT_MAGNET.hoses], ports: DEFAULT_MAGNET.ports.map((q) => ({ ...q })) };
+  return { ...DEFAULT_MAGNET, hoses: DEFAULT_MAGNET.hoses.map((h) => ({ ...h })), ports: DEFAULT_MAGNET.ports.map((q) => ({ ...q })) };
 }

@@ -605,7 +605,10 @@ await withPreview(4180, async (url, browser) => {
     await pg.getByRole('radio', { name: 'Zwei Schläuche' }).click();
     await ready(pg);
     expect((await pg.locator('.stage-head .code').innerText()).includes('H32+H32'), 'Kopfzeile: ' + (await pg.locator('.stage-head .code').innerText()));
-    expect((await pg.locator('.thread-info').count()) === 1, 'Gewindetabelle bei gleichen Schläuchen doppelt');
+    expect((await pg.locator('.thread-info').count()) === 2, 'nicht jeder Schlauch hat eine Gewindetabelle');
+    await pg.getByRole('radiogroup', { name: 'Drehrichtung von Schlauch 2' }).getByRole('radio', { name: 'Rechtsgewinde' }).click();
+    await ready(pg);
+    expect((await pg.locator('.stage-head .code').innerText()).includes('H32+H32R'), 'Rechtsgewinde für Schlauch 2 fehlt: ' + (await pg.locator('.stage-head .code').innerText()));
     const f2 = pg.getByRole('textbox', { name: 'Innendurchmesser von Schlauch 2' });
     await f2.fill('50');
     await f2.press('Enter');
@@ -617,7 +620,7 @@ await withPreview(4180, async (url, browser) => {
     await step(pg, 'Passung');
     expect((await pg.getByText('Spiel am Drehring').count()) === 1, 'Spiel am Drehring fehlt');
     await step(pg, 'Download');
-    expect((await pg.locator('.lead').first().innerText()).includes('zwei Schläuche Ø32 und Ø36 mm mit Drehring'), 'Download-Text: ' + (await pg.locator('.lead').first().innerText()));
+    expect((await pg.locator('.lead').first().innerText()).includes('zwei Schläuche mit Drehring: Ø32 mm Linksgewinde und Ø36 mm Rechtsgewinde'), 'Download-Text: ' + (await pg.locator('.lead').first().innerText()));
     const tips = await pg.locator('.tips').innerText();
     expect(tips.includes('Schlauchplatte bei 4 mm'), 'Druckpause der Platte fehlt');
     expect(tips.includes('genauso wie bei der Schlauchplatte'), 'Polung der Platte fehlt');

@@ -44,10 +44,16 @@ export interface MagnetSpec {
   fitGap: number;
   /** „Gerät ↔ Schlauch“: Schlauch Ø100 mit Außengewinde wie bisher oder kleinere Schläuche mit Drehring auf der Magnetplatte */
   hoseMode: 'large' | 'small';
-  /** kleinere Schläuche: Innendurchmesser, ein oder zwei */
-  hoses: number[];
+  /** kleinere Schläuche: ein oder zwei, je Innendurchmesser und Drehrichtung des Gewindes */
+  hoses: MagnetHose[];
   /** „Gerät ↔ osVAC neo“: ein oder zwei Anschlüsse, je Kupplung (F) oder Stecker (M), wahlweise mit Verschlusskappe */
   ports: MagnetPort[];
+}
+
+/** kleinerer Schlauch auf der Magnetplatte */
+export interface MagnetHose {
+  d: number;
+  hand: 'left' | 'right';
 }
 
 /** Anschluss von osVAC neo auf der Magnetplatte */
@@ -60,7 +66,7 @@ export interface MagnetPort {
 
 export const DEFAULT_MAGNET: MagnetSpec = {
   adapter: true, coupling: true, magnet: '10x3', stutzen: 100, depth: 35, hose: 100, pitch: 12, hand: 'left', pipeGap: 0.3, fitGap: 0.3,
-  hoseMode: 'large', hoses: [32], ports: [{ t: 'F', d: 32, cap: false }],
+  hoseMode: 'large', hoses: [{ d: 32, hand: 'left' }], ports: [{ t: 'F', d: 32, cap: false }],
 };
 /** kleinere Schläuche und osVAC-Anschlüsse auf der Magnetplatte: Durchmesser innen */
 export const PORT_D: readonly [number, number] = [15, 60];
@@ -361,14 +367,13 @@ export function magnetName(s: MagnetSpec, osvac = false): { code: string; file: 
   const small = !osvac && s.hoseMode === 'small';
   const coupling = osvac ? 'Anschlussplatte' : small ? 'Schlauchplatte' : 'Kupplung';
   const parts = s.adapter && s.coupling ? `Adapter + ${coupling}` : s.adapter ? 'Adapter' : coupling;
-  const portCode = osvac ? s.ports.map((q) => `${q.t}${f(q.d)}`).join('+') : small ? s.hoses.map((d) => `H${f(d)}`).join('+') : '';
+  const portCode = osvac ? s.ports.map((q) => `${q.t}${f(q.d)}`).join('+') : small ? s.hoses.map((h) => `H${f(h.d)}${h.hand === 'right' ? 'R' : ''}`).join('+') : '';
   const caps = osvac ? s.ports.filter((q) => q.cap) : [];
   const file = [
     'Magnetkupplung',
     s.adapter && s.coupling ? '' : s.adapter ? 'Adapter' : osvac ? 'osVAC' : 'Schlauch',
     s.adapter ? `S${f(s.stutzen)}` : '',
     s.coupling ? (osvac || small ? portCode : `H${f(s.hose)}${s.hand === 'right' ? 'R' : 'L'}${f(s.pitch)}`) : '',
-    s.coupling && small && s.hand === 'right' ? 'Rechtsgewinde' : '',
     s.coupling && caps.length ? 'mit Kappe' : '',
     `Mag${mag}`,
   ].filter(Boolean).join(' ');
@@ -378,7 +383,7 @@ export function magnetName(s: MagnetSpec, osvac = false): { code: string; file: 
     parts,
     s.adapter ? `Stutzen Ø${f(s.stutzen)} mm, ${f(s.depth)} mm tief` : '',
     s.coupling && osvac ? `${s.ports.map(portWord).join(' und ')}${caps.length ? `, Verschlusskappe${caps.length > 1 ? 'n' : ''}: ${caps.map(capWord).join(' und ')}` : ''}` : '',
-    s.coupling && small ? `${s.hoses.length > 1 ? `zwei Schläuche Ø${s.hoses.map(f).join(' und Ø')}` : `Schlauch Ø${f(s.hoses[0])}`} mm mit Drehring, ${s.hand === 'right' ? 'Rechts' : 'Links'}gewinde` : '',
+    s.coupling && small ? `${s.hoses.length > 1 ? 'zwei Schläuche mit Drehring: ' : 'Schlauch mit Drehring: '}${s.hoses.map((h) => `Ø${f(h.d)} mm ${h.hand === 'right' ? 'Rechts' : 'Links'}gewinde`).join(' und ')}` : '',
     s.coupling && !osvac && !small ? `Schlauch Ø${f(s.hose)} mm, ${s.hand === 'right' ? 'Rechts' : 'Links'}gewinde Steigung ${f(s.pitch)} mm` : '',
     `Magnete ${MAGNET_SIZES[mag].label}`,
   ].filter(Boolean).join(', ');
@@ -389,19 +394,20 @@ export function magnetName(s: MagnetSpec, osvac = false): { code: string; file: 
 // ---------------------------------------------------------------- Magnetplatte mit kleineren Anschlüssen
 
 /**
- * Magnetplatte statt der Schlauchkupplung Ø100: gleicher Flansch, gleiche Taschen und Bund-Tasche, aber mit der
- * Kontaktfläche nach unten gedruckt (z = 0). Darüber führt ein 45°-Trichter (Wand 3 mm) von der Bohrung Ø97 in ein oder
- * zwei Rohre, auf denen die Anschlüsse sitzen (osVAC-Kupplung, -Stecker oder Schlauch mit Drehring). So druckt alles
- * ohne Stützen; die Decke der Bund-Tasche ist nur ein schmaler Ring (Brücke).
+ * Magnetplatte statt der Schlauchkupplung Ø100: gleicher Flansch, gleiche Taschen, mit der Kontaktfläche nach unten
+ * gedruckt (z = 0). Flach wie beim Vorbild: Die Platte schließt die Bohrung Ø97 des Adapters selbst, nur unter den
+ * Anschlüssen ist sie durchbohrt. Für den Zentrierbund hat sie unten eine Ringnut (Decke 4,8 mm breit = Brücke), innen
+ * ist sie dünner. So druckt sie ohne Stützen und braucht wenig Filament.
  */
 export const PLATE = {
-  /** Wand des Trichters */
+  /** Wand der Rohre unter Kupplung und Stecker (Übergang wie bei den Stutzen-Adaptern) */
   wall: 3,
   /** freier Abstand zwischen den Außenkonturen zweier Anschlüsse (mit Gegenstück): Bajonett greifen und drehen bzw. Schlauch aufdrehen */
   gapBayonet: 15,
   gapHose: 8,
-  /** Rohr über dem Trichter bis zum Anschluss */
-  tubeAbove: 4,
+  /** Dicke der Platte innerhalb des Bunds und Wand an der Ringnut */
+  disc: 4,
+  grooveWall: 3,
 } as const;
 
 export interface PlatePort {
@@ -412,7 +418,7 @@ export interface PlatePort {
   rOut: number;
 }
 
-/** Höhe der Platte (Kontaktfläche bis Oberkante Flansch) und der Bund-Tasche */
+/** Höhe der Platte (Kontaktfläche bis Oberseite), der Ringnut für den Bund und der Druckpause */
 export function plateHeights(lay: MagnetLayout) {
   return { recessH: lay.recessH, plateT: r2(lay.recessH + 2), pause: r2(MAG.cover + lay.pH) };
 }
@@ -429,51 +435,30 @@ export function portLayout(env: number[], gap: number): { xs: number[]; width: n
   return { xs, width, fits: width <= 2 * MAG.flangeR + 1e-9, free: MAG.flangeR - width / 2 };
 }
 
-/** Oberkante der Rohre (gemeinsam für alle Anschlüsse) */
-export function plateTubeTop(lay: MagnetLayout, ports: PlatePort[]): number {
-  const { recessH } = plateHeights(lay);
-  const tops = ports.map((q) => recessH + funnelBase(q) - q.rIn);
-  return r2(Math.max(...tops) + PLATE.tubeAbove);
+/** Oberseite der Platte = Unterkante der Anschlüsse */
+export function plateTubeTop(lay: MagnetLayout, _ports?: PlatePort[]): number {
+  return plateHeights(lay).plateT;
 }
-/** Grundradius des Trichterkegels je Anschluss: überdeckt die Hälfte der Bohrung auf seiner Seite */
-const funnelBase = (q: PlatePort) => Math.hypot(q.x, MAG.boreR);
 
-/** Magnetplatte mit Trichter und Rohren bis zur Oberkante zTop (Kontaktfläche unten, z = 0) */
-export function magnetPlate(s: MagnetSpec, ports: PlatePort[], zTop: number): Shape3D {
+/** Flache Magnetplatte mit Sockeln und Löchern unter den Anschlüssen (Kontaktfläche unten, z = 0) */
+export function magnetPlate(s: MagnetSpec, ports: PlatePort[], _zTop?: number): Shape3D {
   const lay = magnetLayout(s);
   const { recessH, plateT } = plateHeights(lay);
-  const w = PLATE.wall, ws = w * Math.SQRT2;
-  // Flansch als Rotationskörper bis zum Teilkreis, Nasen extra: Grundriss-Extrusionen aus vielen Bögen ließen
-  // spätere Vereinigungen scheitern (Volumen 0)
-  let body = cylZ(MAG.flangeR, 0, plateT);
+  const rGi = MAG.boreR - s.fitGap; // Ringnut innen (Bund innen Ø97)
+  const rWall = rGi - PLATE.grooveWall;
+  // Flansch und Nasen als Zylinder (Grundriss-Extrusionen aus vielen Bögen ließen spätere Vereinigungen scheitern)
+  let body = revolvePts([[rWall, 0], [MAG.flangeR, 0], [MAG.flangeR, plateT], [rWall, plateT]]);
   for (const a of magnetAngles()) {
     const [x, y] = at(MAG.R, a);
     body = body.fuse(cylZ(lay.lugR, 0, plateT, x, y)) as Shape3D;
   }
-  // Trichter außen: je Anschluss ein 45°-Kegel bis an das Rohr; innerhalb des Grundrisses (steht auf dem Flansch)
-  const cone = (x: number, r0: number, z0: number, r1: number) => revolvePts([[0, z0], [r0, z0], [r1, z0 + r0 - r1], [0, z0 + r0 - r1]]).translate([x, 0, 0]) as Shape3D;
-  const prism = cylZ(MAG.flangeR, -1, zTop + 1);
-  let outer: Shape3D | null = null;
-  for (const q of ports) {
-    const c = cone(q.x, funnelBase(q) + ws, recessH, q.rOut);
-    outer = outer ? (outer.fuse(c) as Shape3D) : c;
-  }
-  body = body.fuse((outer as Shape3D).intersect(prism) as Shape3D) as Shape3D;
-  // Rohre bis zur Oberkante (unten tief im Trichter verankert)
-  for (const q of ports) {
-    const zB = recessH + funnelBase(q) - q.rIn - w - 2;
-    body = body.fuse(cylZ(q.rOut, zB, zTop, q.x)) as Shape3D; // Bohrung wird unten ausgeschnitten
-  }
-  // innen: Bund-Tasche, Trichter (in der Bohrung, bei weit außen sitzenden Rohren etwas weiter), Rohre
-  body = body.cut(cylZ(lay.recessR, -1, recessH)) as Shape3D;
-  const rClip = Math.max(MAG.boreR, ...ports.map((q) => Math.abs(q.x) + q.rIn));
-  let cav: Shape3D | null = null;
-  for (const q of ports) {
-    const c = cone(q.x, funnelBase(q), recessH, q.rIn);
-    cav = cav ? (cav.fuse(c) as Shape3D) : c;
-  }
-  body = body.cut((cav as Shape3D).intersect(cylZ(rClip, recessH - 1, zTop)) as Shape3D) as Shape3D;
-  for (const q of ports) body = body.cut(cylZ(q.rIn, recessH + funnelBase(q) - q.rIn - 1, zTop + 1, q.x)) as Shape3D;
+  // innen dünner
+  body = body.fuse(cylZ(rWall + 0.01, 0, PLATE.disc)) as Shape3D;
+  // volle Höhe unter den Anschlüssen (Sockel)
+  for (const q of ports) body = body.fuse(cylZ(q.rOut, 0, plateT, q.x)) as Shape3D;
+  // Ringnut für den Bund (Decke = Brücke), Löcher
+  body = body.cut(revolvePts([[rGi, -1], [lay.recessR, -1], [lay.recessR, recessH], [rGi, recessH]])) as Shape3D;
+  for (const q of ports) body = body.cut(cylZ(q.rIn, -1, plateT + 1, q.x)) as Shape3D;
   // Magnettaschen 0,6 mm über der Kontaktfläche (geschlossen, Druckpause an der Oberkante)
   for (const a of magnetAngles()) {
     const [x, y] = at(MAG.R, a);
