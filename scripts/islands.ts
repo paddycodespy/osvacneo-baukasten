@@ -84,10 +84,10 @@ const others: [string, string, object, RegExp, object?][] = [
   ['magnet-10x3', 'MAGNET', { magnet: { ...DEFAULT_MAGNET } as MagnetSpec }, /^$/],
   ['magnet-12x5-rechts-110', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, magnet: '12x5', hand: 'right', stutzen: 110, hose: 110, pitch: 8, depth: 20 } as MagnetSpec }, /^$/],
   ['magnet-15x3-90', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, magnet: '15x3', stutzen: 90, hose: 90, pitch: 20, depth: 60 } as MagnetSpec }, /^$/],
-  // Magnetplatte (Kontaktfläche unten) mit Trichter: kleinere Schläuche mit Drehring und osVAC-Anschlüsse mit Verschlusskappen
-  ['magnet-schlauch-32', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, hoseMode: 'small', hoses: [32] } as MagnetSpec }, /^$/],
-  ['magnet-schlauch-32-36-12x5', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, magnet: '12x5', hoseMode: 'small', hoses: [32, 36], hand: 'right' } as MagnetSpec }, /^$/],
-  ['magnet-schlauch-50-W9', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, adapter: false, hoseMode: 'small', hoses: [50] } as MagnetSpec }, /^$/, { generalMaterialWidth: 9, slipRingGapSize: 0.5 }],
+  // flache Magnetplatte (Kontaktfläche unten): kleinere Schläuche mit Drehring und osVAC-Anschlüsse mit Verschlusskappen
+  ['magnet-schlauch-32', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, hoseMode: 'small', hoses: [{ d: 32, hand: 'left' }] } as MagnetSpec }, /^$/],
+  ['magnet-schlauch-32-36-12x5', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, magnet: '12x5', hoseMode: 'small', hoses: [{ d: 32, hand: 'left' }, { d: 36, hand: 'right' }] } as MagnetSpec }, /^$/],
+  ['magnet-schlauch-50-W9', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, adapter: false, hoseMode: 'small', hoses: [{ d: 50, hand: 'left' }] } as MagnetSpec }, /^$/, { generalMaterialWidth: 9, slipRingGapSize: 0.5 }],
   ['magnet-osvac-F32-kappe', 'MAGNET_OSVAC', { magnet: { ...DEFAULT_MAGNET, ports: [{ t: 'F', d: 32, cap: true }] } as MagnetSpec }, /^$/],
   ['magnet-osvac-F32-M25-kappen', 'MAGNET_OSVAC', { magnet: { ...DEFAULT_MAGNET, ports: [{ t: 'F', d: 32, cap: true }, { t: 'M', d: 25, cap: true }] } as MagnetSpec }, /^$/],
   ['magnet-osvac-M50-15x3', 'MAGNET_OSVAC', { magnet: { ...DEFAULT_MAGNET, adapter: false, magnet: '15x3', ports: [{ t: 'M', d: 50, cap: true }] } as MagnetSpec }, /^$/],

@@ -86,6 +86,23 @@ export function hoseKnurlOverlap(p: OsvacParams, variant: 'plain' | 'housed', pr
   return gripKnurlOverlap(p.hoseDiameterInner / 2 + p.generalMaterialWidth, gz.top, gz.bot, variant === 'plain' ? 'full' : 'housedHose');
 }
 
+/**
+ * Rändelung und Textfelder des Schlauchbechers auf der Magnetplatte: Schlauchteil umgedreht (Kopf unten bei z = 0,
+ * Öffnung oben). Der Griffbereich liegt gespiegelt, die Felder werden aufrecht gebaut (Schrift nicht auf dem Kopf):
+ * vorne „osVAC neo“ und der Durchmesser, hinten die Lizenz – wie beim Schlauchteil der Schlauchadapter.
+ */
+export function hoseCupGrip(p: OsvacParams) {
+  const gz = hoseGripZone(p, 'plain');
+  const r = p.hoseDiameterInner / 2 + p.generalMaterialWidth;
+  const top = -gz.bot, bot = -gz.top;
+  return {
+    knurl: () => gripKnurl(r, top, bot, 'full'),
+    knurlOverlap: gripKnurlOverlap(r, top, bot, 'full'),
+    fields: (opt: HoseOptions = {}) => gripFields(r, top, bot, 'full', opt.text === false ? null : (opt.label ?? `H${fmt(p.hoseDiameterInner)}`)),
+    fieldsOverlap: gripFieldsOverlap(r, top, bot, 'full'),
+  };
+}
+
 /** Griffbereich des Schlauchteils (oben/unten) – gemeinsam für Rändelung und Textfelder. */
 function hoseGripZone(p: OsvacParams, variant: 'plain' | 'housed', print = false) {
   const rH = p.hoseDiameterInner / 2;

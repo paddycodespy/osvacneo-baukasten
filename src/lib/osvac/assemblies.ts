@@ -8,7 +8,7 @@ import type { OsvacParams } from './params';
 import { femaleRing, femaleFields, femaleFieldsOverlap, femaleKnurl, femaleKnurlOverlap } from './female';
 import { maleTube, maleSupport } from './male';
 import { revolveProfile, L, L as L_ } from './geom';
-import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, swivelPrintTop, swivelPrintBottom, swivelPrintProfile, SWIVEL_PRINT, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
+import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, hoseCupGrip, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, swivelPrintTop, swivelPrintBottom, swivelPrintProfile, SWIVEL_PRINT, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, pipeRibs, femaleBeadFill, DEFAULT_PIPE, type PipeSpec } from './machine';
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, partPlacements, inPart2, hasSplit, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
@@ -480,7 +480,9 @@ export function portEnvelope(W: number, t: 'F' | 'M' | 'H', d: number): number {
 
 /** Anschlüsse der Magnetplatte und ihre Lage (x), mit Prüfung, ob sie mit genug Abstand auf den Flansch passen */
 export function magnetPortLayout(W: number, s: MagnetSpec, osvac: boolean) {
-  const list: { t: 'F' | 'M' | 'H'; d: number; cap: boolean }[] = osvac ? s.ports.map((q) => ({ ...q })) : s.hoses.map((d) => ({ t: 'H' as const, d, cap: false }));
+  const list: { t: 'F' | 'M' | 'H'; d: number; cap: boolean; hand: 'left' | 'right' }[] = osvac
+    ? s.ports.map((q) => ({ ...q, hand: 'left' as const }))
+    : s.hoses.map((h) => ({ t: 'H' as const, d: h.d, cap: false, hand: h.hand }));
   const env = list.map((q) => portEnvelope(W, q.t, q.d));
   const gap = osvac ? PLATE.gapBayonet : PLATE.gapHose;
   return { list, env, gap, ...portLayout(env, gap) };
@@ -517,7 +519,7 @@ const HEAD_CONE = 5.257 / 3.681;
  * Magnet-Schnellkupplung Ø100: Maschinenadapter und/oder das Teil für den Schlauch bzw. für osVAC neo. Mit beiden
  * Teilen liegen sie diagonal nebeneinander, das zweite als eigenes Objekt im 3MF.
  * - Schlauch Ø100 (wie bisher): Schlauchkupplung mit Außengewinde, Kontaktfläche oben gedruckt.
- * - kleinere Schläuche (1 oder 2): Magnetplatte (Kontaktfläche unten) mit Trichter, darauf je Schlauch ein Drehring
+ * - kleinere Schläuche (1 oder 2): flache Magnetplatte (Kontaktfläche unten), darauf je Schlauch ein Drehring
  *   (druckoptimiert) und ein Becher mit dem Innengewinde von osVAC neo (umgedreht: Öffnung oben). Platte und unterer
  *   Ring stehen, oberer Ring und Becher drehen.
  * - osVAC neo (1 oder 2): Magnetplatte mit Kupplung(en) oder Stecker(n) fest darauf, wahlweise mit Verschlusskappe.
@@ -542,12 +544,12 @@ export function partsMagnet(p: OsvacParams, o: BuildOptions = {}): Part[] {
       part('Schlauchkupplung', 1.5, { ...dC, at: bed.coupling, rot: bed.rot }, () => place(magnetCoupling(s), bed.coupling, bed.rot), obj),
       part('Gewinde', 1.5, { ...dT, at: bed.coupling, rot: bed.rot }, () => place(magnetThread(s), bed.coupling, bed.rot), { ...obj, volumeOffset: magnetThreadOverlap(s) }),
     );
-  if (s.coupling && plate) out.push(...platePartsAll(p, s, osvac, bed, obj));
+  if (s.coupling && plate) out.push(...platePartsAll(p, s, osvac, bed, obj, o));
   return out;
 }
 
 /** Magnetplatte mit Anschlüssen (und Verschlusskappen) an ihrer Stelle auf dem Druckbett */
-function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: ReturnType<typeof magnetBed>, obj: PartExtra): Part[] {
+function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: ReturnType<typeof magnetBed>, obj: PartExtra, o: BuildOptions): Part[] {
   const W = p.generalMaterialWidth;
   const L = magnetPortLayout(W, s, osvac);
   if (!L.fits)
@@ -569,7 +571,7 @@ function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: Retur
   });
   const out: Part[] = [part(osvac ? 'Anschlussplatte' : 'Schlauchplatte', 2, { ...dP, ...bedKey }, () => onBed(magnetPlate(s, pp, zTop)), obj)];
   const pipeFor = (d: number): PipeSpec => ({ d1Inner: d, d2Inner: d, length: 0, wall: PLATE.wall, transition: OSVAC_TRANSITION, screwHoles: false });
-  const noSupport: BuildOptions = { text: true, knurl: true, supports: false };
+  const noSupport: BuildOptions = { text: o.text, knurl: o.knurl, supports: false };
   L.list.forEach((q, i) => {
     const tag = L.list.length > 1 ? String(i + 1) : '';
     const x = L.xs[i];
@@ -583,7 +585,7 @@ function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: Retur
       const v: [number, number, number] = [x, 0, zTop + pq.maleHeight + OSVAC_TRANSITION];
       for (const r of [part('Male', 9, { ...dM(pq, o2), rot: 'flip' }, () => flippedMale(pq, o2)), part('Übergang', 0.1, { kind: 'magnetM', ...dAll(pq) }, () => pipeTransition(pq.maleDiameterInner / 2, pq.maleDiameterOuter / 2, pipeFor(q.d)).translate([0, 0, -pq.maleHeight]))])
         out.push(moved(r, v, tag));
-    } else out.push(...hosePortParts(pq, s.hand, zTop).map((r) => moved(r, [x, 0, 0], tag)));
+    } else out.push(...hosePortParts(pq, q.hand, zTop, { text: o.text, knurl: o.knurl }).map((r) => moved(r, [x, 0, 0], tag)));
   });
   // Verschlusskappen neben der Platte: Stopfen (geschlossener Stecker) für eine Kupplung, Kappe (geschlossene Kupplung) für einen Stecker
   const caps = L.list.map((q, i) => ({ q, i })).filter(({ q }) => q.cap && q.t !== 'H');
@@ -620,7 +622,8 @@ function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: Retur
  * Schlauchteils (sitzt auf dem Rohr der Platte, Oberkante zTop), darüber drehbar der obere Ring und ein Becher mit dem
  * Innengewinde von osVAC neo, umgedreht (Öffnung oben, ohne Knickschutz).
  */
-function hosePortParts(pq: OsvacParams, hand: 'left' | 'right', zTop: number): Part[] {
+function hosePortParts(pq: OsvacParams, hand: 'left' | 'right', zTop: number, o: BuildOptions): Part[] {
+  const cg = hoseCupGrip(pq);
   const W = pq.generalMaterialWidth, rH = pq.hoseDiameterInner / 2, rO = rH + W;
   const g = Math.min(pq.slipRingGapSize, SWIVEL_PRINT.gapMax);
   const prof = swivelPrintProfile(W, false, g);
@@ -638,7 +641,8 @@ function hosePortParts(pq: OsvacParams, hand: 'left' | 'right', zTop: number): P
     part('Schlauchkopf', 0.3, k, () => t(hoseBody(pq, 'plain'), zH).intersect(revolveProfile([rH, zTop - 1], [L(rO + 0.01, zTop - 1), L(rO + 0.01, zH + 1), L(rH, zH + 1)])) as Shape3D),
     part('Drehring oben', 0.1, { ...k, swivel: 'print' }, () => t(swivelPrintTop(pq, false), zO)),
     part('Schlauchbecher', 0.5, k, cup),
-    ...knurlPart('Rändelung Schlauchbecher', {}, k, () => flip(hoseKnurl(pq, 'plain')), hoseKnurlOverlap(pq, 'plain')),
+    ...knurlPart('Rändelung Schlauchbecher', o, k, () => t(cg.knurl(), zO), cg.knurlOverlap),
+    part('Textfeld Schlauchbecher', 7, { ...k, text: o.text }, () => t(cg.fields(o), zO), { volumeOffset: cg.fieldsOverlap }),
     part('Gewinde', 8, { ...k, hand }, () => flip(hoseThreadBody(pq, false, hand))),
   ];
 }
