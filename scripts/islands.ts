@@ -90,6 +90,7 @@ const others: [string, string, object, RegExp, object?][] = [
   ['magnet-schlauch-50-W9', 'MAGNET', { magnet: { ...DEFAULT_MAGNET, adapter: false, hoseMode: 'small', hoses: [{ d: 50, hand: 'left' }] } as MagnetSpec }, /^$/, { generalMaterialWidth: 9, slipRingGapSize: 0.5 }],
   ['magnet-osvac-F32-kappe', 'MAGNET_OSVAC', { magnet: { ...DEFAULT_MAGNET, ports: [{ t: 'F', d: 32, cap: true }] } as MagnetSpec }, /^$/],
   ['magnet-osvac-F32-M25-kappen', 'MAGNET_OSVAC', { magnet: { ...DEFAULT_MAGNET, ports: [{ t: 'F', d: 32, cap: true }, { t: 'M', d: 25, cap: true }] } as MagnetSpec }, /^$/],
+  ['magnet-osvac-M36-M36', 'MAGNET_OSVAC', { magnet: { ...DEFAULT_MAGNET, ports: [{ t: 'M', d: 36, cap: true }, { t: 'M', d: 36, cap: false }] } as MagnetSpec }, /^$/],
   ['magnet-osvac-M50-15x3', 'MAGNET_OSVAC', { magnet: { ...DEFAULT_MAGNET, adapter: false, magnet: '15x3', ports: [{ t: 'M', d: 50, cap: true }] } as MagnetSpec }, /^$/],
 ];
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
