@@ -36,7 +36,7 @@
       return `Freiform: ${s.long}${app.free.blocks.length ? `, dazwischen ${s.blocks}` : ''}.`;
     }
     if (k.gate) return `Schieber einzeln: ${gateName(app.gate).long}.`;
-    if (k.magnet) return `Magnet-Schnellkupplung Ø100: ${magnetName(app.magnet).long}.`;
+    if (k.magnet) return `Magnet-Schnellkupplung Ø100: ${magnetName(app.magnet, !!k.magnetOsvac).long}.`;
     if (k.helper) return `Drehring-Lösehilfe ${[app.helper.forF ? `für Kupplungen F${fmt(app.input.femaleDiameterInner)}` : '', app.helper.forM ? `für Stecker M${fmt(app.input.maleDiameterInner)}` : ''].filter(Boolean).join(' und ')}.`;
     if (k.bleed) return `Nebenluft-Regler: oben ${app.bleed.top === 'female' ? 'Kupplung F' : 'Stecker M'}${fmt(app.input[app.bleed.top === 'female' ? 'femaleDiameterInner' : 'maleDiameterInner'])}, unten Schlauch H${fmt(app.input.hoseDiameterInner)}${app.hoseHand === 'right' ? ' mit Rechtsgewinde' : ''}, mit Drehring für den Schlauch.`;
     const sizes = k.diameters.map((d) => `${LABELS[d].name} ${fmt(app.input[d])} mm`).join(', ');

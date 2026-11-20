@@ -1,8 +1,8 @@
 <script lang="ts">
   /** Schritt 3: Passung (Spiel, Materialstärke, Extras) */
-  import { app, fmt } from '../../lib/app.svelte';
+  import { app, fmt, START_INPUT } from '../../lib/app.svelte';
   import { BLEED } from '../../lib/osvac/bleed';
-  import { swivelPrintFlankGap } from '../../lib/osvac/hose';
+  import { swivelPrintFlankGap, SWIVEL_PRINT } from '../../lib/osvac/hose';
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
   import ResetLink from '../ResetLink.svelte';
@@ -32,6 +32,25 @@
   </div>
   <HelpText id="magnetFit" />
   <p class="hint" id="mfit-hint">Je Seite, wirkt an der Tasche der Kupplung. Geht die Kupplung schwer auf: größer. Wackelt sie: kleiner. Standard: 0,3 mm.</p>
+</fieldset>
+{/if}
+{#if app.magnet.coupling && app.magnetPlate && app.kind.magnetOsvac}
+<fieldset class="opt">
+  <legend class="field-label">Spiel zwischen Stecker und Kupplung</legend>
+  <div class="slider">
+    <input type="range" min="0.1" max="0.5" step="0.05" bind:value={app.input.maleFemaleGapSize} aria-describedby="mgap-hint" />
+    <output>{fmt(app.input.maleFemaleGapSize, 2)} mm</output>
+  </div>
+  <p class="hint" id="mgap-hint">Wie bei allen Teilen von osVAC neo; gilt für die Anschlüsse und die Verschlusskappen. Standard: {fmt(START_INPUT.maleFemaleGapSize, 2)} mm.</p>
+</fieldset>
+{:else if app.magnet.coupling && app.magnetPlate}
+<fieldset class="opt">
+  <legend class="field-label">Spiel am Drehring</legend>
+  <div class="slider">
+    <input type="range" min="0.2" max={SWIVEL_PRINT.gapMax} step="0.05" bind:value={app.input.slipRingGapSize} aria-describedby="mswivel-hint" />
+    <output>{fmt(app.input.slipRingGapSize, 2)} mm</output>
+  </div>
+  <p class="hint" id="mswivel-hint">Druckoptimierter Drehring wie bei den Schlauchadaptern: an den Dichtflächen dieses Spiel, an den Schrägen {fmt(swivelPrintFlankGap(app.input.slipRingGapSize), 2)} mm. Dreht er schwer: größer. Wackelt er stark: kleiner. Standard: {fmt(START_INPUT.slipRingGapSize, 2)} mm.</p>
 </fieldset>
 {/if}
 {:else if app.kind.gate}

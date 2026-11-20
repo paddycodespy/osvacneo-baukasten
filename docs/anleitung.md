@@ -51,7 +51,7 @@ Im ersten Schritt wählst du, was für einen Adapter du brauchst. Die Arten sind
 - **An ein Gerät:** [Kupplung → Stutzen und Stecker → Stutzen](#stutzen) – für ein Gerät mit rundem Stutzen, den du selbst ausmisst.
 - **Eigener Aufbau:** [Freiform](#freiform) – ein Adapter aus Bausteinen, z. B. für eckige Auslässe, Bögen, Abzweige oder Geräte mit ungewöhnlicher Form.
 - **Zubehör:** [Saugdüse](#duese), [Nebenluft-Regler](#nebenluft), [Schieber einzeln](#schieber) und [Drehring-Lösehilfe](#loesehilfe).
-- **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten. Ein eigenes System, es passt nicht zu den Teilen von osVAC neo.
+- **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten, auch mit [kleineren Schläuchen](#magnet-schlauch) oder [Anschlüssen von osVAC neo](#magnet-osvac). Ein eigenes System für Geräte mit 100-mm-Stutzen.
 
 Rechts neben jeder Art steht das Kürzel, unter dem die Datei später heißt (z. B. *MxxFyy*; xx und yy sind die Durchmesser).
 
@@ -143,7 +143,14 @@ Die kleine Tabelle darunter zeigt, wie weit das Rohrteil am Ende innen und auße
 
 ## Magnet-Schnellkupplung Ø100 {#magnet}
 
-Für große Geräte mit 100-mm-Absaugung, in Schritt 1 die Karte *Gerät ↔ Schlauch*. Am Gerät sitzt ein **Maschinenadapter**, am Schlauch eine **Schlauchkupplung**. Beide halten über je acht Neodym-Magnete zusammen; ein Bund in der Mitte zentriert sie. Zum Umstecken ziehst du die Kupplung ab und setzt sie am nächsten Gerät an. Das ist ein eigenes System und passt nicht zu den Teilen von osVAC neo.
+Für große Geräte mit 100-mm-Absaugung. Am Gerät sitzt ein **Maschinenadapter**, darauf die Kupplung für den Schlauch. Beide halten über je acht Neodym-Magnete zusammen; ein Bund in der Mitte zentriert sie. Zum Umstecken ziehst du die Kupplung ab und setzt sie am nächsten Gerät an. Das ist ein eigenes System; über die Karte *Gerät ↔ osVAC neo* schließt du daran aber auch Teile von osVAC neo an.
+
+In Schritt 1 gibt es zwei Karten:
+
+- **Gerät ↔ Schlauch:** Kupplung für einen 100er-Schlauch (Gewinde außen) oder eine Platte für einen oder zwei kleinere Schläuche mit Drehring.
+- **Gerät ↔ osVAC neo:** eine Platte mit einem oder zwei Anschlüssen von osVAC neo, wahlweise mit Verschlusskappe.
+
+Adapter, Magnete und Stutzen sind bei beiden Karten gleich; jede Kupplung und jede Platte passt an jeden Adapter mit derselben Magnetgröße.
 
 ![Magnet-Schnellkupplung in der Vorschau](anleitung/magnet-vorschau.webp)
 
@@ -156,6 +163,25 @@ Für große Geräte mit 100-mm-Absaugung, in Schritt 1 die Karte *Gerät ↔ Sch
 
 In *Passung* stellst du das Spiel am Stutzen und am Zentrierbund ein.
 
+### Kleinere Schläuche mit Drehring {#magnet-schlauch}
+
+Bei *Gerät ↔ Schlauch* unter *Schlauch* auf **Kleiner, mit Drehring** stellen. Statt der Kupplung Ø100 entsteht eine **Schlauchplatte**: unten der Flansch mit den Magneten, darüber ein Trichter in einen oder zwei Becher mit dem Schlauchgewinde von osVAC neo. Jeder Becher dreht sich auf einem Drehring, so verdreht sich der Schlauch beim Arbeiten nicht.
+
+- **Ein Schlauch** oder **zwei Schläuche**, je mit eigenem Innendurchmesser (15 bis 60 mm). Unter jedem Feld steht die [Gewindetabelle](#schlauch) wie bei den Schlauchadaptern.
+- **Links- oder Rechtsgewinde** gilt für alle Becher.
+- Zwei Schläuche gehen nur, wenn zwischen den Bechern mindestens 8 mm Luft bleibt und beide auf die Platte passen (z. B. 32 + 32, 32 + 36, 25 + 40). Sonst meldet die App einen Fehler und du wählst einen kleineren Durchmesser.
+- In *Passung* gibt es dazu das **Spiel am Drehring** (druckoptimierter Drehring wie bei den Schlauchadaptern).
+
+Platte, Drehring und Becher druckst du in einem Stück, mit der Kontaktfläche auf dem Druckbett. Nach dem Druck den Becher festhalten und die Platte einmal kräftig dagegen drehen, bis er frei läuft.
+
+### Gerät ↔ osVAC neo {#magnet-osvac}
+
+Eine **Anschlussplatte** mit einem oder zwei Anschlüssen von osVAC neo. Je Anschluss wählst du **Kupplung (F)** oder **Stecker (M)** und den Durchmesser; beide Anschlüsse dürfen verschieden sein. Die Anschlüsse sitzen fest auf der Platte, ohne Drehring: Die Schläuche drehen sich in ihren eigenen Schlauchadaptern von osVAC neo.
+
+- Zwei Anschlüsse brauchen 15 mm Luft zwischen den aufgesteckten Teilen, damit du sie greifen und drehen kannst. Möglich sind z. B. 32 + 32, F32 + F36 oder 25 + 40; zu große Kombinationen sperrt die App.
+- **Verschlusskappe dazu:** Für eine Kupplung gibt es einen Stopfen (ein geschlossener Stecker), für einen Stecker eine Kappe (eine geschlossene Kupplung). Sie liegt als eigenes Teil daneben und verschließt einen Anschluss, an dem gerade kein Schlauch hängt – sonst zieht er Falschluft.
+- In *Passung* stellst du das **Spiel zwischen Stecker und Kupplung** ein, wie bei den anderen Teilen von osVAC neo.
+
 Der Adapter wird mit einer Schraubklemme festgezogen: eine Zylinderschraube M5 × 25 (ISO 4762) und eine selbstsichernde Mutter M5 (DIN 985). Die Mutter sitzt verdrehsicher in einer Sechskant-Tasche.
 
 ### Magnete eindrucken {#magnete-eindrucken}
@@ -164,7 +190,7 @@ Die Magnete liegen in geschlossenen Taschen unter der Kontaktfläche. Beim Druck
 
 1. Im Slicer an der Höhe, die im [Download](#download) unter *Druckhinweise* steht, eine Pause einfügen (Bambu Studio: Schieber der Schichtvorschau auf diese Höhe, Rechtsklick auf das Plus, *Pause hinzufügen*). Mit 0,2 mm Schichthöhe drucken.
 2. In der Pause die Magnete bis zum Boden in die Taschen drücken. Nichts darf überstehen.
-3. **Polung:** Alle Magnete eines Teils gleich herum einlegen, beim Adapter mit der einen Seite nach oben, bei der Kupplung mit der anderen. Dann ziehen sich alle Kupplungen und Adapter an.
+3. **Polung:** Alle Magnete eines Teils gleich herum einlegen, beim Adapter mit der einen Seite nach oben, bei der Kupplung Ø100 mit der anderen. Schlauch- und Anschlussplatte liegen mit der Kontaktfläche unten auf dem Druckbett, deshalb kommen ihre Magnete wie beim Adapter hinein. Dann ziehen sich alle Kupplungen, Platten und Adapter an.
 4. Weiterdrucken.
 
 ## Saugdüse {#duese}
