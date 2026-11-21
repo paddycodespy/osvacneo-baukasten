@@ -9,7 +9,7 @@
 - Prüfungen im Browser (`test:ui`, `test:sketches`, `docs:bilder`, `docs:pruefen`) finden Chrome, Chromium oder Edge selbst (Linux, macOS, Windows, auch den Browser von `npx playwright install chromium`); ohne Browser gibt es eine Anleitung statt eines Absturzes. `docs:pruefen` prüft Python mit Pillow und numpy vor der Aufnahme.
 - Vorschau: Regel für die Zeichenfläche war ungültig (`:global` in app.css) und wurde beim Build verworfen; Warnung beim Build weg.
 - Anleitung: Abschnitte in derselben Reihenfolge wie die Karten in Schritt 1 (Freiform und eigene Kontur nach den Stutzen-Adaptern, dann Zubehör, Magnet-Schnellkupplung zuletzt). Bilder von Schritt 1 und der Magnet-Schnellkupplung neu (neues Symbol und Name der Karte *Gerät ↔ Kupplung/Stecker*, Kontrollkästchen im einheitlichen Stil).
-- Hilfetext „Spiel am Zentrierbund“: Satzbau korrigiert.
+- Hilfetext „Spiel am Zentrierbund“: Satzbau korrigiert. Anleitung: Satz zum Kurznamen auf den Karten (z. B. *MxxFyy*) verständlicher.
 
 ## 0.6.0
 
