@@ -3,7 +3,7 @@
  * „Neu anfangen“, Rückfrage vor dem Laden einer Vorlage, Bereich „Versetzen, knicken, drehen“ bleibt offen,
  * Download gesperrt bei Fehlern, gespeicherter Stand nach dem Neuladen, Extras im Namen auf dem Druckbett.
  *
- * Chrome: CHROME_PATH oder /usr/bin/google-chrome. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
+ * Chrome/Chromium/Edge wird gesucht (scripts/lib/preview.ts), sonst CHROME_PATH angeben. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
  */
 import type { Page } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
