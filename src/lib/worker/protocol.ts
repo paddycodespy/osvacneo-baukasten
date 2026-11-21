@@ -18,6 +18,14 @@ export interface MeshBody {
   positions: Float32Array;
   normals: Float32Array;
   indices: Uint32Array;
+  /** Schnittebene in der Vorschau (Modellkoordinaten), aus Part.cut; nur im Hauptthread gesetzt */
+  cut?: SectionCut;
+}
+
+/** Schnittebene: Punkt und Normale (Modellkoordinaten) */
+export interface SectionCut {
+  p: [number, number, number];
+  n: [number, number, number];
 }
 
 /** Ein einzelner Körper eines Adapters (Index in kind.parts). */

@@ -3,7 +3,10 @@
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import type { MeshBody } from './worker/protocol';
+import type { MeshBody, SectionCut } from './worker/protocol';
+
+/** Schnitt durch die Achse (Ursprung der Modellkoordinaten) */
+const AXIS_CUT: SectionCut = { p: [0, 0, 0], n: [0, 1, 0] };
 
 // Farben nach osvacneo.de
 export const COLORS = {
@@ -194,6 +197,7 @@ export class PartViewer {
       const mesh = new THREE.Mesh(g, mat);
       mesh.name = b.name;
       mesh.userData.helper = b.helper;
+      mesh.userData.cut = b.cut;
       mesh.visible = !b.helper || this.showHelpers;
       this.model.add(mesh);
       box.union(g.boundingBox!);
@@ -273,10 +277,14 @@ export class PartViewer {
     if (this.section) this.setSection(true);
   }
 
-  /** Schnittebene eines Körpers in Weltkoordinaten; abgeschnitten wird die Seite zur Kamera (wie bei der gemeinsamen Ebene) */
+  /**
+   * Schnittebene eines Körpers in Weltkoordinaten; abgeschnitten wird die Seite zur Kamera (wie bei der gemeinsamen Ebene).
+   * Reihenfolge: Ebenen der Freiform/des Schiebers, dann die Ebene am Körper (Part.cut), sonst durch die Achse (Ursprung
+   * der Modellkoordinaten, Normale y). Früher lag die gemeinsame Ebene in der Mitte der Bounding-Box: bei mehreren Teilen
+   * nebeneinander (Magnetkupplung) schnitt sie nur eines, bei Einzelteilen mit Nasen lag sie neben der Achse.
+   */
   private clipFor(m: THREE.Mesh): THREE.Plane {
-    const d = this.planes?.(m.name);
-    if (!d) return this.clip;
+    const d = this.planes?.(m.name) ?? (m.userData.cut as SectionCut | undefined) ?? AXIS_CUT;
     const plane = (m.userData.clip as THREE.Plane | undefined) ?? new THREE.Plane();
     m.userData.clip = plane;
     const p = new THREE.Vector3(...d.p).add(this.model.position);
