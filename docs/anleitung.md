@@ -53,7 +53,7 @@ Im ersten Schritt wählst du, was für einen Adapter du brauchst. Die Arten sind
 - **Zubehör:** [Saugdüse](#duese), [Nebenluft-Regler](#nebenluft), [Schieber einzeln](#schieber) und [Drehring-Lösehilfe](#loesehilfe).
 - **Magnet-Schnellkupplung Ø100:** [Adapter und Kupplung für 100-mm-Schläuche](#magnet), die mit eingedruckten Magneten zusammenhalten, auch mit [kleineren Schläuchen](#magnet-schlauch) oder [Kupplung/Stecker](#magnet-osvac). Ein eigenes System für Geräte mit 100-mm-Stutzen.
 
-Bei den Adaptern von osVAC neo steht rechts das Kürzel, unter dem die Datei später heißt (z. B. *MxxFyy*; xx und yy sind die Durchmesser).
+Rechts auf vielen Karten steht ein Kurzname, z. B. *MxxFyy* bei *Stecker ↔ Kupplung*. Die Buchstaben sagen, was an den Enden ist (siehe [Was die Zeichen bedeuten](#begriffe)), *xx* und *yy* stehen für die Durchmesser, die du im nächsten Schritt wählst. Nach diesem Kurznamen heißt später die Datei, z. B. *osVAC neo M32F36*.
 
 ## Stecker ↔ Kupplung {#stecker-kupplung}
 
