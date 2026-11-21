@@ -8,7 +8,7 @@
  * Prüfen, ob Bilder veraltet sind (npm run build && npm run docs:pruefen): nimmt alle Bilder nach out/anleitung/ auf und
  * vergleicht sie mit public/anleitung/ (tools/anleitung/vergleich.py, braucht python3 mit Pillow und numpy). Veraltete
  * Bilder werden genannt, auf GitHub als Warnung; der Lauf bleibt grün.
- * Chrome: CHROME_PATH oder /usr/bin/google-chrome. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
+ * Chrome/Chromium/Edge wird gesucht (scripts/lib/preview.ts), sonst CHROME_PATH angeben. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
  */
 import type { Browser, Locator, Page } from 'playwright-core';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -19,7 +19,17 @@ import { withPreview } from './lib/preview';
 const check = process.argv.includes('--pruefen');
 const OUT = check ? 'out/anleitung' : 'public/anleitung';
 const fixture = (n: string) => path.join(import.meta.dirname, 'fixtures', n);
-if (check) rmSync(OUT, { recursive: true, force: true });
+if (check) {
+  // Python-Pakete vorher prüfen, nicht erst nach 20 Minuten Aufnahme
+  const py = spawnSync('python3', ['-c', 'import PIL, numpy'], { encoding: 'utf8' });
+  if (py.status !== 0) {
+    console.error('Für den Vergleich fehlt python3 mit Pillow und numpy.');
+    console.error('  Linux Mint/Ubuntu: sudo apt install python3-pil python3-numpy');
+    console.error('  sonst: pip install pillow numpy');
+    process.exit(1);
+  }
+  rmSync(OUT, { recursive: true, force: true });
+}
 mkdirSync(OUT, { recursive: true });
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 
@@ -426,7 +436,6 @@ if (check) {
   const r = spawnSync('python3', [path.join(import.meta.dirname, '../tools/anleitung/vergleich.py'), 'public/anleitung', OUT], { encoding: 'utf8' });
   if (r.status !== 0) {
     console.error(r.stderr);
-    console.error('python3 mit Pillow und numpy nötig: pip install pillow numpy');
     process.exit(1);
   }
   const stale = r.stdout.trim().split('\n').filter(Boolean);

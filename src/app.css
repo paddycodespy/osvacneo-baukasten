@@ -158,8 +158,7 @@ button:disabled { cursor: not-allowed; }
   min-height: 0;
 }
 .viewport { position: absolute; inset: 0; }
-.viewport :global(canvas) { display: block; }
-/* Plaketten A/B/C an den Enden (Freiform): klein, durchscheinend, wie die Buchstaben an den Karten */
+.viewport canvas { display: block; }
 
 .stage-head {
   position: absolute;

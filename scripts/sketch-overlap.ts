@@ -7,7 +7,7 @@
  *
  *   npm run build && npm run test:sketches
  *
- * Chrome: CHROME_PATH oder /usr/bin/google-chrome. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
+ * Chrome/Chromium/Edge wird gesucht (scripts/lib/preview.ts), sonst CHROME_PATH angeben. Andere Adresse statt eigenem Server: BASE_URL=http://localhost:5173/
  */
 import type { Page } from 'playwright-core';
 import { withPreview } from './lib/preview';

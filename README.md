@@ -165,7 +165,7 @@ tools/druck/                 Schichtprüfung für test:islands und test:bleed (P
 | `npm run check` | Typen (Svelte und TypeScript) | < 1 min |
 | `npm run test:keys` | gleiche Cache-Schlüssel ergeben gleiche Körper | ca. 1 min |
 | `npm run test:freeform` | alle Freiform-Vorlagen, Querschnitte, Extras, Flansch (alle Formen, mit Dichtung, Lochbild nach Maß, Prüfungen) und längere Ketten, Stutzen-Typen mit Klemmrippen/Schlitzen, Weg des Hinweises bei weggelassenen Rippen, Rahmen nicht gespiegelt | ca. 4 min |
-| `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen (braucht `npm run build` und Chrome, Pfad über `CHROME_PATH`) | < 1 min |
+| `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen (braucht `npm run build` und Chrome, Chromium oder Edge; wird gesucht, sonst Pfad über `CHROME_PATH`) | < 1 min |
 | `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern und bei Teilen unter dem Druckbett, Stand und Druckbett nach dem Neuladen, Extras im Namen, Flansch, Druckhilfe je Verbindung, Link aus den Download-Hinweisen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 1 min |
 | `npm run test:geometry` | alle Adaptertypen mit Grenzwerten | ca. 10–15 min |
 | `npm run test:swivel` | Druckoptimierter Drehring: Profile ohne Überlappung, Mindestspiel, kein Überhang außer dem Anfang des oberen Rings; Vergleich mit dem Original | wenige s |
@@ -210,7 +210,7 @@ Die Anleitung für Anwender liegt in der App unter **Anleitung** (Kopfzeile, öf
 
 - Text: `docs/anleitung.md` (einfaches Markdown, erlaubte Zeichen oben in `scripts/anleitung.ts`). Daraus baut `npm run docs` die Seite, `npm run build` macht das jedes Mal mit; die HTML-Datei nicht von Hand ändern.
 - Bilder: `public/anleitung/*.webp`, aufgenommen mit `npm run build && npm run docs:bilder` (alle) oder `npm run docs:bilder -- kontur duese` (nur Szenen mit diesem Namen). Jede Szene startet mit Standardwerten; die Szenen stehen in `scripts/anleitung-bilder.ts`.
-- Veraltete Bilder finden: `npm run build && npm run docs:pruefen` nimmt alle Szenen nach `out/anleitung/` auf und nennt die Bilder, die sich gegenüber `public/anleitung/` sichtbar geändert haben (`tools/anleitung/vergleich.py`, Python mit Pillow und numpy). Läuft auch im Workflow „Tests“ (Job „Anleitungsbilder aktuell?“, nur Warnung, neue Bilder als Artefakt).
+- Veraltete Bilder finden: `npm run build && npm run docs:pruefen` nimmt alle Szenen nach `out/anleitung/` auf und nennt die Bilder, die sich gegenüber `public/anleitung/` sichtbar geändert haben (`tools/anleitung/vergleich.py`, Python mit Pillow und numpy, unter Linux Mint/Ubuntu `sudo apt install python3-pil python3-numpy`). Am zuverlässigsten mit demselben Browser, mit dem die Bilder aufgenommen wurden (Google Chrome); ein anderer Browser kann einzelne Bilder fälschlich als veraltet melden. Läuft auch im Workflow „Tests“ (Job „Anleitungsbilder aktuell?“, nur Warnung, neue Bilder als Artefakt).
 - **Bei jeder Änderung an der Oberfläche prüfen**, ob die Anleitung betroffen ist (neue oder umbenannte Einstellungen, neue Adapterarten, andere Abläufe): Text in `docs/anleitung.md` anpassen, betroffene Bilder neu aufnehmen, `npm run docs` ausführen und alles mit committen. Ein Eintrag im CHANGELOG reicht dafür nicht.
 
 ## Abgleich mit Fusion
