@@ -5,6 +5,8 @@
 Ein Bild gilt als veraltet, wenn sich die Größe geändert hat oder mehr als 0,01 % der Pixel deutlich unterscheiden
 (ein Farbkanal um mehr als 40 von 255). Kleines Rauschen (WebP, Kantenglättung der 3D-Vorschau) bleibt darunter.
 Ausgabe: je veraltetem Bild eine Zeile „name anteil“; ohne Unterschiede nichts. Exit-Code 0, außer mit --streng.
+Mit --github: Warnungen für GitHub Actions und eine Zusammenfassung (auf GitHub werden zwei dort aufgenommene Stände
+verglichen, siehe Job „anleitung“ in .github/workflows/tests.yml).
 """
 import sys
 from pathlib import Path
@@ -33,7 +35,12 @@ def main() -> int:
         share = 1.0 if not ref.exists() else diff(ref, f)
         if share > LIMIT:
             stale.append(f.name)
-            print(f'{f.stem} {share * 100:.2f} %')
+            if '--github' in sys.argv:
+                print(f'::warning title=Anleitungsbild veraltet::{f.stem}: {share * 100:.2f} % der Pixel anders als beim letzten Stand der Bilder. Neu aufnehmen: npm run build && npm run docs:bilder -- {f.stem}')
+            else:
+                print(f'{f.stem} {share * 100:.2f} %')
+    if '--github' in sys.argv and not stale:
+        print('Anleitungsbilder aktuell')
     return 1 if stale and '--streng' in sys.argv else 0
 
 

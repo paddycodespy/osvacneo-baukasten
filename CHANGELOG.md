@@ -2,6 +2,10 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## Unveröffentlicht
+
+- Prüfung der Anleitungsbilder auf GitHub vergleicht zwei dort aufgenommene Stände (aktuell und Stand der letzten Bilder) statt direkt mit den eingecheckten Bildern; vorher meldete sie wegen kleiner Unterschiede beim Zeichnen 45 Bilder fälschlich als veraltet. GitHub-Actions auf aktuelle Versionen (setup-python v6, upload-artifact v6).
+
 ## 0.6.1
 
 Fehlerbehebungen und Feinschliff nach 0.6.0.

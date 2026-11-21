@@ -48,7 +48,7 @@ jobs:
       # Bildschirmfotos fehlgeschlagener Abläufe zum Herunterladen
       - name: Bildschirmfotos bei Fehlern
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ui-bildschirmfotos
           path: out/ui-*.png
@@ -105,7 +105,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: npm ci
@@ -120,36 +120,66 @@ jobs:
       - name: Nebenluft-Ring
         run: npm run test:bleed
 
-  # Anleitungsbilder: alle Szenen neu aufnehmen und mit public/anleitung/ vergleichen. Veraltete Bilder erscheinen als
-  # Warnung (der Lauf bleibt grün, ein Release wird nicht blockiert); die neuen Bilder liegen als Artefakt bereit.
-  anleitung:
-    name: Anleitungsbilder aktuell?
+  # Anleitungsbilder: Sind sie noch aktuell? Chrome zeichnet auf GitHub minimal anders als lokal (Kantenglättung, Schrift),
+  # ein Vergleich mit public/anleitung/ meldet deshalb fast jedes Bild. Stattdessen werden auf GitHub zwei Stände
+  # aufgenommen: der aktuelle und der, bei dem public/anleitung/ zuletzt geändert wurde. Unterscheiden sich die beiden,
+  # hat sich die App seitdem sichtbar geändert und das Bild ist veraltet. Nur Warnung, ein Release wird nicht blockiert.
+  anleitung-aufnahme:
+    name: Anleitungsbilder aufnehmen (${{ matrix.stand }})
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    strategy:
+      matrix:
+        stand: [neu, basis]
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Stand der letzten Bilder auschecken
+        if: matrix.stand == 'basis'
+        run: |
+          BASE=$(git log -1 --format=%H -- public/anleitung/)
+          echo "Bilder zuletzt geändert in $(git log -1 --format='%h %s' $BASE)"
+          git checkout -q "$BASE"
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: npm ci
       - run: pip install pillow numpy
-
       - name: Web-Oberfläche bauen
         run: npm run build
-
-      - name: Bilder aufnehmen und vergleichen
-        run: npm run docs:pruefen
+      - name: Bilder aufnehmen
+        # GITHUB_ACTIONS leer: der Vergleich mit public/anleitung/ im Skript gibt dann keine Warnungen aus
+        run: npx tsx scripts/anleitung-bilder.ts --pruefen
         env:
           CHROME_PATH: /usr/bin/google-chrome
-
-      - name: Neu aufgenommene Bilder
-        if: always()
-        uses: actions/upload-artifact@v4
+          GITHUB_ACTIONS: ''
+      - uses: actions/upload-artifact@v6
         with:
-          name: anleitung-bilder
+          name: anleitung-${{ matrix.stand }}
           path: out/anleitung/*.webp
-          if-no-files-found: ignore
+
+  anleitung:
+    name: Anleitungsbilder aktuell?
+    needs: anleitung-aufnahme
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install pillow numpy
+      - uses: actions/download-artifact@v8
+        with:
+          name: anleitung-basis
+          path: out/basis
+      - uses: actions/download-artifact@v8
+        with:
+          name: anleitung-neu
+          path: out/neu
+      - name: Vergleichen
+        run: python3 tools/anleitung/vergleich.py out/basis out/neu --github
