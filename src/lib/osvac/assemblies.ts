@@ -13,6 +13,7 @@ import { pipeCone, pipeTransition, pipeRibs, DEFAULT_PIPE, type PipeSpec } from 
 import { deriveParams, type OsvacInput } from './params';
 import { planFree, partPlacements, inPart2, hasSplit, placeShape, isIdentity, placementKey, localPlacement, loosePlacements, DEFAULT_FREE, OSVAC_TRANSITION, type FreeSpec, type Placement, type V3 } from './freeform';
 import { DEFAULT_GATE, gateLayout, gateLower, gateUpper, gateSlider, gateClip, gateBed, upperOnBed, type GateSpec } from './gate';
+import type { SectionCut } from '../worker/protocol';
 import { helperForFemale, helperForMale, helperSide } from './helper';
 import { BLEED, bleedLayout, bleedBody, bleedRing } from './bleed';
 import { DEFAULT_MAGNET, MAG, PLATE, magnetAdapter, magnetCoupling, magnetThread, magnetThreadOverlap, magnetBed, magnetLayout, magnetPlate, plateTubeTop, portLayout, capFloor, type MagnetSpec, type PlatePort } from './magnet';
@@ -42,6 +43,9 @@ export interface Part {
   areaOffset?: number;
   /** eigenes Objekt im 3MF (z. B. die Schieberplatte, die getrennt gedruckt und eingesetzt wird) */
   object?: string;
+  /** Schnitt in der Vorschau durch diesen Punkt mit dieser Normalen (sonst durch den Ursprung, Normale y): für Teile, die
+   * neben der Achse liegen (z. B. zweites Teil der Magnetkupplung) */
+  cut?: SectionCut;
   make: () => Shape3D;
 }
 
@@ -101,6 +105,7 @@ type Dep = Partial<Record<keyof OsvacParams | 'text' | 'knurl' | 'pipe' | 'z' | 
 
 interface PartExtra {
   helper?: boolean;
+  cut?: SectionCut;
   object?: string;
   volumeOffset?: number;
   areaOffset?: number;
@@ -536,12 +541,15 @@ export function partsMagnet(p: OsvacParams, o: BuildOptions = {}): Part[] {
   const dT = { ...dM, hose: s.hose, pitch: s.pitch, hand: s.hand };
   const obj = both ? { object: plate ? (osvac ? 'Anschlussplatte' : 'Schlauchplatte') : 'Schlauchkupplung' } : {};
   const out: Part[] = [];
+  // Schnitt in der Vorschau je Teil durch seine eigene Achse (die Teile liegen diagonal nebeneinander)
+  const cutA: SectionCut = { p: bed.adapter, n: [0, 1, 0] };
+  const cutC: SectionCut = { p: bed.coupling, n: [0, 1, 0] };
   if (s.adapter)
-    out.push(part('Maschinenadapter', 2, { ...dM, stutzen: s.stutzen, depth: s.depth, gap: s.pipeGap, at: bed.adapter }, () => place(magnetAdapter(s), bed.adapter, 0)));
+    out.push(part('Maschinenadapter', 2, { ...dM, stutzen: s.stutzen, depth: s.depth, gap: s.pipeGap, at: bed.adapter }, () => place(magnetAdapter(s), bed.adapter, 0), { cut: cutA }));
   if (s.coupling && !plate)
     out.push(
-      part('Schlauchkupplung', 1.5, { ...dC, at: bed.coupling, rot: bed.rot }, () => place(magnetCoupling(s), bed.coupling, bed.rot), obj),
-      part('Gewinde', 1.5, { ...dT, at: bed.coupling, rot: bed.rot }, () => place(magnetThread(s), bed.coupling, bed.rot), { ...obj, volumeOffset: magnetThreadOverlap(s) }),
+      part('Schlauchkupplung', 1.5, { ...dC, at: bed.coupling, rot: bed.rot }, () => place(magnetCoupling(s), bed.coupling, bed.rot), { ...obj, cut: cutC }),
+      part('Gewinde', 1.5, { ...dT, at: bed.coupling, rot: bed.rot }, () => place(magnetThread(s), bed.coupling, bed.rot), { ...obj, volumeOffset: magnetThreadOverlap(s), cut: cutC }),
     );
   if (s.coupling && plate) out.push(...platePartsAll(p, s, osvac, bed, obj, o));
   return out;
@@ -565,10 +573,13 @@ function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: Retur
   const at = bed.coupling, rot = bed.rot;
   const onBed = (sh: Shape3D) => (rot ? sh.rotate(rot, [0, 0, 0], [0, 0, 1]) : sh).translate(at) as Shape3D;
   const bedKey = { at, rot };
+  // Schnitt: eine Ebene durch die Plattenmitte und die Achsen aller Anschlüsse (sie liegen in Plattenkoordinaten auf y = 0)
+  const a = (rot * Math.PI) / 180;
+  const cut: SectionCut = { p: at, n: [-Math.sin(a), Math.cos(a), 0] };
   const moved = (q: Part, v: [number, number, number], tag: string): Part => ({
-    ...q, name: tag ? `${q.name} ${tag}` : q.name, key: JSON.stringify([JSON.parse(q.key), v, bedKey]), make: () => onBed(q.make().translate(v) as Shape3D), ...obj,
+    ...q, name: tag ? `${q.name} ${tag}` : q.name, key: JSON.stringify([JSON.parse(q.key), v, bedKey]), make: () => onBed(q.make().translate(v) as Shape3D), ...obj, cut,
   });
-  const out: Part[] = [part(osvac ? 'Anschlussplatte' : 'Schlauchplatte', 2, { ...dP, ...bedKey }, () => onBed(magnetPlate(s, pp, zTop)), obj)];
+  const out: Part[] = [part(osvac ? 'Anschlussplatte' : 'Schlauchplatte', 2, { ...dP, ...bedKey }, () => onBed(magnetPlate(s, pp, zTop)), { ...obj, cut })];
   const pipeFor = (d: number): PipeSpec => ({ d1Inner: d, d2Inner: d, length: 0, wall: PLATE.wall, transition: OSVAC_TRANSITION, screwHoles: false });
   const noSupport: BuildOptions = { text: o.text, knurl: o.knurl, supports: false };
   L.list.forEach((q, i) => {
@@ -606,7 +617,7 @@ function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: Retur
     const c = capAt(k, rCap);
     const h = (q.t === 'F' ? pq.maleHeight : pq.femaleHeight) + OSVAC_TRANSITION;
     const v: [number, number, number] = [c[0], c[1], h + PLATE.wall];
-    const mv = (r: Part): Part => ({ ...r, name: `${r.name} Kappe`, key: JSON.stringify([JSON.parse(r.key), v]), make: () => r.make().translate(v) as Shape3D, ...capObj });
+    const mv = (r: Part): Part => ({ ...r, name: `${r.name} Kappe${caps.length > 1 ? ` ${i + 1}` : ''}`, key: JSON.stringify([JSON.parse(r.key), v]), make: () => r.make().translate(v) as Shape3D, ...capObj, cut: { p: c, n: [0, 1, 0] } });
     const floor = part('Kappenboden', 0.1, { kind: 'magnetCap', d: q.d, W, t: q.t }, () => capFloor(q.d / 2 + PLATE.wall, -h - PLATE.wall));
     if (q.t === 'F')
       out.push(...[part('Male', 9, { ...dM(pq, noSupport), rot: 'flip' }, () => flippedMale(pq, noSupport)), part('Übergang', 0.1, { kind: 'magnetM', ...dAll(pq) }, () => pipeTransition(pq.maleDiameterInner / 2, pq.maleDiameterOuter / 2, pipeFor(q.d)).translate([0, 0, -pq.maleHeight])), floor].map(mv));

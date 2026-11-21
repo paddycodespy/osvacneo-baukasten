@@ -195,14 +195,14 @@ export async function build(req: BuildRequest, onPart?: (index: number, body: Me
   const res = await Promise.all(
     parts.map((q, i) =>
       enqueue<Extract<WorkerReply, { type: 'part' }>>({ type: 'part', id: nextId++, ...ref(req, i) }, q.cost, q.key).then((r) => {
-        onPart?.(i, r.body);
+        onPart?.(i, q.cut ? { ...r.body, cut: q.cut } : r.body);
         return { q, r };
       }),
     ),
   );
   const sum = (f: (x: (typeof res)[number]) => number, helper: boolean) => res.filter((x) => !!x.q.helper === helper).reduce((s, x) => s + f(x), 0);
   return {
-    bodies: res.map((x) => x.r.body),
+    bodies: res.map((x) => (x.q.cut ? { ...x.r.body, cut: x.q.cut } : x.r.body)),
     ms: performance.now() - t0,
     volume: sum((x) => x.r.volume, false),
     area: sum((x) => x.r.area, false),
