@@ -2,10 +2,12 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
-## Unveröffentlicht
+## 0.6.1
 
-- **Schnitt in der Vorschau** schneidet jedes Teil durch seine eigene Achse. Bei der Magnet-Schnellkupplung wurde bisher nur ein Teil (oder nur ein Streifen der Platte) geschnitten, weil die gemeinsame Ebene in der Mitte aller Teile lag; jetzt Adapter, Kupplung bzw. Platte mit Anschlüssen (Ebene durch alle Anschlüsse) und Verschlusskappen je für sich. Auch bei den übrigen Adaptern liegt der Schnitt jetzt genau auf der Achse (vorher je nach Nasen und Beschriftung etwas daneben).
+Fehlerbehebungen und Feinschliff nach 0.6.0.
+
 - **Dichtnut der Kupplung frei** bei *Kupplung → Stutzen*, in der Freiform (Kupplung an A, B oder C, auch bei der Saugdüse mit Kupplung) und an der Magnet-Anschlussplatte (Kupplung und Kappe für einen Stecker). Bisher füllte dort eine 45°-Schräge die Dichtnut unter dem Rand auf (wie beim Maschinenadapter im Original), sodass keine Dichtung hineinpasste und Nebenluft gezogen wurde. Jetzt ist die Kupplung innen überall wie beim Schlauchadapter (*Kupplung ↔ Schlauch*): Eine Dichtung lässt sich unter den Rand klemmen. Hinweis aus dem Forum.
+- **Schnitt in der Vorschau** schneidet jedes Teil durch seine eigene Achse. Bei der Magnet-Schnellkupplung wurde bisher nur ein Teil (oder nur ein Streifen der Platte) geschnitten, weil die gemeinsame Ebene in der Mitte aller Teile lag; jetzt Adapter, Kupplung bzw. Platte mit Anschlüssen (Ebene durch alle Anschlüsse) und Verschlusskappen je für sich. Auch bei den übrigen Adaptern liegt der Schnitt jetzt genau auf der Achse (vorher je nach Nasen und Beschriftung etwas daneben).
 - Neue Prüfung `npm run docs:pruefen`: nimmt alle Anleitungsbilder neu auf und nennt die, die nicht mehr zur App passen. Läuft auch in den Tests auf GitHub (nur Warnung, die neuen Bilder liegen als Artefakt bei).
 - Prüfungen im Browser (`test:ui`, `test:sketches`, `docs:bilder`, `docs:pruefen`) finden Chrome, Chromium oder Edge selbst (Linux, macOS, Windows, auch den Browser von `npx playwright install chromium`); ohne Browser gibt es eine Anleitung statt eines Absturzes. `docs:pruefen` prüft Python mit Pillow und numpy vor der Aufnahme.
 - Vorschau: Regel für die Zeichenfläche war ungültig (`:global` in app.css) und wurde beim Build verworfen; Warnung beim Build weg.

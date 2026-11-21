@@ -1,5 +1,5 @@
 # Veröffentlicht eine neue Version: Tests, alle drei Installer, dann ein GitHub-Release mit den Dateien.
-# Start: Versions-Tag hochladen, z. B. git tag v0.6.0 && git push origin v0.6.0
+# Start: Versions-Tag hochladen, z. B. git tag v0.6.1 && git push origin v0.6.1
 # Der Tag muss zur Version in package.json und src-tauri/tauri.conf.json passen, sonst bricht der Lauf sofort ab.
 # Ergebnis: unter „Releases“ (…/releases/latest) die Seite „osVAC neo Baukasten <Version>“ mit den Änderungen aus
 # CHANGELOG.md und den Dateien osVAC-neo-Baukasten-<Version>-Windows-Setup.exe, -macOS.dmg, -Linux.AppImage,
@@ -113,7 +113,7 @@ jobs:
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
-      # Vorabversionen (Tag mit Bindestrich, z. B. v0.6.0-beta.1) werden als „Pre-release“ markiert.
+      # Vorabversionen (Tag mit Bindestrich, z. B. v0.6.1-beta.1) werden als „Pre-release“ markiert.
       # Gibt es das Release schon (erneuter Lauf), werden nur Text und Dateien ersetzt.
       - name: Release anlegen
         shell: bash

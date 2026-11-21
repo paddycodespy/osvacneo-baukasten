@@ -278,20 +278,20 @@ dann `npx tauri build --bundles appimage,deb`.
 1. Version in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` und
    `src-tauri/Cargo.lock` erhöhen und in `CHANGELOG.md` einen Abschnitt `## <Version>` anlegen.
 2. Bei geänderten Abhängigkeiten die Lizenzdateien neu erzeugen (siehe „Lizenzen“).
-3. Committen, pushen, dann den Tag setzen: `git tag v0.6.0 && git push origin v0.6.0`.
+3. Committen, pushen, dann den Tag setzen: `git tag v0.6.1 && git push origin v0.6.1`.
 
 Der Tag startet `.github/workflows/release.yml`: Erst wird geprüft, ob Tag, Versionsnummern und CHANGELOG
 zusammenpassen und die Lizenzdateien aktuell sind. Dann laufen alle Tests und die drei Installer gleichzeitig (etwa 15–20 Minuten). Nur wenn alles
 grün ist, entsteht unter **Releases** die Seite „osVAC neo Baukasten <Version>“ mit dem Text aus dem CHANGELOG,
 Links zu den Anleitungen und den Dateien `osVAC-neo-Baukasten-<Version>-Windows-Setup.exe`, `…-macOS.dmg`,
 `…-Linux.AppImage`, `…-Linux.deb` sowie `SHA256SUMS.txt`. Herunterladen geht ohne GitHub-Konto, der Link
-`…/releases/latest` zeigt immer auf die neueste Version. Ein Tag mit Bindestrich (z. B. `v0.6.0-beta.1`) wird als
+`…/releases/latest` zeigt immer auf die neueste Version. Ein Tag mit Bindestrich (z. B. `v0.6.1-beta.1`) wird als
 Vorabversion markiert und zählt nicht als „latest“.
 
 Schlägt etwas fehl, entsteht kein Release:
 - Fehler ohne Änderung am Code (z. B. Störung bei GitHub): im Lauf **Re-run failed jobs**.
 - Fehler im Code: beheben, pushen, Tag löschen und neu setzen:
-  `git tag -d v0.6.0 && git push origin :refs/tags/v0.6.0 && git tag v0.6.0 && git push origin v0.6.0`.
+  `git tag -d v0.6.1 && git push origin :refs/tags/v0.6.1 && git tag v0.6.1 && git push origin v0.6.1`.
   Das geht nur, solange es zu diesem Tag noch kein Release gibt. Sonst lieber eine neue Version.
 
 **Nur zum Testen** lässt sich jeder Installer auch einzeln bauen: **Actions → Windows-Installer** (bzw. macOS-,
