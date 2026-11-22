@@ -2,17 +2,19 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
-## Unveröffentlicht
+## 0.7.0
 
-- Dateinamen: „Spiel 0,3“ statt „Spalt 0,3“, wie in der Oberfläche („Spiel zwischen Stecker und Kupplung“). Beim Magnet-Adapter heißt das Spiel am Stutzen im Dateinamen jetzt „Stutzen 0,4“, damit es sich vom Spiel am Bajonett unterscheidet.
-- *Größen* beim Stutzen: Die Tabelle „So wird das Rohrteil des Adapters“ zeigt die Werte mit Einheit (Ø29,3 mm statt 29,3).
-- Der Kasten *Dichtung in der Kupplung* bleibt aufgeklappt, wenn man zwischen den Schritten wechselt.
-- Anleitungsbilder *kontur-foto-pruefen* und *kontur-fertig* (Schreibweise R0,5), *druckbett* (Dateiname mit „Spiel“) und *stutzen-fein* (Tabelle mit Einheiten) neu.
-- Technik: three.js (3D-Vorschau) liegt in einer eigenen Datei, die Startdatei ist dadurch 450 statt 1040 kB groß; keine Datei mehr über 800 kB. `tsconfig.json` ohne veraltete Einstellung (moduleResolution node10, mit TypeScript 7 nicht mehr erlaubt). README: Ø und R ohne Leerzeichen, auf den aktuellen Stand gebracht (Dichtung in der Kupplung und Lippendichtung, Drehring druckoptimiert als Standard, Gewinde links oder rechts, Prüfungen und ihre Dauer).
+Dichtung in der Kupplung: Maße der Dichtnut im Download und eine Lippendichtung aus TPU zum Herunterladen (Anregung aus dem Forum), dazu Feinschliff nach der Durchsicht der ganzen App.
+
 - **Maße der Dichtnut** im Schritt *Download*: Bei jedem Adapter mit Kupplung zeigt der Kasten *Dichtung in der Kupplung* eine maßstäbliche Skizze und die Maße für eine eigene Dichtung: Bohrung über der Nut, größter Ø der Nut, Rundung außen (R1,95), Höhe an der Bohrung, Abstand der Steckerspitze vom Boden (unter Sog und ohne Sog), Durchgang und Auflagefläche der Steckerspitze, dazu ein passender O-Ring und wie stark er zusammengedrückt wird. Bei zwei Kupplungen verschiedener Größe je eine Tabelle (bei der Magnet-Platte auch für die Kupplung in der Kappe eines Steckers). Hinweise: gedruckt weicht die Nut etwas ab (Probering drucken), genau nachmessen lässt sie sich im STEP-Modell; die Werte gelten für einen Stecker mit demselben Spiel. Die Lage der Steckerspitze ist am Modell nachgemessen (F32, Spiel 0,2 und 0,4). Wunsch aus dem Forum (bisher half nur, eine Kupplung aufzuschneiden).
 - Neu: **Lippendichtung aus TPU** im Kasten *Dichtung in der Kupplung* (Schritt *Download*), als eigene Datei (3MF, STL, STEP) für alle Kupplungen des Adapters. Lippendichtung: Ein Fuß hält in der Hinterschneidung der Nut (unten 45°, 0,1 mm Luft zur Rundung), eine 0,8 mm dünne Lippe wächst innen schräg nach oben außen (mindestens 55° steil, druckt flach ohne Stützen) und legt sich von unten an die Steckerspitze. Die Außenluft kommt über den Spalt an der Bohrung unter die Lippe und drückt sie gegen den Stecker, unter Sog wird es also dichter; weil sich nur die Lippe biegt, lässt sich der Stecker leicht eindrehen. *Vorspannung der Lippe* 0,2–1,0 mm (Standard 0,5); die Lippe wird steiler, wenn sie sonst an die Bohrung käme. Skizze mit Ring, Maße und Gewicht (etwa 0,5–1,5 g). Am Modell geprüft: der Ring berührt die Kupplung nicht, der Stecker berührt nur die Lippe. Hinweise zu TPU (85A–95A), Einsetzen und Probedruck.
 - Texte zur Dichtnut korrigiert: Der Sog zieht den Stecker kaum tiefer (bei 35 kPa etwa 35 N), maßgeblich ist, wie stark die Dichtung zusammengedrückt ist, wenn die Nasen oben in der Nut anliegen. Zeile E nennt den Spielraum der Nasen; die Skizze zeigt den Stecker in dieser Stellung.
+- Dateinamen: „Spiel 0,3“ statt „Spalt 0,3“, wie in der Oberfläche („Spiel zwischen Stecker und Kupplung“). Beim Magnet-Adapter heißt das Spiel am Stutzen im Dateinamen jetzt „Stutzen 0,4“, damit es sich vom Spiel am Bajonett unterscheidet.
+- *Größen* beim Stutzen: Die Tabelle „So wird das Rohrteil des Adapters“ zeigt die Werte mit Einheit (Ø29,3 mm statt 29,3).
+- Der Kasten *Dichtung in der Kupplung* bleibt aufgeklappt, wenn man zwischen den Schritten wechselt.
 - Schreibweise: „R0,5“ statt „R 0,5“ bei den Hinweisen zu gerundeten Ecken der eigenen Kontur, wie sonst Ø und R ohne Leerzeichen.
+- Anleitungsbilder *kontur-foto-pruefen* und *kontur-fertig* (Schreibweise R0,5), *druckbett* (Dateiname mit „Spiel“) und *stutzen-fein* (Tabelle mit Einheiten) neu.
+- Technik: three.js (3D-Vorschau) liegt in einer eigenen Datei, die Startdatei ist dadurch 450 statt 1040 kB groß; keine Datei mehr über 800 kB. `tsconfig.json` ohne veraltete Einstellung (moduleResolution node10, mit TypeScript 7 nicht mehr erlaubt). README: Ø und R ohne Leerzeichen, auf den aktuellen Stand gebracht (Dichtung in der Kupplung und Lippendichtung, Drehring druckoptimiert als Standard, Gewinde links oder rechts, Prüfungen und ihre Dauer).
 - Prüfung der Anleitungsbilder auf GitHub vergleicht zwei dort aufgenommene Stände (aktuell und Stand der letzten Bilder) statt direkt mit den eingecheckten Bildern; vorher meldete sie wegen kleiner Unterschiede beim Zeichnen 45 Bilder fälschlich als veraltet. GitHub-Actions auf aktuelle Versionen (setup-python v6, upload-artifact v6).
 
 ## 0.6.1
