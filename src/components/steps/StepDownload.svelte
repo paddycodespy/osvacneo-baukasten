@@ -10,6 +10,7 @@
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
   import SealFigure from '../SealFigure.svelte';
+  import type { SealGroove } from '../../lib/osvac/seal';
 
   const canPick = isDesktop || canPickWeb;
   /** Datei noch einmal speichern (in den jetzt gewählten Ordner; im Browser ohne Ordner: normaler Download) */
@@ -32,6 +33,8 @@
 
   /** Maße der Dichtnut: mm mit Komma, Bereiche mit Halbgeviertstrich */
   const mm = (v: number, d = 2) => fmt(v, d);
+  /** Größe der Kupplung, bei der Magnet-Platte mit Hinweis, wenn sie in der Kappe für einen Stecker steckt */
+  const sealName = (s: SealGroove) => `F${fmt(s.d)}${s.cap ? ' (in der Kappe)' : ''}`;
   /** O-Ring zum Kaufen: ganze Millimeter innen, Schnur 4 mm */
   const oring = (d: number) => (Number.isInteger(d) ? `O-Ring ${d} × 4` : `O-Ring ${Math.floor(d)} × 4 oder ${Math.ceil(d)} × 4`);
   const range = (a: number, b: number) => (Math.abs(a - b) < 0.05 ? mm(a, 1) : `${mm(a, 1)}–${mm(b, 1)}`);
@@ -111,14 +114,14 @@
 
 {#if app.seals.length && app.status !== 'error'}
   <details class="box seal">
-    <summary>Dichtung in der Kupplung{app.seals.length === 1 ? ` F${fmt(app.seals[0].d)}` : ''}: Maße der Nut</summary>
+    <summary>Dichtung in der Kupplung{app.seals.length === 1 ? ` ${sealName(app.seals[0])}` : ''}: Maße der Nut</summary>
     <p class="hint">
-      Unten in der Kupplung, unter der Steckerspitze, läuft eine Nut für eine Dichtung rundum: Rundschnur, O-Ring oder ein selbst gedruckter Ring aus TPU. Sie reicht unten
-      {mm((app.seals[0].outer - app.seals[0].bore) / 2, 1)} mm weiter nach außen als die Bohrung darüber, so bleibt die Dichtung von selbst liegen. Die Steckerspitze drückt von oben auf die Dichtung.
+      Unten in der Kupplung läuft rundum eine Nut für eine Dichtung: Rundschnur, O-Ring oder ein selbst gedruckter Ring aus TPU. Sie reicht unten
+      {mm((app.seals[0].outer - app.seals[0].bore) / 2, 1)} mm weiter nach außen als die Bohrung darüber, so bleibt die Dichtung von selbst liegen.
     </p>
     <SealFigure s={app.seals[0]} />
-    {#each app.seals as s (s.d + '/' + s.gap)}
-      {#if app.seals.length > 1}<p class="seal-h">Kupplung F{fmt(s.d)}</p>{/if}
+    {#each app.seals as s (s.d + '/' + s.gap + '/' + !!s.cap)}
+      {#if app.seals.length > 1}<p class="seal-h">Kupplung {sealName(s)}</p>{/if}
       <table class="seal-t">
         <tbody>
           <tr><th>A</th><td>Bohrung über der Nut</td><td>Ø{mm(s.bore)}</td></tr>
@@ -135,7 +138,14 @@
         anliegen: Sie wird dann um {mm(Math.max(0, 4 - s.tipMax), 1)} mm zusammengedrückt. Unter Sog zieht der Sauger den Stecker tiefer hinein, dann sind es bis zu {mm(4 - s.tipMin, 1)} mm.
       </p>
     {/each}
-    <p class="hint">Alle Maße in mm{app.seals.every((s) => s.gap === app.seals[0].gap) ? `, bei ${fmt(app.seals[0].gap, 2)} mm Spiel zwischen Stecker und Kupplung` : ''}. Die Nut selbst ändert sich mit dem Spiel nicht, nur Bohrung und Stecker.</p>
+    <p class="hint">
+      Alle Maße in mm{app.seals.every((s) => s.gap === app.seals[0].gap) ? `, bei ${fmt(app.seals[0].gap, 2)} mm Spiel zwischen Stecker und Kupplung` : ''}, für einen Stecker mit demselben Spiel.
+      Die Nut selbst ändert sich mit dem Spiel nicht, nur Bohrung und Stecker.
+    </p>
+    <p class="hint">
+      Gedruckt weicht die Nut je nach Drucker um etwa 0,1–0,2 mm ab, weil der obere Rand der Rundung beim Druck überhängt. Für eine eigene Dichtung deshalb erst einen Probering drucken.
+      Genau nachmessen und als Vorlage nehmen lässt sich die Nut im STEP-Modell.
+    </p>
   </details>
 {/if}
 

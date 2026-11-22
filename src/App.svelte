@@ -69,8 +69,10 @@
     }
     try {
       app.status = 'preview';
-      // Maße der Dichtnut sofort zum neuen Adapter (nicht erst nach der Vorschau, sonst kurz die Werte des vorigen)
-      app.seals = sealGroovesOf(app.spec());
+      // voller Bauauftrag gleich zu Beginn: Maße der Dichtnut sofort zum neuen Adapter (nicht erst nach der Vorschau,
+      // sonst kurz die Werte des vorigen); die Teileliste rechnet cad.ts dafür nur einmal
+      const req = app.spec();
+      app.seals = sealGroovesOf(req);
       if (shownKind && shownKind !== kindId) {
         v.setDimmed(true);
         app.dims = null; // Maße gehören zum alten Typ
@@ -83,7 +85,6 @@
       app.status = 'detail';
       // Fertige Körper sofort zeigen; bis dahin bleiben die Körper der schnellen Vorschau stehen
       // (die volle Berechnung hat zusätzlich die Rändelung als eigene Körper, daher Zuordnung über den Namen)
-      const req = app.spec();
       const quickByName = new Map(quick.bodies.map((b) => [b.name, b]));
       const names = partNames(req);
       const cur: (MeshBody | undefined)[] = names.map((n) => quickByName.get(n));

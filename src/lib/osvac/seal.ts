@@ -23,6 +23,8 @@ export interface SealGroove {
   d: number;
   /** Spaltmaß Stecker/Kupplung */
   gap: number;
+  /** Kupplung steckt in einer Verschlusskappe (Magnet-Platte: Kappe für einen Stecker) */
+  cap?: boolean;
   /** Durchgang (Innen-Ø der Kupplung) */
   inner: number;
   /** Bohrung über der Nut, durch die die Dichtung eingesetzt wird */

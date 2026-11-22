@@ -156,10 +156,16 @@ function dropStale() {
   }
 }
 
+/** Teilelisten je Bauauftrag: Dichtnut, Namen und Berechnung fragen denselben Auftrag ab (Freiform plant sonst mehrfach) */
+const partsCache = new WeakMap<BuildRequest, Part[]>();
 function partsOf(req: BuildRequest): Part[] {
+  const hit = partsCache.get(req);
+  if (hit) return hit;
   const kind = kindById(req.kind);
   if (!kind.parts) throw new UserError(`Adaptertyp ${kind.code} ist noch nicht verfügbar.`);
-  return kind.parts(deriveParams(req.input), req.options);
+  const parts = kind.parts(deriveParams(req.input), req.options);
+  partsCache.set(req, parts);
+  return parts;
 }
 
 const ref = (req: BuildRequest, index: number): PartRef => ({ kind: req.kind, input: req.input, options: req.options, index });
@@ -170,8 +176,8 @@ export const partNames = (req: BuildRequest) => partsOf(req).map((q) => q.name);
 /** Dichtnuten der Kupplungen einer Berechnung, je Größe und Spalt einmal (ohne etwas zu bauen) */
 export function sealGroovesOf(req: BuildRequest): SealGroove[] {
   const out = new Map<string, SealGroove>();
-  for (const q of partsOf(req)) if (q.seal) out.set(`${q.seal.d}/${q.seal.gap}`, q.seal);
-  return [...out.values()].sort((a, b) => a.d - b.d);
+  for (const q of partsOf(req)) if (q.seal) out.set(`${q.seal.d}/${q.seal.gap}/${!!q.seal.cap}`, q.seal);
+  return [...out.values()].sort((a, b) => Number(!!a.cap) - Number(!!b.cap) || a.d - b.d);
 }
 
 

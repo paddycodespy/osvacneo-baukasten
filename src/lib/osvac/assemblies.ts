@@ -621,7 +621,7 @@ function platePartsAll(p: OsvacParams, s: MagnetSpec, osvac: boolean, bed: Retur
     const c = capAt(k, rCap);
     const h = (q.t === 'F' ? pq.maleHeight : pq.femaleHeight) + OSVAC_TRANSITION;
     const v: [number, number, number] = [c[0], c[1], h + PLATE.wall];
-    const mv = (r: Part): Part => ({ ...r, name: `${r.name} Kappe${caps.length > 1 ? ` ${i + 1}` : ''}`, key: JSON.stringify([JSON.parse(r.key), v]), make: () => r.make().translate(v) as Shape3D, ...capObj, cut: { p: c, n: [0, 1, 0] } });
+    const mv = (r: Part): Part => ({ ...r, name: `${r.name} Kappe${caps.length > 1 ? ` ${i + 1}` : ''}`, key: JSON.stringify([JSON.parse(r.key), v]), make: () => r.make().translate(v) as Shape3D, ...capObj, cut: { p: c, n: [0, 1, 0] }, ...(r.seal ? { seal: { ...r.seal, cap: true } } : {}) });
     const floor = part('Kappenboden', 0.1, { kind: 'magnetCap', d: q.d, W, t: q.t }, () => capFloor(q.d / 2 + PLATE.wall, -h - PLATE.wall));
     if (q.t === 'F')
       out.push(...[part('Male', 9, { ...dM(pq, noSupport), rot: 'flip' }, () => flippedMale(pq, noSupport)), part('Übergang', 0.1, { kind: 'magnetM', ...dAll(pq) }, () => pipeTransition(pq.maleDiameterInner / 2, pq.maleDiameterOuter / 2, pipeFor(q.d)).translate([0, 0, -pq.maleHeight])), floor].map(mv));

@@ -653,6 +653,17 @@ await withPreview(4180, async (url, browser) => {
     const seal = await pg.locator('details.seal').innerText();
     for (const t of ['Kupplung F32', 'Ø38,2', 'Ø40,2', 'R1,95', '3,65', '3,3–3,7', 'O-Ring 32 × 4']) expect(seal.includes(t), `Dichtnut: „${t}“ fehlt`);
     expect(!seal.includes('F25'), 'Dichtnut für den Stecker M25 angezeigt');
+    // Kappe für den Stecker M25: darin steckt eine Kupplung F25, eigene Tabelle mit Hinweis
+    await step(pg, 'Teile');
+    await pg.locator('label.cap input').nth(1).check();
+    await ready(pg);
+    await step(pg, 'Download');
+    if ((await pg.locator('details.seal').getAttribute('open')) === null) await pg.locator('details.seal summary').click();
+    const seal2 = await pg.locator('details.seal').innerText();
+    for (const t of ['Kupplung F32', 'Kupplung F25 (in der Kappe)', 'Ø33,2']) expect(seal2.includes(t), `Dichtnut mit Kappe: „${t}“ fehlt: ${seal2.slice(0, 120)}`);
+    await step(pg, 'Teile');
+    await pg.locator('label.cap input').nth(1).uncheck();
+    await ready(pg);
     await step(pg, 'Teile');
     await f2.fill('50');
     await f2.press('Enter');
