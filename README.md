@@ -66,9 +66,11 @@ Gerade, Bogen, Anschlagring und Muffe/Zapfen ohne Konus sind exakte Extrusionen 
 
 **Magnet-Schnellkupplung Ø100** (`src/lib/osvac/magnet.ts`, `partsMagnet` in `assemblies.ts`): Testdruck steht noch aus; `test:ui` prüft den Ablauf. Eigenes System (an osVAC neo nur über die Platte mit Kupplung/Stecker); Idee wie die magnetische Schnellkupplung von kleinholz.me, eigene Konstruktion. Maschinenadapter: Muffe über den Stutzen (Ø90–110, Spiel je Seite 0,3), innen 45°-Anschlag auf die Bohrung Ø97, am offenen Ende Schraubklemme (Schlitz 4 mm mit Entlastungsloch Ø8, zwei Ohren mit 45°-Stützen, Bohrung Ø5,5, Kopfsenkung Ø9,2 und Sechskant-Tasche SW 8,3, beide 5,3 tief: Zylinderschraube M5 × 25 ISO 4762, selbstsichernde Mutter M5 DIN 985), oben Flansch und Zentrierbund Ø106 × 6. Schlauchkupplung: Rohr mit Außengewinde (Grund = Schlauch innen Ø90–110, Tiefe 3, Flanken 45°, Steigung 8–20, links oder rechts, eigener Körper „Gewinde“), oben Flansch mit Tasche für den Bund (Spiel je Seite 0,3). Flansch: Scheibe R59 und 8 Nasen auf R63 (Nasenradius = Tasche/2 + 3,5), Unterseite durchgehend 45° von der Wand bis außen an die Nasen, darum druckt alles ohne Stützen. Magnete 10 × 3, 12 × 5 oder 15 × 3 in geschlossenen Taschen (+0,3 im Ø, +0,2 hoch) 0,6 mm unter der Kontaktfläche; Kontaktfläche und Taschen im 0,2-mm-Raster, die Höhen der Druckpause stehen in den Druckhinweisen. Beide Teile werden mit der Kontaktfläche nach oben gedruckt und liegen diagonal nebeneinander, um 22,5° gegeneinander verdreht (passen auf 256 mm). `npm run test:islands -- magnet` prüft drei Varianten; `npx tsx scripts/magnet-try.ts [Ordner] [JSON]` baut die Körper einzeln als STL. Platten (Karte *Gerät ↔ Schlauch* mit „Kleiner, mit Drehring“ und Karte *Gerät ↔ Kupplung/Stecker*, `magnetPlate`, `magnetPortLayout`, `magnetPlateInfo`): flach, Kontaktfläche unten (z = 0), 8,4 mm stark mit Ringnut für den Bund (innen Ø97 − 2 × Spiel, Decke = Brücke 4,8 mm), innerhalb der Nut 4 mm, unter jedem Anschluss ein Sockel in voller Stärke mit Loch; Taschen 0,6 über der Kontaktfläche (Druckpause früh). osVAC-Anschlüsse fest (Female bzw. Male gedreht, je mit Übergang wie bei den Stutzen-Adaptern); Schläuche: unterer Drehring + Kopf des Schlauchteils fest, oberer Drehring + umgedrehter Becher (Schlauchteil ohne Knickschutz, Schulter aufgefüllt, Gewinde ohne Auslauf, je Schlauch links oder rechts; Rändelung und Textfelder aufrecht gebaut, `hoseCupGrip`) drehen. Außenradius je Anschluss mit Gegenstück: F/M d/2 + W + 1,5, Schlauch d/2 + W + 0,5; freier Abstand 15 mm (Bajonett), 12 mm bei zwei Steckern (gemessen an den aufgesteckten Kupplungen) bzw. 8 mm (Schläuche), beide innerhalb R59. Verschlusskappen (Stopfen = Male, Kappe = Female, je mit Boden) als eigene Objekte in den freien Ecken des Druckbetts. `npm run test:islands -- magnet` prüft sechs weitere Fälle.
 
-**Druckoptimierter Drehring** (`swivelPrintProfile`, `swivelPrintTop/Bottom` in `hose.ts`, `swivelParts` in `assemblies.ts`, BuildOptions `swivel: 'print'`): in „Passung“ wählbar (*Wie Original* / *Druckoptimiert*, Standard wie im Original), Testdruck steht noch aus. Standard des Drehring-Spiels 0,3 mm wie im Original. Eigene Form statt der Haken des Originals: Der obere Ring (an Kupplung, Gehäuse bzw. Nebenluft-Rohr) sitzt innen und hat unten einen Flansch, der untere (am Schlauchteil) liegt außen als 1,6-mm-Hülse mit einer Lippe, die 1,4 mm über den Flansch greift. Alle beim Druck nach unten zeigenden Flächen sind 45° (Lippen-Unterseite 50°) oder senkrecht; senkrechte Dichtflächen (Flanschspitze 2,2 mm, Lippe 0,8 mm) mit dem eingestellten Spiel, Schrägen mit Spiel + 0,15, mindestens 0,45. Frei beginnt nur die Flanschspitze, 0,65 mm über dem unteren Ring. FxxHyy/Nebenluft-Regler: Schlauchteil 6,5 statt 6,0 mm unter dem Ring (0,5 mm länger); MxxHyy: Gehäuse-Unterkante 45° (Ecke an der Bohrung 0,36 höher), Schulter des Schlauchteils folgt. `npm run test:swivel` prüft die Profile für 7/9 mm und Spiel 0,2–0,5 (keine Überlappung, Mindestspiel, kein Überhang außer dem Anfang) und rechnet das Original zum Vergleich mit; `test:islands` hat drei Fälle `drehring-druck`/`nebenluft-druck`.
+**Druckoptimierter Drehring** (`swivelPrintProfile`, `swivelPrintTop/Bottom` in `hose.ts`, `swivelParts` in `assemblies.ts`, BuildOptions `swivel: 'print'`): in „Passung“ wählbar (*Druckoptimiert* / *Wie Original*, Standard seit 0.6.0 druckoptimiert), Testdruck steht noch aus. Standard des Drehring-Spiels 0,3 mm wie im Original. Eigene Form statt der Haken des Originals: Der obere Ring (an Kupplung, Gehäuse bzw. Nebenluft-Rohr) sitzt innen und hat unten einen Flansch, der untere (am Schlauchteil) liegt außen als 1,6-mm-Hülse mit einer Lippe, die 1,4 mm über den Flansch greift. Alle beim Druck nach unten zeigenden Flächen sind 45° (Lippen-Unterseite 50°) oder senkrecht; senkrechte Dichtflächen (Flanschspitze 2,2 mm, Lippe 0,8 mm) mit dem eingestellten Spiel, Schrägen mit Spiel + 0,15, mindestens 0,45. Frei beginnt nur die Flanschspitze, 0,65 mm über dem unteren Ring. FxxHyy/Nebenluft-Regler: Schlauchteil 6,5 statt 6,0 mm unter dem Ring (0,5 mm länger); MxxHyy: Gehäuse-Unterkante 45° (Ecke an der Bohrung 0,36 höher), Schulter des Schlauchteils folgt. `npm run test:swivel` prüft die Profile für 7/9 mm und Spiel 0,2–0,5 (keine Überlappung, Mindestspiel, kein Überhang außer dem Anfang) und rechnet das Original zum Vergleich mit; `test:islands` hat drei Fälle `drehring-druck`/`nebenluft-druck`.
 
 **Drehring-Lösehilfe** (`src/lib/osvac/helper.ts`): nach „osVACneo SlipRingHelper“ von Ludo Kerz (odul), parametrisch nachgebaut (Abgleich mit dem Fusion-Export F32/M32: Abweichung ≤ 0,02 mm, Schrift ausgenommen). Halter für Kupplungen: Block (FemaleDiameterOuter + 2, 33,5 hoch) mit Stecker-Stutzen und drei Rippen bis 3,3 mm unter die Oberkante. Halter für Stecker: Block mit Bohrung wie die Kupplung und sechs Taschen für die Nasen. Schrift „osVAC neo / F32 bzw. M32 / Drehring-Lösehilfe“ 0,5 mm tief; beschriftet wie im Original nach dem Teil selbst (der Halter für Kupplungen ist ein Stecker: M32, der für Stecker eine Kupplung: F32). Fusion-Exportskript: `tools/fusion/export_loesehilfe`.
+
+**Dichtung in der Kupplung** (`src/lib/osvac/seal.ts`, `sealring.ts`, `partsSealRing` in `assemblies.ts`, Kasten im Schritt Download, Skizze `SealFigure.svelte`): Maße der Dichtnut unten in jeder Kupplung (Bohrung F + 6 + Spiel, größter Ø F + 8,2 auf 1,95 mm Höhe, Rundung R1,95 um Ø F + 4,3, Höhe an der Bohrung, Spielraum der Steckerspitze 3,3 bis 3,6 + 0,6 × Spiel mm über dem Boden, am Modell nachgemessen) mit O-Ring-Vorschlag. Dazu eine **Lippendichtung aus TPU** als eigene Datei (eigener Adaptertyp `SEAL`, nicht in Schritt 1): Fuß in der Hinterschneidung (unten 45°, 0,1 mm Luft), 0,8 mm Lippe unter mindestens 55° nach oben außen, steht um die *Vorspannung der Lippe* (0,2–1,0 mm, Standard 0,5) über der Steckerspitze; die Außenluft drückt sie unter Sog an den Stecker. Die Dichtnut selbst wird in Kupplungen überall frei gelassen (keine Dichtnut-Füllung wie beim Maschinenadapter des Originals).
 
 **Druckbarkeit** (`npm run test:islands`): Düsen, Nebenluft-Regler und Vorlagen werden wie beim Export vernetzt und in 0,2-mm-Schichten geschnitten. Sagt die App „ohne Stützen“, darf nichts frei in der Luft beginnen (außer der untersten Schicht des Drehrings); offene Netzkanten sind immer ein Fehler. Die Stützen-Prüfung der Freiform zählt Kupplungen und Stecker mit, die schräg stehen (nach einem Bogen, am Abzweig).
 
@@ -106,7 +108,7 @@ Nach Änderungen reicht `git add -A`, `git commit -m "…"` und `git push`.
 src/
   App.svelte                 Gerüst: Vorschau, Berechnung mit Fortschritt, Schrittleiste
   lib/app.svelte.ts          Zustand aller Schritte (Eingaben, abgeleitete Werte, Export, Speichern im Browser)
-  components/steps/          Die Schritte Verbindung, Größen, Passung, Download
+  components/steps/          Die Schritte Verbindung, Größen (bzw. Teile, Düse, Nebenluft), Passung, Download
   lib/viewer.ts              3D-Ansicht (three.js) mit Druckbett
   lib/cad.ts                 Worker-Pool, Auftragsverteilung, Export STL/STEP/3MF
   lib/worker/cad.worker.ts   OpenCascade (replicad) im Web Worker, Teile-Cache
@@ -117,7 +119,7 @@ src/
   lib/osvac/sealring.ts      Lippendichtung aus TPU als Körper (eigene Datei, Kind SEAL außerhalb von Schritt 1)
   lib/osvac/male.ts          Stecker mit Bajonettnasen, Druckhilfe
   lib/osvac/hose.ts          Gewindekörper, Drehring, Gehäuse, Knickschutz
-  lib/osvac/thread.ts        Schlauchgewinde (linksgängig, Steigung 5 mm, Konus 4°)
+  lib/osvac/thread.ts        Schlauchgewinde (links- oder rechtsgängig, Steigung 5 mm, Konus 4°)
   lib/osvac/magnet.ts        Magnet-Schnellkupplung Ø100 (Adapter, Kupplung, Taschen, Klemme)
   lib/osvac/machine.ts       Rohrkonus für Stutzen
   lib/osvac/grip.ts          Rändelung und Textfelder
@@ -139,6 +141,7 @@ src/
   components/SectionEditor.svelte   Querschnitt wählen und bemaßen, mit Skizze
   components/BlockFigure.svelte     Erklärskizzen der Bausteine
   components/ContourPanel.svelte    eigene Kontur laden, nachzeichnen, zeichnen (ContourDraw.svelte)
+  components/SealFigure.svelte      Schnitt durch die Dichtnut mit Steckerspitze und Lippendichtung (Download)
 scripts/
   build-ref.ts               Einzelteil in Node bauen (npm run part -- MxxFyy 25 32 32)
   matrix.ts                  Alle Typen mit Grenzwerten bauen (npm run test:geometry)
@@ -167,14 +170,14 @@ tools/druck/                 Schichtprüfung für test:islands und test:bleed (P
 | `npm run check` | Typen (Svelte und TypeScript) | < 1 min |
 | `npm run test:keys` | gleiche Cache-Schlüssel ergeben gleiche Körper | ca. 1 min |
 | `npm run test:freeform` | alle Freiform-Vorlagen, Querschnitte, Extras, Flansch (alle Formen, mit Dichtung, Lochbild nach Maß, Prüfungen) und längere Ketten, Stutzen-Typen mit Klemmrippen/Schlitzen, Weg des Hinweises bei weggelassenen Rippen, Rahmen nicht gespiegelt | ca. 4 min |
-| `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen (braucht `npm run build` und Chrome, Chromium oder Edge; wird gesucht, sonst Pfad über `CHROME_PATH`) | < 1 min |
-| `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern und bei Teilen unter dem Druckbett, Stand und Druckbett nach dem Neuladen, Extras im Namen, Flansch, Druckhilfe je Verbindung, Link aus den Download-Hinweisen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 1 min |
+| `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen, auch in der Skizze der Dichtnut (braucht `npm run build` und Chrome, Chromium oder Edge; wird gesucht, sonst Pfad über `CHROME_PATH`) | ca. 2 min |
+| `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern und bei Teilen unter dem Druckbett, Stand und Druckbett nach dem Neuladen, Extras im Namen, Flansch, Abzweig, Schieber, Speicherort, Saugdüse, Nebenluft-Regler, eigene Kontur, Lösehilfe, Magnet-Schnellkupplung (mit Maßen der Dichtnut und Download der Lippendichtung), Drehring, Gewinderichtung, Druckhilfe je Verbindung, hell/dunkel, Link aus den Download-Hinweisen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 10 min |
 | `npm run test:geometry` | alle Adaptertypen mit Grenzwerten | ca. 10–15 min |
 | `npm run test:swivel` | Druckoptimierter Drehring: Profile ohne Überlappung, Mindestspiel, kein Überhang außer dem Anfang des oberen Rings; Vergleich mit dem Original | wenige s |
 | `npm run test:bleed` | Nebenluft-Ring: Rohr und Ring in 0,2-mm-Schichten, frei beginnt nur die unterste Ringschicht (mindestens 0,6 mm über dem Rohr), Abstand nirgends kleiner als das Spiel (braucht python3 mit trimesh, shapely, rtree) | etwa 20 s |
 | `npm run test:islands` | Druckbarkeit: Düsen, Nebenluft-Regler und Vorlagen in 0,2-mm-Schichten geschnitten, nichts beginnt frei in der Luft, wenn die App „ohne Stützen“ sagt (braucht python3 mit trimesh und shapely) | ca. 2 min |
 
-Auf GitHub laufen alle von Hand (Actions → Tests → Run workflow) und vor jedem Release (siehe „Neue Version veröffentlichen“), in mehreren gleichzeitigen Gruppen, zusammen etwa 15 Minuten. Nicht bei jedem Push: vor jedem Patch laufen die Tests ohnehin lokal.
+Auf GitHub laufen alle von Hand (Actions → Tests → Run workflow) und vor jedem Release (siehe „Neue Version veröffentlichen“), in mehreren gleichzeitigen Gruppen, zusammen etwa 20 Minuten. Nicht bei jedem Push: nach größeren Änderungen deshalb von Hand starten.
 
 ### Rechenzeit
 
@@ -202,7 +205,8 @@ Auf GitHub laufen alle von Hand (Actions → Tests → Run workflow) und vor jed
 - Freiform: Dateiname und Druckbett-Liste nennen die Extras („… Schrauben Aussparung“). Die Lage der Aussparung zeigt eine kleine Skizze des Querschnitts, ein Klick darauf setzt sie. Die schnelle Vorschau rechnet ohne Extras.
 - Während der Berechnung zeigt die Vorschau den Fortschritt („3 von 9 Teilen“, ab dem ersten fertigen Teil). Scheitert sie, bleibt das letzte Modell blass stehen; gab es noch keins, erscheint ein Hinweis statt einer leeren Vorschau.
 - Im Download-Schritt lassen sich mehrere Adapter auf ein Druckbett legen und zusammen als 3MF, STL oder STEP herunterladen.
-- Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Drehring 0,4“).
+- Bei jedem Adapter mit Kupplung zeigt der Download-Schritt den Kasten „Dichtung in der Kupplung“ (siehe oben).
+- Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Spiel 0,3 Drehring 0,4“).
 
 Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Radien hängen über die Fusion-Formeln von den Eingaben ab, axiale Maße sind fest.
 
@@ -280,7 +284,7 @@ dann `npx tauri build --bundles appimage,deb`.
 1. Version in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` und
    `src-tauri/Cargo.lock` erhöhen und in `CHANGELOG.md` einen Abschnitt `## <Version>` anlegen.
 2. Bei geänderten Abhängigkeiten die Lizenzdateien neu erzeugen (siehe „Lizenzen“).
-3. Committen, pushen, dann den Tag setzen: `git tag v0.6.1 && git push origin v0.6.1`.
+3. Committen, pushen, dann den Tag setzen: `git tag v<Version> && git push origin v<Version>` (z. B. `v0.7.0`).
 
 Der Tag startet `.github/workflows/release.yml`: Erst wird geprüft, ob Tag, Versionsnummern und CHANGELOG
 zusammenpassen und die Lizenzdateien aktuell sind. Dann laufen alle Tests und die drei Installer gleichzeitig (etwa 15–20 Minuten). Nur wenn alles
