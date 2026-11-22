@@ -50,5 +50,11 @@ export default defineConfig({
   // fester Port für „npm run desktop:dev“ (Tauri erwartet http://localhost:5173)
   server: { port: 5173, strictPort: true },
   optimizeDeps: { exclude: ['replicad-opencascadejs'] },
-  build: { target: 'es2022', chunkSizeWarningLimit: 4000 },
+  // Hauptfenster in zwei Dateien: three.js (Vorschau) ändert sich selten und bleibt so im Zwischenspeicher, wenn sich nur
+  // die App ändert; kein Teil ist mehr über 1 MB
+  build: {
+    target: 'es2022',
+    chunkSizeWarningLimit: 800,
+    rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'three', test: /node_modules[\\/]three[\\/]/ }] } } },
+  },
 });

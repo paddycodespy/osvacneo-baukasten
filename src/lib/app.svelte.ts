@@ -215,6 +215,8 @@ class AppState {
   /** Lippendichtung aus TPU: Vorspannung der Lippe und Format, das gerade erzeugt wird */
   sealSqueeze = $state(SEAL_RING.squeeze);
   sealBusy = $state<ExportFormat | null>(null);
+  /** Kasten „Dichtung in der Kupplung“ aufgeklappt (bleibt beim Wechsel der Schritte so) */
+  sealOpen = $state(false);
 
   // ---------------------------------------------------------------- abgeleitet
   kind = $derived(kindById(this.kindId));
@@ -273,8 +275,8 @@ class AppState {
     };
   });
   pipeRows = $derived([
-    { label: 'innen Ø', a: this.pipe.d1Inner, b: this.pipe.d2Inner },
-    { label: 'außen Ø', a: this.pipe.d1Inner + 2 * this.pipe.wall, b: this.pipe.d2Inner + 2 * this.pipe.wall },
+    { label: 'innen', a: this.pipe.d1Inner, b: this.pipe.d2Inner },
+    { label: 'außen', a: this.pipe.d1Inner + 2 * this.pipe.wall, b: this.pipe.d2Inner + 2 * this.pipe.wall },
   ]);
   buildOpts = $derived({
     ...(this.kind.freeform ? { free: $state.snapshot(this.free) } : this.kind.machine ? { pipe: this.pipe } : this.kind.gate ? { gate: $state.snapshot(this.gate) } : this.kind.helper ? { helper: $state.snapshot(this.helper) } : this.kind.bleed ? { bleed: { top: this.bleed.top, gap: this.bleed.bleedGap } } : this.kind.magnet ? { magnet: $state.snapshot(this.magnet) } : {}),
@@ -295,14 +297,14 @@ class AppState {
       return [this.baseName, ...extra].join(' ');
     }
     if (this.kind.magnet) {
-      if (this.magnet.pipeGap !== DEFAULT_MAGNET.pipeGap && this.magnet.adapter) extra.push(`Spiel ${fmt(this.magnet.pipeGap, 2)}`);
+      if (this.magnet.pipeGap !== DEFAULT_MAGNET.pipeGap && this.magnet.adapter) extra.push(`Stutzen ${fmt(this.magnet.pipeGap, 2)}`);
       if (this.magnet.fitGap !== DEFAULT_MAGNET.fitGap && this.magnet.coupling) extra.push(`Bund ${fmt(this.magnet.fitGap, 2)}`);
       if (this.magnet.depth !== DEFAULT_MAGNET.depth && this.magnet.adapter) extra.push(`Tiefe ${fmt(this.magnet.depth)}`);
-      if (this.magnetPlate && this.magnet.coupling && this.kind.magnetOsvac && i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
+      if (this.magnetPlate && this.magnet.coupling && this.kind.magnetOsvac && i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spiel ${fmt(i.maleFemaleGapSize, 2)}`);
       if (this.magnetPlate && this.magnet.coupling && !this.kind.magnetOsvac && i.slipRingGapSize !== START_INPUT.slipRingGapSize) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);
       return [this.baseName, ...extra].join(' ');
     }
-    if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spalt ${fmt(i.maleFemaleGapSize, 2)}`);
+    if (i.maleFemaleGapSize !== START_INPUT.maleFemaleGapSize) extra.push(`Spiel ${fmt(i.maleFemaleGapSize, 2)}`);
     if (this.hasSwivel && this.hoseHand === 'right') extra.push('Rechtsgewinde');
     if (this.hasSwivel && !this.swivelPrint) extra.push('Drehring wie Original');
     if (this.hasSwivel && i.slipRingGapSize !== this.swivelDefault) extra.push(`Drehring ${fmt(i.slipRingGapSize, 2)}`);

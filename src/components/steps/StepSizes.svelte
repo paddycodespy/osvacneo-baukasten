@@ -171,7 +171,7 @@
           <tbody>
             <!-- das Maß, auf das es ankommt, zuerst: aufgesteckt innen, eingesteckt außen -->
             {#each m.mode === 'over' ? app.pipeRows : [...app.pipeRows].reverse() as r}
-              <tr><th>{r.label}</th><td>{fmt(r.a, 2)}</td><td>{fmt(r.b, 2)}</td></tr>
+              <tr><th>{r.label}</th><td>Ø{fmt(r.a, 2)} mm</td><td>Ø{fmt(r.b, 2)} mm</td></tr>
             {/each}
           </tbody>
         </table>

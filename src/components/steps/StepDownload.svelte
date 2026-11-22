@@ -115,7 +115,7 @@
 </details>
 
 {#if app.seals.length && app.status !== 'error'}
-  <details class="box seal">
+  <details class="box seal" bind:open={app.sealOpen}>
     <summary>Dichtung in der Kupplung{app.seals.length === 1 ? ` ${sealName(app.seals[0])}` : ''}: Maße der Nut</summary>
     <p class="hint">
       Unten in der Kupplung läuft rundum eine Nut für eine Dichtung: Rundschnur, O-Ring oder die Lippendichtung aus TPU (siehe unten). Sie reicht unten
