@@ -815,7 +815,8 @@ class AppState {
       bleed: this.bleed,
       swivelStyle: this.swivelStyle,
       hoseHand: this.hoseHand,
-      sealSqueeze: this.sealSqueeze,
+      // eigener Name: „sealSqueeze“ war die Pressung des verworfenen vollen Rings (Standard 0,3), nicht übernehmen
+      sealLip: this.sealSqueeze,
       gate: this.gate,
       helper: this.helper,
       magnet: this.magnet,
@@ -945,7 +946,7 @@ class AppState {
       }
       if (s.swivelStyle === 'print' || s.swivelStyle === 'original') this.swivelStyle = s.swivelStyle;
       if (s.hoseHand === 'left' || s.hoseHand === 'right') this.hoseHand = s.hoseHand;
-      if (num(s.sealSqueeze)) this.sealSqueeze = Math.min(SEAL_RING.max, Math.max(SEAL_RING.min, Math.round(s.sealSqueeze * 100) / 100));
+      if (num(s.sealLip)) this.sealSqueeze = Math.min(SEAL_RING.max, Math.max(SEAL_RING.min, Math.round(s.sealLip * 100) / 100));
       if (s.nozzle && typeof s.nozzle === 'object') {
         const n = this.nozzle, z = s.nozzle;
         if (NOZZLE_KINDS.some((k) => k.id === z.kind)) n.kind = z.kind;

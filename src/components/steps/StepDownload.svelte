@@ -118,7 +118,7 @@
   <details class="box seal">
     <summary>Dichtung in der Kupplung{app.seals.length === 1 ? ` ${sealName(app.seals[0])}` : ''}: Maße der Nut</summary>
     <p class="hint">
-      Unten in der Kupplung läuft rundum eine Nut für eine Dichtung: Rundschnur, O-Ring oder ein selbst gedruckter Ring aus TPU. Sie reicht unten
+      Unten in der Kupplung läuft rundum eine Nut für eine Dichtung: Rundschnur, O-Ring oder die Lippendichtung aus TPU (siehe unten). Sie reicht unten
       {mm((app.seals[0].outer - app.seals[0].bore) / 2, 1)} mm weiter nach außen als die Bohrung darüber, so bleibt die Dichtung von selbst liegen.
     </p>
     <SealFigure s={app.seals[0]} ring={sealRing(app.seals[0], app.sealSqueeze)} />
@@ -138,7 +138,7 @@
       <p class="hint">
         Passt: Rundschnur Ø4 mm, als Ring <span class="nw">({oring(s.d)},</span> innen × Schnur). Die Dichtung drückt den Stecker hoch, bis seine Nasen oben in der Nut anliegen
         ({mm(s.tipMax, 1)} mm über dem Boden); dabei wird sie um etwa {mm(Math.max(0, 4 - s.tipMax), 1)} mm zusammengedrückt. Der Sog zieht den Stecker kaum tiefer: Bei 35 kPa
-        sind das nur etwa {fmt(sogN(s), 0)} N.
+        zieht er mit nur etwa {fmt(sogN(s), 0)} N.
       </p>
     {/each}
     <p class="hint">
@@ -146,14 +146,14 @@
       Die Nut selbst ändert sich mit dem Spiel nicht, nur Bohrung und Stecker.
     </p>
     <p class="hint">
-      Gedruckt weicht die Nut je nach Drucker um etwa 0,1–0,2 mm ab, weil der obere Rand der Rundung beim Druck überhängt. Für eine eigene Dichtung deshalb erst einen Probering drucken.
+      Gedruckt weicht die Nut je nach Drucker um etwa 0,1–0,2 mm ab, weil der obere Rand der Rundung beim Druck überhängt. Bei einer selbst konstruierten Dichtung deshalb erst eine zur Probe drucken.
       Genau nachmessen und als Vorlage nehmen lässt sich die Nut im STEP-Modell.
     </p>
     <p class="seal-h">Lippendichtung aus TPU</p>
     <p class="hint">
       Sie passt genau in die Nut (in der Skizze blau): Der Fuß hält in der Hinterschneidung, die dünne Lippe steht schräg nach oben und legt sich von unten an
       die Steckerspitze. Die Außenluft kommt über den Spalt an der Bohrung unter die Lippe und drückt sie gegen den Stecker: Je stärker der Sog, desto dichter. Weil sich nur die Lippe
-      biegt, lässt sich der Stecker leicht eindrehen. Der Ring liegt beim Drucken flach und braucht keine Stützen.
+      biegt, lässt sich der Stecker leicht eindrehen. Sie liegt beim Drucken flach und braucht keine Stützen.
     </p>
     <fieldset class="field seal-sq">
       <legend class="field-label">Vorspannung der Lippe</legend>
@@ -167,7 +167,7 @@
       <tbody>
         {#each app.seals as s (s.d + '/' + s.gap + '/' + !!s.cap)}
           {@const r = sealRing(s, app.sealSqueeze)}
-          <tr><td>Für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)}, Lippe {mm(r.h)} mm hoch, {fmt(r.angle, 1)}° steil</td><td>ca. {mm(r.grams, 1)} g</td></tr>
+          <tr><td>Für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)}, {mm(r.h)} mm hoch, Lippe {fmt(r.angle, 1)}° steil</td><td>ca. {mm(r.grams, 1)} g</td></tr>
         {/each}
       </tbody>
     </table>
@@ -178,9 +178,9 @@
       {/each}
     </div>
     <p class="hint">
-      Drucken: TPU, am besten 85A–95A, mit 0,2 mm Schichthöhe; die Lippe ist zwei Bahnen breit (0,4-mm-Düse). TPU druckt oft etwas dicker, deshalb hat der Ring außen 0,1 mm Luft.
-      Einsetzen: Ring etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken, bis der Fuß flach auf dem Boden liegt, Lippe nach oben. Erst einen Ring
-      drucken und probieren, dann die Vorspannung anpassen.
+      Drucken: TPU, am besten 85A–95A, mit 0,2 mm Schichthöhe; die Lippe ist zwei Bahnen breit (0,4-mm-Düse). TPU druckt oft etwas dicker, deshalb hat die Lippendichtung außen 0,1 mm Luft.
+      Einsetzen: Lippendichtung etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken, bis der Fuß flach auf dem Boden liegt, Lippe nach oben. Erst
+      eine drucken und probieren, dann die Vorspannung anpassen.
     </p>
   </details>
 {/if}
