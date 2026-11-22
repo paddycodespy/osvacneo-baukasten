@@ -126,13 +126,13 @@
       {#if app.seals.length > 1}<p class="seal-h">Kupplung {sealName(s)}</p>{/if}
       <table class="seal-t">
         <tbody>
-          <tr><th>A</th><td>Bohrung über der Nut</td><td>Ø{mm(s.bore)}</td></tr>
-          <tr><th>B</th><td>Größter Ø der Nut, {mm(s.outerZ)} mm über dem Boden</td><td>Ø{mm(s.outer)}</td></tr>
-          <tr><th>C</th><td>Rundung außen, Mittelpunkt auf Ø{mm(s.centerD)}</td><td>R{mm(s.radius)}</td></tr>
-          <tr><th>D</th><td>Höhe der Nut an der Bohrung</td><td>{mm(s.heightAtBore)}</td></tr>
-          <tr><th>E</th><td>Steckerspitze über dem Boden (Spielraum der Nasen in der Nut)</td><td>{range(s.tipMin, s.tipMax)}</td></tr>
-          <tr><th></th><td>Durchgang (Innen-Ø der Kupplung)</td><td>Ø{mm(s.inner)}</td></tr>
-          <tr><th></th><td>Ebene Fläche der Steckerspitze</td><td>Ø{mm(s.tipInner)}–{mm(s.tipOuter)}</td></tr>
+          <tr><th>A</th><td>Bohrung über der Nut</td><td>Ø{mm(s.bore)} mm</td></tr>
+          <tr><th>B</th><td>Größter Ø der Nut, {mm(s.outerZ)} mm über dem Boden</td><td>Ø{mm(s.outer)} mm</td></tr>
+          <tr><th>C</th><td>Rundung außen, Mittelpunkt auf Ø{mm(s.centerD)} mm</td><td>R{mm(s.radius)} mm</td></tr>
+          <tr><th>D</th><td>Höhe der Nut an der Bohrung</td><td>{mm(s.heightAtBore)} mm</td></tr>
+          <tr><th>E</th><td>Steckerspitze über dem Boden (Spielraum der Nasen in der Nut)</td><td>{range(s.tipMin, s.tipMax)} mm</td></tr>
+          <tr><th></th><td>Durchgang (Innen-Ø der Kupplung)</td><td>Ø{mm(s.inner)} mm</td></tr>
+          <tr><th></th><td>Ebene Fläche der Steckerspitze</td><td>Ø{mm(s.tipInner)}–{mm(s.tipOuter)} mm</td></tr>
         </tbody>
       </table>
       <p class="hint">
@@ -142,7 +142,7 @@
       </p>
     {/each}
     <p class="hint">
-      Alle Maße in mm{app.seals.every((s) => s.gap === app.seals[0].gap) ? `, bei ${fmt(app.seals[0].gap, 2)} mm Spiel zwischen Stecker und Kupplung` : ''}, für einen Stecker mit demselben Spiel.
+      Die Maße gelten{app.seals.every((s) => s.gap === app.seals[0].gap) ? ` bei ${fmt(app.seals[0].gap, 2)} mm Spiel zwischen Stecker und Kupplung` : ''} für einen Stecker mit demselben Spiel.
       Die Nut selbst ändert sich mit dem Spiel nicht, nur Bohrung und Stecker.
     </p>
     <p class="hint">
@@ -167,7 +167,7 @@
       <tbody>
         {#each app.seals as s (s.d + '/' + s.gap + '/' + !!s.cap)}
           {@const r = sealRing(s, app.sealSqueeze)}
-          <tr><td>Für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)}, {mm(r.h)} mm hoch, Lippe {fmt(r.angle, 1)}° steil</td><td>ca. {mm(r.grams, 1)} g</td></tr>
+          <tr><td>Für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)} mm, {mm(r.h)} mm hoch, Lippe {fmt(r.angle, 1)}° steil</td><td>ca. {mm(r.grams, 1)} g</td></tr>
         {/each}
       </tbody>
     </table>

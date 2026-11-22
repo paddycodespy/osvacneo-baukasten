@@ -651,7 +651,7 @@ await withPreview(4180, async (url, browser) => {
     // Maße der Dichtnut: nur die Kupplung F32 an der Platte (der Stopfen ist ein Stecker)
     await pg.locator('details.seal summary').click();
     const seal = await pg.locator('details.seal').innerText();
-    for (const t of ['Kupplung F32', 'Ø38,2', 'Ø40,2', 'R1,95', '3,65', '3,3–3,7', 'O-Ring 32 × 4']) expect(seal.includes(t), `Dichtnut: „${t}“ fehlt`);
+    for (const t of ['Kupplung F32', 'Ø38,2 mm', 'Ø40,2 mm', 'R1,95 mm', '3,65 mm', '3,3–3,7 mm', 'O-Ring 32 × 4']) expect(seal.includes(t), `Dichtnut: „${t}“ fehlt`);
     expect(!seal.includes('F25'), 'Dichtnut für den Stecker M25 angezeigt');
     // Kappe für den Stecker M25: darin steckt eine Kupplung F25, eigene Tabelle mit Hinweis
     await step(pg, 'Teile');
@@ -660,7 +660,7 @@ await withPreview(4180, async (url, browser) => {
     await step(pg, 'Download');
     if ((await pg.locator('details.seal').getAttribute('open')) === null) await pg.locator('details.seal summary').click();
     const seal2 = await pg.locator('details.seal').innerText();
-    for (const t of ['Kupplung F32', 'Kupplung F25 (in der Kappe)', 'Ø33,2']) expect(seal2.includes(t), `Dichtnut mit Kappe: „${t}“ fehlt: ${seal2.slice(0, 120)}`);
+    for (const t of ['Kupplung F32', 'Kupplung F25 (in der Kappe)', 'Ø33,2 mm']) expect(seal2.includes(t), `Dichtnut mit Kappe: „${t}“ fehlt: ${seal2.slice(0, 120)}`);
     // Lippendichtungen aus TPU für beide Kupplungen als eigene Datei
     for (const t of ['Lippendichtung aus TPU', 'Für F32:', 'Für F25 (in der Kappe):', 'Vorspannung der Lippe']) expect(seal2.includes(t), `Lippendichtung: „${t}“ fehlt`);
     const [dr] = await Promise.all([pg.waitForEvent('download', { timeout: 120000 }), pg.locator('details.seal .plate-dl button', { hasText: 'STL' }).click()]);
