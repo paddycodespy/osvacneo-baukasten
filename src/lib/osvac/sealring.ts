@@ -1,5 +1,5 @@
 /**
- * Dichtring aus TPU für die Dichtnut der Kupplung: Rotationskörper aus dem Querschnitt von sealRing() (seal.ts).
+ * Lippendichtung aus TPU für die Dichtnut der Kupplung: Rotationskörper aus dem Querschnitt von sealRing() (seal.ts).
  * Liegt mit dem Boden auf z = 0 (so wird er gedruckt), Achse = Z.
  */
 import type { Shape3D } from 'replicad';

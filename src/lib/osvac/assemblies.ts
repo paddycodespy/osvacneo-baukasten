@@ -75,11 +75,11 @@ export interface BuildOptions {
   swivel?: 'print';
   /** Schlauchgewinde: 'right' = Rechtsgewinde, sonst links wie im Original */
   hoseHand?: 'right';
-  /** Dichtringe aus TPU für die Dichtnuten der Kupplungen (eigener Download im Schritt Download) */
+  /** Lippendichtungen aus TPU für die Dichtnuten der Kupplungen (eigener Download im Schritt Download) */
   sealRing?: SealRingSpec;
 }
 
-/** Dichtringe: Vorspannung der Lippe und je Kupplung Größe (und ob sie in der Kappe eines Steckers steckt) */
+/** Lippendichtungen: Vorspannung der Lippe und je Kupplung Größe (und ob sie in der Kappe eines Steckers steckt) */
 export interface SealRingSpec {
   squeeze: number;
   rings: { d: number; cap?: boolean }[];
@@ -686,7 +686,7 @@ export const buildBleed = (p: OsvacParams, o: BuildOptions = {}) => buildAll(par
 export const buildMagnet = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMagnet(p, o));
 
 /**
- * Dichtringe aus TPU (eigene Datei, nicht im Adapter): je Kupplung ein Ring, nebeneinander in x, jeder ein eigenes
+ * Lippendichtungen aus TPU (eigene Datei, nicht im Adapter): je Kupplung ein Ring, nebeneinander in x, jeder ein eigenes
  * Objekt im 3MF. Ohne Angabe ein Ring für die Kupplung der Eingaben.
  */
 export function partsSealRing(p: OsvacParams, o: BuildOptions = {}): Part[] {
@@ -698,7 +698,7 @@ export function partsSealRing(p: OsvacParams, o: BuildOptions = {}): Part[] {
     if (i > 0) x += r.outer / 2;
     const at = x;
     x += r.outer / 2 + 6;
-    const name = `Dichtring F${q.d.toLocaleString('de-DE')}${q.cap ? ' Kappe' : ''}`;
+    const name = `Lippendichtung F${q.d.toLocaleString('de-DE')}${q.cap ? ' Kappe' : ''}`;
     return part(name, 0.3, { kind: 'sealRing', d: q.d, g: p.maleFemaleGapSize, s: spec.squeeze, x: at }, () => sealRingSolid(r).translate([at, 0, 0]) as Shape3D, { object: name, cut: { p: [at, 0, 0], n: [0, 1, 0] } });
   });
 }

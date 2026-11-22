@@ -2,10 +2,10 @@
   /**
    * Schnitt durch die Dichtnut unten in der Kupplung, maßstäblich (rechte Wandhälfte, Achse links):
    * Boden, Rundung R1,95 als Hinterschneidung, Bohrung darüber, Steckerspitze gestrichelt (eingedreht, Nasen oben in der Nut: so steht sie mit Dichtung),
-   * eine Rundschnur passender Größe gepunktet bzw. der Dichtring aus TPU (Lippendichtung) blau. Buchstaben an Hinweislinien rechts, Bedeutung in der Tabelle darunter.
+   * eine Rundschnur passender Größe gepunktet bzw. die Lippendichtung aus TPU blau. Buchstaben an Hinweislinien rechts, Bedeutung in der Tabelle darunter.
    */
   import { MALE_TIP_EDGE, type SealGroove, type SealRing } from '../lib/osvac/seal';
-  /** ring: Dichtring aus TPU (statt der Rundschnur gezeichnet, ungepresst) */
+  /** ring: Lippendichtung aus TPU (statt der Rundschnur gezeichnet, ohne Stecker) */
   let { s, ring }: { s: SealGroove; ring?: SealRing } = $props();
 
   const K = 24; // px je mm
@@ -36,7 +36,7 @@
   <!-- Wand der Kupplung mit Boden und Nut -->
   <path d={g.wall} class="part" />
   {#if g.ringPath}
-    <!-- Dichtring aus TPU (Lippendichtung), ohne Stecker: die Steckerspitze überdeckt die Lippe um die Vorspannung -->
+    <!-- Lippendichtung aus TPU, ohne Stecker: die Steckerspitze überdeckt die Lippe um die Vorspannung -->
     <path d={g.ringPath} class="ring" />
   {:else}
     <!-- Rundschnur passender Größe -->

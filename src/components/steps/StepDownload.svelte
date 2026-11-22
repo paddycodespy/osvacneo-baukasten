@@ -149,9 +149,9 @@
       Gedruckt weicht die Nut je nach Drucker um etwa 0,1–0,2 mm ab, weil der obere Rand der Rundung beim Druck überhängt. Für eine eigene Dichtung deshalb erst einen Probering drucken.
       Genau nachmessen und als Vorlage nehmen lässt sich die Nut im STEP-Modell.
     </p>
-    <p class="seal-h">Dichtring aus TPU zum Selberdrucken</p>
+    <p class="seal-h">Lippendichtung aus TPU</p>
     <p class="hint">
-      Eine Lippendichtung, die genau in die Nut passt (in der Skizze blau): Der Fuß hält in der Hinterschneidung, die dünne Lippe steht schräg nach oben und legt sich von unten an
+      Sie passt genau in die Nut (in der Skizze blau): Der Fuß hält in der Hinterschneidung, die dünne Lippe steht schräg nach oben und legt sich von unten an
       die Steckerspitze. Die Außenluft kommt über den Spalt an der Bohrung unter die Lippe und drückt sie gegen den Stecker: Je stärker der Sog, desto dichter. Weil sich nur die Lippe
       biegt, lässt sich der Stecker leicht eindrehen. Der Ring liegt beim Drucken flach und braucht keine Stützen.
     </p>
@@ -167,12 +167,12 @@
       <tbody>
         {#each app.seals as s (s.d + '/' + s.gap + '/' + !!s.cap)}
           {@const r = sealRing(s, app.sealSqueeze)}
-          <tr><td>Ring für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)}, Lippe {mm(r.h)} mm hoch, {fmt(r.angle, 1)}° steil</td><td>ca. {mm(r.grams, 1)} g</td></tr>
+          <tr><td>Für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)}, Lippe {mm(r.h)} mm hoch, {fmt(r.angle, 1)}° steil</td><td>ca. {mm(r.grams, 1)} g</td></tr>
         {/each}
       </tbody>
     </table>
     <div class="plate-dl">
-      <span>Dichtring herunterladen:</span>
+      <span>Lippendichtung herunterladen:</span>
       {#each FORMATS as f (f.id)}
         <button class="ghost sm" disabled={!!app.sealBusy || !!app.exporting} onclick={() => app.downloadSeal(f.id)}>{app.sealBusy === f.id ? 'Wird erzeugt\u00a0…' : f.label}</button>
       {/each}

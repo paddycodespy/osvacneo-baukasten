@@ -212,7 +212,7 @@ class AppState {
   /** grams: Filament wie im Download (Spanne als [min, max]); kommt nach, wenn die Messung beim Hinzufügen noch lief */
   plate = $state.raw<(PlateItem & { key: string; grams?: [number, number] })[]>([]);
   plateBusy = $state<ExportFormat | null>(null);
-  /** Dichtring aus TPU: Vorspannung der Lippe und Format, das gerade erzeugt wird */
+  /** Lippendichtung aus TPU: Vorspannung der Lippe und Format, das gerade erzeugt wird */
   sealSqueeze = $state(SEAL_RING.squeeze);
   sealBusy = $state<ExportFormat | null>(null);
 
@@ -762,7 +762,7 @@ class AppState {
   removeFromPlate(i: number) {
     this.plate = this.plate.filter((_, j) => j !== i);
   }
-  /** Dichtringe aus TPU für alle Kupplungen des Adapters als eigene Datei (Schritt Download, Kasten Dichtung) */
+  /** Lippendichtungen aus TPU für alle Kupplungen des Adapters als eigene Datei (Schritt Download, Kasten Dichtung) */
   sealRingSpec() {
     return { squeeze: this.sealSqueeze, rings: this.seals.map((s) => ({ d: s.d, ...(s.cap ? { cap: true } : {}) })) };
   }
