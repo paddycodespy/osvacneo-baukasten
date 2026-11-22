@@ -62,12 +62,15 @@
     app.layoutError = '';
     // es fehlt noch eine Eingabe (z. B. Kontur): nicht rechnen, kein Fehler zeigen
     if (app.waiting) {
+      app.seals = [];
       app.status = 'todo';
       v.setDimmed(true);
       return;
     }
     try {
       app.status = 'preview';
+      // Maße der Dichtnut sofort zum neuen Adapter (nicht erst nach der Vorschau, sonst kurz die Werte des vorigen)
+      app.seals = sealGroovesOf(app.spec());
       if (shownKind && shownKind !== kindId) {
         v.setDimmed(true);
         app.dims = null; // Maße gehören zum alten Typ
@@ -83,7 +86,6 @@
       const req = app.spec();
       const quickByName = new Map(quick.bodies.map((b) => [b.name, b]));
       const names = partNames(req);
-      app.seals = sealGroovesOf(req);
       const cur: (MeshBody | undefined)[] = names.map((n) => quickByName.get(n));
       let done = 0;
       app.progress = { done, total: names.length };

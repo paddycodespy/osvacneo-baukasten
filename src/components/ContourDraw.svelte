@@ -400,7 +400,7 @@
           </div>
           <span class="fl">Breite laut Messschieber</span>
           <NumberField bind:value={measured} min={CONTOUR_MIN} max={CONTOUR_MAX} step={0.1} label="Breite laut Messschieber" />
-          {#if result?.rounded}<p class="small">{result.rounded} spitze Ecke{result.rounded > 1 ? 'n werden' : ' wird'} auf R 0,5 gerundet.</p>{/if}
+          {#if result?.rounded}<p class="small">{result.rounded} spitze Ecke{result.rounded > 1 ? 'n werden' : ' wird'} auf R0,5 gerundet.</p>{/if}
           {#if img}<p class="warnbox">Foto möglichst <b>genau von oben</b> und mit etwas Abstand (Zoom) machen. Schräg fotografiert wird die Kontur verzerrt; dann die Breite hier korrigieren.</p>{/if}
         {/if}
         {#if step !== 'scale' && problems.length && verts.length >= 3}<ul class="probs">{#each problems as p}<li>{p}</li>{/each}</ul>{/if}

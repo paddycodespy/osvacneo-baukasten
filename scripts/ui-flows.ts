@@ -651,7 +651,7 @@ await withPreview(4180, async (url, browser) => {
     // Maße der Dichtnut: nur die Kupplung F32 an der Platte (der Stopfen ist ein Stecker)
     await pg.locator('details.seal summary').click();
     const seal = await pg.locator('details.seal').innerText();
-    for (const t of ['Kupplung F32', 'Ø 38,2', 'Ø 40,2', 'R 1,95', '3,65', '3,3–3,7', 'O-Ring 32 × 4']) expect(seal.includes(t), `Dichtnut: „${t}“ fehlt`);
+    for (const t of ['Kupplung F32', 'Ø38,2', 'Ø40,2', 'R1,95', '3,65', '3,3–3,7', 'O-Ring 32 × 4']) expect(seal.includes(t), `Dichtnut: „${t}“ fehlt`);
     expect(!seal.includes('F25'), 'Dichtnut für den Stecker M25 angezeigt');
     await step(pg, 'Teile');
     await f2.fill('50');

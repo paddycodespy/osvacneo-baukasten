@@ -1,14 +1,14 @@
 <script lang="ts">
   /**
    * Schnitt durch die Dichtnut unten in der Kupplung, maßstäblich (rechte Wandhälfte, Achse links):
-   * Boden, Rundung R 1,95 als Hinterschneidung, Bohrung darüber, Steckerspitze gestrichelt (ganz hineingezogen),
+   * Boden, Rundung R1,95 als Hinterschneidung, Bohrung darüber, Steckerspitze gestrichelt (ganz hineingezogen),
    * eine Rundschnur passender Größe gepunktet. Buchstaben an Hinweislinien rechts, Bedeutung in der Tabelle darunter.
    */
-  import type { SealGroove } from '../lib/osvac/seal';
+  import { MALE_TIP_EDGE, type SealGroove } from '../lib/osvac/seal';
   let { s }: { s: SealGroove } = $props();
 
   const K = 24; // px je mm
-  const X0 = -1.8, Z1 = 6.6; // linke obere Ecke in mm (x ab Innenradius, z ab Boden)
+  const X0 = -2.9, Z1 = 6.6; // linke obere Ecke in mm (x ab Innenradius, z ab Boden)
   const X = (x: number) => +((x - X0) * K).toFixed(2);
   const Y = (z: number) => +((Z1 - z) * K).toFixed(2);
 
@@ -17,8 +17,8 @@
     const dx = s.centerD / 2 - ri; // Mitte der Rundung
     const xb = s.bore / 2 - ri; // Bohrung
     const xo = s.outer / 2 - ri; // tiefste Stelle
-    const xm = s.tipOuter / 2 + 0.725 - ri; // Stecker außen
-    const e = 0.725;
+    const e = MALE_TIP_EDGE;
+    const xm = s.tipOuter / 2 + e - ri; // Stecker außen
     const R = s.radius, hb = s.heightAtBore, t = s.tipMin;
     const wall = `M${X(0)} ${Y(0)} H${X(dx)} A${R * K} ${R * K} 0 0 0 ${X(xb)} ${Y(hb)} V${Y(6.4)} H${X(5.6)} V${Y(-1)} H${X(0)} Z`;
     const male = `M${X(0)} ${Y(6.4)} V${Y(t + e)} A${e * K} ${e * K} 0 0 0 ${X(e)} ${Y(t)} H${X(xm - e)} L${X(xm)} ${Y(t + e)} V${Y(6.4)}`;
@@ -29,7 +29,7 @@
   const XL = 6.0; // Ende der Hinweislinien
 </script>
 
-<svg class="sfig" viewBox="0 0 222 182" role="img" aria-label="Skizze Dichtnut: Schnitt durch die Kupplung unten, mit Steckerspitze und Rundschnur">
+<svg class="sfig" viewBox="0 0 248 182" role="img" aria-label="Skizze Dichtnut: Schnitt durch die Kupplung unten, links die Mitte, mit Steckerspitze und Rundschnur">
   <!-- Wand der Kupplung mit Boden und Nut -->
   <path d={g.wall} class="part" />
   <!-- Rundschnur passender Größe -->
@@ -49,14 +49,19 @@
   <!-- Steckerspitze über dem Boden -->
   <path d="M{X(0)} {Y(0)} H{X(-1)} M{X(0)} {Y(g.t)} H{X(-1)} M{X(-0.7)} {Y(0)} V{Y(g.t)}" class="lead" />
   <text x={X(-1.55)} y={Y(g.t / 2) + 4} class="lt">E</text>
+  <!-- Richtung zur Mitte der Kupplung (Achse liegt weit links) -->
+  <path d="M{X(-2.7)} {Y(6.0)} h24 M{X(-2.7)} {Y(6.0)} l5 -3.5 M{X(-2.7)} {Y(6.0)} l5 3.5" class="axis" />
+  <text x={X(-2.7)} y={Y(6.0) + 16} class="mute">Mitte</text>
 </svg>
 
 <style>
-  .sfig { width: 100%; max-width: 240px; height: auto; display: block; background: var(--card); border-radius: 8px; margin: 8px 0 6px; }
+  .sfig { width: 100%; max-width: 268px; height: auto; display: block; background: var(--card); border-radius: 8px; margin: 8px 0 6px; }
   .part { fill: var(--red-l); stroke: var(--red); stroke-width: 1.4; }
   .male { fill: none; stroke: var(--graphite); stroke-width: 1.2; stroke-dasharray: 4 3; }
   .cord { fill: none; stroke: var(--slate); stroke-width: 1.2; stroke-dasharray: 1.5 2.5; }
   .lead { fill: none; stroke: var(--sky-d); stroke-width: 1; }
   .dot { fill: var(--sky-d); }
+  .axis { fill: none; stroke: var(--slate); stroke-width: 1.2; }
+  .mute { font-family: var(--body); font-size: 11px; font-weight: 500; fill: var(--slate); }
   .lt { font-family: var(--body); font-size: 12px; font-weight: 700; fill: var(--sky-d); }
 </style>

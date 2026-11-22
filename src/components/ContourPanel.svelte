@@ -86,7 +86,7 @@
     out.push({ ok: !cross, text: cross ? 'Die Kontur überschneidet sich selbst' : 'Kontur ist geschlossen und überschneidet sich nicht' });
     const size = Math.min(b.w, b.h) >= CONTOUR_MIN && Math.max(b.w, b.h) <= CONTOUR_MAX;
     out.push({ ok: size, text: size ? `Größe passt (${CONTOUR_MIN} bis ${CONTOUR_MAX} mm)` : `Größe muss zwischen ${CONTOUR_MIN} und ${CONTOUR_MAX} mm liegen` });
-    if (section.rounded) out.push({ ok: 'warn', text: `${section.rounded} spitze Ecke${section.rounded > 1 ? 'n' : ''} auf R 0,5 gerundet` });
+    if (section.rounded) out.push({ ok: 'warn', text: `${section.rounded} spitze Ecke${section.rounded > 1 ? 'n' : ''} auf R0,5 gerundet` });
     const n = straightSides(pts);
     out.push({ ok: true, text: n ? `${n} gerade Seite${n > 1 ? 'n' : ''} ab 14 mm: Schraubenlöcher sitzen dort mittig` : 'Keine langen geraden Seiten: Schraubenlöcher werden gleichmäßig verteilt' });
     return out;

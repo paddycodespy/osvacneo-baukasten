@@ -32,6 +32,8 @@
 
   /** Maße der Dichtnut: mm mit Komma, Bereiche mit Halbgeviertstrich */
   const mm = (v: number, d = 2) => fmt(v, d);
+  /** O-Ring zum Kaufen: ganze Millimeter innen, Schnur 4 mm */
+  const oring = (d: number) => (Number.isInteger(d) ? `O-Ring ${d} × 4` : `O-Ring ${Math.floor(d)} × 4 oder ${Math.ceil(d)} × 4`);
   const range = (a: number, b: number) => (Math.abs(a - b) < 0.05 ? mm(a, 1) : `${mm(a, 1)}–${mm(b, 1)}`);
 
   const lead = $derived.by(() => {
@@ -119,20 +121,21 @@
       {#if app.seals.length > 1}<p class="seal-h">Kupplung F{fmt(s.d)}</p>{/if}
       <table class="seal-t">
         <tbody>
-          <tr><th>A</th><td>Bohrung über der Nut</td><td>Ø {mm(s.bore)}</td></tr>
-          <tr><th>B</th><td>Größter Ø der Nut, {mm(s.outerZ)} mm über dem Boden</td><td>Ø {mm(s.outer)}</td></tr>
-          <tr><th>C</th><td>Rundung außen, Mittelpunkt auf Ø {mm(s.centerD)}</td><td>R {mm(s.radius)}</td></tr>
+          <tr><th>A</th><td>Bohrung über der Nut</td><td>Ø{mm(s.bore)}</td></tr>
+          <tr><th>B</th><td>Größter Ø der Nut, {mm(s.outerZ)} mm über dem Boden</td><td>Ø{mm(s.outer)}</td></tr>
+          <tr><th>C</th><td>Rundung außen, Mittelpunkt auf Ø{mm(s.centerD)}</td><td>R{mm(s.radius)}</td></tr>
           <tr><th>D</th><td>Höhe der Nut an der Bohrung</td><td>{mm(s.heightAtBore)}</td></tr>
-          <tr><th>E</th><td>Steckerspitze über dem Boden (ganz hineingezogen bis ganz herausgedrückt)</td><td>{range(s.tipMin, s.tipMax)}</td></tr>
-          <tr><th></th><td>Durchgang (Innen-Ø der Kupplung)</td><td>Ø {mm(s.inner)}</td></tr>
-          <tr><th></th><td>Ebene Fläche der Steckerspitze</td><td>Ø {mm(s.tipInner)}–{mm(s.tipOuter)}</td></tr>
+          <tr><th>E</th><td>Steckerspitze über dem Boden (unter Sog bis ohne Sog)</td><td>{range(s.tipMin, s.tipMax)}</td></tr>
+          <tr><th></th><td>Durchgang (Innen-Ø der Kupplung)</td><td>Ø{mm(s.inner)}</td></tr>
+          <tr><th></th><td>Ebene Fläche der Steckerspitze</td><td>Ø{mm(s.tipInner)}–{mm(s.tipOuter)}</td></tr>
         </tbody>
       </table>
       <p class="hint">
-        Passt: Rundschnur Ø 4 mm, als Ring mit etwa {fmt(s.d)} mm Innen-Ø <span class="nw">(O-Ring {fmt(s.d)} × 4)</span>. Die Steckerspitze drückt sie um {range(4 - s.tipMax, 4 - s.tipMin)} mm zusammen.
+        Passt: Rundschnur Ø4 mm, als Ring <span class="nw">({oring(s.d)},</span> innen × Schnur). Ohne Sog drückt die Dichtung den Stecker hoch, bis seine Nasen oben in der Nut
+        anliegen: Sie wird dann um {mm(Math.max(0, 4 - s.tipMax), 1)} mm zusammengedrückt. Unter Sog zieht der Sauger den Stecker tiefer hinein, dann sind es bis zu {mm(4 - s.tipMin, 1)} mm.
       </p>
     {/each}
-    <p class="hint">Alle Maße in mm{app.seals.every((s) => s.gap === app.seals[0].gap) ? `, bei ${fmt(app.seals[0].gap, 2)} mm Spalt zwischen Stecker und Kupplung` : ''}. Die Nut selbst ändert sich mit dem Spalt nicht, nur Bohrung und Stecker.</p>
+    <p class="hint">Alle Maße in mm{app.seals.every((s) => s.gap === app.seals[0].gap) ? `, bei ${fmt(app.seals[0].gap, 2)} mm Spiel zwischen Stecker und Kupplung` : ''}. Die Nut selbst ändert sich mit dem Spiel nicht, nur Bohrung und Stecker.</p>
   </details>
 {/if}
 

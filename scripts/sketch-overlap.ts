@@ -70,6 +70,10 @@ async function main() {
     await chk('Stutzen aufgesteckt');
     await pg.getByRole('radio', { name: 'Adapter kommt in die Öffnung' }).click();
     await chk('Stutzen eingesteckt');
+    // Maße der Dichtnut im Download (Kasten aufklappen; erscheint, sobald die Teileliste steht)
+    await step('Download');
+    await pg.locator('details.seal summary').click();
+    await chk('Dichtnut');
 
     // Schieber einzeln mit und ohne Befestigung
     await step('Verbindung');
