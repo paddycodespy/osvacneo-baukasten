@@ -83,57 +83,62 @@ export function sealGroove(p: OsvacParams): SealGroove {
   };
 }
 
-/** Dichtring aus TPU: Pressung ohne Sog (Ring höher als die Steckerspitze in Ruhe), Grenzen und Standard */
-export const SEAL_RING = { squeeze: 0.3, min: 0.1, max: 0.8, step: 0.05, clearance: 0.1, inner: 0.3, chamfer: 0.3, density: 1.21 };
+/**
+ * Dichtring aus TPU als Lippendichtung: Vorspannung der Lippe (so viel steht sie ohne Stecker über der Steckerspitze),
+ * Grenzen und Standard; Lippe 0,8 mm dick, mindestens 55° steil (druckt ohne Stützen).
+ */
+export const SEAL_RING = { squeeze: 0.5, min: 0.2, max: 1.0, step: 0.05, clearance: 0.1, inner: 0.3, lip: 0.8, angle: 55, density: 1.21 };
 
 export interface SealRing {
-  /** innen, außen an der Bohrung (Radien), Höhe */
+  /** Querschnitt (r, z) als geschlossenes Polygon, gegen den Uhrzeigersinn, Boden z = 0 */
+  pts: [number, number][];
+  /** innen (Radius), größter Ø, Oberkante der Lippe, Oberkante des Fußes */
   ri: number;
-  rb: number;
-  h: number;
-  /** Boden bis r1, dann 45° bis T (auf der Rundung, kurz über der weitesten Stelle), Bogen um (cx, cz) mit Radius rc bis J an der Bohrung */
-  r1: number;
-  T: [number, number];
-  J: [number, number];
-  cx: number;
-  cz: number;
-  rc: number;
-  ch: number;
-  /** größter Ø des Rings, Pressung ohne und unter Sog, Volumen (mm³), Gewicht TPU (g) */
   outer: number;
+  h: number;
+  zb: number;
+  /** Neigung der Lippe (Grad über der Waagerechten), Vorspannung in Ruhe */
+  angle: number;
   squeeze: number;
-  squeezeSog: number;
+  /** Volumen (mm³), Gewicht TPU (g) */
   volume: number;
   grams: number;
 }
 
 /**
- * Querschnitt des Dichtrings (r, z; Boden z = 0 = Boden der Nut), folgt der Nut mit Luft `clearance` nach außen:
- * innen senkrecht (Durchgang + 0,3), Boden flach bis kurz vor den tiefsten Punkt der Rundung (dort beginnt sie am
- * Boden), dann 45° nach außen (druckt ohne Stützen) bis auf die Rundung kurz über ihrer weitesten Stelle, der Rundung
- * entlang bis zur Bohrung, dort senkrecht bis zur Höhe Steckerspitze ohne Sog + Pressung, oben innen und außen gefast.
- * Unter der 45°-Schräge bleibt in der Nut ein kleiner Hohlraum.
+ * Querschnitt des Dichtrings (r, z; Boden z = 0 = Boden der Nut), Lippendichtung:
+ * - Fuß: flach auf dem Boden, innen senkrecht (Durchgang + 0,3), außen 45° (druckt ohne Stützen) bis in die
+ *   Hinterschneidung (0,1 mm Luft zur Rundung, knapp über ihrer weitesten Stelle), oben eben. Er hält den Ring in der Nut.
+ * - Lippe: 0,8 mm dick, wächst innen aus dem Fuß schräg nach oben außen und steht ohne Stecker um die Vorspannung über
+ *   der Steckerspitze (Stellung ohne Sog). Der Stecker biegt sie beim Einstecken nach unten; die Außenluft kommt über den
+ *   Spalt an der Bohrung unter die Lippe und drückt sie gegen die Spitze (zieht sich unter Sog selbst zu).
+ * Die Lippe wird steiler, wenn ihre obere Außenkante sonst über den Stecker hinaus an die Bohrung käme.
  */
 export function sealRing(s: SealGroove, squeeze: number): SealRing {
-  const c = SEAL_RING.clearance, ch = SEAL_RING.chamfer;
+  const c = SEAL_RING.clearance, t = SEAL_RING.lip;
   const rFi = s.inner / 2, cx = s.centerD / 2, cz = s.outerZ, rc = s.radius - c;
   const ri = rFi + SEAL_RING.inner;
-  const rb = s.bore / 2 - c;
-  // Boden endet 0,15 vor dem tiefsten Punkt der Rundung; die 45°-Gerade schneidet den Bogen (Radius rc) dann kurz über
-  // seiner weitesten Stelle und liegt dazwischen ganz innerhalb der Nut
+  const rMo = s.tipOuter / 2 + MALE_TIP_EDGE; // Stecker außen
+  // Fuß: Boden bis 0,15 vor dem tiefsten Punkt der Rundung, 45° bis auf den Bogen kurz über seiner weitesten Stelle
   const a = 0.15, r1 = cx - a;
   const u = (cz - a + Math.sqrt(Math.max(0, 2 * rc * rc - (cz - a) ** 2))) / 2;
   const T: [number, number] = [cx + u, u + a];
-  const J: [number, number] = [rb, cz + Math.sqrt(Math.max(0, rc * rc - (rb - cx) ** 2))];
-  const h = Math.max(s.tipMax + squeeze, J[1] + ch + 0.1);
-  // Fläche und Schwerpunktradius (Polygon mit fein abgetastetem Bogen) → Volumen nach Guldin
-  const pts: [number, number][] = [[ri, 0], [r1, 0], T];
-  const a0 = Math.atan2(T[1] - cz, T[0] - cx), a1 = Math.atan2(J[1] - cz, J[0] - cx);
-  for (let i = 1; i <= 24; i++) {
-    const a = a0 + ((a1 - a0) * i) / 24;
-    pts.push([cx + rc * Math.cos(a), cz + rc * Math.sin(a)]);
-  }
-  pts.push([rb, h - ch], [rb - ch, h], [ri + ch, h], [ri, h - ch]);
+  const zb = T[1];
+  const h = s.tipMax + squeeze;
+  // Lippe: Innenkante von (ri, zb) unter dem Winkel ang bis h, Außenkante parallel im Abstand t
+  const outerAt = (deg: number) => {
+    const g = (deg * Math.PI) / 180;
+    return ri + (h - zb) / Math.tan(g) + t / Math.sin(g);
+  };
+  const xMax = Math.min(rMo, s.bore / 2 - 0.25);
+  let angle = SEAL_RING.angle;
+  while (angle < 80 && outerAt(angle) > xMax) angle += 0.5;
+  const g = (angle * Math.PI) / 180;
+  const xIn = ri + (h - zb) / Math.tan(g);
+  const xOut = xIn + t / Math.sin(g);
+  const xRoot = xOut - (h - zb) / Math.tan(g); // Außenkante der Lippe auf der Oberkante des Fußes
+  const pts: [number, number][] = [[ri, 0], [r1, 0], T, [xRoot, zb], [xOut, h], [xIn, h], [ri, zb]];
+  // Fläche und Schwerpunktradius → Volumen nach Guldin
   let A2 = 0, Sr = 0;
   for (let i = 0; i < pts.length; i++) {
     const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % pts.length];
@@ -143,5 +148,5 @@ export function sealRing(s: SealGroove, squeeze: number): SealRing {
   }
   const area = Math.abs(A2) / 2, rBar = Math.abs(Sr / (3 * A2));
   const volume = 2 * Math.PI * rBar * area;
-  return { ri, rb, h, r1, T, J, cx, cz, rc, ch, outer: 2 * Math.max(T[0], cx + (a0 < 0 ? rc : rc * Math.cos(a0))), squeeze: h - s.tipMax, squeezeSog: h - s.tipMin, volume, grams: (volume / 1000) * SEAL_RING.density };
+  return { pts, ri, outer: 2 * T[0], h, zb, angle, squeeze: h - s.tipMax, volume, grams: (volume / 1000) * SEAL_RING.density };
 }

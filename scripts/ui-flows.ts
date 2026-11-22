@@ -662,9 +662,9 @@ await withPreview(4180, async (url, browser) => {
     const seal2 = await pg.locator('details.seal').innerText();
     for (const t of ['Kupplung F32', 'Kupplung F25 (in der Kappe)', 'Ø33,2']) expect(seal2.includes(t), `Dichtnut mit Kappe: „${t}“ fehlt: ${seal2.slice(0, 120)}`);
     // Dichtringe aus TPU für beide Kupplungen als eigene Datei
-    for (const t of ['Dichtring aus TPU', 'Ring für F32', 'Ring für F25 (in der Kappe)', 'Pressung ohne Sog']) expect(seal2.includes(t), `Dichtring: „${t}“ fehlt`);
+    for (const t of ['Dichtring aus TPU', 'Ring für F32', 'Ring für F25 (in der Kappe)', 'Vorspannung der Lippe']) expect(seal2.includes(t), `Dichtring: „${t}“ fehlt`);
     const [dr] = await Promise.all([pg.waitForEvent('download', { timeout: 120000 }), pg.locator('details.seal .plate-dl button', { hasText: 'STL' }).click()]);
-    expect(dr.suggestedFilename() === 'osVAC neo Dichtring F32 F25 Pressung 0,3.stl', 'Dateiname Dichtring: ' + dr.suggestedFilename());
+    expect(dr.suggestedFilename() === 'osVAC neo Dichtring F32 F25 Lippe 0,5.stl', 'Dateiname Dichtring: ' + dr.suggestedFilename());
     await step(pg, 'Teile');
     await pg.locator('label.cap input').nth(1).uncheck();
     await ready(pg);

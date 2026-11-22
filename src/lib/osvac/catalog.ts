@@ -279,12 +279,12 @@ export const SEAL_RING_KIND: AdapterKind = {
   group: 'accessory',
   code: 'Dichtring',
   title: 'Dichtring',
-  description: 'Dichtring aus TPU für die Dichtnut der Kupplung.',
+  description: 'Dichtring aus TPU (Lippendichtung) für die Dichtnut der Kupplung.',
   ends: { top: 'female', bottom: null },
   diameters: ['femaleDiameterInner'],
   available: true,
   parts: asm.partsSealRing,
-  fileName: (p, o) => `osVAC neo Dichtring ${(o?.sealRing?.rings ?? [{ d: p.femaleDiameterInner }]).map((q) => `F${n(q.d)}`).join(' ')} Pressung ${n(o?.sealRing?.squeeze ?? 0.3)}`,
+  fileName: (p, o) => `osVAC neo Dichtring ${(o?.sealRing?.rings ?? [{ d: p.femaleDiameterInner }]).map((q) => `F${n(q.d)}`).join(' ')} Lippe ${n(o?.sealRing?.squeeze ?? 0.5)}`,
 };
 
 export const kindById = (id: string) => (id === SEAL_RING_KIND.id ? SEAL_RING_KIND : KINDS.find((k) => k.id === id)!);

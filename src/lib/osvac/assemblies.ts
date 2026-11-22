@@ -79,7 +79,7 @@ export interface BuildOptions {
   sealRing?: SealRingSpec;
 }
 
-/** Dichtringe: Pressung ohne Sog und je Kupplung Größe (und ob sie in der Kappe eines Steckers steckt) */
+/** Dichtringe: Vorspannung der Lippe und je Kupplung Größe (und ob sie in der Kappe eines Steckers steckt) */
 export interface SealRingSpec {
   squeeze: number;
   rings: { d: number; cap?: boolean }[];

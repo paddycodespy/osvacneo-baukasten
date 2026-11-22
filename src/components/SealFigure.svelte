@@ -1,8 +1,8 @@
 <script lang="ts">
   /**
    * Schnitt durch die Dichtnut unten in der Kupplung, maßstäblich (rechte Wandhälfte, Achse links):
-   * Boden, Rundung R1,95 als Hinterschneidung, Bohrung darüber, Steckerspitze gestrichelt (ganz hineingezogen),
-   * eine Rundschnur passender Größe gepunktet bzw. der Dichtring aus TPU blau. Buchstaben an Hinweislinien rechts, Bedeutung in der Tabelle darunter.
+   * Boden, Rundung R1,95 als Hinterschneidung, Bohrung darüber, Steckerspitze gestrichelt (eingedreht, Nasen oben in der Nut: so steht sie mit Dichtung),
+   * eine Rundschnur passender Größe gepunktet bzw. der Dichtring aus TPU (Lippendichtung) blau. Buchstaben an Hinweislinien rechts, Bedeutung in der Tabelle darunter.
    */
   import { MALE_TIP_EDGE, type SealGroove, type SealRing } from '../lib/osvac/seal';
   /** ring: Dichtring aus TPU (statt der Rundschnur gezeichnet, ungepresst) */
@@ -20,15 +20,13 @@
     const xo = s.outer / 2 - ri; // tiefste Stelle
     const e = MALE_TIP_EDGE;
     const xm = s.tipOuter / 2 + e - ri; // Stecker außen
-    const R = s.radius, hb = s.heightAtBore, t = s.tipMin;
+    const R = s.radius, hb = s.heightAtBore, t = s.tipMax;
     const wall = `M${X(0)} ${Y(0)} H${X(dx)} A${R * K} ${R * K} 0 0 0 ${X(xb)} ${Y(hb)} V${Y(6.4)} H${X(5.6)} V${Y(-1)} H${X(0)} Z`;
     const male = `M${X(0)} ${Y(6.4)} V${Y(t + e)} A${e * K} ${e * K} 0 0 0 ${X(e)} ${Y(t)} H${X(xm - e)} L${X(xm)} ${Y(t + e)} V${Y(6.4)}`;
     const a30 = Math.PI / 6;
     const pc: [number, number] = [dx + R * Math.cos(a30), R + R * Math.sin(a30)];
     const q = ring;
-    const ringPath = q
-      ? `M${X(q.ri - ri)} ${Y(0)} H${X(q.r1 - ri)} L${X(q.T[0] - ri)} ${Y(q.T[1])} A${q.rc * K} ${q.rc * K} 0 0 0 ${X(q.J[0] - ri)} ${Y(q.J[1])} L${X(q.rb - ri)} ${Y(q.h - q.ch)} L${X(q.rb - q.ch - ri)} ${Y(q.h)} H${X(q.ri + q.ch - ri)} L${X(q.ri - ri)} ${Y(q.h - q.ch)} Z`
-      : '';
+    const ringPath = q ? 'M' + q.pts.map(([x, z]) => `${X(x - ri)} ${Y(z)}`).join(' L') + ' Z' : '';
     return { dx, xb, xo, xm, R, hb, t, wall, male, pc, ringPath };
   });
   const XL = 6.0; // Ende der Hinweislinien
@@ -38,13 +36,13 @@
   <!-- Wand der Kupplung mit Boden und Nut -->
   <path d={g.wall} class="part" />
   {#if g.ringPath}
-    <!-- Dichtring aus TPU, ungepresst (oben überdeckt ihn die Steckerspitze um die Pressung) -->
+    <!-- Dichtring aus TPU (Lippendichtung), ohne Stecker: die Steckerspitze überdeckt die Lippe um die Vorspannung -->
     <path d={g.ringPath} class="ring" />
   {:else}
     <!-- Rundschnur passender Größe -->
     <circle cx={X(g.dx)} cy={Y(g.R)} r={g.R * K} class="cord" />
   {/if}
-  <!-- Steckerspitze, ganz hineingezogen -->
+  <!-- Steckerspitze eingedreht, mit Dichtung (Nasen oben in der Nut) -->
   <path d={g.male} class="male" />
   <!-- Hinweislinien -->
   <path d="M{X(g.xb)} {Y(5)} H{X(XL)}" class="lead" />

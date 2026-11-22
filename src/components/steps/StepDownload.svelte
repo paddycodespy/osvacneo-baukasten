@@ -35,6 +35,8 @@
   const mm = (v: number, d = 2) => fmt(v, d);
   /** Größe der Kupplung, bei der Magnet-Platte mit Hinweis, wenn sie in der Kappe für einen Stecker steckt */
   const sealName = (s: SealGroove) => `F${fmt(s.d)}${s.cap ? ' (in der Kappe)' : ''}`;
+  /** Kraft, mit der der Sog den Stecker hineinzieht (35 kPa auf die Fläche innerhalb der Dichtung) */
+  const sogN = (s: SealGroove) => 0.035 * Math.PI * (s.centerD / 2) ** 2;
   /** O-Ring zum Kaufen: ganze Millimeter innen, Schnur 4 mm */
   const oring = (d: number) => (Number.isInteger(d) ? `O-Ring ${d} × 4` : `O-Ring ${Math.floor(d)} × 4 oder ${Math.ceil(d)} × 4`);
   const range = (a: number, b: number) => (Math.abs(a - b) < 0.05 ? mm(a, 1) : `${mm(a, 1)}–${mm(b, 1)}`);
@@ -128,14 +130,15 @@
           <tr><th>B</th><td>Größter Ø der Nut, {mm(s.outerZ)} mm über dem Boden</td><td>Ø{mm(s.outer)}</td></tr>
           <tr><th>C</th><td>Rundung außen, Mittelpunkt auf Ø{mm(s.centerD)}</td><td>R{mm(s.radius)}</td></tr>
           <tr><th>D</th><td>Höhe der Nut an der Bohrung</td><td>{mm(s.heightAtBore)}</td></tr>
-          <tr><th>E</th><td>Steckerspitze über dem Boden (unter Sog bis ohne Sog)</td><td>{range(s.tipMin, s.tipMax)}</td></tr>
+          <tr><th>E</th><td>Steckerspitze über dem Boden (Spielraum der Nasen in der Nut)</td><td>{range(s.tipMin, s.tipMax)}</td></tr>
           <tr><th></th><td>Durchgang (Innen-Ø der Kupplung)</td><td>Ø{mm(s.inner)}</td></tr>
           <tr><th></th><td>Ebene Fläche der Steckerspitze</td><td>Ø{mm(s.tipInner)}–{mm(s.tipOuter)}</td></tr>
         </tbody>
       </table>
       <p class="hint">
-        Passt: Rundschnur Ø4 mm, als Ring <span class="nw">({oring(s.d)},</span> innen × Schnur). Ohne Sog drückt die Dichtung den Stecker hoch, bis seine Nasen oben in der Nut
-        anliegen: Sie wird dann um {mm(Math.max(0, 4 - s.tipMax), 1)} mm zusammengedrückt. Unter Sog zieht der Sauger den Stecker tiefer hinein, dann sind es bis zu {mm(4 - s.tipMin, 1)} mm.
+        Passt: Rundschnur Ø4 mm, als Ring <span class="nw">({oring(s.d)},</span> innen × Schnur). Die Dichtung drückt den Stecker hoch, bis seine Nasen oben in der Nut anliegen
+        ({mm(s.tipMax, 1)} mm über dem Boden); dabei wird sie um etwa {mm(Math.max(0, 4 - s.tipMax), 1)} mm zusammengedrückt. Der Sog zieht den Stecker kaum tiefer: Bei 35 kPa
+        sind das nur etwa {fmt(sogN(s), 0)} N.
       </p>
     {/each}
     <p class="hint">
@@ -148,22 +151,23 @@
     </p>
     <p class="seal-h">Dichtring aus TPU zum Selberdrucken</p>
     <p class="hint">
-      Ein Ring, der genau in die Nut passt (in der Skizze blau): innen frei bis zum Durchgang, außen der Rundung nach, oben eben für die Steckerspitze. Er wird flach liegend ohne Stützen
-      gedruckt, am besten aus TPU 95A, und als eigene Datei heruntergeladen.
+      Eine Lippendichtung, die genau in die Nut passt (in der Skizze blau): Der Fuß hält in der Hinterschneidung, die dünne Lippe steht schräg nach oben und legt sich von unten an
+      die Steckerspitze. Die Außenluft kommt über den Spalt an der Bohrung unter die Lippe und drückt sie gegen den Stecker: Je stärker der Sog, desto dichter. Weil sich nur die Lippe
+      biegt, lässt sich der Stecker leicht eindrehen. Der Ring liegt beim Drucken flach und braucht keine Stützen.
     </p>
     <fieldset class="field seal-sq">
-      <legend class="field-label">Pressung ohne Sog</legend>
+      <legend class="field-label">Vorspannung der Lippe</legend>
       <div class="slider">
-        <input type="range" min={SEAL_RING.min} max={SEAL_RING.max} step={SEAL_RING.step} bind:value={app.sealSqueeze} aria-label="Pressung des Dichtrings ohne Sog" />
+        <input type="range" min={SEAL_RING.min} max={SEAL_RING.max} step={SEAL_RING.step} bind:value={app.sealSqueeze} aria-label="Vorspannung der Lippe" />
         <output>{fmt(app.sealSqueeze, 2)} mm</output>
       </div>
-      <p class="hint">So viel ist der Ring höher als die Steckerspitze, wenn nicht gesaugt wird. Zieht es noch Falschluft: größer. Lässt sich der Stecker schwer eindrehen: kleiner. Standard: {fmt(SEAL_RING.squeeze, 2)} mm.</p>
+      <p class="hint">So weit biegt der Stecker die Lippe nach unten, wenn er eingedreht ist. Zieht es noch Falschluft: größer. Geht der Stecker schwer: kleiner. Standard: {fmt(SEAL_RING.squeeze, 2)} mm.</p>
     </fieldset>
     <table class="seal-t">
       <tbody>
         {#each app.seals as s (s.d + '/' + s.gap + '/' + !!s.cap)}
           {@const r = sealRing(s, app.sealSqueeze)}
-          <tr><td>Ring für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)}, {mm(r.h)} mm hoch; unter Sog {mm(r.squeezeSog, 1)} mm gepresst</td><td>ca. {mm(r.grams, 1)} g</td></tr>
+          <tr><td>Ring für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)}, Lippe {mm(r.h)} mm hoch, {fmt(r.angle, 1)}° steil</td><td>ca. {mm(r.grams, 1)} g</td></tr>
         {/each}
       </tbody>
     </table>
@@ -174,8 +178,9 @@
       {/each}
     </div>
     <p class="hint">
-      Einsetzen: Ring etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken, bis er flach auf dem Boden liegt. Beim Einstecken drückt der Stecker ihn zusammen,
-      bevor sich die Nasen drehen lassen. Erst einen Ring drucken und probieren, dann die Pressung anpassen.
+      Drucken: TPU, am besten 85A–95A, mit 0,2 mm Schichthöhe; die Lippe ist zwei Bahnen breit (0,4-mm-Düse). TPU druckt oft etwas dicker, deshalb hat der Ring außen 0,1 mm Luft.
+      Einsetzen: Ring etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken, bis der Fuß flach auf dem Boden liegt, Lippe nach oben. Erst einen Ring
+      drucken und probieren, dann die Vorspannung anpassen.
     </p>
   </details>
 {/if}
