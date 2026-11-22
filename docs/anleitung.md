@@ -458,6 +458,7 @@ Die Standardwerte passen meistens. Ändern lohnt sich erst, wenn ein Testdruck n
 - **STL:** funktioniert mit jedem Slicer.
 - **STEP:** das exakte CAD-Modell, zum Weiterkonstruieren.
 - **Druckhinweise:** was du beim Drucken und Zusammenbauen beachten musst. Lies sie vor dem ersten Druck.
+- **Dichtung in der Kupplung:** Maße der Nut unten in der Kupplung (Bohrung, größter Durchmesser, Rundung außen, Höhe, Abstand der Steckerspitze vom Boden), mit Skizze. Damit kannst du eine passende Dichtung kaufen oder selbst aus TPU drucken, ohne eine Kupplung aufzuschneiden. Der Kasten erscheint bei jedem Adapter mit Kupplung.
 
 ### Mehrere Adapter auf ein Druckbett {#druckbett}
 

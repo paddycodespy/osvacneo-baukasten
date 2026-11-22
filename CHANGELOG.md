@@ -4,6 +4,7 @@
 
 ## Unveröffentlicht
 
+- **Maße der Dichtnut** im Schritt *Download*: Bei jedem Adapter mit Kupplung zeigt der Kasten *Dichtung in der Kupplung* eine maßstäbliche Skizze und die Maße für eine eigene Dichtung: Bohrung über der Nut, größter Ø der Nut, Rundung außen (R 1,95), Höhe an der Bohrung, Abstand der Steckerspitze vom Boden (ganz hineingezogen bis ganz herausgedrückt), Durchgang und Auflagefläche der Steckerspitze, dazu ein passender O-Ring. Bei zwei Kupplungen verschiedener Größe je eine Tabelle. Die Lage der Steckerspitze ist am Modell nachgemessen (F32, Spalt 0,2 und 0,4). Wunsch aus dem Forum (bisher half nur, eine Kupplung aufzuschneiden).
 - Prüfung der Anleitungsbilder auf GitHub vergleicht zwei dort aufgenommene Stände (aktuell und Stand der letzten Bilder) statt direkt mit den eingecheckten Bildern; vorher meldete sie wegen kleiner Unterschiede beim Zeichnen 45 Bilder fälschlich als veraltet. GitHub-Actions auf aktuelle Versionen (setup-python v6, upload-artifact v6).
 
 ## 0.6.1

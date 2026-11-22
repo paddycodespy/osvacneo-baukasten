@@ -6,6 +6,7 @@
 import { makePolygon, makeSolid, makeCylinder, type Shape3D, type Point } from 'replicad';
 import type { OsvacParams } from './params';
 import { revolveProfile, revolveProfileSector, extrudeDown, channelOutline, drawPath, L, A, rad, deg, type P2 } from './geom';
+import { BEAD, BEAD_FLOOR, FEMALE_GROOVE } from './seal';
 import { gripKnurl, gripKnurlOverlap, gripFields, gripFieldsOverlap } from './grip';
 
 export interface FemaleOptions {
@@ -113,8 +114,9 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
 
   // --- Grundprofil (Rotationskörper) ---
   // Dichtnut: Lage fest zum Innendurchmesser (bei Spalt 0,4 gemessen: wandert nicht mit der Bohrung)
-  const beadC: [number, number] = [p.femaleDiameterInner / 2 + 2.15, -31.45];
-  const beadR = 1.95;
+  // Maße für eine eigene Dichtung: sealGroove() in seal.ts
+  const beadC: [number, number] = [p.femaleDiameterInner / 2 + BEAD.dx, BEAD.z];
+  const beadR = BEAD.r;
   const beadTopZ = beadC[1] + Math.sqrt(beadR ** 2 - (rFm - beadC[0]) ** 2);
   let body = revolveProfile([rFi, -H], [
     L(rFo - 1, -H),
@@ -125,7 +127,7 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
     A(rFm, -1, rFm + 1, -1),
     L(rFm, beadTopZ),
     { t: 'A', p: [beadC[0], beadC[1] - beadR], c: beadC },
-    L(rFi + 0.1, -H + 0.1),
+    L(rFi + BEAD_FLOOR, -H + BEAD_FLOOR),
   ]);
 
   // --- Bajonett ---
@@ -133,8 +135,8 @@ export function femaleRing(p: OsvacParams, opt: FemaleOptions = {}): Shape3D {
   const h = w / 2;
   const Rb = rFm + p.bajonettNaseDicke; // Rückwand von Kanal und Nut
   const rr = Rb - p.rastnasenStaerke; // Fläche der Rastnase
-  const zGrooveBot = -26.8;
-  const zGrooveTop = -21.0;
+  const zGrooveBot = FEMALE_GROOVE.bot;
+  const zGrooveTop = FEMALE_GROOVE.top;
   const zBevelTop = zGrooveTop + p.bayonetChamfer; // -19.8
   const slot2D = channelOutline(w, Rb, 1, rFm - 2, { rBore: rFm, fm: 1 });
   const grooveProfile = (a0: number, a1: number) =>

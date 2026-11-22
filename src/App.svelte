@@ -6,7 +6,7 @@
    */
   import { onMount } from 'svelte';
   import { PartViewer } from './lib/viewer';
-  import { build, partNames, measureBodies } from './lib/cad';
+  import { build, partNames, measureBodies, sealGroovesOf } from './lib/cad';
   import type { MeshBody } from './lib/worker/protocol';
   import { userMessage } from './lib/errors';
   import { theme } from './lib/theme.svelte';
@@ -83,6 +83,7 @@
       const req = app.spec();
       const quickByName = new Map(quick.bodies.map((b) => [b.name, b]));
       const names = partNames(req);
+      app.seals = sealGroovesOf(req);
       const cur: (MeshBody | undefined)[] = names.map((n) => quickByName.get(n));
       let done = 0;
       app.progress = { done, total: names.length };

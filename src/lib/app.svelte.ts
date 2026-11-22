@@ -20,6 +20,7 @@ import { BLEED } from './osvac/bleed';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
 import { DEFAULT_MAGNET, MAGNET_LIMITS, MAGNET_SIZES, MAG, PORT_D, magnetLayout, magnetName, type MagnetSpec, type MagnetSize, type MagnetPort, type MagnetHose } from './osvac/magnet';
 import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
+import type { SealGroove } from './osvac/seal';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
   { id: '3mf', label: '3MF', hint: 'Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura' },
@@ -198,6 +199,8 @@ class AppState {
   overhang = $state(0);
   /** Hinweise aus der vollen Berechnung (z. B. weggelassene Klemmrippen) */
   buildNotes = $state<string[]>([]);
+  /** Dichtnuten der Kupplungen im aktuellen Adapter (Maße im Download-Schritt) */
+  seals = $state<SealGroove[]>([]);
   /** Freiform: Teil liegt tiefer als das Ende auf dem Druckbett (so nicht druckbar) */
   layoutError = $state('');
 

@@ -648,6 +648,11 @@ await withPreview(4180, async (url, browser) => {
     await step(pg, 'Download');
     expect((await pg.locator('.lead').first().innerText()).includes('Stopfen für F32'), 'Download-Text ohne Verschlusskappe: ' + (await pg.locator('.lead').first().innerText()));
     expect((await pg.locator('.tips').innerText()).includes('Verschlusskappe liegt als eigenes Teil'), 'Hinweis zur Kappe fehlt');
+    // Maße der Dichtnut: nur die Kupplung F32 an der Platte (der Stopfen ist ein Stecker)
+    await pg.locator('details.seal summary').click();
+    const seal = await pg.locator('details.seal').innerText();
+    for (const t of ['Kupplung F32', 'Ø 38,2', 'Ø 40,2', 'R 1,95', '3,65', '3,3–3,7', 'O-Ring 32 × 4']) expect(seal.includes(t), `Dichtnut: „${t}“ fehlt`);
+    expect(!seal.includes('F25'), 'Dichtnut für den Stecker M25 angezeigt');
     await step(pg, 'Teile');
     await f2.fill('50');
     await f2.press('Enter');

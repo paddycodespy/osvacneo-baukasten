@@ -13,6 +13,7 @@ import type { BuildRequest, ExportFormat, MeshBody, WorkerReply, WorkerRequest, 
 import type { OsvacInput } from './osvac/params';
 import { deriveParams } from './osvac/params';
 import type { BuildOptions, Part } from './osvac/assemblies';
+import type { SealGroove } from './osvac/seal';
 import { kindById } from './osvac/catalog';
 import { build3MF } from './worker/threemf';
 import { UserError } from './errors';
@@ -165,6 +166,13 @@ const ref = (req: BuildRequest, index: number): PartRef => ({ kind: req.kind, in
 
 /** Namen der Körper einer Berechnung (ohne etwas zu bauen) */
 export const partNames = (req: BuildRequest) => partsOf(req).map((q) => q.name);
+
+/** Dichtnuten der Kupplungen einer Berechnung, je Größe und Spalt einmal (ohne etwas zu bauen) */
+export function sealGroovesOf(req: BuildRequest): SealGroove[] {
+  const out = new Map<string, SealGroove>();
+  for (const q of partsOf(req)) if (q.seal) out.set(`${q.seal.d}/${q.seal.gap}`, q.seal);
+  return [...out.values()].sort((a, b) => a.d - b.d);
+}
 
 
 export function makeBuild(kind: string, input: OsvacInput, options: BuildOptions): BuildRequest {

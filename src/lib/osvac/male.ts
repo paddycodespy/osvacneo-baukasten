@@ -8,6 +8,7 @@ import { revolveProfile, extrudeDown, channelOutline, drawPath, L, A } from './g
 import { textOnCylinder, engrave } from './text';
 import { TEXT, LICENSE_TEXT } from './grip';
 import { fmt } from './female';
+import { MALE_TIP_EDGE } from './seal';
 import { makePolygon, makeSolid, type Point } from 'replicad';
 
 export const MALE_NOSE_ANGLES = [30, 150, 270];
@@ -36,7 +37,7 @@ export function maleTube(p: OsvacParams, opt: MaleOptions = {}): Shape3D {
   const rMi = p.maleDiameterInner / 2;
   const rMo = p.maleDiameterOuter / 2;
   const H = p.maleHeight;
-  const e = 0.725; // Kantenbruch Spitze
+  const e = MALE_TIP_EDGE; // Kantenbruch Spitze
   let body = revolveProfile([rMi, 0], [
     L(rMi, -H + e),
     A(rMi + e, -H, rMi + e, -H + e),
@@ -82,7 +83,7 @@ export function maleSupport(p: OsvacParams): Shape3D {
   const rMo = p.maleDiameterOuter / 2;
   const H = p.maleHeight;
   const g = p.supportStructureGapSize;
-  const e = 0.725;
+  const e = MALE_TIP_EDGE;
   const rBrimIn = rMi - 3;
   const rBrimOut = rMo + 20;
   const zBrimTop = -H - 0.5;

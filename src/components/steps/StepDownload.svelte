@@ -9,6 +9,7 @@
   import { CHANGES } from '../../lib/credits';
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
+  import SealFigure from '../SealFigure.svelte';
 
   const canPick = isDesktop || canPickWeb;
   /** Datei noch einmal speichern (in den jetzt gewählten Ordner; im Browser ohne Ordner: normaler Download) */
@@ -28,6 +29,10 @@
     const d = [...dirs][0];
     return d.split(/[\\/]/).pop() || d;
   });
+
+  /** Maße der Dichtnut: mm mit Komma, Bereiche mit Halbgeviertstrich */
+  const mm = (v: number, d = 2) => fmt(v, d);
+  const range = (a: number, b: number) => (Math.abs(a - b) < 0.05 ? mm(a, 1) : `${mm(a, 1)}–${mm(b, 1)}`);
 
   const lead = $derived.by(() => {
     const k = app.kind;
@@ -102,6 +107,35 @@
   </ul>
 </details>
 
+{#if app.seals.length && app.status !== 'error'}
+  <details class="box seal">
+    <summary>Dichtung in der Kupplung{app.seals.length === 1 ? ` F${fmt(app.seals[0].d)}` : ''}: Maße der Nut</summary>
+    <p class="hint">
+      Unten in der Kupplung, unter der Steckerspitze, läuft eine Nut für eine Dichtung rundum: Rundschnur, O-Ring oder ein selbst gedruckter Ring aus TPU. Sie reicht unten
+      {mm((app.seals[0].outer - app.seals[0].bore) / 2, 1)} mm weiter nach außen als die Bohrung darüber, so bleibt die Dichtung von selbst liegen. Die Steckerspitze drückt von oben auf die Dichtung.
+    </p>
+    <SealFigure s={app.seals[0]} />
+    {#each app.seals as s (s.d + '/' + s.gap)}
+      {#if app.seals.length > 1}<p class="seal-h">Kupplung F{fmt(s.d)}</p>{/if}
+      <table class="seal-t">
+        <tbody>
+          <tr><th>A</th><td>Bohrung über der Nut</td><td>Ø {mm(s.bore)}</td></tr>
+          <tr><th>B</th><td>Größter Ø der Nut, {mm(s.outerZ)} mm über dem Boden</td><td>Ø {mm(s.outer)}</td></tr>
+          <tr><th>C</th><td>Rundung außen, Mittelpunkt auf Ø {mm(s.centerD)}</td><td>R {mm(s.radius)}</td></tr>
+          <tr><th>D</th><td>Höhe der Nut an der Bohrung</td><td>{mm(s.heightAtBore)}</td></tr>
+          <tr><th>E</th><td>Steckerspitze über dem Boden (ganz hineingezogen bis ganz herausgedrückt)</td><td>{range(s.tipMin, s.tipMax)}</td></tr>
+          <tr><th></th><td>Durchgang (Innen-Ø der Kupplung)</td><td>Ø {mm(s.inner)}</td></tr>
+          <tr><th></th><td>Ebene Fläche der Steckerspitze</td><td>Ø {mm(s.tipInner)}–{mm(s.tipOuter)}</td></tr>
+        </tbody>
+      </table>
+      <p class="hint">
+        Passt: Rundschnur Ø 4 mm, als Ring mit etwa {fmt(s.d)} mm Innen-Ø <span class="nw">(O-Ring {fmt(s.d)} × 4)</span>. Die Steckerspitze drückt sie um {range(4 - s.tipMax, 4 - s.tipMin)} mm zusammen.
+      </p>
+    {/each}
+    <p class="hint">Alle Maße in mm{app.seals.every((s) => s.gap === app.seals[0].gap) ? `, bei ${fmt(app.seals[0].gap, 2)} mm Spalt zwischen Stecker und Kupplung` : ''}. Die Nut selbst ändert sich mit dem Spalt nicht, nur Bohrung und Stecker.</p>
+  </details>
+{/if}
+
 <details class="box" open={app.plate.length > 0}>
   <summary>Mehrere Adapter auf ein Druckbett{app.plate.length ? ` (${app.plate.length})` : ''}</summary>
   <p class="hint">Praktisch zum Testen: Adapter hinzufügen, dann etwas ändern (z. B. das Spiel) und wieder hinzufügen. Alle kommen nebeneinander in eine Datei.</p>
@@ -175,3 +209,12 @@
   <p class="version">Baukasten-Version {__APP_VERSION__}</p>
   <p class="lic"><a class="lic-link" href="./lizenzen.html" target="_blank" rel="noopener">Verwendete Bausteine und ihre Lizenzen<svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" /></svg></a></p>
 </div>
+
+<style>
+  .seal-h { margin: 10px 0 2px; font-weight: 600; font-size: 14px; }
+  .seal-t { border-collapse: collapse; font-size: 14px; color: var(--slate-2); width: 100%; }
+  .seal-t th { width: 1.4em; text-align: left; color: var(--sky-d); font-weight: 700; vertical-align: top; padding: 2px 0; }
+  .seal-t td { padding: 2px 6px 2px 0; vertical-align: top; }
+  .seal-t td:last-child { text-align: right; white-space: nowrap; color: var(--graphite); font-weight: 600; }
+  .seal-t tr + tr { border-top: 1px solid var(--line); }
+</style>

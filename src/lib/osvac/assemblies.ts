@@ -7,6 +7,7 @@ import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
 import { femaleRing, femaleFields, femaleFieldsOverlap, femaleKnurl, femaleKnurlOverlap } from './female';
 import { maleTube, maleSupport } from './male';
+import { sealGroove, type SealGroove } from './seal';
 import { revolveProfile, L, L as L_ } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, hoseCupGrip, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, swivelPrintTop, swivelPrintBottom, swivelPrintProfile, SWIVEL_PRINT, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, pipeRibs, DEFAULT_PIPE, type PipeSpec } from './machine';
@@ -46,6 +47,8 @@ export interface Part {
   /** Schnitt in der Vorschau durch diesen Punkt mit dieser Normalen (sonst durch den Ursprung, Normale y): für Teile, die
    * neben der Achse liegen (z. B. zweites Teil der Magnetkupplung) */
   cut?: SectionCut;
+  /** Kupplung: Maße der Dichtnut (für den Hinweis im Download-Schritt) */
+  seal?: SealGroove;
   make: () => Shape3D;
 }
 
@@ -105,6 +108,7 @@ type Dep = Partial<Record<keyof OsvacParams | 'text' | 'knurl' | 'pipe' | 'z' | 
 
 interface PartExtra {
   helper?: boolean;
+  seal?: SealGroove;
   cut?: SectionCut;
   object?: string;
   volumeOffset?: number;
@@ -145,7 +149,7 @@ const dHK = (p: OsvacParams, housed = false) => ({ hoseDiameterInner: p.hoseDiam
 const dAll = (p: OsvacParams, _o?: BuildOptions) => ({ ...p });
 
 const female = (p: OsvacParams, o: BuildOptions): Part[] => [
-  part('Female', 8, dF(p), () => femaleRing(p, { text: false })),
+  part('Female', 8, dF(p), () => femaleRing(p, { text: false }), { seal: sealGroove(p) }),
   ...knurlPart('Rändelung Female', o, dFK(p), () => femaleKnurl(p), femaleKnurlOverlap(p)),
   part('Textfeld Female', 7, dFT(p, o), () => femaleFields(p, o), { volumeOffset: femaleFieldsOverlap(p) }),
 ];
