@@ -7,7 +7,8 @@ import type { Shape3D } from 'replicad';
 import type { OsvacParams } from './params';
 import { femaleRing, femaleFields, femaleFieldsOverlap, femaleKnurl, femaleKnurlOverlap } from './female';
 import { maleTube, maleSupport } from './male';
-import { sealGroove, type SealGroove } from './seal';
+import { sealGroove, sealRing, SEAL_RING, type SealGroove } from './seal';
+import { sealRingSolid } from './sealring';
 import { revolveProfile, L, L as L_ } from './geom';
 import { hoseBody, hoseFields, hoseFieldsOverlap, hoseKnurl, hoseKnurlOverlap, hoseCupGrip, housingKnurl, housingKnurlOverlap, hoseThreadBody, hoseSkirt, swivelOuter, swivelInner, swivelPrintTop, swivelPrintBottom, swivelPrintProfile, SWIVEL_PRINT, maleHousing, housingFields, housingFieldsOverlap, transitionConeFH } from './hose';
 import { pipeCone, pipeTransition, pipeRibs, DEFAULT_PIPE, type PipeSpec } from './machine';
@@ -74,6 +75,14 @@ export interface BuildOptions {
   swivel?: 'print';
   /** Schlauchgewinde: 'right' = Rechtsgewinde, sonst links wie im Original */
   hoseHand?: 'right';
+  /** Dichtringe aus TPU für die Dichtnuten der Kupplungen (eigener Download im Schritt Download) */
+  sealRing?: SealRingSpec;
+}
+
+/** Dichtringe: Pressung ohne Sog und je Kupplung Größe (und ob sie in der Kappe eines Steckers steckt) */
+export interface SealRingSpec {
+  squeeze: number;
+  rings: { d: number; cap?: boolean }[];
 }
 
 /** Nebenluft-Regler: unten Schlauch (H), oben Kupplung (F, Standard) oder Stecker (M) */
@@ -675,3 +684,21 @@ export const buildGate = (p: OsvacParams, o: BuildOptions = {}) => buildAll(part
 export const buildHelper = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsHelper(p, o));
 export const buildBleed = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsBleed(p, o));
 export const buildMagnet = (p: OsvacParams, o: BuildOptions = {}) => buildAll(partsMagnet(p, o));
+
+/**
+ * Dichtringe aus TPU (eigene Datei, nicht im Adapter): je Kupplung ein Ring, nebeneinander in x, jeder ein eigenes
+ * Objekt im 3MF. Ohne Angabe ein Ring für die Kupplung der Eingaben.
+ */
+export function partsSealRing(p: OsvacParams, o: BuildOptions = {}): Part[] {
+  const spec = o.sealRing ?? { squeeze: SEAL_RING.squeeze, rings: [{ d: p.femaleDiameterInner }] };
+  let x = 0;
+  return spec.rings.map((q, i) => {
+    const pq = withDiameter(p, 'female', q.d);
+    const r = sealRing(sealGroove(pq), spec.squeeze);
+    if (i > 0) x += r.outer / 2;
+    const at = x;
+    x += r.outer / 2 + 6;
+    const name = `Dichtring F${q.d.toLocaleString('de-DE')}${q.cap ? ' Kappe' : ''}`;
+    return part(name, 0.3, { kind: 'sealRing', d: q.d, g: p.maleFemaleGapSize, s: spec.squeeze, x: at }, () => sealRingSolid(r).translate([at, 0, 0]) as Shape3D, { object: name, cut: { p: [at, 0, 0], n: [0, 1, 0] } });
+  });
+}

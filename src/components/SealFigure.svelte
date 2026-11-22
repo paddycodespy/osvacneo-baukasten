@@ -2,10 +2,11 @@
   /**
    * Schnitt durch die Dichtnut unten in der Kupplung, maßstäblich (rechte Wandhälfte, Achse links):
    * Boden, Rundung R1,95 als Hinterschneidung, Bohrung darüber, Steckerspitze gestrichelt (ganz hineingezogen),
-   * eine Rundschnur passender Größe gepunktet. Buchstaben an Hinweislinien rechts, Bedeutung in der Tabelle darunter.
+   * eine Rundschnur passender Größe gepunktet bzw. der Dichtring aus TPU blau. Buchstaben an Hinweislinien rechts, Bedeutung in der Tabelle darunter.
    */
-  import { MALE_TIP_EDGE, type SealGroove } from '../lib/osvac/seal';
-  let { s }: { s: SealGroove } = $props();
+  import { MALE_TIP_EDGE, type SealGroove, type SealRing } from '../lib/osvac/seal';
+  /** ring: Dichtring aus TPU (statt der Rundschnur gezeichnet, ungepresst) */
+  let { s, ring }: { s: SealGroove; ring?: SealRing } = $props();
 
   const K = 24; // px je mm
   const X0 = -2.9, Z1 = 6.6; // linke obere Ecke in mm (x ab Innenradius, z ab Boden)
@@ -24,7 +25,11 @@
     const male = `M${X(0)} ${Y(6.4)} V${Y(t + e)} A${e * K} ${e * K} 0 0 0 ${X(e)} ${Y(t)} H${X(xm - e)} L${X(xm)} ${Y(t + e)} V${Y(6.4)}`;
     const a30 = Math.PI / 6;
     const pc: [number, number] = [dx + R * Math.cos(a30), R + R * Math.sin(a30)];
-    return { dx, xb, xo, xm, R, hb, t, wall, male, pc };
+    const q = ring;
+    const ringPath = q
+      ? `M${X(q.ri - ri)} ${Y(0)} H${X(q.r1 - ri)} L${X(q.T[0] - ri)} ${Y(q.T[1])} A${q.rc * K} ${q.rc * K} 0 0 0 ${X(q.J[0] - ri)} ${Y(q.J[1])} L${X(q.rb - ri)} ${Y(q.h - q.ch)} L${X(q.rb - q.ch - ri)} ${Y(q.h)} H${X(q.ri + q.ch - ri)} L${X(q.ri - ri)} ${Y(q.h - q.ch)} Z`
+      : '';
+    return { dx, xb, xo, xm, R, hb, t, wall, male, pc, ringPath };
   });
   const XL = 6.0; // Ende der Hinweislinien
 </script>
@@ -32,8 +37,13 @@
 <svg class="sfig" viewBox="0 0 248 182" role="img" aria-label="Skizze Dichtnut: Schnitt durch die Kupplung unten, links die Mitte, mit Steckerspitze und Rundschnur">
   <!-- Wand der Kupplung mit Boden und Nut -->
   <path d={g.wall} class="part" />
-  <!-- Rundschnur passender Größe -->
-  <circle cx={X(g.dx)} cy={Y(g.R)} r={g.R * K} class="cord" />
+  {#if g.ringPath}
+    <!-- Dichtring aus TPU, ungepresst (oben überdeckt ihn die Steckerspitze um die Pressung) -->
+    <path d={g.ringPath} class="ring" />
+  {:else}
+    <!-- Rundschnur passender Größe -->
+    <circle cx={X(g.dx)} cy={Y(g.R)} r={g.R * K} class="cord" />
+  {/if}
   <!-- Steckerspitze, ganz hineingezogen -->
   <path d={g.male} class="male" />
   <!-- Hinweislinien -->
@@ -58,6 +68,7 @@
   .sfig { width: 100%; max-width: 268px; height: auto; display: block; background: var(--card); border-radius: 8px; margin: 8px 0 6px; }
   .part { fill: var(--red-l); stroke: var(--red); stroke-width: 1.4; }
   .male { fill: none; stroke: var(--graphite); stroke-width: 1.2; stroke-dasharray: 4 3; }
+  .ring { fill: var(--sky-l); stroke: var(--sky); stroke-width: 1.2; fill-opacity: 0.9; }
   .cord { fill: none; stroke: var(--slate); stroke-width: 1.2; stroke-dasharray: 1.5 2.5; }
   .lead { fill: none; stroke: var(--sky-d); stroke-width: 1; }
   .dot { fill: var(--sky-d); }

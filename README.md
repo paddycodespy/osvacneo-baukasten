@@ -113,7 +113,8 @@ src/
   lib/worker/threemf.ts      3MF-Writer
   lib/osvac/params.ts        Parameter und Formeln aus Fusion
   lib/osvac/female.ts        Kupplung mit Bajonett, Rastnase, Dichtnut
-  lib/osvac/seal.ts          Maße der Dichtnut und Lage der Steckerspitze (Download-Schritt)
+  lib/osvac/seal.ts          Maße der Dichtnut, Lage der Steckerspitze, Querschnitt des Dichtrings (Download-Schritt)
+  lib/osvac/sealring.ts      Dichtring aus TPU als Körper (eigene Datei, Kind SEAL außerhalb von Schritt 1)
   lib/osvac/male.ts          Stecker mit Bajonettnasen, Druckhilfe
   lib/osvac/hose.ts          Gewindekörper, Drehring, Gehäuse, Knickschutz
   lib/osvac/thread.ts        Schlauchgewinde (linksgängig, Steigung 5 mm, Konus 4°)

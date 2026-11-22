@@ -10,7 +10,7 @@
   import HelpToggle from '../HelpToggle.svelte';
   import HelpText from '../HelpText.svelte';
   import SealFigure from '../SealFigure.svelte';
-  import type { SealGroove } from '../../lib/osvac/seal';
+  import { SEAL_RING, sealRing, type SealGroove } from '../../lib/osvac/seal';
 
   const canPick = isDesktop || canPickWeb;
   /** Datei noch einmal speichern (in den jetzt gewählten Ordner; im Browser ohne Ordner: normaler Download) */
@@ -119,7 +119,7 @@
       Unten in der Kupplung läuft rundum eine Nut für eine Dichtung: Rundschnur, O-Ring oder ein selbst gedruckter Ring aus TPU. Sie reicht unten
       {mm((app.seals[0].outer - app.seals[0].bore) / 2, 1)} mm weiter nach außen als die Bohrung darüber, so bleibt die Dichtung von selbst liegen.
     </p>
-    <SealFigure s={app.seals[0]} />
+    <SealFigure s={app.seals[0]} ring={sealRing(app.seals[0], app.sealSqueeze)} />
     {#each app.seals as s (s.d + '/' + s.gap + '/' + !!s.cap)}
       {#if app.seals.length > 1}<p class="seal-h">Kupplung {sealName(s)}</p>{/if}
       <table class="seal-t">
@@ -145,6 +145,37 @@
     <p class="hint">
       Gedruckt weicht die Nut je nach Drucker um etwa 0,1–0,2 mm ab, weil der obere Rand der Rundung beim Druck überhängt. Für eine eigene Dichtung deshalb erst einen Probering drucken.
       Genau nachmessen und als Vorlage nehmen lässt sich die Nut im STEP-Modell.
+    </p>
+    <p class="seal-h">Dichtring aus TPU zum Selberdrucken</p>
+    <p class="hint">
+      Ein Ring, der genau in die Nut passt (in der Skizze blau): innen frei bis zum Durchgang, außen der Rundung nach, oben eben für die Steckerspitze. Er wird flach liegend ohne Stützen
+      gedruckt, am besten aus TPU 95A, und als eigene Datei heruntergeladen.
+    </p>
+    <fieldset class="field seal-sq">
+      <legend class="field-label">Pressung ohne Sog</legend>
+      <div class="slider">
+        <input type="range" min={SEAL_RING.min} max={SEAL_RING.max} step={SEAL_RING.step} bind:value={app.sealSqueeze} aria-label="Pressung des Dichtrings ohne Sog" />
+        <output>{fmt(app.sealSqueeze, 2)} mm</output>
+      </div>
+      <p class="hint">So viel ist der Ring höher als die Steckerspitze, wenn nicht gesaugt wird. Zieht es noch Falschluft: größer. Lässt sich der Stecker schwer eindrehen: kleiner. Standard: {fmt(SEAL_RING.squeeze, 2)} mm.</p>
+    </fieldset>
+    <table class="seal-t">
+      <tbody>
+        {#each app.seals as s (s.d + '/' + s.gap + '/' + !!s.cap)}
+          {@const r = sealRing(s, app.sealSqueeze)}
+          <tr><td>Ring für {sealName(s)}: Ø{mm(2 * r.ri)}–{mm(r.outer)}, {mm(r.h)} mm hoch; unter Sog {mm(r.squeezeSog, 1)} mm gepresst</td><td>ca. {mm(r.grams, 1)} g</td></tr>
+        {/each}
+      </tbody>
+    </table>
+    <div class="plate-dl">
+      <span>Dichtring herunterladen:</span>
+      {#each FORMATS as f (f.id)}
+        <button class="ghost sm" disabled={!!app.sealBusy || !!app.exporting} onclick={() => app.downloadSeal(f.id)}>{app.sealBusy === f.id ? 'Wird erzeugt\u00a0…' : f.label}</button>
+      {/each}
+    </div>
+    <p class="hint">
+      Einsetzen: Ring etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken, bis er flach auf dem Boden liegt. Beim Einstecken drückt der Stecker ihn zusammen,
+      bevor sich die Nasen drehen lassen. Erst einen Ring drucken und probieren, dann die Pressung anpassen.
     </p>
   </details>
 {/if}
@@ -230,4 +261,6 @@
   .seal-t td { padding: 2px 6px 2px 0; vertical-align: top; }
   .seal-t td:last-child { text-align: right; white-space: nowrap; color: var(--graphite); font-weight: 600; }
   .seal-t tr + tr { border-top: 1px solid var(--line); }
+  .seal-sq { margin: 8px 0 4px; border: 0; padding: 0; }
+  .seal-sq .hint { font-weight: 400; }
 </style>

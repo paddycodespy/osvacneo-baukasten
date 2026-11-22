@@ -270,7 +270,24 @@ export const KINDS: AdapterKind[] = [
   },
 ];
 
-export const kindById = (id: string) => KINDS.find((k) => k.id === id)!;
+/**
+ * Nicht in Schritt 1: Dichtringe aus TPU für die Kupplungen des gewählten Adapters, als eigener Download im Schritt
+ * Download (gleicher Weg über Worker und Export wie ein Adapter).
+ */
+export const SEAL_RING_KIND: AdapterKind = {
+  id: 'SEAL',
+  group: 'accessory',
+  code: 'Dichtring',
+  title: 'Dichtring',
+  description: 'Dichtring aus TPU für die Dichtnut der Kupplung.',
+  ends: { top: 'female', bottom: null },
+  diameters: ['femaleDiameterInner'],
+  available: true,
+  parts: asm.partsSealRing,
+  fileName: (p, o) => `osVAC neo Dichtring ${(o?.sealRing?.rings ?? [{ d: p.femaleDiameterInner }]).map((q) => `F${n(q.d)}`).join(' ')} Pressung ${n(o?.sealRing?.squeeze ?? 0.3)}`,
+};
+
+export const kindById = (id: string) => (id === SEAL_RING_KIND.id ? SEAL_RING_KIND : KINDS.find((k) => k.id === id)!);
 
 /** Verbindungen, die die Oberfläche anbietet */
 /** Karten in Schritt 1: nach der Reihenfolge der Gruppen (KIND_GROUPS), innerhalb einer Gruppe wie in KINDS */

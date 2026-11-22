@@ -5,9 +5,10 @@
  */
 import { exportFile, exportPlate, makeBuild, type PlateItem } from './cad';
 import { saveTarget } from './save.svelte';
-import { kindById, kindSelectable, type DiameterKey } from './osvac/catalog';
+import { kindById, kindSelectable, SEAL_RING_KIND, type DiameterKey } from './osvac/catalog';
 import { DEFAULT_INPUT, deriveParams, type OsvacInput } from './osvac/params';
 import type { ExportFormat } from './worker/protocol';
+import { SEAL_RING, type SealGroove } from './osvac/seal';
 import { pipeWall, type PipeSpec } from './osvac/machine';
 import type { Dimensions } from './viewer';
 import { slipRingGapMax, SWIVEL_PRINT } from './osvac/hose';
@@ -20,7 +21,6 @@ import { BLEED } from './osvac/bleed';
 import { DEFAULT_NOZZLE, NOZZLE_KINDS, NOZZLE_LIMITS, nozzleIssues, nozzleLayout, nozzleToFree, type NozzleSpec } from './osvac/nozzle';
 import { DEFAULT_MAGNET, MAGNET_LIMITS, MAGNET_SIZES, MAG, PORT_D, magnetLayout, magnetName, type MagnetSpec, type MagnetSize, type MagnetPort, type MagnetHose } from './osvac/magnet';
 import { DEFAULT_GATE, GATE_GAP, snapPlateGap, MOUNT_LABELS, ORIENT_LABELS, WALL_MORE, gateLayout, gateName, type GateSpec, type GateMount, type GateOrient } from './osvac/gate';
-import type { SealGroove } from './osvac/seal';
 
 export const FORMATS: { id: ExportFormat; label: string; hint: string }[] = [
   { id: '3mf', label: '3MF', hint: 'Empfohlen für Bambu Studio, PrusaSlicer, Orca, Cura' },
@@ -212,6 +212,9 @@ class AppState {
   /** grams: Filament wie im Download (Spanne als [min, max]); kommt nach, wenn die Messung beim Hinzufügen noch lief */
   plate = $state.raw<(PlateItem & { key: string; grams?: [number, number] })[]>([]);
   plateBusy = $state<ExportFormat | null>(null);
+  /** Dichtring aus TPU: Pressung ohne Sog und Format, das gerade erzeugt wird */
+  sealSqueeze = $state(SEAL_RING.squeeze);
+  sealBusy = $state<ExportFormat | null>(null);
 
   // ---------------------------------------------------------------- abgeleitet
   kind = $derived(kindById(this.kindId));
@@ -759,6 +762,28 @@ class AppState {
   removeFromPlate(i: number) {
     this.plate = this.plate.filter((_, j) => j !== i);
   }
+  /** Dichtringe aus TPU für alle Kupplungen des Adapters als eigene Datei (Schritt Download, Kasten Dichtung) */
+  sealRingSpec() {
+    return { squeeze: this.sealSqueeze, rings: this.seals.map((s) => ({ d: s.d, ...(s.cap ? { cap: true } : {}) })) };
+  }
+  async downloadSeal(f: ExportFormat) {
+    if (!this.seals.length) return;
+    this.sealBusy = f;
+    try {
+      await saveTarget.prepare();
+      const input = $state.snapshot(this.input);
+      const opts = { sealRing: this.sealRingSpec() };
+      const name = SEAL_RING_KIND.fileName(deriveParams(input), opts);
+      const { blob, ...r } = await exportFile(makeBuild(SEAL_RING_KIND.id, input, opts), f, name, false);
+      const where = await saveTarget.save(blob, r.fileName, r.url);
+      for (const old of this.files.filter((x) => x.fileName === r.fileName)) URL.revokeObjectURL(old.url);
+      this.files = [{ ...r, key: 'seal' + f, where }, ...this.files.filter((x) => x.fileName !== r.fileName)];
+    } catch (e) {
+      this.errorMsg = userMessage(e);
+    } finally {
+      this.sealBusy = null;
+    }
+  }
   async downloadPlate(f: ExportFormat) {
     this.plateBusy = f;
     try {
@@ -790,6 +815,7 @@ class AppState {
       bleed: this.bleed,
       swivelStyle: this.swivelStyle,
       hoseHand: this.hoseHand,
+      sealSqueeze: this.sealSqueeze,
       gate: this.gate,
       helper: this.helper,
       magnet: this.magnet,
@@ -815,6 +841,7 @@ class AppState {
     this.freeTemplate = TEMPLATES[0].id;
     this.nozzle = structuredClone(DEFAULT_NOZZLE);
     this.bleed = { top: 'female', bleedGap: BLEED.gap };
+    this.sealSqueeze = SEAL_RING.squeeze;
     this.swivelStyle = SWIVEL_DEFAULT;
     this.hoseHand = 'left';
     this.fromKind = '';
@@ -918,6 +945,7 @@ class AppState {
       }
       if (s.swivelStyle === 'print' || s.swivelStyle === 'original') this.swivelStyle = s.swivelStyle;
       if (s.hoseHand === 'left' || s.hoseHand === 'right') this.hoseHand = s.hoseHand;
+      if (num(s.sealSqueeze)) this.sealSqueeze = Math.min(SEAL_RING.max, Math.max(SEAL_RING.min, Math.round(s.sealSqueeze * 100) / 100));
       if (s.nozzle && typeof s.nozzle === 'object') {
         const n = this.nozzle, z = s.nozzle;
         if (NOZZLE_KINDS.some((k) => k.id === z.kind)) n.kind = z.kind;

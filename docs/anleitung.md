@@ -458,7 +458,7 @@ Die Standardwerte passen meistens. Ändern lohnt sich erst, wenn ein Testdruck n
 - **STL:** funktioniert mit jedem Slicer.
 - **STEP:** das exakte CAD-Modell, zum Weiterkonstruieren.
 - **Druckhinweise:** was du beim Drucken und Zusammenbauen beachten musst. Lies sie vor dem ersten Druck.
-- **Dichtung in der Kupplung:** Maße der Nut unten in der Kupplung (Bohrung, größter Durchmesser, Rundung außen, Höhe, Abstand der Steckerspitze vom Boden), mit Skizze. Damit kannst du eine passende Dichtung kaufen oder selbst aus TPU drucken, ohne eine Kupplung aufzuschneiden. Der Kasten erscheint bei jedem Adapter mit Kupplung.
+- **Dichtung in der Kupplung:** Maße der Nut unten in der Kupplung (Bohrung, größter Durchmesser, Rundung außen, Höhe, Abstand der Steckerspitze vom Boden), mit Skizze. Damit kannst du eine passende Dichtung kaufen, ohne eine Kupplung aufzuschneiden. Oder du lädst dort einen **Dichtring aus TPU** herunter, der genau in die Nut passt: Mit *Pressung ohne Sog* stellst du ein, wie stark die Steckerspitze ihn zusammendrückt (Standard 0,3 mm). Er wird flach ohne Stützen gedruckt, am besten aus TPU 95A. Zum Einsetzen den Ring etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken. Der Kasten erscheint bei jedem Adapter mit Kupplung.
 
 ### Mehrere Adapter auf ein Druckbett {#druckbett}
 
