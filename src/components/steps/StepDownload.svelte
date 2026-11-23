@@ -37,8 +37,15 @@
   const sealName = (s: SealGroove) => `F${fmt(s.d)}${s.cap ? ' (in der Kappe)' : ''}`;
   /** Kraft, mit der der Sog den Stecker hineinzieht (35 kPa auf die Fläche innerhalb der Dichtung) */
   const sogN = (s: SealGroove) => 0.035 * Math.PI * (s.centerD / 2) ** 2;
-  /** O-Ring zum Kaufen: ganze Millimeter innen, Schnur 4 mm */
-  const oring = (d: number) => (Number.isInteger(d) ? `O-Ring ${d} × 4` : `O-Ring ${Math.floor(d)} × 4 oder ${Math.ceil(d)} × 4`);
+  /** O-Ring zum Kaufen: nach dem Außen-Ø (= B oder etwas mehr), Schnur 3,5 mm; Vorschläge mit ganzen Millimetern innen */
+  const ORING_CORD = 3.5;
+  const oring = (s: SealGroove) => {
+    // Schnur 3,5 mm, außen B − 0,5 … B + 1 (Rückmeldung aus dem Forum: außen knapp unter B hält gerade noch,
+    // so groß wie B oder etwas mehr sitzt perfekt; kleiner liegt hinten nicht an). Ganze Millimeter innen.
+    const ids: number[] = [];
+    for (let n = Math.ceil(s.outer - 0.5 - 2 * ORING_CORD); n + 2 * ORING_CORD <= s.outer + 1 + 1e-9; n++) ids.push(n);
+    return ids.map((n) => `${n} × ${fmt(ORING_CORD, 1)}`).join(' oder ');
+  };
   const range = (a: number, b: number) => (Math.abs(a - b) < 0.05 ? mm(a, 1) : `${mm(a, 1)}–${mm(b, 1)}`);
 
   const lead = $derived.by(() => {
@@ -136,9 +143,10 @@
         </tbody>
       </table>
       <p class="hint">
-        Passt: Rundschnur Ø4 mm, als Ring <span class="nw">({oring(s.d)},</span> innen × Schnur). Die Dichtung drückt den Stecker hoch, bis seine Nasen oben in der Nut anliegen
-        ({mm(s.tipMax, 1)} mm über dem Boden); dabei wird sie um etwa {mm(Math.max(0, 4 - s.tipMax), 1)} mm zusammengedrückt. Der Sog zieht den Stecker kaum tiefer: Bei 35 kPa
-        zieht er mit nur etwa {fmt(sogN(s), 0)} N.
+        Passt: ein O-Ring mit 3,5 mm Schnur, der außen so groß ist wie B (Ø{mm(s.outer)} mm) oder etwas größer, z. B. <span class="nw">O-Ring {oring(s)}</span>
+        (innen × Schnur). Dann greift er in die Hinterschneidung und hält von selbst. Händler geben mal den Innen-, mal den Außen-Ø an: am besten mit dem Messschieber außen
+        nachmessen. Ohne Dichtung hat die Verbindung etwas Spiel, mit Dichtung sitzt sie fest; eine dickere Schnur (4 mm) macht das Eindrehen deutlich schwerer. Der Sog zieht den
+        Stecker kaum tiefer: Bei 35 kPa zieht er mit nur etwa {fmt(sogN(s), 0)} N.
       </p>
     {/each}
     <p class="hint">

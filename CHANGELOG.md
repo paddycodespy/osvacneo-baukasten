@@ -2,6 +2,10 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## Unveröffentlicht
+
+- O-Ring-Vorschlag im Kasten *Dichtung in der Kupplung* nach dem **Außen-Ø** statt nach dem Innen-Ø: außen so groß wie B (größter Ø der Nut) oder etwas größer, Schnur **3,5 mm** statt 4 mm, mit Beispielen in ganzen Millimetern (F32: 33 × 3,5 oder 34 × 3,5; F50: 51 × 3,5 oder 52 × 3,5). Hinweis, außen mit dem Messschieber nachzumessen, weil Händler unterschiedlich zählen. Grundlage ist ein Test aus dem Forum (F25 und F50, PLA, 0,2 mm Spiel): außen kleiner als B liegt der Ring hinten nicht an, so groß wie B oder etwas mehr sitzt er perfekt; ohne Dichtung hat die Verbindung Spiel, mit 3,5-mm-Ring sitzt sie fest, 4 mm wäre zu stramm.
+
 ## 0.7.0
 
 Dichtung in der Kupplung: Maße der Dichtnut im Download und eine Lippendichtung aus TPU zum Herunterladen (Anregung aus dem Forum), dazu Feinschliff nach der Durchsicht der ganzen App.
