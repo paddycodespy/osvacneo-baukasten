@@ -5,6 +5,9 @@
 ## Unveröffentlicht
 
 - O-Ring-Vorschlag im Kasten *Dichtung in der Kupplung* nach dem **Außen-Ø** statt nach dem Innen-Ø: außen so groß wie B (größter Ø der Nut) oder etwas größer, Schnur **3,5 mm** statt 4 mm, mit Beispielen in ganzen Millimetern (F32: 33 × 3,5 oder 34 × 3,5; F50: 51 × 3,5 oder 52 × 3,5). Hinweis, außen mit dem Messschieber nachzumessen, weil Händler unterschiedlich zählen. Grundlage ist ein Test aus dem Forum (F25 und F50, PLA, 0,2 mm Spiel): außen kleiner als B liegt der Ring hinten nicht an, so groß wie B oder etwas mehr sitzt er perfekt; ohne Dichtung hat die Verbindung Spiel, mit 3,5-mm-Ring sitzt sie fest, 4 mm wäre zu stramm.
+- **Lippendichtung:** Der Fuß folgt außen der Rundung der Nut (unten anliegend, oben 0,1 mm Luft) statt unten einer 45°-Schräge mit Hohlraum dahinter; er liegt so überall an der Kupplung an und hält fester. Lippe und Maße der Lippe unverändert; am Modell geprüft (F15–F50, Spiel 0,1–0,5): der Ring berührt die Kupplung nicht. Anregung aus dem Forum.
+- **Saugdüse, Schutzring und Rand mit Bürstennut:** unten eine glatte Schräge (15° zur Mittellinie) statt Stufen von 0,6 mm, deren waagerechte Unterseiten der Slicer stützen wollte (Rückmeldung aus dem Forum, Breitdüse nach einem Bogen von 35°). Bei schräger Spitze folgen Unterkante und Schräge der Spitze als ein Körper (vorher in Streifen); das rechnet auch schneller. Bürstennut: Wo die Schräge am Nutgrund noch nicht bis an die Außenwand der Nut reicht, bleibt dort eine kleine Stufe stehen, sonst begänne die Außenlippe frei in der Luft. Die App zählt die Schräge als Überhang, wenn das Düsenende nach einem Bogen so schräg steht, dass sie steiler als 45° überhängt (bei 35° Bogen 50° zur Senkrechten).
+- Prüfungen: `test:islands` mit zwei neuen Düsen (Breitdüse 150 × 20 nach 35°-Bogen mit Schutzring, Fugendüse 45° gebogen mit Schutzring und schräger Spitze).
 
 ## 0.7.0
 

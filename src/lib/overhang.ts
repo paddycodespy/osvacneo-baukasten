@@ -14,8 +14,8 @@ export interface OverhangMesh {
   indices: ArrayLike<number>;
 }
 
-// Düsenrand: in Stufen von höchstens 0,6 mm abgesetzt (wie eine 45°-Schräge); waagerechte Stufen zählen nicht,
-// schräge (Rand nach einem Bogen) schon
+// Düsenrand: unten mit glatter Schräge (RIM_SLOPE zur Mittellinie); sie zählt, wenn das Düsenende nach einem Bogen
+// so schräg steht, dass sie steiler als 45° überhängt. Waagerechte Flächen (Grund der Bürstennut) zählen nicht.
 export const COUNTED = /^(Formstück|Übergang zu|Geräteanschluss|Anschlagring|Düsenrand)/;
 /** Stutzen-Adapter und Schieber einzeln: eigene Teile (die Teile von osVAC neo sind für den Druck ohne Stützen gebaut) */
 export const COUNTED_MACHINE = /^(Übergang|Rohr|Klemmrippen)$/;

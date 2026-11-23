@@ -10,7 +10,7 @@
  * Dieses Modul plant die Kette rein rechnerisch (Prüfungen laufen auch in der Oberfläche, ohne OpenCascade);
  * erst make() der einzelnen Körper ruft replicad auf.
  */
-import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, makeBSplineApproximation, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, makeBox, measureVolume, type Shape3D, type Point } from 'replicad';
+import { loft, assembleWire, makeFace, cast, getOC, Edge, Vector, makeLine, makeThreePointArc, makeCircle, makeEllipse, makeBSplineApproximation, basicFaceExtrusion, revolution, makeCompound, makeCylinder, makePolygon, makeBox, measureVolume, type Shape3D, type Point, type Wire } from 'replicad';
 import { UserError, partLabel, partNotes } from '../errors';
 import { offset as offsetContour, bbox as bboxOf, runs as contourRuns, denseAll, contourKey, selfIntersects, mirrorX, narrowLoss, CONTOUR_MIN, CONTOUR_MAX } from './contour';
 import { bleedDims, bleedBody, bleedRing, BLEED } from './bleed';
@@ -147,10 +147,13 @@ export interface NozzleTip {
 }
 export const DEFAULT_TIP: NozzleTip = { angle: 45, dir: 0, ring: false, brush: false };
 /**
- * Maße der Düsenspitze: Schutzring 1,2 mm dick und 5 mm hoch (in Stufen von höchstens 0,6 mm, damit die Unterkante
+ * Maße der Düsenspitze: Schutzring 1,2 mm dick und 5 mm hoch (unten mit glatter Schräge, RIM_SLOPE, damit die Unterkante
  * ohne Stützen druckt); Bürstennut 2 mm breit und 4 mm tief mitten im Rand (Rand dafür mindestens 4,4 mm, Ring 6 mm
  * hoch).
  */
+/** Neigung der Unterseite des Schutzrings zur Mittellinie (Grad): an einem um bis zu 45° geneigten Düsenende steigt sie
+ *  dann noch mit etwa 30° an und druckt ohne Stützen (wird steiler, wenn der Rand dicker ist als in ringH − 0,5 passt) */
+export const RIM_SLOPE = 15;
 export const NOZZLE = { ringE: 1.2, ringH: 5, brushW: 2, brushDepth: 4, brushLip: 1.2, brushH: 6, maxAngle: 60 };
 
 /** Ende B oder Ende C: Anschluss von osVAC neo, Gerät oder (nur B) Düsenspitze, mit Übergangslänge vom letzten Baustein */
@@ -963,7 +966,12 @@ function wire3(f: Frame, pts: P2[]) {
  */
 /** Geschlossener Linienzug durch die Punkte (für Körper, die anschließend geschnitten werden: ebene Flächen schneidet OpenCascade zuverlässig) */
 function polyWire3(f: Frame, pts: P2[]) {
-  const q = pts.map(([x, y]) => add(add(f.o, mul(f.u, x)), mul(f.v, y)) as Point);
+  return polyWirePts(pts.map(([x, y]) => add(add(f.o, mul(f.u, x)), mul(f.v, y))));
+}
+
+/** Geschlossener Polygonzug durch Raumpunkte */
+function polyWirePts(pts: V3[]) {
+  const q = pts as Point[];
   return assembleWire(q.map((p, i) => makeLine(p, q[(i + 1) % q.length])));
 }
 
@@ -981,10 +989,16 @@ function hollowLoft(frames: Frame[], inner: P2[][], outer: P2[][], ruled: boolea
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const oc = getOC() as any;
   const fail = () => new UserError(`${partLabel(name)} ließ sich mit diesen Maßen nicht berechnen. Bitte Länge, Versatz oder Knick etwas ändern.`);
-  const n = frames.length - 1;
   const w3 = poly ? polyWire3 : wire3;
-  const wo = frames.map((f, i) => w3(f, outer[i]));
-  const wi = frames.map((f, i) => w3(f, inner[i]));
+  return hollowLoftWires(frames.map((f, i) => w3(f, outer[i])), frames.map((f, i) => w3(f, inner[i])), ruled, name);
+}
+
+/** Hohlkörper aus fertigen Außen- und Innenzügen (je einer pro Querschnitt, eben), die Züge werden freigegeben */
+function hollowLoftWires(wo: Wire[], wi: Wire[], ruled: boolean, name: string): Shape3D {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const oc = getOC() as any;
+  const fail = () => new UserError(`${partLabel(name)} ließ sich mit diesen Maßen nicht berechnen. Bitte Länge, Versatz oder Knick etwas ändern.`);
+  const n = wo.length - 1;
   const so = loft(wo, { ruled }, true);
   const si = loft(wi, { ruled }, true);
   const caps = [makeFace(wo[0], [wi[0]]), makeFace(wo[n], [wi[n]])];
@@ -1578,7 +1592,28 @@ function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
   const back = g.slant + g.ringH + 1;
   const prism = (r0: number, r1: number) => extrudeRing(advance(f, -back), grow(s, r0), grow(s, r1), rot, back + 1);
   const gi = (g.rim - N.brushW) / 2;
-  const groove = () => prism(gi, gi + N.brushW).intersect(slab(-N.brushDepth * Math.cos(g.th), 1)) as Shape3D;
+  const gd = N.brushDepth * Math.cos(g.th);
+  // Bürstennut. Der Rand wird unten schräg dicker (siehe unten); reicht die Schräge am Nutgrund noch nicht bis an die
+  // Außenwand der Nut, begänne die Außenlippe frei in der Luft. Dann bleibt außen am Grund eine kleine Stufe stehen,
+  // auf der die Lippe aufbaut, bis die Schräge sie trägt.
+  const eR0 = g.rim - w, lt0 = Math.min(g.ringH - 0.5, eR0 / Math.tan(rad(RIM_SLOPE)));
+  const taperAt = (y: number) => w + (eR0 * Math.min(1, Math.max(0, y) / lt0));
+  const hf = g.ringH - N.brushDepth, go = gi + N.brushW;
+  const stepped = tip.brush && eR0 > 0 && taperAt(hf) < go + 0.2;
+  const sw = stepped ? Math.min(1, Math.max(0.4, go - taperAt(hf) + 0.3)) : 0;
+  const sz = stepped ? Math.min(N.brushDepth - 1.5, Math.max(0.6, ((go + 0.3 - w) * lt0) / eR0 - hf + 0.2)) : 0;
+  const cutGroove = (sh: Shape3D) => {
+    let out = sh;
+    const cuts: [number, number][] = stepped ? [[go - sw, -gd], [go, -gd + sz * Math.cos(g.th)]] : [[go, -gd]];
+    for (const [r1, z0] of cuts) {
+      const p = prism(gi, r1), l = slab(z0, 1), t = p.intersect(l) as Shape3D;
+      const nx = out.cut(t) as Shape3D;
+      if (out !== sh) out.delete();
+      for (const x of [p, l, t]) x.delete();
+      out = nx;
+    }
+    return out;
+  };
   const zone = g.slant + g.ringH + 5;
   const tipKey = { ...tip, angle: r6(tip.angle), dir: r6(tip.dir), w };
   for (const b of bodies) {
@@ -1591,44 +1626,48 @@ function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
       const corners: V3[] = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [i & 1 ? hi[0] : lo[0], i & 2 ? hi[1] : lo[1], i & 4 ? hi[2] : lo[2]]);
       if (Math.max(...corners.map((c) => dot(sub(c, f.o), f.t))) < -zone) return sh;
       if (Math.max(...corners.map((c) => dot(sub(c, P0), n))) > 1e-6) sh = sh.cut(slab(0, BIG)) as Shape3D;
-      if (tip.brush) sh = sh.cut(groove()) as Shape3D;
+      if (tip.brush) sh = cutGroove(sh);
       return sh;
     };
   }
   if (g.thick) {
-    // Rand in Stufen (je höchstens 0,6 mm, 45° zur Mittellinie), innen 0,3 mm in der Wand, damit der Slicer die
-    // Körper verbindet. Unterkanten quer zur Mittellinie (nicht schräg wie die Spitze, sonst hinge der Rand auf der
-    // tiefen Seite steil über und finge frei in der Luft an). Bei schräger Spitze folgt der Rand ihr in Streifen
-    // (je höchstens 1,5 mm Höhenunterschied), so ist er überall etwa gleich hoch.
-    const eR = g.rim - w;
-    const K = Math.max(1, Math.ceil(eR / 0.6 - 1e-9)), step = eR / K;
-    const span = g.ePlus + extent(g.outer, rot, g.dirDeg + 180);
-    const nb = g.th > 1e-6 ? Math.max(1, Math.ceil(g.slant / 1.5)) : 1;
-    const xd2 = unit(cross(f.t, across));
+    // Rand mit glatter Schräge unten (statt Stufen: deren waagerechte Unterseiten wollte der Slicer stützen, Rückmeldung
+    // aus dem Forum): wächst über die Länge lt vom Außenrand der Wand auf die volle Dicke, unter RIM_SLOPE zur
+    // Mittellinie, damit die Unterseite auch an einer schräg stehenden Spitze (Bogen bis 45°) noch ansteigt; danach
+    // gerade bis zur Spitze. Innen 0,3 mm in der Wand, damit der Slicer die Körper verbindet. Bei schräger Spitze
+    // folgen Unterkante und Schräge ihr (Höhen längs der Mittellinie gemessen), so ist der Rand überall gleich hoch und
+    // die Schräge behält ihre Neigung zur Mittellinie.
+    const lt = lt0;
+    const inS = grow(s, w - 0.3), out0 = grow(s, w), out1 = grow(s, g.rim);
+    const NP = nFor(out1, out1);
+    const inP = samplePoints(inS, NP, rot), inP0 = samplePoints(grow(s, w - 0.1), NP, rot);
+    const outP0 = samplePoints(out0, NP, rot), outP1 = samplePoints(out1, NP, rot);
+    const tanT = Math.tan(g.th);
+    // Querschnittspunkt (u, v) in der Höhe c unter der (schrägen) Spitze, längs der Mittellinie gemessen
+    const lift = (pts: P2[], c: number): V3[] =>
+      pts.map(([x, y]) => {
+        const q = add(add(f.o, mul(f.u, x)), mul(f.v, y));
+        return add(q, mul(f.t, -(g.ePlus - dot(sub(q, f.o), across)) * tanT - c));
+      });
     bodies.push({
       name: 'Düsenrand',
-      cost: 0.6 + 0.05 * nb * K,
-      dep: { kind: 'free', t: 'nozzleRim2', f: frameKey(f), s: secKey(s), rot: r6(rot), tip: tipKey },
+      cost: 0.8,
+      dep: { kind: 'free', t: 'nozzleRim4', f: frameKey(f), s: secKey(s), rot: r6(rot), tip: tipKey },
       make: () => {
-        const pieces: Shape3D[] = [];
-        for (let j = 0; j < nb; j++) {
-          // Streifen quer zur Schräge: across von x1 (hoch) bis x0 (tiefer); tiefste Stelle der Spitze im Streifen
-          const x1 = g.ePlus - (span * j) / nb, x0 = g.ePlus - (span * (j + 1)) / nb;
-          const dMax = (g.ePlus - x0) * Math.tan(g.th);
-          // Streifen überlappen sich leicht, damit die Vereinigung sauber wird (keine gemeinsamen Flächen)
-          const xa = j === 0 ? x1 + 50 : x1 + 0.05, xb = j === nb - 1 ? x0 - 50 : x0 - 0.05;
-          for (let k = 1; k <= K; k++) {
-            const B = dMax + g.ringH - (k - 1) * step;
-            const ring = extrudeRing(advance(f, -B), grow(s, w - 0.3), grow(s, w + step * k), rot, B + 1);
-            const band = placeShape(makeBox([xb, -BIG, -B], [xa, BIG, 1]) as Shape3D, localPlacement(f.o, across, unit(cross(across, xd2))));
-            pieces.push(nb === 1 ? ring : (ring.intersect(band) as Shape3D));
-          }
+        // ein Loft durch drei Querschnitte parallel zur Spitze (unten, Ende der Schräge, 1 mm über der Spitze); als
+        // Vieleck (ebene Querschnitte), mit Splines lieferten die Schnitte falsche Volumen
+        // Unterkante innen nur 0,1 mm in der Wand: sie liegt schräg wie die Spitze und zählte sonst als Überhang
+        const levels: [number, P2[], P2[]][] = [[g.ringH, inP0, outP0], [g.ringH - lt, inP, outP1], [-1, inP, outP1]];
+        const ring = hollowLoftWires(levels.map(([c, , o]) => polyWirePts(lift(o, c))), levels.map(([c, i]) => polyWirePts(lift(i, c))), true, 'Düsenrand');
+        const top = slab(-BIG, 0);
+        let sh = ring.intersect(top) as Shape3D;
+        ring.delete();
+        top.delete();
+        if (tip.brush) {
+          const cut = cutGroove(sh);
+          sh.delete();
+          sh = cut;
         }
-        let sh = pieces[0];
-        for (const q of pieces.slice(1)) sh = sh.fuse(q) as Shape3D;
-        sh = sh.simplify() as Shape3D;
-        sh = sh.intersect(slab(-BIG, 0)) as Shape3D;
-        if (tip.brush) sh = sh.cut(groove()) as Shape3D;
         return sh;
       },
     });

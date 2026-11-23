@@ -57,6 +57,9 @@ const cases: [string, FreeSpec][] = [
   ...NOZZLE_KINDS.map((k) => [`duese-${k.id}`, nz({ kind: k.id, ...k.values })] as [string, FreeSpec]),
   ...NOZZLE_KINDS.map((k) => [`duese-${k.id}-ring-buerste`, nz({ kind: k.id, ...k.values, ring: true, brush: true, tip: 30 })] as [string, FreeSpec]),
   ['duese-kupplung', nz({ kind: 'crevice', ...NOZZLE_KINDS[1].values, a: { type: 'female', d: 32 } })],
+  // Rückmeldung aus dem Forum: Breitdüse M50 → 150 × 20, Bogen 35°, Schutzring (Stufen unter dem Ring wollten Stützen)
+  ['duese-breit-gebogen-ring', nz({ kind: 'wide', a: { type: 'male', d: 50 }, w: 150, h: 20, bend: 35, tip: 0, wall: 4, ring: true })],
+  ['duese-fuge-gebogen-ring-45', nz({ kind: 'bent', ...NOZZLE_KINDS[2].values, bend: 45, tip: 30, ring: true })],
   ['nebenluft-32', bl(32, 32)],
   ['nebenluft-15', bl(15, 15, 0.2)],
   ['nebenluft-25-50', bl(25, 50, 0.6)],
