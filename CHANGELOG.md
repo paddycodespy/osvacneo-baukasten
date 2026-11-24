@@ -2,7 +2,9 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
-## Unveröffentlicht
+## 0.7.1
+
+Rückmeldungen aus dem Forum nach Drucktests: O-Ring-Vorschlag nach dem Außen-Ø, Lippendichtung mit Fuß entlang der Rundung (dichtet im Test vollständig) und ein Schutzring an der Saugdüse, der ohne Stufen druckt.
 
 - O-Ring-Vorschlag im Kasten *Dichtung in der Kupplung* nach dem **Außen-Ø** statt nach dem Innen-Ø: außen so groß wie B (größter Ø der Nut) oder etwas größer, Schnur **3,5 mm** statt 4 mm, mit Beispielen in ganzen Millimetern (F32: 33 × 3,5 oder 34 × 3,5; F50: 51 × 3,5 oder 52 × 3,5). Hinweis, außen mit dem Messschieber nachzumessen, weil Händler unterschiedlich zählen. Grundlage ist ein Test aus dem Forum (F25 und F50, PLA, 0,2 mm Spiel): außen kleiner als B liegt der Ring hinten nicht an, so groß wie B oder etwas mehr sitzt er perfekt; ohne Dichtung hat die Verbindung Spiel, mit 3,5-mm-Ring sitzt sie fest, 4 mm wäre zu stramm.
 - **Lippendichtung:** Der Fuß folgt außen der Rundung der Nut (unten anliegend, oben 0,1 mm Luft) statt unten einer 45°-Schräge mit Hohlraum dahinter; er liegt so überall an der Kupplung an und hält fester. Lippe und Maße der Lippe unverändert; am Modell geprüft (F15–F50, Spiel 0,1–0,5): der Ring berührt die Kupplung nicht. Anregung aus dem Forum.
