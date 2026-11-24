@@ -325,7 +325,7 @@ Ob die Düse mit einem **Stecker (M)** oder einer **Kupplung (F)** angeschlossen
 
 - **Schräge:** Winkel, mit dem die Spitze schräg abgeschnitten ist.
 - **Wandstärke:** 2 mm sind stabil.
-- **Schutzring an der Spitze:** ein dickerer Rand, der Möbel schont und nicht so leicht abbricht.
+- **Schutzring an der Spitze:** ein dickerer Rand, der Möbel schont und nicht so leicht abbricht. Unten geht er mit einer glatten Schräge in die Wand über, so druckt er auch nach einem Bogen meist ohne Stützen.
 - **Nut für eine Bürstenleiste:** eine Rille rundum zum Einkleben einer Streifenbürste.
 
 Unter den Einstellungen steht, ob die Düse ohne Stützen druckbar ist.
@@ -458,7 +458,7 @@ Die Standardwerte passen meistens. Ändern lohnt sich erst, wenn ein Testdruck n
 - **STL:** funktioniert mit jedem Slicer.
 - **STEP:** das exakte CAD-Modell, zum Weiterkonstruieren.
 - **Druckhinweise:** was du beim Drucken und Zusammenbauen beachten musst. Lies sie vor dem ersten Druck.
-- **Dichtung in der Kupplung:** Maße der Nut unten in der Kupplung (Bohrung, größter Durchmesser, Rundung außen, Höhe, Abstand der Steckerspitze vom Boden), mit Skizze. Damit kannst du eine passende Dichtung kaufen, ohne eine Kupplung aufzuschneiden. Oder du lädst dort eine **Lippendichtung aus TPU** herunter, die genau in die Nut passt: Ihre dünne Lippe legt sich von unten an die Steckerspitze. Der Stecker biegt sie beim Eindrehen etwas nach unten, so liegt sie rundum an und dichtet. Mit *Vorspannung der Lippe* stellst du ein, wie weit der Stecker sie nach unten biegt (Standard 0,5 mm). Neues TPU ist leicht klebrig, die ersten Male geht die Verriegelung deshalb schwerer. Sie wird flach ohne Stützen gedruckt, aus TPU 85A–95A; bewährt haben sich 0,16 mm Schichthöhe, 0,4-mm-Düse, Füllung 100 % und Nahtposition „Zufällig“. Zum Einsetzen die Lippendichtung etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken, Lippe nach oben. Der Kasten erscheint bei jedem Adapter mit Kupplung.
+- **Dichtung in der Kupplung:** Maße der Nut unten in der Kupplung (Bohrung, größter Durchmesser, Rundung außen, Höhe, Abstand der Steckerspitze vom Boden), mit Skizze. Damit kannst du eine passende Dichtung kaufen, ohne eine Kupplung aufzuschneiden. Der Kasten schlägt dazu O-Ringe mit 3,5 mm Schnur vor, die außen so groß sind wie der größte Durchmesser der Nut oder etwas größer (Händler geben mal den Innen-, mal den Außen-Ø an, am besten außen nachmessen). Oder du lädst dort eine **Lippendichtung aus TPU** herunter, die genau in die Nut passt: Ihre dünne Lippe legt sich von unten an die Steckerspitze. Der Stecker biegt sie beim Eindrehen etwas nach unten, so liegt sie rundum an und dichtet. Mit *Vorspannung der Lippe* stellst du ein, wie weit der Stecker sie nach unten biegt (Standard 0,5 mm). Neues TPU ist leicht klebrig, die ersten Male geht die Verriegelung deshalb schwerer. Sie wird flach ohne Stützen gedruckt, aus TPU 85A–95A; bewährt haben sich 0,16 mm Schichthöhe, 0,4-mm-Düse, Füllung 100 % und Nahtposition „Zufällig“. Zum Einsetzen die Lippendichtung etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken, Lippe nach oben. Der Kasten erscheint bei jedem Adapter mit Kupplung.
 
 ### Mehrere Adapter auf ein Druckbett {#druckbett}
 
