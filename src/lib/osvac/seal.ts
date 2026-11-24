@@ -111,8 +111,8 @@ export interface SealRing {
  *   Hinterschneidung (unten anliegend, oben 0,1 mm Luft, knapp über ihrer weitesten Stelle), oben eben. Er hält den Ring
  *   in der Nut.
  * - Lippe: 0,8 mm dick, wächst innen aus dem Fuß schräg nach oben außen und steht ohne Stecker um die Vorspannung über
- *   der Steckerspitze (Stellung ohne Sog). Der Stecker biegt sie beim Einstecken nach unten; die Außenluft kommt über den
- *   Spalt an der Bohrung unter die Lippe und drückt sie gegen die Spitze (zieht sich unter Sog selbst zu).
+ *   der Steckerspitze (Stellung ohne Sog). Der Stecker biegt sie beim Einstecken nach unten, sie dichtet durch diese
+ *   Vorspannung (ein Zuziehen unter Sog hat sich im Test aus dem Forum nicht gezeigt).
  * Die Lippe wird steiler, wenn ihre obere Außenkante sonst über den Stecker hinaus an die Bohrung käme.
  */
 export function sealRing(s: SealGroove, squeeze: number): SealRing {

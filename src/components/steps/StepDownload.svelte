@@ -159,9 +159,9 @@
     </p>
     <p class="seal-h">Lippendichtung aus TPU</p>
     <p class="hint">
-      Sie passt genau in die Nut (in der Skizze blau): Der Fuß hält in der Hinterschneidung, die dünne Lippe steht schräg nach oben und legt sich von unten an
-      die Steckerspitze. Die Außenluft kommt über den Spalt an der Bohrung unter die Lippe und drückt sie gegen den Stecker: Je stärker der Sog, desto dichter. Weil sich nur die Lippe
-      biegt, lässt sich der Stecker leicht eindrehen. Sie liegt beim Drucken flach und braucht keine Stützen.
+      Sie passt genau in die Nut (in der Skizze blau): Der Fuß hält in der Hinterschneidung, die dünne Lippe steht schräg nach oben. Der Stecker biegt sie beim
+      Eindrehen um die Vorspannung nach unten, so liegt sie rundum an der Steckerspitze an und dichtet. Neues TPU ist leicht klebrig: Die ersten Male geht die
+      Verriegelung schwerer, das gibt sich bald. Die Lippendichtung liegt beim Drucken flach und braucht keine Stützen.
     </p>
     <fieldset class="field seal-sq">
       <legend class="field-label">Vorspannung der Lippe</legend>
@@ -186,7 +186,8 @@
       {/each}
     </div>
     <p class="hint">
-      Drucken: TPU, am besten 85A–95A, mit 0,2 mm Schichthöhe; die Lippe ist zwei Bahnen breit (0,4-mm-Düse). TPU druckt oft etwas dicker, deshalb hat die Lippendichtung außen 0,1 mm Luft.
+      Drucken: TPU, am besten 85A–95A (erprobt mit 95A), Schichthöhe 0,16 mm, 0,4-mm-Düse (die Lippe ist zwei Bahnen breit), Füllung 100 %, damit keine Hohlräume bleiben,
+      und Nahtposition „Zufällig“ (bei „Ausgerichtet“ gab es Fehlstellen). TPU druckt oft etwas dicker, deshalb hat der Fuß oben an der Rundung 0,1 mm Luft.
       Einsetzen: Lippendichtung etwas oval drücken, schräg durch die Bohrung schieben und rundum in die Nut drücken, bis der Fuß flach auf dem Boden liegt, Lippe nach oben. Erst
       eine drucken und probieren, dann die Vorspannung anpassen.
     </p>
