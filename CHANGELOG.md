@@ -2,7 +2,9 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
-## Unveröffentlicht
+## 0.7.2
+
+Schutzring an der Saugdüse stabiler: Im Test aus dem Forum brach er in 0.7.1 am dünnen Ansatz ab.
 
 - **Saugdüse, Schutzring und Rand mit Bürstennut stabiler:** Der Ring ist jetzt über die ganze Höhe (5 mm, mit Bürstennut 6 mm) voll dick, die glatte Schräge zur Wand sitzt darunter. In 0.7.1 lag die Schräge innerhalb des Rings, voll dick war er nur auf den letzten 0,5 mm an der Spitze; im Test aus dem Forum (PLA, 0,24 mm Schicht) brach er schon beim Einsetzen in einen Stecker am dünnen Ansatz ab (gemessen 0,74 mm am Ansatz, 1,44 mm oben). Die Neigung der Schräge richtet sich nach der Neigung des Düsenendes beim Druck: an einer geraden Düse 44° zur Mittellinie (Schräge 1,2 mm lang), nach einem Bogen entsprechend flacher, höchstens bis 15° (nach 45° Bogen 4,5 mm lang). Bei schräger Spitze folgt die Unterkante der Spitze, auf einer Seite wird die Schräge dadurch flacher; dafür wird sie um Ringdicke × tan(Schräge der Spitze) länger (Schutzring bei 30°: 0,7 mm). Die Schräge wird höchstens so lang, wie der Ring hoch ist (betrifft den breiten Rand der Bürstennut), und dort entsprechend steiler. Das gerade Stück an der Spitze muss um die Länge der Schräge länger sein; das Düsen-Formular rechnet das selbst ein, im Freiform-Aufbau gibt es eine Meldung mit Vorschlag.
 
