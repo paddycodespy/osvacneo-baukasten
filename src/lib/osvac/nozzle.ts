@@ -82,7 +82,8 @@ export function nozzleLayout(n: NozzleSpec) {
   const bendDir = isCircle ? 0 : 90;
   const tipDir = n.bend > 0 ? bendDir : n.kind === 'wide' || n.kind === 'upholstery' ? 90 : 0;
   const tip = { ...DEFAULT_TIP, angle: n.tip, dir: tipDir, ring: n.ring, brush: n.brush };
-  const g = tipGeom(s, 0, n.wall, tip);
+  // das Düsenende steht nach dem Bogen um n.bend gegen die Senkrechte geneigt
+  const g = tipGeom(s, 0, n.wall, tip, n.bend);
   const across = (isCircle ? n.d : n.h) / 2 + n.wall;
   const radius = n.bend > 0 ? Math.max(50, Math.round(3 * across)) : 0;
   const arc = (radius * n.bend * Math.PI) / 180;

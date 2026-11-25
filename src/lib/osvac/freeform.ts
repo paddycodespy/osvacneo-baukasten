@@ -147,13 +147,21 @@ export interface NozzleTip {
 }
 export const DEFAULT_TIP: NozzleTip = { angle: 45, dir: 0, ring: false, brush: false };
 /**
- * Maße der Düsenspitze: Schutzring 1,2 mm dick und 5 mm hoch (unten mit glatter Schräge, RIM_SLOPE, damit die Unterkante
- * ohne Stützen druckt); Bürstennut 2 mm breit und 4 mm tief mitten im Rand (Rand dafür mindestens 4,4 mm, Ring 6 mm
- * hoch).
+ * Maße der Düsenspitze: Schutzring 1,2 mm dick und 5 mm hoch in voller Dicke, darunter eine glatte Schräge zur Wand
+ * (rimSlope), damit die Unterkante ohne Stützen druckt; Bürstennut 2 mm breit und 4 mm tief mitten im Rand (Rand dafür
+ * mindestens 4,4 mm, Ring 6 mm hoch).
  */
-/** Neigung der Unterseite des Schutzrings zur Mittellinie (Grad): an einem um bis zu 45° geneigten Düsenende steigt sie
- *  dann noch mit etwa 30° an und druckt ohne Stützen (wird steiler, wenn der Rand dicker ist als in ringH − 0,5 passt) */
+/** Flachste Neigung der Unterseite des Schutzrings zur Mittellinie (Grad), für stark geneigte Düsenenden: an einem um
+ *  45° geneigten Ende steigt sie dann noch mit etwa 30° an und druckt mit üblichen Slicern ohne Stützen */
 export const RIM_SLOPE = 15;
+/** Steilste Neigung (Grad zur Mittellinie): an einer geraden Düse; zusammen mit der Neigung des Düsenendes höchstens
+ *  so viel, dann hängt die Schräge nirgends flacher als 46° über (Überhang-Regel der App) */
+export const RIM_SLOPE_MAX = 44;
+/** Neigung der Schräge unter dem Schutzring (Grad zur Mittellinie) für ein Düsenende, das um tilt Grad gegen die
+ *  Senkrechte beim Druck geneigt ist */
+export function rimSlope(tilt: number) {
+  return Math.min(RIM_SLOPE_MAX, Math.max(RIM_SLOPE, RIM_SLOPE_MAX - Math.abs(tilt)));
+}
 export const NOZZLE = { ringE: 1.2, ringH: 5, brushW: 2, brushDepth: 4, brushLip: 1.2, brushH: 6, maxAngle: 60 };
 
 /** Ende B oder Ende C: Anschluss von osVAC neo, Gerät oder (nur B) Düsenspitze, mit Übergangslänge vom letzten Baustein */
@@ -1536,10 +1544,12 @@ function planEnd(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: numb
 
 /**
  * Maße der Düsenspitze aus dem letzten Querschnitt (rein rechnerisch, auch für das Düsen-Formular):
- * rim = Randdicke (Wand + Ring), slant = wie weit die Schräge längs der Mittellinie reicht, ringH = Höhe des Rings,
- * need = so lang muss das letzte gerade Stück mindestens sein (Ring und Fenster sitzen darauf; 0 = egal).
+ * rim = Randdicke (Wand + Ring), slant = wie weit die Schräge längs der Mittellinie reicht, ringH = Höhe des Rings in
+ * voller Dicke, lt = Länge der Schräge darunter (längs der Mittellinie), need = so lang muss das letzte gerade Stück
+ * mindestens sein (Ring und Fenster sitzen darauf; 0 = egal). tilt = Neigung des Düsenendes gegen die Senkrechte beim
+ * Druck (Grad).
  */
-export function tipGeom(s: Section, rotDeg: number, w: number, tip: NozzleTip) {
+export function tipGeom(s: Section, rotDeg: number, w: number, tip: NozzleTip, tilt = 0) {
   const N = NOZZLE;
   const thick = tip.ring || tip.brush;
   const rim = thick ? Math.max(w + N.ringE, tip.brush ? 2 * N.brushLip + N.brushW : 0) : w;
@@ -1549,8 +1559,14 @@ export function tipGeom(s: Section, rotDeg: number, w: number, tip: NozzleTip) {
   const ePlus = extent(outer, rotDeg, dirDeg), eMinus = extent(outer, rotDeg, dirDeg + 180);
   const slant = (ePlus + eMinus) * Math.tan(th);
   const ringH = thick ? (tip.brush ? N.brushH : N.ringH) : 0;
-  const need = thick ? slant + ringH + 1 : 0;
-  return { rim, outer, th, dirDeg, ePlus, slant, ringH, need, thick };
+  // Schräge unter dem Ring: so steil, wie es die Neigung des Endes erlaubt. Bei schräger Spitze folgt die Unterkante
+  // der Spitze; auf der Seite, wo sie nach außen hin tiefer liegt, wird die Schräge dadurch flacher. Darum kommt
+  // eR · tan(Spitzenschräge) dazu. Höchstens so lang wie der Ring hoch ist (der breite Rand der Bürstennut würde sonst
+  // über 10 mm lang, dort wird sie steiler).
+  const eR = rim - w;
+  const lt = thick && eR > 0 ? Math.min(ringH, eR / Math.tan(rad(rimSlope(tilt))) + eR * Math.tan(th)) : 0;
+  const need = thick ? slant + ringH + lt + 1 : 0;
+  return { rim, outer, th, dirDeg, ePlus, slant, ringH, lt, need, thick };
 }
 
 /**
@@ -1568,7 +1584,10 @@ function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
   if (hasSplit(spec)) return void issues.push({ level: 'error', text: 'Düse: Mit Schieber geht keine Düsenspitze. Den Schieber entfernen oder an Ende B einen Anschluss wählen.' });
   if (spec.blocks.some((b) => b.type === 'branch')) return void issues.push({ level: 'error', text: 'Düse: Mit Abzweig geht keine Düsenspitze. Den Abzweig entfernen oder an Ende B einen Anschluss wählen.' });
   const s = ce.section, rot = ce.rot, f = ce.frame;
-  const g = tipGeom(s, rot, w, tip);
+  // Neigung des Düsenendes gegen die Senkrechte beim Druck (Anschluss A liegt unten, seine Achse steht senkrecht)
+  // (Startrichtung der Kette im Plan: −z)
+  const tilt = (Math.acos(Math.min(1, Math.max(-1, -f.t[2]))) * 180) / Math.PI;
+  const g = tipGeom(s, rot, w, tip, tilt);
   const last = spec.blocks[spec.blocks.length - 1];
   if (g.need > 0 && !(last?.type === 'straight' && last.length >= g.need - 1e-6)) {
     const L = Math.ceil(g.need);
@@ -1596,9 +1615,10 @@ function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
   // Bürstennut. Der Rand wird unten schräg dicker (siehe unten); reicht die Schräge am Nutgrund noch nicht bis an die
   // Außenwand der Nut, begänne die Außenlippe frei in der Luft. Dann bleibt außen am Grund eine kleine Stufe stehen,
   // auf der die Lippe aufbaut, bis die Schräge sie trägt.
-  const eR0 = g.rim - w, lt0 = Math.min(g.ringH - 0.5, eR0 / Math.tan(rad(RIM_SLOPE)));
-  const taperAt = (y: number) => w + (eR0 * Math.min(1, Math.max(0, y) / lt0));
-  const hf = g.ringH - N.brushDepth, go = gi + N.brushW;
+  const eR0 = g.rim - w, lt0 = g.lt;
+  const taperAt = (y: number) => w + (lt0 > 0 ? eR0 * Math.min(1, Math.max(0, y) / lt0) : eR0);
+  // Höhe des Nutgrunds über der Unterkante der Schräge (liegt die Nut ganz im vollen Ring, bleibt keine Stufe)
+  const hf = g.ringH + lt0 - N.brushDepth, go = gi + N.brushW;
   const stepped = tip.brush && eR0 > 0 && taperAt(hf) < go + 0.2;
   const sw = stepped ? Math.min(1, Math.max(0.4, go - taperAt(hf) + 0.3)) : 0;
   const sz = stepped ? Math.min(N.brushDepth - 1.5, Math.max(0.6, ((go + 0.3 - w) * lt0) / eR0 - hf + 0.2)) : 0;
@@ -1614,8 +1634,8 @@ function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
     }
     return out;
   };
-  const zone = g.slant + g.ringH + 5;
-  const tipKey = { ...tip, angle: r6(tip.angle), dir: r6(tip.dir), w };
+  const zone = g.slant + g.ringH + g.lt + 5;
+  const tipKey = { ...tip, angle: r6(tip.angle), dir: r6(tip.dir), w, lt: r6(g.lt) };
   for (const b of bodies) {
     const m0 = b.make;
     b.dep = { ...(b.dep as object), tip: tipKey };
@@ -1631,10 +1651,12 @@ function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
     };
   }
   if (g.thick) {
-    // Rand mit glatter Schräge unten (statt Stufen: deren waagerechte Unterseiten wollte der Slicer stützen, Rückmeldung
-    // aus dem Forum): wächst über die Länge lt vom Außenrand der Wand auf die volle Dicke, unter RIM_SLOPE zur
-    // Mittellinie, damit die Unterseite auch an einer schräg stehenden Spitze (Bogen bis 45°) noch ansteigt; danach
-    // gerade bis zur Spitze. Innen 0,3 mm in der Wand, damit der Slicer die Körper verbindet. Bei schräger Spitze
+    // Rand: volle Dicke über die ganze Höhe ringH, darunter eine glatte Schräge (statt Stufen: deren waagerechte
+    // Unterseiten wollte der Slicer stützen, Rückmeldung aus dem Forum), die über die Länge lt vom Außenrand der Wand
+    // auf die volle Dicke wächst. Vorher lag die Schräge innerhalb von ringH, der Ring hatte nur an der Spitze die volle
+    // Dicke und brach am dünnen Ansatz ab (Test aus dem Forum). Neigung nach rimSlope: an geraden Düsen steil und kurz,
+    // nach einem Bogen flacher, damit die Unterseite noch ansteigt. Innen 0,3 mm in der Wand, damit der Slicer die
+    // Körper verbindet. Bei schräger Spitze
     // folgen Unterkante und Schräge ihr (Höhen längs der Mittellinie gemessen), so ist der Rand überall gleich hoch und
     // die Schräge behält ihre Neigung zur Mittellinie.
     const lt = lt0;
@@ -1652,12 +1674,12 @@ function planNozzle(spec: FreeSpec, ce: { frame: Frame; section: Section; rot: n
     bodies.push({
       name: 'Düsenrand',
       cost: 0.8,
-      dep: { kind: 'free', t: 'nozzleRim4', f: frameKey(f), s: secKey(s), rot: r6(rot), tip: tipKey },
+      dep: { kind: 'free', t: 'nozzleRim5', f: frameKey(f), s: secKey(s), rot: r6(rot), tip: tipKey },
       make: () => {
         // ein Loft durch drei Querschnitte parallel zur Spitze (unten, Ende der Schräge, 1 mm über der Spitze); als
         // Vieleck (ebene Querschnitte), mit Splines lieferten die Schnitte falsche Volumen
         // Unterkante innen nur 0,1 mm in der Wand: sie liegt schräg wie die Spitze und zählte sonst als Überhang
-        const levels: [number, P2[], P2[]][] = [[g.ringH, inP0, outP0], [g.ringH - lt, inP, outP1], [-1, inP, outP1]];
+        const levels: [number, P2[], P2[]][] = lt > 0 ? [[g.ringH + lt, inP0, outP0], [g.ringH, inP, outP1], [-1, inP, outP1]] : [[g.ringH, inP, outP1], [-1, inP, outP1]];
         const ring = hollowLoftWires(levels.map(([c, , o]) => polyWirePts(lift(o, c))), levels.map(([c, i]) => polyWirePts(lift(i, c))), true, 'Düsenrand');
         const top = slab(-BIG, 0);
         let sh = ring.intersect(top) as Shape3D;
