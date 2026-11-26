@@ -325,7 +325,7 @@ Ob die Düse mit einem **Stecker (M)** oder einer **Kupplung (F)** angeschlossen
 
 - **Schräge:** Winkel, mit dem die Spitze schräg abgeschnitten ist.
 - **Wandstärke:** 2 mm sind stabil.
-- **Schutzring an der Spitze:** ein dickerer Rand, der Möbel schont und nicht so leicht abbricht. Er ist auf 5 mm Höhe voll dick, darunter geht er mit einer glatten Schräge in die Wand über, so druckt er auch nach einem Bogen meist ohne Stützen. An einer geraden, gerade abgeschnittenen Düse ist die Schräge steil und kurz (gut 1 mm), nach einem Bogen und bei schräger Spitze flacher und länger (höchstens so lang, wie der Ring hoch ist); das gerade Stück an der Spitze wird entsprechend länger.
+- **Schutzring an der Spitze:** ein dickerer Rand, der Möbel schont und nicht so leicht abbricht. Er ist auf 5 mm Höhe voll dick, darunter geht er mit einer glatten Schräge in die Wand über. An einer geraden Düse und nach einem Bogen bis etwa 30° druckt er so ohne Stützen; bei stärkeren Bögen zeigt die App an, ob Stützen nötig sind. An einer geraden, gerade abgeschnittenen Düse ist die Schräge steil und kurz (gut 1 mm), nach einem Bogen und bei schräger Spitze flacher und länger (höchstens so lang, wie der Ring hoch ist); das gerade Stück an der Spitze wird entsprechend länger.
 - **Nut für eine Bürstenleiste:** eine Rille rundum zum Einkleben einer Streifenbürste.
 
 Unter den Einstellungen steht, ob die Düse ohne Stützen druckbar ist.

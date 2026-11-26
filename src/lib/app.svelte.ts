@@ -596,7 +596,7 @@ class AppState {
       const tp = this.free.b.tip;
       t.push('Die Düse steht mit dem Anschluss auf dem Druckbett, die Spitze zeigt nach oben. Für eine stabile Düse im Slicer mindestens 3 Wände einstellen; bei 2 mm Wand ist sie dann durchgehend massiv.');
       if (tp?.brush) t.push('In die Nut im Rand passt eine Streifenbürste mit etwa 2 mm breitem Rücken (Meterware, „Streifenbürste“ oder „Leistenbürste“). Mit Sekunden- oder Montagekleber einkleben, die Borsten etwa 5 mm über die Spitze stehen lassen.');
-      else if (tp?.ring) t.push('Der Schutzring macht den Rand dicker und schont Möbel. Er ist 5 mm hoch voll dick und geht darunter mit einer glatten Schräge in die Wand über, so druckt er ohne Stützen.');
+      else if (tp?.ring) t.push('Der Schutzring macht den Rand dicker und schont Möbel. Er ist 5 mm hoch voll dick und geht darunter mit einer glatten Schräge in die Wand über. An einer geraden Düse und nach einem Bogen bis etwa 30° braucht er so keine Stützen.');
     }
     if (this.hasSwivel || this.hasBleed) {
       const two = this.hasSwivel && this.hasBleed;

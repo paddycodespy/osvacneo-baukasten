@@ -2,6 +2,10 @@
 
 Änderungen je Version (in der App nicht mehr angezeigt).
 
+## Unveröffentlicht
+
+- **Anleitung und Hinweis zum Schutzring genauer:** „druckt ohne Stützen“ gilt nur an geraden Düsen und nach Bögen bis etwa 30°; bei stärkeren Bögen meldet die App weiter Stützen (ob ein Slicer dort ohne auskommt, ist nicht getestet).
+
 ## 0.7.2
 
 Schutzring an der Saugdüse stabiler: Im Test aus dem Forum brach er in 0.7.1 am dünnen Ansatz ab.
