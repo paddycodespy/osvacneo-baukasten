@@ -1,7 +1,7 @@
 <!--
   Quelle der Anleitung in der App (public/anleitung.html).
   Nach Änderungen: „npm run docs“. Bilder neu aufnehmen: „npm run build && npm run docs:bilder“.
-  Bitte bei jeder Änderung an der Oberfläche prüfen, ob Text oder Bilder angepasst werden müssen (siehe README).
+  Bitte bei jeder Änderung an der Oberfläche prüfen, ob Text oder Bilder angepasst werden müssen (siehe docs/entwicklung.md).
   Erlaubtes Markdown steht oben in scripts/anleitung.ts.
 -->
 

@@ -5,7 +5,7 @@
 # CHANGELOG.md und den Dateien osVAC-neo-Baukasten-<Version>-Windows-Setup.exe, -macOS.dmg, -Linux.AppImage,
 # -Linux.deb und SHA256SUMS.txt. Herunterladen geht ohne GitHub-Konto.
 # Schlägt ein Test oder ein Installer fehl, entsteht kein Release. Nach dem Beheben: „Re-run failed jobs“ (gleicher
-# Stand) oder Tag löschen und neu setzen (neuer Stand), siehe README.
+# Stand) oder Tag löschen und neu setzen (neuer Stand), siehe docs/entwicklung.md.
 name: Release
 
 on:

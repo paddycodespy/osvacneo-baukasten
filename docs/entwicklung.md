@@ -1,0 +1,304 @@
+# Entwicklung und Technik
+
+Technische Einzelheiten zum osVAC neo Baukasten für Entwickler. Die Übersicht für Anwender steht in der [README](../README.md).
+
+## Adaptertypen im Detail
+
+Einstellbar: Durchmesser von Stecker, Kupplung und Schlauch, Spaltmaß Stecker/Kupplung, Drehring druckoptimiert (Standard) oder wie im Original, Spaltmaß Drehring (ab 0,2 mm, Standard 0,3 mm wie im Original; an der Kupplung höchstens 0,5 mm bei 7 mm bzw. 0,35 mm bei 9 mm Materialstärke, im Gehäuse bis 0,8 mm), Materialstärke (7 oder 9 mm), Druckhilfe (die Beschriftung ist immer dabei) sowie beim Stutzen Befestigungsart, Durchmesser vorne und in der Tiefe, Steckweg, Wandstärke, Zugabe, Übergangslänge (TransitionConeLength, Standard 8 mm), Schraubenlöcher, Klemmrippen (aufgesteckt innen, eingesteckt außen; eingesteckt möglichst neben der Beschriftung) und beim Aufstecken Schlitze für eine Schlauchschelle (2 Stück bei 0° und 180°, zwischen Löchern und Schrift; 80 % der Rohrlänge, Breite Umfang/40).
+
+### Schieber einzeln
+
+Absperrschieber (Blast Gate) für Rohre mit 15–60 mm Außen-Ø (`src/lib/osvac/gate.ts`), zweiteilig zum Verschrauben (Sandwich). Das Rohr steckt beidseitig in einer Muffe (Tiefe einstellbar, Standard 20 mm, Spiel 0,4 mm) bis zu einem Anschlag 2 mm enger als das Rohr, der Anschlag läuft unter 45° zur Bohrung aus. Unterteil: Muffe, Boden (mindestens 3,5 mm) und der Kanal für die Platte (Platte 4 mm, Spiel 0,3 mm oben und unten in Schritten von 0,1 mm, 0,3 mm seitlich), dazu die Wandplatte. Oberteil: Deckel mit Muffe. Grundriss achteckig (Ecken unter 45° gebrochen, an den Enden des Kanals 1,6 mm Seitenwand), zur Muffe läuft das Gehäuse unter 50° aus; die Muffen haben innen eine Einführfase 0,6 mm. Boden, Kanal und Lippen liegen im 0,2-mm-Schichtraster (Druckhinweis: mit 0,2 mm Schichthöhe drucken), sonst rundet der Slicer die Pressung weg. Um die Bohrung sitzt oben und unten eine Dichtlippe (0,4 mm hoch, 1,2 mm breit, 1 mm neben der Bohrung), die beim Standardspiel je Seite 0,1 mm auf die Platte drückt (ab 0,4 mm Spiel liegt sie nur an): dicht gegen Falschluft über die offenen Enden des Kanals, und die Platte bleibt durch Reibung stehen. Vier Schrauben M3 neben dem Kanal (Wand zum Kanal mindestens 1,2 mm, nach außen und zur gebrochenen Ecke 1,6 mm), Muttern in Sechskant-Taschen von unten im Unterteil, Köpfe versenkt im Oberteil (Auflage je 2,4 mm vor dem Kanal, mit Brückenhilfe: erste Schicht über der Tasche ein Schlitz so breit wie das Loch, zweite ein Quadrat, dann das Loch; bei kleinen Schiebern, wo sich die Muttern einer Seite berühren würden, nur eine Schraube je Seite; die Taschen laufen senkrecht und öffnen sich unten in der Schräge); die Länge steht in den Druckhinweisen. Gedruckt werden beide Gehäuseteile mit der Muffe auf dem Bett (das Oberteil umgedreht, eigenes Objekt im 3MF), ohne Brücke über einem Schlitz und ohne Stützen; nur die Auflagen von Mutter und Kopf sind kleine, gerade Brücken. Die Platte (eigenes Objekt, flach davor) hat ein volles Stück und ein Fenster. Anschläge: beide Enden sind 2,5 mm dicker als die Platte, der Griff schlägt bei „zu“ am Oberteil an, das andere Ende (8 mm) bei „auf“. Die Platte wird vor dem Aufschrauben des Oberteils eingelegt. Befestigung: ohne, Wandplatte am Unterteil über die ganze Höhe mit vier Senklöchern (Ø4 mm, je Seite unten und oben), zwei Schlüssellöcher oder ein eigener Wandhalter (Ring mit Öffnung zum Einklipsen); das Oberteil ist hinten 0,4 mm schmaler und berührt die Wandplatte nicht. Wandplatte und Wandhalter passen für senkrechtes und waagerechtes Rohr (symmetrisch, gedreht anschrauben). Nur bei den Schlüssellöchern wählt man die Lage an der Wand: bei senkrechtem Rohr zeigt der Schlitz zum oberen Ende, bei waagerechtem sitzen beide Löcher auf einer Seite mit dem Schlitz dorthin (Kopf neben dem Gehäuse). Der Wandabstand wird bis zur Rohrmitte angegeben, kleinster Wert = Teil direkt an der Wand, höchstens 50 mm mehr. `npm run test:freeform` prüft je Variante: Netze geschlossen, Unter- und Oberteil überlappen nicht, die Platte berührt zu und auf nur die Dichtlippen, schlägt an beiden Enden an, Dichthöhen im 0,2-mm-Raster, Überhang wie in der App unter 40 mm², und die Teile liegen auf dem Bett nebeneinander. Gespeicherte Stände werden beim Laden auf die Bereiche der Eingabefelder begrenzt (Spiel der Platte auf das 0,1-mm-Raster).
+
+### Freiform
+
+Für Geräte ohne runden Stutzen oder für Winkel und Versätze. Der Adapter wird im Schritt „Aufbau“ als Kette zusammengesetzt:
+
+- **Anschluss A** am Anfang der Kette: Kupplung oder Stecker von osVAC neo in den Standardgrößen oder frei (15–60 mm), mit 8-mm-Übergangskonus auf die Wandstärke der Bausteine.
+- **Bausteine** in beliebiger Reihenfolge: **Gerade** (Länge), **Bogen** (Winkel, Radius der Mittellinie, Richtung), **Übergang** (neuer Querschnitt, Länge, Versatz, Knick, Verdrehung), **Absatz** (neuer Querschnitt mit 45°-Schräge, Länge automatisch). **Abzweig** (Y- oder T-Stück, Vorlage „Y-Abzweig 45°“): ein zweiter, runder Abgang mit Winkel 30–90°, eigenem Innen-Ø (höchstens so weit wie das Rohr), Richtung und Länge über das Rohr hinaus; er sitzt mittig auf einem runden Rohrstück, dessen Länge mindestens so groß sein muss, dass der Abzweig ganz darauf passt. Am Abzweig sitzt **Ende C** mit denselben Möglichkeiten wie Ende B (Kupplung, Stecker oder Gerät mit Stutzen, Öffnung oder Flansch). Höchstens ein Abzweig je Adapter; das Rohr davor muss rund sein. Rohr und Abzweig werden außen vereinigt und beide Bohrungen herausgeschnitten (mit Volumen-Gegenprobe); die Innenkante der Einmündung wird ausgerundet (Radius 2 mm, notfalls kleiner – größer würde die Rundung beim Drucken überhängen; bei gleich weiten Bohrungen wird die Bohrung des Abzweigs zur Mündung hin um 0,3 mm im Radius enger, sonst scheitert die Ausrundung). Ab 50° gibt es den **gebogenen Abzweig**: erst unter 45° aus dem Rohr, dann im Bogen (Radius 1,5 × Ø) auf den Winkel, danach das gerade Stück. Strömung: Der Sauger gehört an Anschluss A (Hinweis am Abzweig); ab 60° ohne Bogen kommt ein Hinweis mit den Vorschlägen „Winkel auf 45°“ und „Gebogenen Abzweig einschalten“. Ende C liegt nie auf dem Druckbett; Kupplung oder Stecker an C stehen schräg und brauchen Stützen (Hinweis im Aufbau und in den Druckhinweisen). **Schieber** (Vorlage „Absperrschieber“, Stecker an beiden Enden): dasselbe verschraubte Gehäuse wie beim Schieber einzeln (Kanal, Dichtlippen an Boden und Deckel, M3 mit Muttern, Platte mit dicken Enden) auf einem runden Rohrstück (Länge mindestens so, dass das Gehäuse mit seinen Schrägen passt), Richtung der Platte wählbar, höchstens ein Schieber je Adapter. Der Adapter wird am Schieber geteilt und in zwei Teilen gedruckt: das A-Teil (bis zum Unterteil mit Kanal) steht auf Anschluss A, das B-Teil (ab dem Deckel) auf Ende B, beide mit der Trennfläche oben, das B-Teil ist ein eigenes Objekt im 3MF; „Was liegt unten?“ entfällt dann, an beiden Enden gibt es Druckhilfe bzw. bei einer Kupplung einen Hinweis. Boden und Trennfläche liegen beim Druck im 0,2-mm-Raster, gedacht für 0,2 mm Schichthöhe (das Gehäuse wird dazu auf dem Rohr bis 0,1 mm verschoben und das Rohr hinter dem Deckel bis 0,2 mm verlängert). Liegt zwischen Schieber und Ende ein Bogen, steht das Gehäuse schräg: Hinweis. Die Platte liegt flach vor dem Adapter. Waagerechte Flächen am Schieber (Decken der Muttertaschen) zählen nicht als Überhang.
+- **Ende B**: ein Geräteanschluss (aufgesteckt als Muffe/Haube oder eingesteckt als Zapfen, mit Steckweg, Zugabe, Drehung, Einführfase und beim Zapfen optional einem Anschlagring) oder wieder eine Kupplung bzw. ein Stecker. Ein automatischer Übergang führt vom letzten Baustein auf den Querschnitt des Endes.
+- **Flansch** („Mit Flansch“, Vorlage „Flansch am Gehäuse“): Ende B wird eine flache Platte zum Anschrauben, die beim Drucken unten auf dem Bett liegt (Skizze im Aufbau). Angegeben wird die Öffnung im Gerät. Standard: Rand 15 mm rund um die Öffnung (Form folgt der Öffnung), Dicke 5 mm, Löcher Ø4,5 mm mit 90°-Senkung für M4, automatisch verteilt (eins in jeder Ecke, an langen Rundungen an deren Enden, dazwischen höchstens 70 mm Abstand; runde Formen mindestens 4). In den Feineinstellungen „Lochbild nach Maß“: rechteckige Platte mit Lochabstand und Löchern je Seite (2–6, gleichmäßig auf dem Rand des Lochbilds) runde Platte mit Lochkreis oder dreieckige Platte (abgerundetes Dreieck, immer 3 Löcher, je eins in einer Ecke auf dem Lochkreis, Eckradius = Senkung + 4 mm, Drehung einstellbar); Loch-Ø frei (Senkung passt sich an). Die Werte werden aus dem automatischen Flansch vorbelegt und laufen mit der Öffnung mit, bis man sie von Hand ändert; danach schlägt der Link „Platte und Löcher neu vorschlagen“ (Erklärung hinter dem „?“) sie wieder neu vor. Extra: Nut für Moosgummi-Dichtband auf der Anlagefläche (2 mm Steg an der Öffnung, 6, 9 oder 10 mm breit, 1,5 mm tief; der Rand wächst passend mit). Ab 100 mm Plattengröße empfehlen die Druckhinweise einen Brim. Die schnelle Vorschau zeigt den Flansch ohne Löcher und Nut, die kommen in der vollen Berechnung. Zu schmaler Rand, Löcher zu nah an Öffnung, Dichtung oder Plattenrand und zu dichte Löcher werden mit verständlicher Meldung abgefangen.
+- **Extras am Geräteanschluss** (eingeklappt unter „Extras“): Klemmrippen für einen Presssitz (dreieckig, 1,6 mm breit, ragen 0,3 mm über die Gerätefläche), Längsschlitze für eine Schlauchschelle (nur aufgesteckt und nur bei Kreis, Ellipse und D-Form, denn an eckigen Formen drückt eine Schelle nur auf die Ecken; fest nach Größe: 80 % der Tiefe, Breite Umfang/40 = 2,5–4 mm, mit Schraubenlöchern je einer mittig zwischen zwei Löchern, sonst 3/4/6 je nach Umfang < 100 / ≤ 200 / > 200 mm; runder Schlitzgrund), Schraubenlöcher (Kreis und Ellipse 3 gleichmäßig, Formen mit geraden Seiten je eins mittig auf jeder Seite ab 14 mm, D-Form auf der Abflachung und 2 weitere; aufgesteckt Ø4 mit Senkung wie beim Rohrkonus, eingesteckt Ø3,2 zum Eindrehen; 8 mm vom Rand) und eine Aussparung am offenen Rand (nur aufgesteckt; Breite, Tiefe, Lage). Löcher, Schlitze und Rippen liegen versetzt zueinander und entfallen im Bereich der Aussparung.
+- Querschnitte: Kreis, Ellipse, Langloch, Rechteck (Eckradien oben und unten getrennt), D-Form (Kreis mit Abflachung), Trapez. Maße der Bausteine sind die lichte Weite, die Wandstärke (1,6–8 mm) kommt außen dazu; am Gerät wird das gemessene Maß eingegeben.
+- Vorlagen nach Beispielen von Thingiverse: Winkel 90° (stefanegg), rechteckige Haube (esbenrug, Bosch PSM 18 LI), Versatz mit Knick (dynamic-cube, Einhell TC-BJ 900), Gerade auf Stutzen.
+- Wahlweise liegt Ende B oder Anschluss A auf dem Druckbett. Ein Stecker unten bekommt die Druckhilfe; steht eine Kupplung auf ihrer Öffnung (auch an einem Ende mit Schieber), zeigen Aufbau und Druckhinweise „Stützen nötig“: die Decke der Bajonett-Nut hängt dann etwa 2 mm breit waagerecht in der Luft (die Stützen-Prüfung zählt die Teile von osVAC neo sonst nicht mit). Nach der Berechnung meldet die Überhang-Prüfung (src/lib/overhang.ts: Fläche der Bausteine, die steiler als 45° frei nach unten zeigt) im Aufbau und in den Druckhinweisen, ob Stützmaterial nötig ist. Stoßflächen zwischen zwei Körpern zählen nicht mit, ebenso waagerechte Brücken am Geräteanschluss.
+- Vorschau: Der Adapter steht immer mittig auf dem Druckbett; ist er größer als 170 mm, wächst das Bett in der Vorschau mit. Ab 220 mm Breite bzw. 250 mm Höhe erscheint im Download ein Hinweis zur Druckbettgröße. Ragt ein Teil tiefer als das Ende auf dem Druckbett (z. B. U-Bogen nach unten), ist der Adapter so nicht druckbar: roter Hinweis im Aufbau, Download gesperrt.
+- Prüfungen in Klartext direkt am Baustein, z. B. zu kleiner Bogenradius, D-Form ohne Abflachung, zu steiler Übergang, zu kurzer Steckweg.
+
+**Meldungen mit Vorschlag:** Ist ein Wert zu klein oder zu groß, nennt die Meldung die Grenze und bietet einen Knopf „… auf … setzen“ an (beim Flansch, wenn es zwei Wege gibt, beide, z. B. Platte größer oder Löcher enger). Das betroffene Feld ist rot (Fehler) bzw. gelb (Hinweis) markiert. Gilt für Bausteine, Gerät, Extras, Flansch, Wandstärke und die Stutzen-Hinweise; `npm run test:freeform` prüft, dass jeder Vorschlag seine Meldung auch behebt.
+
+Gerade, Bogen, Anschlagring und Muffe/Zapfen ohne Konus sind exakte Extrusionen bzw. Rotationen einer Ringfläche. Übergänge, Absätze, Fase und konische Geräteanschlüsse sind Lofts durch abgetastete Querschnitte (periodische B-Spline-Interpolation, gleiche Startlage und Laufrichtung bei allen Formen, damit sich nichts verwindet). Außenhaut, Innenhaut und die beiden Ringflächen werden direkt zu einem Körper vernäht statt Innen- von Außenkörper abzuziehen: das ist schneller (unter 1 s statt bis zu 70 s) und bei Freiformflächen zuverlässig. `npm run test:freeform` baut alle Vorlagen, alle Querschnitte auf- und eingesteckt und längere Ketten und prüft jeden Körper. Mit `--teil=1/2` bzw. `--teil=2/2` (`npm run test:freeform:1`/`:2`) läuft nur eine Hälfte; auf GitHub laufen beide Hälften gleichzeitig.
+
+**Saugdüse** (`src/lib/osvac/nozzle.ts`): Formular mit Düsenart (Rundrohr, Fugendüse, gebogen, Breitdüse, Polsterdüse), Anschluss, Länge, Biegung bis 45°, Öffnung, Schräge der Spitze bis 60° und Wandstärke; daraus entsteht eine Freiform-Kette mit dem Ende „Düse“ (Spitze an der schrägen Ebene abgeschnitten). Extras: Schutzring (1,2 mm dicker Rand) und Nut für eine Bürstenleiste (2 × 4 mm im Rand). Der Rand wird unten mit einer glatten Schräge (15° zur Mittellinie) dicker, so steigt sie auch an einem schräg stehenden Düsenende nach einem Bogen noch an; bei schräger Spitze folgen Unterkante und Schräge ihr. Wo die Schräge am Grund der Bürstennut noch nicht bis an deren Außenwand reicht, bleibt dort eine kleine Stufe stehen, damit die Außenlippe nicht frei in der Luft beginnt. „In der Freiform weiterbauen“ übernimmt die Düse als Bausteine, „Zurück zur Düse“ führt zum Formular.
+
+**Nebenluft-Regler** (`src/lib/osvac/bleed.ts`, `partsBleed` in `assemblies.ts`): kompakt direkt auf dem Schlauch. Oben Kupplung (Standard) oder Stecker, darunter Rohr mit drei Fenstern (je 50°) und mitgedrucktem Drehring (60° = auf bis zu), unten wie beim Schlauchadapter FxxHyy Drehring für den Schlauch, Schlauchteil mit Gewinde und Knickschutz. Rohr innen wie der Schlauch, außen wie der Schlauchteil. Ring-Querschnitt trapezförmig, Bunde mit 45°-Flanken, Spiel Standard 0,35 mm (0,2–0,6) an der senkrechten Innenfläche, an den 45°-Schrägen wie beim druckoptimierten Drehring 0,15 mm mehr (mindestens 0,45). Der untere Bund ist außen unter dem Anfang des Rings auf 0,8 mm Breite um 0,4 mm abgesenkt: Die unterste Ringschicht, die frei beginnt, liegt so gut 1 mm über dem Bund statt 0,49 mm. Griffzähne wachsen unten mit 45° aus dem Ring. Raste: Noppe innen am Ring, Mulden im Rohr bei „auf“ und „zu“ (Mulde um das Schrägen-Spiel größer als die Noppe). `npm run test:bleed` schneidet Rohr und Ring in 0,2-mm-Schichten (`tools/druck/ring.py`): frei über dem Spalt darf nur die unterste Ringschicht beginnen (mindestens 0,6 mm über dem Rohr), erlaubt sind die Brücken über den Fenstern. Kerben am oberen Bund über den Fenstern. (Der Freiform-Baustein „Nebenluft“ ist in der Oberfläche nicht mehr wählbar; ältere Stände bauen weiter.)
+
+**Eigene Kontur** (`src/lib/osvac/contour.ts`, `src/lib/contour-import.ts`, `ContourPanel.svelte`, `ContourDraw.svelte`): siebte Form „Eigene“ in jeder Formauswahl der Freiform. Wege: SVG/DXF laden (SVG im Browser abgetastet mit Transformationen und Einheiten aus width/viewBox; DXF: LWPOLYLINE/POLYLINE mit Bögen, LINE/ARC verkettet, CIRCLE, ELLIPSE, SPLINE, `$INSUNITS`; mehrere Umrisse → Auswahl), am Foto nachzeichnen (Maßstab aus zwei Punkten auf einem Lineal) oder auf Millimeterraster zeichnen (Punkte ziehen, einfügen, löschen, Eckradius je Punkt). Aufbereitung: spitze Ecken R0,5, Rundungen dicht abgetastet, Mitte des Umrisses im Ursprung. Versatz für Zugabe und Wand mit Clipper (runde Ecken). Draht: lange Kanten als Linien, Ketten kurzer Kanten als BSpline, an Knicken getrennt. Die Punkte gelten mit Blick auf den Stutzen (von außen); in der Geometrie werden sie gespiegelt, weil die Querschnittsebene in Richtung der Kette gesehen wird. Prüfung: geschlossen, ohne Überschneidung, 6–250 mm; eingesteckt Hinweis bei Stellen, die schmaler als Wand und Luft sind (narrowLoss). SVG: `<use>`/`<symbol>` werden aufgelöst, Vorlagen in `<defs>` nicht mitgezählt. Editor: Rückgängig, Zoom mit zwei Fingern und Knöpfen, Rückfrage vor dem Verwerfen. Testdateien in `scripts/fixtures`. Clipper, der SVG/DXF-Leser und das Zeichenfenster werden nachgeladen (eigene Dateien): Wer mit Konturen rechnet, wartet auf `clipperReady` (CAD-Worker, Skripte); die Planung im Browser rechnet nach dem Laden neu (`app.clipperOk`).
+
+**Magnet-Schnellkupplung Ø100** (`src/lib/osvac/magnet.ts`, `partsMagnet` in `assemblies.ts`): Testdruck steht noch aus; `test:ui` prüft den Ablauf. Eigenes System (an osVAC neo nur über die Platte mit Kupplung/Stecker); Idee wie die magnetische Schnellkupplung von kleinholz.me, eigene Konstruktion. Maschinenadapter: Muffe über den Stutzen (Ø90–110, Spiel je Seite 0,3), innen 45°-Anschlag auf die Bohrung Ø97, am offenen Ende Schraubklemme (Schlitz 4 mm mit Entlastungsloch Ø8, zwei Ohren mit 45°-Stützen, Bohrung Ø5,5, Kopfsenkung Ø9,2 und Sechskant-Tasche SW 8,3, beide 5,3 tief: Zylinderschraube M5 × 25 ISO 4762, selbstsichernde Mutter M5 DIN 985), oben Flansch und Zentrierbund Ø106 × 6. Schlauchkupplung: Rohr mit Außengewinde (Grund = Schlauch innen Ø90–110, Tiefe 3, Flanken 45°, Steigung 8–20, links oder rechts, eigener Körper „Gewinde“), oben Flansch mit Tasche für den Bund (Spiel je Seite 0,3). Flansch: Scheibe R59 und 8 Nasen auf R63 (Nasenradius = Tasche/2 + 3,5), Unterseite durchgehend 45° von der Wand bis außen an die Nasen, darum druckt alles ohne Stützen. Magnete 10 × 3, 12 × 5 oder 15 × 3 in geschlossenen Taschen (+0,3 im Ø, +0,2 hoch) 0,6 mm unter der Kontaktfläche; Kontaktfläche und Taschen im 0,2-mm-Raster, die Höhen der Druckpause stehen in den Druckhinweisen. Beide Teile werden mit der Kontaktfläche nach oben gedruckt und liegen diagonal nebeneinander, um 22,5° gegeneinander verdreht (passen auf 256 mm). `npm run test:islands -- magnet` prüft drei Varianten; `npx tsx scripts/magnet-try.ts [Ordner] [JSON]` baut die Körper einzeln als STL. Platten (Karte *Gerät ↔ Schlauch* mit „Kleiner, mit Drehring“ und Karte *Gerät ↔ Kupplung/Stecker*, `magnetPlate`, `magnetPortLayout`, `magnetPlateInfo`): flach, Kontaktfläche unten (z = 0), 8,4 mm stark mit Ringnut für den Bund (innen Ø97 − 2 × Spiel, Decke = Brücke 4,8 mm), innerhalb der Nut 4 mm, unter jedem Anschluss ein Sockel in voller Stärke mit Loch; Taschen 0,6 über der Kontaktfläche (Druckpause früh). osVAC-Anschlüsse fest (Female bzw. Male gedreht, je mit Übergang wie bei den Stutzen-Adaptern); Schläuche: unterer Drehring + Kopf des Schlauchteils fest, oberer Drehring + umgedrehter Becher (Schlauchteil ohne Knickschutz, Schulter aufgefüllt, Gewinde ohne Auslauf, je Schlauch links oder rechts; Rändelung und Textfelder aufrecht gebaut, `hoseCupGrip`) drehen. Außenradius je Anschluss mit Gegenstück: F/M d/2 + W + 1,5, Schlauch d/2 + W + 0,5; freier Abstand 15 mm (Bajonett), 12 mm bei zwei Steckern (gemessen an den aufgesteckten Kupplungen) bzw. 8 mm (Schläuche), beide innerhalb R59. Verschlusskappen (Stopfen = Male, Kappe = Female, je mit Boden) als eigene Objekte in den freien Ecken des Druckbetts. `npm run test:islands -- magnet` prüft sechs weitere Fälle.
+
+**Druckoptimierter Drehring** (`swivelPrintProfile`, `swivelPrintTop/Bottom` in `hose.ts`, `swivelParts` in `assemblies.ts`, BuildOptions `swivel: 'print'`): in „Passung“ wählbar (*Druckoptimiert* / *Wie Original*, Standard seit 0.6.0 druckoptimiert), Testdruck steht noch aus. Standard des Drehring-Spiels 0,3 mm wie im Original. Eigene Form statt der Haken des Originals: Der obere Ring (an Kupplung, Gehäuse bzw. Nebenluft-Rohr) sitzt innen und hat unten einen Flansch, der untere (am Schlauchteil) liegt außen als 1,6-mm-Hülse mit einer Lippe, die 1,4 mm über den Flansch greift. Alle beim Druck nach unten zeigenden Flächen sind 45° (Lippen-Unterseite 50°) oder senkrecht; senkrechte Dichtflächen (Flanschspitze 2,2 mm, Lippe 0,8 mm) mit dem eingestellten Spiel, Schrägen mit Spiel + 0,15, mindestens 0,45. Frei beginnt nur die Flanschspitze, 0,65 mm über dem unteren Ring. FxxHyy/Nebenluft-Regler: Schlauchteil 6,5 statt 6,0 mm unter dem Ring (0,5 mm länger); MxxHyy: Gehäuse-Unterkante 45° (Ecke an der Bohrung 0,36 höher), Schulter des Schlauchteils folgt. `npm run test:swivel` prüft die Profile für 7/9 mm und Spiel 0,2–0,5 (keine Überlappung, Mindestspiel, kein Überhang außer dem Anfang) und rechnet das Original zum Vergleich mit; `test:islands` hat drei Fälle `drehring-druck`/`nebenluft-druck`.
+
+**Drehring-Lösehilfe** (`src/lib/osvac/helper.ts`): nach „osVACneo SlipRingHelper“ von Ludo Kerz (odul), parametrisch nachgebaut (Abgleich mit dem Fusion-Export F32/M32: Abweichung ≤ 0,02 mm, Schrift ausgenommen). Halter für Kupplungen: Block (FemaleDiameterOuter + 2, 33,5 hoch) mit Stecker-Stutzen und drei Rippen bis 3,3 mm unter die Oberkante. Halter für Stecker: Block mit Bohrung wie die Kupplung und sechs Taschen für die Nasen. Schrift „osVAC neo / F32 bzw. M32 / Drehring-Lösehilfe“ 0,5 mm tief; beschriftet wie im Original nach dem Teil selbst (der Halter für Kupplungen ist ein Stecker: M32, der für Stecker eine Kupplung: F32). Fusion-Exportskript: `tools/fusion/export_loesehilfe`.
+
+**Dichtung in der Kupplung** (`src/lib/osvac/seal.ts`, `sealring.ts`, `partsSealRing` in `assemblies.ts`, Kasten im Schritt Download, Skizze `SealFigure.svelte`): Maße der Dichtnut unten in jeder Kupplung (Bohrung F + 6 + Spiel, größter Ø F + 8,2 auf 1,95 mm Höhe, Rundung R1,95 um Ø F + 4,3, Höhe an der Bohrung, Spielraum der Steckerspitze 3,3 bis 3,6 + 0,6 × Spiel mm über dem Boden, am Modell nachgemessen, an einer gedruckten Kupplung auf < 0,1 mm bestätigt) mit O-Ring-Vorschlag nach dem Außen-Ø (außen etwa B − 0,5 bis B + 1 mm, Schnur 3,5 mm). Dazu eine **Lippendichtung aus TPU** als eigene Datei (eigener Adaptertyp `SEAL`, nicht in Schritt 1): Fuß in der Hinterschneidung, außen der Rundung der Nut entlang (unten anliegend, oben 0,1 mm Luft), 0,8 mm Lippe unter mindestens 55° nach oben außen, steht um die *Vorspannung der Lippe* (0,2–1,0 mm, Standard 0,5) über der Steckerspitze und dichtet, weil der Stecker sie um diesen Betrag nach unten biegt. Die Dichtnut selbst wird in Kupplungen überall frei gelassen (keine Dichtnut-Füllung wie beim Maschinenadapter des Originals).
+
+**Druckbarkeit** (`npm run test:islands`): Düsen, Nebenluft-Regler und Vorlagen werden wie beim Export vernetzt und in 0,2-mm-Schichten geschnitten. Sagt die App „ohne Stützen“, darf nichts frei in der Luft beginnen (außer der untersten Schicht des Drehrings); offene Netzkanten sind immer ein Fehler. Die Stützen-Prüfung der Freiform zählt Kupplungen und Stecker mit, die schräg stehen (nach einem Bogen, am Abzweig).
+
+Wie in Fusion besteht ein Adapter aus mehreren Körpern, die sich berühren oder überlappen. Slicer verschmelzen sie beim Laden. In 3MF liegen sie als Teile eines Objekts vor, in STEP als einzelne Volumenkörper.
+
+## Lokal starten
+
+Für Entwickler. Wer den Baukasten nur benutzen will, findet die einfache Anleitung in [docs/im-browser.md](im-browser.md).
+
+Voraussetzung: Node.js 22 oder neuer.
+
+```bash
+npm ci
+npm run dev        # Entwicklungsserver auf http://localhost:5173
+```
+
+Fertige Version bauen und lokal ausliefern:
+
+```bash
+npm run build
+npm run preview    # http://localhost:4173
+```
+
+Der Ordner `dist/` ist eine statische Website und läuft mit jedem lokalen Webserver. Per Doppelklick als `file://` funktioniert er nicht, weil Browser dort keine Web Worker und kein WebAssembly laden.
+
+## Versionsverwaltung mit GitHub
+
+Das Repository ist öffentlich: Jeder kann den Code ansehen und herunterladen, Änderungen kommen nur vom Eigentümer. Pull Requests sind abgeschaltet, Rückmeldungen laufen über Issues.
+
+Nach Änderungen reicht `git add -A`, `git commit -m "…"` und `git push`.
+
+## Aufbau
+
+```
+src/
+  App.svelte                 Gerüst: Vorschau, Berechnung mit Fortschritt, Schrittleiste
+  lib/app.svelte.ts          Zustand aller Schritte (Eingaben, abgeleitete Werte, Export, Speichern im Browser)
+  components/steps/          Die Schritte Verbindung, Größen (bzw. Teile, Düse, Nebenluft), Passung, Download
+  lib/viewer.ts              3D-Ansicht (three.js) mit Druckbett
+  lib/cad.ts                 Worker-Pool, Auftragsverteilung, Export STL/STEP/3MF
+  lib/worker/cad.worker.ts   OpenCascade (replicad) im Web Worker, Teile-Cache
+  lib/worker/threemf.ts      3MF-Writer
+  lib/osvac/params.ts        Parameter und Formeln aus Fusion
+  lib/osvac/female.ts        Kupplung mit Bajonett, Rastnase, Dichtnut
+  lib/osvac/seal.ts          Maße der Dichtnut, Lage der Steckerspitze, Querschnitt der Lippendichtung (Download-Schritt)
+  lib/osvac/sealring.ts      Lippendichtung aus TPU als Körper (eigene Datei, Kind SEAL außerhalb von Schritt 1)
+  lib/osvac/male.ts          Stecker mit Bajonettnasen, Druckhilfe
+  lib/osvac/hose.ts          Gewindekörper, Drehring, Gehäuse, Knickschutz
+  lib/osvac/thread.ts        Schlauchgewinde (links- oder rechtsgängig, Steigung 5 mm, Konus 4°)
+  lib/osvac/magnet.ts        Magnet-Schnellkupplung Ø100 (Adapter, Kupplung, Taschen, Klemme)
+  lib/osvac/machine.ts       Rohrkonus für Stutzen
+  lib/osvac/grip.ts          Rändelung und Textfelder
+  lib/osvac/assemblies.ts    Baugruppen als Liste einzelner Teile
+  lib/osvac/freeform.ts      Freiform: Querschnitte, Bausteine, Prüfungen, Lage auf dem Druckbett
+  lib/osvac/catalog.ts       Adaptertypen für den Wizard
+  lib/osvac/gate.ts          Schieber (Gehäuse, Platte, Befestigung)
+  lib/osvac/nozzle.ts        Saugdüse (Formular → Freiform-Kette)
+  lib/osvac/bleed.ts         Nebenluft-Regler
+  lib/osvac/helper.ts        Drehring-Lösehilfe
+  lib/osvac/contour.ts       eigene Kontur (Aufbereitung, Versatz, Prüfung)
+  lib/contour-import.ts      SVG- und DXF-Leser
+  lib/overhang.ts            Überhang- und Druckbett-Prüfung
+  lib/errors.ts              verständliche Meldungen, Hinweise
+  lib/save.svelte.ts         Speichern (Ordner wählen, im Programm und im Browser)
+  lib/desktop.ts             Besonderheiten im Programmfenster (Links, eigene Fenster)
+  lib/worker/measure.worker.ts  Filamentschätzung (manifold-3d)
+  components/FreeformEditor.svelte  Schritt „Aufbau“ (Vorlagen, Bausteine, Ende B)
+  components/SectionEditor.svelte   Querschnitt wählen und bemaßen, mit Skizze
+  components/BlockFigure.svelte     Erklärskizzen der Bausteine
+  components/ContourPanel.svelte    eigene Kontur laden, nachzeichnen, zeichnen (ContourDraw.svelte)
+  components/SealFigure.svelte      Schnitt durch die Dichtnut mit Steckerspitze und Lippendichtung (Download)
+scripts/
+  build-ref.ts               Einzelteil in Node bauen (npm run part -- MxxFyy 25 32 32)
+  matrix.ts                  Alle Typen mit Grenzwerten bauen (npm run test:geometry)
+  freeform.ts                Freiform-Vorlagen und -Varianten bauen (npm run test:freeform, --stl schreibt out/)
+  sketch-overlap.ts          Skizzen auf überlappende Beschriftungen prüfen (npm run build && npm run test:sketches)
+  ui-flows.ts                Bedienabläufe im Browser prüfen (npm run build && npm run test:ui)
+  swivel-print.ts            Profile des druckoptimierten Drehrings prüfen (npm run test:swivel)
+  bleed-print.ts             Nebenluft-Ring in Schichten prüfen (npm run test:bleed; tools/druck/ring.py)
+  islands.ts                 Druckbarkeit in Schichten prüfen (npm run test:islands, braucht python3 mit trimesh/shapely; tools/druck/islands.py)
+  lib/preview.ts             gemeinsam für Skizzen und Bedienabläufe: vite preview + Chrome starten
+  anleitung.ts, anleitung-bilder.ts  Anleitung bauen und Bilder aufnehmen
+  licenses.py, licenses-rust.py      Lizenzseiten erzeugen (Oberfläche bzw. Programm)
+src-tauri/                   Programm für Windows, macOS und Linux (Tauri)
+docs/                        Anleitung, Installation, Nutzung im Browser
+tools/fusion/                Fusion-Exportskripte und Vergleich mit dem Original
+tools/druck/                 Schichtprüfung für test:islands und test:bleed (Python)
+.github/workflows/tests.yml  Alle Prüfungen (Typen, Build, Schlüssel, Freiform, Skizzen, Bedienabläufe, Geometrie, Druckbarkeit)
+.github/workflows/*-installer.yml  Installer für Windows, macOS, Linux
+.github/workflows/release.yml     Version veröffentlichen: Tests, Installer, GitHub-Release
+```
+
+### Prüfungen
+
+| Befehl | Prüft | Dauer |
+|---|---|---|
+| `npm run check` | Typen (Svelte und TypeScript) | < 1 min |
+| `npm run test:keys` | gleiche Cache-Schlüssel ergeben gleiche Körper | ca. 1 min |
+| `npm run test:freeform` | alle Freiform-Vorlagen, Querschnitte, Extras, Flansch (alle Formen, mit Dichtung, Lochbild nach Maß, Prüfungen) und längere Ketten, Stutzen-Typen mit Klemmrippen/Schlitzen, Weg des Hinweises bei weggelassenen Rippen, Rahmen nicht gespiegelt | ca. 4 min |
+| `npm run test:sketches` | keine Beschriftung in Skizzen berührt Linien, Flächen oder andere Beschriftungen, auch in der Skizze der Dichtnut (braucht `npm run build` und Chrome, Chromium oder Edge; wird gesucht, sonst Pfad über `CHROME_PATH`) | ca. 2 min |
+| `npm run test:ui` | Bedienabläufe: Neu anfangen, Rückfrage vor Vorlagen, Bereich bleibt offen, Download gesperrt bei Fehlern und bei Teilen unter dem Druckbett, Stand und Druckbett nach dem Neuladen, Extras im Namen, Flansch, Abzweig, Schieber, Speicherort, Saugdüse, Nebenluft-Regler, eigene Kontur, Lösehilfe, Magnet-Schnellkupplung (mit Maßen der Dichtnut und Download der Lippendichtung), Drehring, Gewinderichtung, Druckhilfe je Verbindung, hell/dunkel, Link aus den Download-Hinweisen (braucht `npm run build` und Chrome; bei Fehlern Bildschirmfotos in out/) | ca. 10 min |
+| `npm run test:geometry` | alle Adaptertypen mit Grenzwerten | ca. 10–15 min |
+| `npm run test:swivel` | Druckoptimierter Drehring: Profile ohne Überlappung, Mindestspiel, kein Überhang außer dem Anfang des oberen Rings; Vergleich mit dem Original | wenige s |
+| `npm run test:bleed` | Nebenluft-Ring: Rohr und Ring in 0,2-mm-Schichten, frei beginnt nur die unterste Ringschicht (mindestens 0,6 mm über dem Rohr), Abstand nirgends kleiner als das Spiel (braucht python3 mit trimesh, shapely, rtree) | etwa 20 s |
+| `npm run test:islands` | Druckbarkeit: Düsen, Nebenluft-Regler und Vorlagen in 0,2-mm-Schichten geschnitten, nichts beginnt frei in der Luft, wenn die App „ohne Stützen“ sagt (braucht python3 mit trimesh und shapely) | ca. 2 min |
+
+Auf GitHub laufen alle von Hand (Actions → Tests → Run workflow) und vor jedem Release (siehe „Neue Version veröffentlichen“), in mehreren gleichzeitigen Gruppen, zusammen etwa 20 Minuten. Nicht bei jedem Push: nach größeren Änderungen deshalb von Hand starten.
+
+### Rechenzeit
+
+- Jede Baugruppe ist eine Liste einzelner Teile. Jedes Teil hat einen Schlüssel aus den Parametern, von denen es wirklich abhängt. Ändert sich nur die Beschriftung, wird nur das Textfeld neu gerechnet; Gewinde, Drehring und Kupplung kommen aus dem Cache.
+- Mehrere Web Worker (bis zu 4, je nach CPU-Kernen) rechnen die Teile parallel, teure Teile zuerst. Fertige Teile erscheinen sofort in der Vorschau.
+- Grundkörper, Rändelung und Textfelder sind getrennte Körper: Der Rändelring greift 0,3 mm in den Grundkörper und spart die Textfelder aus, die Textfelder (mit gravierter Schrift) greifen 0,05 mm hinein. Rändelung und Schrift hängen nur vom Außendurchmesser ab; ein anderes Spaltmaß rechnet nur den Grundkörper neu, und die volle Berechnung übernimmt den Grundkörper aus der schnellen Vorschau. Im 3MF sind alle Körper Teile desselben Objekts, der Slicer vereinigt sie. Volumen und Fläche der Überlappungen werden für die Filamentangabe herausgerechnet.
+- `npm run test:keys` prüft, dass gleiche Zwischenspeicher-Schlüssel in allen Adaptertypen denselben Körper liefern.
+- Der Senkkonus des Rohrstutzens nutzt glatte BSpline-Ringe statt Polygonen.
+- OpenCascade (22 MB WebAssembly) wird beim Laden der Seite einmal übersetzt und allen Workern übergeben.
+- Teure Körper werden zusätzlich im Browser gespeichert (IndexedDB, höchstens 150). Beim nächsten Öffnen ist ein schon einmal berechneter Adapter nach wenigen Sekunden da. Der Schlüssel enthält eine Prüfsumme des Geometrie-Codes; nach einem Update wird neu gerechnet.
+- Jeder berechnete Körper wird auf gültige Topologie geprüft (BRepCheck). Scheitert eine Boolesche Operation, erscheint eine Meldung statt eines kaputten Teils. `npm run test:geometry` prüft das ebenso.
+
+### Bedienung
+
+- Ruhige Oberfläche für Laien: Jedes Feld hat eine kurze Beschriftung; die Erklärung steht hinter dem „?“ daneben (src/components/Field.svelte). Werte, die selten geändert werden (Luft/Zugabe, Wandstärke, Übergangslänge, Schraubenlöcher, Drehung, Fase), liegen in eingeklappten „Feineinstellungen“.
+- Helle und dunkle Ansicht: Umschalter (Mond/Sonne) ganz rechts in der Kopfzeile, neben „Anleitung“. Start immer hell (unabhängig vom System), die Wahl liegt im localStorage (`osvacneo-theme`) und wird in `main.ts` vor dem ersten Zeichnen gesetzt. Farben stehen als Variablen in `src/app.css` (`:root` hell, `:root[data-theme='dark']` dunkel); Komponenten verwenden nur diese Variablen (z. B. `--card`, `--warn-bg`, `--on-sky`) statt fester Farbwerte.
+- Texte in einfacher Sprache, Fachbegriffe vermieden (z. B. „Spiel“ statt „Spaltmaß“ in den Überschriften, „Tiefe“ statt „Steckweg“).
+- Schlicht: Zurücksetzen gibt es nur beim Stutzen (alle Stutzen-Maße inkl. Feineinstellungen, die Befestigungsart bleibt), im Schritt „Passung“ und im Freiform-Aufbau (auf die zuletzt gewählte Vorlage, mit Rückfrage), jeweils nur sichtbar, wenn etwas geändert wurde; F, M und H haben keine eigenen Kennfarben mehr, Auswahlen sind überall gleich himmelblau markiert.
+- Fehler: Solange ein Fehler vorliegt (Berechnung gescheitert oder rot markierte Prüfung), sind der Reiter „Download“ und der Weiter-Knopf dorthin gesperrt, mit Hinweis über den Knöpfen. In der Oberfläche erscheinen nur verständliche Meldungen (src/lib/errors.ts: `UserError` für eigene Meldungen, alles andere wie WebAssembly-Ausnahmen von OpenCascade nur in der Konsole und als allgemeiner Hinweis bzw. „Baustein n (…) ließ sich mit diesen Maßen nicht berechnen“).
+- In Skizzen berührt keine Beschriftung eine Form, Linie oder andere Beschriftung; Eckradien sind mit Hinweislinien außerhalb der Form beschriftet.
+- Filamentschätzung: Nach der vollen Berechnung vereinigt ein eigener kleiner Worker (`measure.worker.ts`, manifold-3d) die Netze aller Körper und schneidet das Teil wie ein Slicer in 0,2-mm-Schichten (`printedVolume` in `unionMeasure.ts`): je Schicht 3 Wände (1,36 mm, so verbraucht es Bambu Studio), 5 volle Lagen oben und 3 unten ganz, der Rest mit 15 % Füllung. Abgeglichen an drei in Bambu Studio gesliceten Teilen (Nebenluft F32H36 78,4 g, M36F36 mit Druckhilfe 40,0 g, Flansch D63 63,6 g), Abweichung unter 1 %. Geht das Schneiden nicht, zeigt die App eine Spanne (1,2 mm Hülle + 15 % bis massiv); geht schon die Vereinigung nicht, gilt die Summe der Körper.
+- Der Stand (Typ, Größen, Passung, Freiform-Aufbau, Schritt) wird im Browser gespeichert (localStorage) und beim nächsten Öffnen wiederhergestellt; beschädigte oder unbekannte Werte fallen auf den Standard zurück.
+- Freiform: Ist der Aufbau gegenüber der Vorlage verändert, fragt ein Klick auf eine Vorlage vorher nach. Nach der Berechnung steht schon im Aufbau, ob Stützen nötig sind. Die Zugabe am Gerät ist bei runden Formen 0,2 mm, bei eckigen 0,4 mm (wechselt mit, solange der Standard drinsteht).
+- „Neu anfangen“ unten in Schritt 1 (nur sichtbar, wenn etwas geändert wurde, mit Rückfrage) setzt alle Eingaben auf den Anfang; Druckbett und fertige Dateien bleiben.
+- Freiform: Dateiname und Druckbett-Liste nennen die Extras („… Schrauben Aussparung“). Die Lage der Aussparung zeigt eine kleine Skizze des Querschnitts, ein Klick darauf setzt sie. Die schnelle Vorschau rechnet ohne Extras.
+- Während der Berechnung zeigt die Vorschau den Fortschritt („3 von 9 Teilen“, ab dem ersten fertigen Teil). Scheitert sie, bleibt das letzte Modell blass stehen; gab es noch keins, erscheint ein Hinweis statt einer leeren Vorschau.
+- Im Download-Schritt lassen sich mehrere Adapter auf ein Druckbett legen und zusammen als 3MF, STL oder STEP herunterladen.
+- Bei jedem Adapter mit Kupplung zeigt der Download-Schritt den Kasten „Dichtung in der Kupplung“ (siehe oben).
+- Dateinamen enthalten abweichende Einstellungen (z. B. „osVAC neo F32H36 Spiel 0,3 Drehring 0,4“).
+
+Konvention: Achse = Z, Oberkante eines Moduls bei z = 0, Profile als (r, z). Radien hängen über die Fusion-Formeln von den Eingaben ab, axiale Maße sind fest.
+
+## Anleitung
+
+Die Anleitung für Anwender liegt in der App unter **Anleitung** (Kopfzeile, öffnet `public/anleitung.html`, auch offline im installierten Programm, hell und dunkel).
+
+- Text: `docs/anleitung.md` (einfaches Markdown, erlaubte Zeichen oben in `scripts/anleitung.ts`). Daraus baut `npm run docs` die Seite, `npm run build` macht das jedes Mal mit; die HTML-Datei nicht von Hand ändern.
+- Bilder: `public/anleitung/*.webp`, aufgenommen mit `npm run build && npm run docs:bilder` (alle) oder `npm run docs:bilder -- kontur duese` (nur Szenen mit diesem Namen). Jede Szene startet mit Standardwerten; die Szenen stehen in `scripts/anleitung-bilder.ts`.
+- Veraltete Bilder finden: Im Workflow „Tests“ nimmt GitHub alle Szenen zweimal auf, mit dem aktuellen Stand und mit dem Stand, bei dem `public/anleitung/` zuletzt geändert wurde, und vergleicht beide (`tools/anleitung/vergleich.py`). Weicht ein Bild ab, hat sich die App dort seitdem sichtbar geändert: Warnung „Anleitungsbild veraltet“ mit dem Namen (nur Warnung, die neuen Bilder liegen als Artefakt „anleitung-neu“ bei). Beide Aufnahmen entstehen auf derselben Maschine, ein direkter Vergleich mit `public/anleitung/` würde wegen kleiner Unterschiede im Zeichnen von Chrome fast jedes Bild melden. Lokal: `npm run build && npm run docs:pruefen` vergleicht direkt mit `public/anleitung/` (Python mit Pillow und numpy, unter Linux Mint/Ubuntu `sudo apt install python3-pil python3-numpy`); das ist nur verlässlich auf dem Rechner und mit dem Browser, mit dem die Bilder aufgenommen wurden.
+- **Bei jeder Änderung an der Oberfläche prüfen**, ob die Anleitung betroffen ist (neue oder umbenannte Einstellungen, neue Adapterarten, andere Abläufe): Text in `docs/anleitung.md` anpassen, betroffene Bilder neu aufnehmen, `npm run docs` ausführen und alles mit committen. Ein Eintrag im CHANGELOG reicht dafür nicht.
+
+## Abgleich mit Fusion
+
+Geprüft gegen die Fusion-STEP-Exporte M25/F32/H36, M32/F32/H32, M25/F25/H25, M50/F50/H50, M40/F40/H40,
+M25/F25/H27, M40/F25/H50 (7 mm), M25/F32/H36 und M32/F32/H32 (9 mm), M32/F32/H36 mit Spaltmaß 0,4 und
+Drehring 0,5 sowie sieben Rohrvarianten (konisch, gerade mit 3–6 mm Wand, Ø30 und 40): Volumen, waagerechte
+Schnitte und ein Flächenvergleich, bei dem für 150 000–300 000 Punkte jeder Oberfläche der exakte Abstand zur
+Gegenfläche berechnet wird (Rändelung eingeschlossen, nur die Schrift ausgenommen). Ergebnis: Alle Flächen liegen
+innerhalb von 0,1 mm am Original. Einzige Ausnahme: Am Gewindeanfang großer Schläuche (H50) weicht die
+Anschnittfläche nahe am Gewindegrund an wenigen Punkten bis 0,15 mm ab; eine Ebene, die H50 genauer trifft,
+verschlechtert die kleinen Größen.
+
+Die Werkzeuge dafür liegen in `tools/fusion/` (Fusion-Exportskript und Vergleich, siehe dortige README).
+
+Nicht nachgemessen (fortgeschrieben): Größen unter 25 und über 50 mm, Spaltmaße außer 0,2/0,4 bzw. 0,3/0,5,
+Drehring bei 9 mm mit anderem Spaltmaß, Schraubenlöcher an sich verjüngenden Rohren.
+
+| Teil | Volumen gegenüber Fusion | Anmerkung |
+|---|---|---|
+| Female F32 / F25 (mit Text) | +0,2 % / +0,1 % | Einführkanal mit R-1-Oberkante, Einlaufschräge (Ebene, < 0,1 mm), Rastnase mit R-1-Übergängen und bis an die Schräge reichend, Nutende mit Fase bzw. gerade bei 60° (F25) |
+| Male M25 / M32 (mit Text) | +0,5 % / +0,4 % | Unterschied nur in der Beschriftung (Schrift); Nasen mit R1 am Rohr und an der oberen Außenkante |
+| Druckhilfe | ±0,01 % | Stützblöcke enden an der Steckerunterkante, Kerbe zur Fangring-Schräge wie im Original |
+| Drehringe, Übergänge, Gehäuse | ±0,2 % | |
+| Hose H36 (Schlauchteil, Gewinde, Knickschutz) | +0,1 % | Gewinde mit Anschnitt am Anfang, Auslauf im Knickschutz bzw. Endanschnitt ohne Knickschutz wie im Original |
+| Rohrkonus, Übergang | ±0,15 % | Senkung als Fase der Bohrung wie im Original. Die Dichtnut-Füllung des Originals (45°-Schräge über der Dichtnut) entfällt: Die Dichtnut bleibt wie beim Schlauchadapter offen, damit eine Dichtung unter den Rand passt. |
+
+Beschriftung: Lage, Größe und Laufweite sind am Original vermessen (Liberation Sans Regular ist maßgleich zu Arial, Abweichung ≤ 0,15 mm). Die Lizenzzeile „CC BY-NC-SA 4.0“ steht wie im Original auf dem Band (Kupplung, Schlauchteil) und oben am Stecker; zusätzlich wird die Lizenz beim Download verlinkt.
+
+Noch nicht umgesetzt: geteilte Varianten (FxxHyyDivided, MxxHyyDivided) mit Stützstruktur sowie Flansche, Griffe und Düsen aus „PipesConesFlangesHandles“ als Nachbau. Eigene Lösungen gibt es dafür: den Flansch zum Anschrauben in der Freiform und die Saugdüse.
+
+## Windows-Programm (Installer)
+
+Der Baukasten lässt sich als eigenes Windows-Programm installieren (Tauri). Er läuft dann in einem eigenen
+Fenster mit dem in Windows eingebauten WebView2 (Edge), weiterhin vollständig lokal und ohne Internet.
+Externe Links öffnen im Standardbrowser, die Lizenzseiten in einem zweiten Fenster. Anleitung: `docs/installation-windows.md`.
+
+**Installieren:** Setup-Datei starten. Sie installiert ohne Administratorrechte für den angemeldeten Benutzer
+(Startmenü, Deinstallation über „Apps“). Da die Datei nicht signiert ist, meldet Windows beim ersten Start
+„Der Computer wurde durch Windows geschützt“: **Weitere Informationen → Trotzdem ausführen**.
+Fehlt WebView2 (nur sehr alte Windows-10-Installationen), lädt der Installer es nach.
+
+**Umstieg vom „osVAC neo Konfigurator“ (bis 0.2.0):** Das Programm hat seit 0.3.0 einen neuen Namen und eine
+neue App-Kennung. Es wird deshalb neben dem alten installiert, das alte Programm bitte über „Apps“ deinstallieren.
+Der zuletzt bearbeitete Adapter wird nicht übernommen, das Programm startet einmal mit dem Standard.
+
+**Selbst bauen** (Windows mit Rust und Visual Studio Build Tools): `npm ci`, dann `npm run desktop:build`.
+Zum Entwickeln im Programmfenster: `npm run desktop:dev`.
+
+## macOS-Programm
+
+DMG als Universal-App (Apple Silicon und Intel), ab macOS 11. Da die App nicht bei Apple beglaubigt ist, beim ersten
+Start im Finder Rechtsklick → **Öffnen** (oder Systemeinstellungen → Datenschutz & Sicherheit → **Dennoch öffnen**),
+Einzelheiten in `docs/installation-mac.md`.
+
+## Linux-Programm
+
+AppImage (ohne Installation, die meisten Distributionen) und .deb (Debian, Ubuntu, Mint), gebaut auf Ubuntu 22.04.
+Anleitung: `docs/installation-linux.md`.
+Selbst bauen (Ubuntu/Debian): `sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev`,
+dann `npx tauri build --bundles appimage,deb`.
+
+## Neue Version veröffentlichen
+
+1. Version in `package.json`, `package-lock.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` und
+   `src-tauri/Cargo.lock` erhöhen und in `CHANGELOG.md` einen Abschnitt `## <Version>` anlegen.
+2. Bei geänderten Abhängigkeiten die Lizenzdateien neu erzeugen (siehe „Lizenzen“).
+3. Committen, pushen, dann den Tag setzen: `git tag v<Version> && git push origin v<Version>` (z. B. `v0.7.0`).
+
+Der Tag startet `.github/workflows/release.yml`: Erst wird geprüft, ob Tag, Versionsnummern und CHANGELOG
+zusammenpassen und die Lizenzdateien aktuell sind. Dann laufen alle Tests und die drei Installer gleichzeitig (etwa 15–20 Minuten). Nur wenn alles
+grün ist, entsteht unter **Releases** die Seite „osVAC neo Baukasten <Version>“ mit dem Text aus dem CHANGELOG,
+Links zu den Anleitungen und den Dateien `osVAC-neo-Baukasten-<Version>-Windows-Setup.exe`, `…-macOS.dmg`,
+`…-Linux.AppImage`, `…-Linux.deb` sowie `SHA256SUMS.txt`. Herunterladen geht ohne GitHub-Konto, der Link
+`…/releases/latest` zeigt immer auf die neueste Version. Ein Tag mit Bindestrich (z. B. `v0.6.1-beta.1`) wird als
+Vorabversion markiert und zählt nicht als „latest“.
+
+Schlägt etwas fehl, entsteht kein Release:
+- Fehler ohne Änderung am Code (z. B. Störung bei GitHub): im Lauf **Re-run failed jobs**.
+- Fehler im Code: beheben, pushen, Tag löschen und neu setzen:
+  `git tag -d v0.6.1 && git push origin :refs/tags/v0.6.1 && git tag v0.6.1 && git push origin v0.6.1`.
+  Das geht nur, solange es zu diesem Tag noch kein Release gibt. Sonst lieber eine neue Version.
+
+**Nur zum Testen** lässt sich jeder Installer auch einzeln bauen: **Actions → Windows-Installer** (bzw. macOS-,
+Linux-Installer) **→ Run workflow**. Die Datei liegt dann nur beim Lauf unter **Artifacts** (Anmeldung bei GitHub
+nötig, wird nach 90 Tagen gelöscht), es entsteht kein Release.
+
+**Downloads im Programm:** Die Oberfläche speichert über den Befehl `save_file` (`src-tauri/src/lib.rs`, Inhalt roh,
+Name und Ordner in Kopfzeilen) in den Ordner, der im Schritt Download unter „Speichern in“ gewählt ist (Plugin
+„dialog“; gemerkt im localStorage, Standard „Downloads“, freier Name „… (2)“). „Im Ordner zeigen“ nutzt
+`revealItemInDir` (Plugin „opener“). Das Hauptfenster wird weiterhin in `lib.rs` erzeugt (`"create": false`), damit
+auch Downloads über Links ankommen: unter macOS und Linux setzt `on_download` das Ziel. Im Browser (Chrome, Edge)
+lässt sich ein Ordner über `showDirectoryPicker` wählen (gemerkt in IndexedDB), sonst bestimmt der Browser den Ordner.
+Unter Linux schaltet `main.rs` den DMA-BUF-Renderer von
+WebKitGTK ab (sonst bei manchen Grafiktreibern leeres Fenster).
+
+Die Version steht in `src-tauri/tauri.conf.json` (`version`) und sollte mit `package.json` übereinstimmen.
+
+## Lizenzen
+
+Basiert auf **osVAC neo von Ludo Kerz**, ursprünglich entstanden im Hobbyhimmel Stuttgart.
+Für den Baukasten nachgebaut und verändert: Maße, Spaltmaße und Stutzen sind frei einstellbar.
+Der osVAC neo Baukasten ist von [paddycodespy](https://github.com/paddycodespy) (in der App im Download-Schritt bei Lizenz und Version; nicht in den exportierten Dateien).
+
+Auch die exportierten Dateien tragen Namensnennung und Lizenz: 3MF in den Metadaten, STL im Dateikopf, STEP im Kopfbereich (Autor, Organisation, Beschreibung).
+
+- **Dieses Projekt** (Quellcode und alle damit erzeugten Teile) steht wie osVAC neo unter **CC BY-NC-SA 4.0**: Namensnennung, nicht kommerziell, Weitergabe unter gleichen Bedingungen. Siehe `LICENSE`.
+- **Bausteine Dritter** mit eigenen Lizenzen, vollständig in `public/lizenzen.html` (in der App im Download-Schritt verlinkt) und als Text in `public/THIRD_PARTY_LICENSES.txt`:
+  - OpenCascade (LGPL 2.1, als WebAssembly unverändert und austauschbar eingebunden)
+  - replicad, three.js, Svelte, fflate (MIT)
+  - Manifold (Apache 2.0, Filamentschätzung) und Clipper (Boost Software License 1.0, eigene Kontur)
+  - Poppins (Oberfläche) und Liberation Sans Regular (Beschriftung): SIL Open Font License
+- **Programm** (nur im installierten Programm, nicht in der Browser-Fassung): Tauri und rund 350 weitere Rust-Bausteine (überwiegend MIT bzw. Apache 2.0, einzelne BSD, ISC, Zlib, Unicode, MPL 2.0), NSIS im Windows-Installer (zlib) und die AppImage-Laufzeit (MIT). Übersicht in `public/lizenzen.html` (alle Texte zum Aufklappen), vollständig in `public/lizenzen-programm.txt`.
+- Nach neuen Abhängigkeiten die Dateien neu erzeugen und mit committen: `python3 scripts/licenses-rust.py` (nach Änderungen an `src-tauri/Cargo.lock`, braucht cargo), dann `python3 scripts/licenses.py` (braucht `npm ci`). Vor jedem Release prüft `release.yml`, ob sie aktuell sind, und bricht sonst ab.
